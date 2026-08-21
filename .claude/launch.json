@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "guia-del-cacao",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "guia-del-cacao", "run", "dev"],
+      "port": 3000
+    }
+  ]
+}

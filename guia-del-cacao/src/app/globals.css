@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+/*
+  Guía del Cacao — sistema de diseño.
+  Paleta y tipografías validadas en el prototipo (ver spec-tecnica §8).
+  Mobile-first: la base es celular, el escritorio adapta.
+  Sin modo oscuro: la identidad vive sobre el fondo crema.
+*/
+
+@theme {
+  --color-crema: #fff7e8;
+  --color-crema-2: #fdeecb;
+  --color-selva: #106b46;
+  --color-selva-2: #0c5236;
+  --color-lima: #a8d94a;
+  --color-mango: #ffb703;
+  --color-guayaba: #ff5d73;
+  --color-turquesa: #12b8ac;
+  --color-cacao: #4a2c1d;
+  --color-ink: #22150e;
+
+  --font-display: var(--font-fredoka), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, monospace;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-crema);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--color-selva-2);
+  }
+
+  ::selection {
+    background: var(--color-mango);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-selva);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
