@@ -94,12 +94,12 @@ Solo marcas Tier 2 y Tier 3 pueden otorgar puntos.
 
 **Rangos:**
 
-| Rango | Puntos acumulados |
-|---|---|
-| Rango 1 | 0–19 |
-| Rango 2 | 20–49 |
-| Rango 3 | 50–100 |
-| Rango 4 | 100–200 |
+| Rango | Nombre | Monedas acumuladas |
+|---|---|---|
+| 1 | **Curioso** | 0 – 19 |
+| 2 | **Catador** | 20 – 49 |
+| 3 | **Conocedor** | 50 – 99 |
+| 4 | **Maestro cacaotero** | 100 o más |
 
 El beneficio por rango (descuento, premio, etc.) lo define cada marca a su criterio — la plataforma solo certifica el rango, no lo canjea directamente.
 
@@ -221,7 +221,7 @@ Administrador
 
 ## 10. Pendientes que no bloquean el desarrollo, pero conviene resolver pronto
 
-- ~~Nombre final del punto~~ → **decidido: monedas de chocolate**. Falta el nombre de cada rango (hoy son Rango 1 a 4).
+- ~~Nombre final del punto y de cada rango~~ → **decidido**: monedas de chocolate; rangos Curioso, Catador, Conocedor y Maestro cacaotero.
 - Límite exacto de caracteres en eventos y noticias (hoy rige un tope de trabajo de 1500).
 - Peso de imágenes: **decidido, 5 MB** para todas. Medidas recomendadas, no obligatorias: logo 512 × 512 px (cuadrada), fondo 1600 × 600 px (horizontal, 8:3), galería 1200 × 800 px.
 - Proveedor de pasarela de pago definitivo (Stripe / Conekta / Mercado Pago).

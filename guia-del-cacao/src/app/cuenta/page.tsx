@@ -5,7 +5,7 @@ import { BarraSesion } from "@/components/barra-sesion";
 import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { misResenas, misSolicitudes } from "@/lib/datos/puntos";
-import { MONEDA, monedas } from "@/lib/vocabulario";
+import { MONEDA, monedas, rango as nombreRango, siguienteRango } from "@/lib/vocabulario";
 
 export const metadata: Metadata = { title: "Mi cuenta · Guía del Cacao" };
 
@@ -14,14 +14,6 @@ const CUANDO = new Intl.DateTimeFormat("es-MX", {
   month: "short",
   year: "numeric",
 });
-
-/** Escalera de §5.4, con el siguiente peldaño a la vista para que motive. */
-const RANGOS = [
-  { nivel: 1, desde: 0, hasta: 19 },
-  { nivel: 2, desde: 20, hasta: 49 },
-  { nivel: 3, desde: 50, hasta: 99 },
-  { nivel: 4, desde: 100, hasta: null },
-];
 
 const ESTADO_SOLICITUD = {
   pendiente: { texto: "Pendiente", tono: "bg-mango/25 text-cacao" },
@@ -54,7 +46,8 @@ export default async function Cuenta() {
 
   const puntos = rango?.puntos_acumulados ?? 0;
   const nivel = rango?.rango_actual ?? 1;
-  const siguiente = RANGOS.find((r) => r.nivel === nivel + 1);
+  const actual = nombreRango(nivel);
+  const siguiente = siguienteRango(nivel);
   const faltan = siguiente ? siguiente.desde - puntos : 0;
 
   return (
@@ -69,7 +62,7 @@ export default async function Cuenta() {
 
           <p className="mt-2 font-mono text-5xl font-bold text-selva">{puntos}</p>
           <p className="mt-1 text-cacao">
-            {monedas(puntos)} · Rango {nivel}
+            {monedas(puntos)} · {actual.nombre}
           </p>
 
           {siguiente && (
@@ -77,7 +70,7 @@ export default async function Cuenta() {
               <div
                 className="h-3 overflow-hidden rounded-full bg-white"
                 role="img"
-                aria-label={`Te faltan ${faltan} ${monedas(faltan, true)} para el Rango ${siguiente.nivel}`}
+                aria-label={`Te faltan ${faltan} ${monedas(faltan, true)} para ser ${siguiente.nombre}`}
               >
                 <div
                   className="h-full rounded-full bg-lima"
@@ -88,7 +81,7 @@ export default async function Cuenta() {
               </div>
               <p className="mt-2 text-cacao">
                 Te {faltan === 1 ? "falta" : "faltan"} <strong>{faltan}</strong>{" "}
-                {monedas(faltan, true)} para el Rango {siguiente.nivel}.
+                {monedas(faltan, true)} para ser {siguiente.nombre}.
               </p>
             </div>
           )}

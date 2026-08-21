@@ -46,8 +46,14 @@ un rango propio: API `54421`, base `54422`, Studio `54423`, correo `54424`.
 
 ## Cómo se llaman las cosas
 
-La unidad del pasaporte se llama **monedas de chocolate**, y ese nombre vive en
-`src/lib/vocabulario.ts`, no repartido por la interfaz. En la base las columnas
+La unidad del pasaporte se llama **monedas de chocolate** y los cuatro rangos
+son **Curioso · Catador · Conocedor · Maestro cacaotero**. Todo eso vive en
+`src/lib/vocabulario.ts`, no repartido por la interfaz.
+
+Los cortes de la escalera (20, 50, 100) están dos veces: en
+`public.calcular_rango` y en `RANGOS`. La base es la que manda; el vocabulario
+solo los explica y dice cuánto falta para el siguiente. Si cambian, cambian en
+los dos lados. En la base las columnas
 siguen siendo `puntos_*`: ahí se guarda la unidad, en el vocabulario se le pone
 nombre comercial. Si mañana se llaman mazorcas, se cambia un archivo y no hace
 falta migración.

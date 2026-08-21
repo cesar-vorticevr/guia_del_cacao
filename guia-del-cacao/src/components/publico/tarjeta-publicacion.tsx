@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { urlImagen } from "@/lib/imagenes";
 import type { Publicacion } from "@/lib/datos/publico";
+import { rango } from "@/lib/vocabulario";
 
 const FECHA = new Intl.DateTimeFormat("es-MX", {
   day: "numeric",
@@ -41,7 +42,7 @@ export function TarjetaPublicacion({
 
         {publicacion.rango_exclusivo && (
           <p className="mt-3 inline-block rounded-full bg-mango/25 px-3 py-1 font-mono text-xs font-bold text-cacao">
-            Solo para Rango {publicacion.rango_exclusivo}
+            Solo para {rango(publicacion.rango_exclusivo).plural}
           </p>
         )}
 

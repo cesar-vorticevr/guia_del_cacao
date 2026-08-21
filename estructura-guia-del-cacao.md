@@ -109,14 +109,14 @@ Solo marcas **Tier 2 y Tier 3** pueden otorgar puntos (Tier 1 no).
 6. Tope: **máximo 3 puntos por persona, por marca, por día.**
 7. Al aprobarse, se acreditan los puntos y se recalcula el rango del usuario.
 
-**Rangos ("rango chocolatero"):**
+**Rangos:**
 
-| Rango | Puntos acumulados |
-|---|---|
-| Rango 1 | 0 – 19 |
-| Rango 2 | 20 – 49 |
-| Rango 3 | 50 – 100 |
-| Rango 4 | 100 – 200 |
+| Rango | Nombre | Monedas acumuladas |
+|---|---|---|
+| 1 | **Curioso** | 0 – 19 |
+| 2 | **Catador** | 20 – 49 |
+| 3 | **Conocedor** | 50 – 99 |
+| 4 | **Maestro cacaotero** | 100 o más |
 
 Cada rango no tiene un premio fijo definido centralmente — **cada marca decide qué le ofrece a un usuario según el rango en el que se encuentre**. Como guía sugerida para las marcas (no obligatoria): Rango 1-2 sin beneficio o beneficio mínimo, Rango 3 descuento especial, Rango 4 descuento mayor o premio/regalo. La plataforma solo certifica el rango del usuario; el beneficio concreto lo define cada negocio.
 
@@ -128,7 +128,6 @@ Cada rango no tiene un premio fijo definido centralmente — **cada marca decide
 
 **Pendiente de decidir:**
 - ~~Nombre final del punto~~ → decidido: **monedas de chocolate**
-- Nombre de cada rango (además del rango numérico)
 - Mecanismo anti-abuso adicional si una marca y un usuario intentan generar solicitudes falsas repetidamente
 
 ---
@@ -188,6 +187,6 @@ Definida por ustedes: la plataforma debe sentirse **tropical, divertida y colori
 
 ## 10. Decisiones pendientes (resumen)
 
-- [x] ~~Nombre final del punto~~ → **monedas de chocolate**. Falta el nombre de cada rango.
+- [x] ~~Nombre final del punto y de cada rango~~ → **monedas de chocolate**; Curioso, Catador, Conocedor, Maestro cacaotero.
 - [ ] Límites de caracteres/imágenes en eventos y noticias
 - [ ] Mecanismo anti-abuso en solicitudes de puntos — **abierto, a definir**. Algunas ideas para cuando se retome: límite de solicitudes rechazadas antes de suspender temporalmente al usuario, revisión aleatoria por el Administrador, o requerir foto del ticket de compra como respaldo opcional. No es bloqueante para empezar a construir: se puede lanzar con el tope de 3/día por marca como única barrera inicial y ajustar según se vean patrones reales de abuso.

@@ -15,6 +15,7 @@ import {
 } from "@/lib/negocio/acciones";
 import { pesos, type Sucursal, type Tier } from "@/lib/tipos";
 import { ACEPTA, MEDIDAS, PESO } from "@/lib/imagenes";
+import { RANGOS } from "@/lib/vocabulario";
 
 const INICIAL: EstadoAccion = {};
 
@@ -291,9 +292,11 @@ export function FormularioEvento({ sucursales }: { sucursales: Sucursal[] }) {
         requerido={false}
         opciones={[
           { valor: "", texto: "Abierto a todos" },
-          { valor: "2", texto: "Solo Rango 2 o más" },
-          { valor: "3", texto: "Solo Rango 3 o más" },
-          { valor: "4", texto: "Solo Rango 4" },
+          ...RANGOS.filter((r) => r.nivel > 1).map((r) => ({
+            valor: String(r.nivel),
+            texto:
+              r.nivel === 4 ? `Solo ${r.plural}` : `${r.plural} o más`,
+          })),
         ]}
       />
 
