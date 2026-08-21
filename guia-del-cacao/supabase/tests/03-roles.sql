@@ -102,3 +102,28 @@ begin;
     raise notice 'OK     bloqueado: %', sqlerrm;
   end $$;
 rollback;
+
+\echo '--- promover a admin por SQL deja el rol confirmado ---'
+-- El rol admin no es autoregistrable, asi que la cuenta nace por el registro
+-- normal y alguien la promueve despues. Si rol_confirmado se quedara en false,
+-- la app mandaria al administrador a /elegir-rol y podria degradarse solo.
+insert into auth.users (id, instance_id, aud, role, email, encrypted_password,
+  email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+values ('dddddddd-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000000',
+  'authenticated', 'authenticated', 'futuroadmin@prueba.mx', 'x', now(),
+  '{}', '{"full_name":"Futuro admin"}', now(), now());
+
+update public.perfiles set rol = 'admin'
+ where id = 'dddddddd-0000-0000-0000-000000000004';
+
+do $$
+declare confirmado boolean;
+begin
+  select rol_confirmado into confirmado from public.perfiles
+   where id = 'dddddddd-0000-0000-0000-000000000004';
+  if confirmado then
+    raise notice 'OK     el admin promovido quedo confirmado';
+  else
+    raise notice 'FALLA  el admin quedo sin confirmar y caeria en /elegir-rol';
+  end if;
+end $$;

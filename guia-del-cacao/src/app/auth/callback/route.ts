@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { crearClienteServidor } from "@/lib/supabase/server";
-import { destinoSegunRol } from "@/lib/auth/sesion";
+import { destinoSegunRol, perfilActual } from "@/lib/auth/sesion";
 
 /**
  * Regreso de Google: cambia el código de un solo uso por una sesión y manda a
@@ -22,10 +22,10 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=google`);
   }
 
-  const { data: perfil } = await supabase
-    .from("perfiles")
-    .select("rol, rol_confirmado")
-    .single();
+  // perfilActual() filtra por id. Un `.single()` suelto sobre perfiles falla
+  // justo para los administradores: su política les deja ver todos los
+  // perfiles, así que la consulta devolvería varias filas.
+  const perfil = await perfilActual();
 
   return NextResponse.redirect(
     `${origin}${perfil ? destinoSegunRol(perfil) : "/cuenta"}`,

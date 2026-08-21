@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
-import { destinoSegunRol, origenDelSitio } from "@/lib/auth/sesion";
+import { destinoSegunRol, origenDelSitio, perfilActual } from "@/lib/auth/sesion";
 
 export type EstadoFormulario = { error?: string };
 
@@ -163,10 +163,10 @@ export async function iniciarSesion(
 
   if (error) return { error: traducirError(error.message) };
 
-  const { data: perfil } = await supabase
-    .from("perfiles")
-    .select("rol, rol_confirmado")
-    .single();
+  // Se lee con perfilActual(), que filtra por id. Un `.single()` suelto sobre
+  // perfiles falla justo para los administradores: su política les deja ver
+  // todos los perfiles, así que la consulta devuelve varias filas.
+  const perfil = await perfilActual();
 
   redirect(perfil ? destinoSegunRol(perfil) : "/cuenta");
 }

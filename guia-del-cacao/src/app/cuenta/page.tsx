@@ -15,9 +15,13 @@ export default async function Cuenta() {
   const supabase = await crearClienteServidor();
   const anio = new Date().getFullYear();
 
+  // Filtrar por usuario, no solo por año: un administrador puede leer los
+  // rangos de todo el mundo, así que sin el .eq acabaría viendo los puntos de
+  // otra persona como si fueran suyos.
   const { data: rango } = await supabase
     .from("rangos_usuario")
     .select("puntos_acumulados, rango_actual")
+    .eq("usuario_id", perfil.id)
     .eq("anio", anio)
     .maybeSingle();
 
