@@ -1,3 +1,7 @@
+import Link from "next/link";
+import { Logotipo } from "@/components/marca";
+import { perfilActual, destinoSegunRol } from "@/lib/auth/sesion";
+
 const CATEGORIAS = [
   "Productora / Finca",
   "Comercializadora",
@@ -11,19 +15,35 @@ const CATEGORIAS = [
  * Portada provisional. Verifica que la paleta y las tipografías del prototipo
  * estén cargando; el home real (banner rotativo, directorio) llega en su fase.
  */
-export default function Home() {
+export default async function Home() {
+  const perfil = await perfilActual();
+
   return (
     <>
       <header className="sticky top-0 z-40 bg-selva py-3.5 text-crema">
         <div className="mx-auto flex w-[92vw] max-w-[1180px] items-center justify-between gap-4">
-          <span className="flex items-center gap-2 font-display text-xl font-bold">
-            <span
-              className="inline-block h-6 w-5 bg-mango"
-              style={{ borderRadius: "60% 60% 55% 55% / 70% 70% 40% 40%" }}
-              aria-hidden="true"
-            />
-            Guía del Cacao
-          </span>
+          <Logotipo />
+
+          {perfil ? (
+            <Link
+              href={destinoSegunRol(perfil)}
+              className="min-h-10 rounded-full bg-mango px-4 py-2 text-sm font-bold text-ink"
+            >
+              Mi cuenta
+            </Link>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link href="/login" className="px-2 py-2 text-sm font-bold">
+                Entrar
+              </Link>
+              <Link
+                href="/registro"
+                className="min-h-10 rounded-full bg-mango px-4 py-2 text-sm font-bold text-ink"
+              >
+                Crear cuenta
+              </Link>
+            </div>
+          )}
         </div>
       </header>
 

@@ -39,6 +39,30 @@ La especificación funcional está en la raíz del repo:
 Este proyecto convive con otro Supabase local en la misma máquina, así que usa
 un rango propio: API `54421`, base `54422`, Studio `54423`, correo `54424`.
 
+## Pruebas de la base
+
+Las reglas de negocio y RLS se prueban en SQL, contra Postgres real, en
+`supabase/tests/`. Usan identificadores fijos, así que necesitan una base
+recién creada:
+
+```
+npm run db:reset && npm run db:test
+```
+
+Al agregar una regla al esquema, agrega ahí su prueba — sobre todo las
+negativas (lo que NO se debe poder hacer), que es donde han salido los errores.
+Y cuidado al probar RLS: `SET LOCAL` solo surte efecto dentro de una
+transacción, y como `postgres` es superusuario, una prueba mal armada pasa
+saltándose las políticas sin comprobar nada.
+
+## Google OAuth
+
+El código ya está completo; falta encenderlo. En `supabase/config.toml`,
+`[auth.external.google]` está en `enabled = false` hasta que existan
+credenciales de Google Cloud. En producción hay que fijar además
+`NEXT_PUBLIC_SITE_URL`: detrás de un proxy la cabecera host no es el dominio
+real y la URL de retorno saldría mal.
+
 ## Antes de cerrar trabajo
 
 ```
