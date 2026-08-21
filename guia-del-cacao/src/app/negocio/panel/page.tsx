@@ -44,12 +44,21 @@ export default async function PanelNegocio() {
 
         <div className="mt-8 flex flex-wrap items-baseline justify-between gap-3">
           <h2 className="font-display text-xl">Tus micrositios</h2>
-          <Link
-            href="/negocio/panel/sucursal/nueva"
-            className="min-h-11 rounded-full bg-selva px-5 py-2.5 font-bold text-crema"
-          >
-            Nueva sucursal
-          </Link>
+
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/negocio/panel/contenido"
+              className="min-h-11 rounded-full border-2 border-selva/25 bg-white px-5 py-2.5 font-bold text-selva-2"
+            >
+              Eventos y noticias
+            </Link>
+            <Link
+              href="/negocio/panel/sucursal/nueva"
+              className="min-h-11 rounded-full bg-selva px-5 py-2.5 font-bold text-crema"
+            >
+              Nueva sucursal
+            </Link>
+          </div>
         </div>
 
         {sucursales.length === 0 ? (
@@ -83,6 +92,15 @@ export default async function PanelNegocio() {
                   >
                     Editar micrositio
                   </Link>
+
+                  {sucursal.estado === "publicado" && (
+                    <Link
+                      href={`/marca/${sucursal.slug}`}
+                      className="min-h-11 rounded-full border-2 border-selva/25 bg-white px-5 py-2.5 font-bold text-selva-2"
+                    >
+                      Ver publicado
+                    </Link>
+                  )}
 
                   {sucursal.estado !== "publicado" &&
                     sucursal.estado !== "pendiente_aprobacion" && (

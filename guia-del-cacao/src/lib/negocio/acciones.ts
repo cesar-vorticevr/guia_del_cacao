@@ -293,3 +293,163 @@ export async function publicarSucursal(
   revalidatePath("/negocio/panel");
   redirect(`/negocio/panel/sucursal/${id}?enviado=1`);
 }
+
+// ---------------------------------------------------------------------------
+// Galeria del micrositio
+// ---------------------------------------------------------------------------
+
+const TOPE_GALERIA = 8;
+
+export async function agregarAGaleria(
+  _previo: EstadoAccion,
+  datos: FormData,
+): Promise<EstadoAccion> {
+  const perfil = await exigirNegocio();
+  const id = datos.get("sucursal_id")?.toString() ?? "";
+  const sucursal = await exigirSucursalPropia(perfil.id, id);
+
+  if (sucursal.galeria.length >= TOPE_GALERIA) {
+    return { error: `El carrusel admite hasta ${TOPE_GALERIA} fotos.` };
+  }
+
+  const archivo = datos.get("archivo");
+  if (!(archivo instanceof File) || archivo.size === 0) {
+    return { error: "Elige una imagen." };
+  }
+
+  const extension = archivo.name.split(".").pop()?.toLowerCase() ?? "jpg";
+  const ruta = `${id}/galeria-${Date.now()}.${extension}`;
+
+  const supabase = await crearClienteServidor();
+
+  const { error: errorSubida } = await supabase.storage
+    .from("micrositios")
+    .upload(ruta, archivo, { upsert: true });
+
+  if (errorSubida) {
+    return { error: "No se pudo subir la foto. Revisa el formato y el tamaño." };
+  }
+
+  const { error } = await supabase
+    .from("sucursales")
+    .update({ galeria: [...sucursal.galeria, ruta] })
+    .eq("id", id);
+
+  if (error) return { error: "La foto subió pero no se pudo agregar al carrusel." };
+
+  revalidatePath(`/negocio/panel/sucursal/${id}`);
+  return { ok: "Foto agregada." };
+}
+
+export async function quitarDeGaleria(datos: FormData) {
+  const perfil = await exigirNegocio();
+  const id = datos.get("sucursal_id")?.toString() ?? "";
+  const ruta = datos.get("ruta")?.toString() ?? "";
+  const sucursal = await exigirSucursalPropia(perfil.id, id);
+
+  const supabase = await crearClienteServidor();
+
+  await supabase
+    .from("sucursales")
+    .update({ galeria: sucursal.galeria.filter((r) => r !== ruta) })
+    .eq("id", id);
+
+  // Se borra tambien del bucket: dejarla ahi seria pagar almacenamiento por una
+  // imagen que ya nadie va a ver.
+  await supabase.storage.from("micrositios").remove([ruta]);
+
+  revalidatePath(`/negocio/panel/sucursal/${id}`);
+}
+
+// ---------------------------------------------------------------------------
+// Eventos y noticias (solo Tier 3)
+// ---------------------------------------------------------------------------
+
+// PENDIENTE (§10): el limite exacto de caracteres esta sin definir. Este es un
+// tope de trabajo para que las tarjetas del feed no se desbalanceen.
+const TOPE_CONTENIDO = 1500;
+
+function validarPublicacion(datos: FormData) {
+  const titulo = texto(datos, "titulo");
+  const contenido = texto(datos, "contenido");
+
+  if (!titulo) return { error: "Escribe un título." };
+  if (!contenido) return { error: "Escribe el contenido." };
+  if (contenido.length > TOPE_CONTENIDO) {
+    return { error: `El contenido no puede pasar de ${TOPE_CONTENIDO} caracteres.` };
+  }
+
+  return null;
+}
+
+/** Traduce a espaniol lo que grita el trigger cuando el tier no alcanza. */
+function traducirErrorContenido(mensaje: string) {
+  if (mensaje.includes("Tier 3")) {
+    return "Publicar eventos y noticias requiere el plan Tier 3.";
+  }
+  if (mensaje.includes("maximo 1 por semana")) {
+    return "Ya tienes un evento esa semana. Solo se permite uno por semana.";
+  }
+  return "No se pudo publicar. Inténtalo de nuevo.";
+}
+
+export async function crearEvento(
+  _previo: EstadoAccion,
+  datos: FormData,
+): Promise<EstadoAccion> {
+  const perfil = await exigirNegocio();
+  const id = datos.get("sucursal_id")?.toString() ?? "";
+  await exigirSucursalPropia(perfil.id, id);
+
+  const problema = validarPublicacion(datos);
+  if (problema) return problema;
+
+  const fecha = texto(datos, "fecha_evento");
+  if (!fecha) return { error: "Elige la fecha del evento." };
+
+  const rango = texto(datos, "rango_exclusivo");
+
+  const supabase = await crearClienteServidor();
+
+  const { error } = await supabase.from("eventos").insert({
+    sucursal_id: id,
+    titulo: texto(datos, "titulo"),
+    subtitulo: texto(datos, "subtitulo"),
+    contenido: texto(datos, "contenido"),
+    fecha_evento: new Date(fecha).toISOString(),
+    rango_exclusivo: rango ? Number(rango) : null,
+  });
+
+  if (error) return { error: traducirErrorContenido(error.message) };
+
+  revalidatePath("/negocio/panel/contenido");
+  revalidatePath("/eventos");
+  return { ok: "Evento publicado." };
+}
+
+export async function crearNoticia(
+  _previo: EstadoAccion,
+  datos: FormData,
+): Promise<EstadoAccion> {
+  const perfil = await exigirNegocio();
+  const id = datos.get("sucursal_id")?.toString() ?? "";
+  await exigirSucursalPropia(perfil.id, id);
+
+  const problema = validarPublicacion(datos);
+  if (problema) return problema;
+
+  const supabase = await crearClienteServidor();
+
+  const { error } = await supabase.from("noticias").insert({
+    sucursal_id: id,
+    titulo: texto(datos, "titulo"),
+    subtitulo: texto(datos, "subtitulo"),
+    contenido: texto(datos, "contenido"),
+  });
+
+  if (error) return { error: traducirErrorContenido(error.message) };
+
+  revalidatePath("/negocio/panel/contenido");
+  revalidatePath("/noticias");
+  return { ok: "Noticia publicada." };
+}

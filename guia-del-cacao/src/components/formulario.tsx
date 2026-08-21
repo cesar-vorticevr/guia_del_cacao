@@ -5,7 +5,7 @@ import { useFormStatus } from "react-dom";
 type CampoProps = {
   nombre: string;
   etiqueta: string;
-  tipo?: "text" | "email" | "password" | "tel";
+  tipo?: "text" | "email" | "password" | "tel" | "datetime-local" | "number";
   ayuda?: string;
   requerido?: boolean;
   autoComplete?: string;
@@ -79,10 +79,16 @@ export function Selector({
   nombre,
   etiqueta,
   opciones,
+  requerido = true,
 }: {
   nombre: string;
   etiqueta: string;
   opciones: { valor: string; texto: string }[];
+  /**
+   * Ojo al ponerlo en true si alguna opción tiene valor vacío: el navegador
+   * la considera "sin elegir" y aborta el envío sin decir nada.
+   */
+  requerido?: boolean;
 }) {
   return (
     <label className="block">
@@ -90,7 +96,7 @@ export function Selector({
       <select
         id={nombre}
         name={nombre}
-        required
+        required={requerido}
         className="min-h-14 w-full rounded-2xl border-2 border-selva/20 bg-white px-4 text-base text-ink focus:border-selva"
       >
         {opciones.map((o) => (

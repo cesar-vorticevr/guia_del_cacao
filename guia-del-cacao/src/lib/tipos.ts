@@ -42,6 +42,7 @@ export type Sucursal = {
   tier_id: number | null;
   estado: EstadoSucursal;
   motivo_rechazo: string | null;
+  galeria: string[];
   fecha_publicacion: string | null;
 };
 

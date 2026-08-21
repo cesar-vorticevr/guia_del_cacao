@@ -1,9 +1,12 @@
 "use client";
 
 import { useActionState } from "react";
-import { Area, Aviso, BotonEnviar, Campo } from "@/components/formulario";
+import { Area, Aviso, BotonEnviar, Campo, Selector } from "@/components/formulario";
 import {
+  agregarAGaleria,
   agregarProducto,
+  crearEvento,
+  crearNoticia,
   crearSucursal,
   guardarMicrositio,
   publicarSucursal,
@@ -213,6 +216,98 @@ export function FormularioPublicar({
       </fieldset>
 
       <BotonEnviar>Pagar y enviar a revisión</BotonEnviar>
+    </form>
+  );
+}
+
+export function FormularioGaleria({ sucursalId }: { sucursalId: string }) {
+  const [estado, accion] = useActionState(agregarAGaleria, INICIAL);
+
+  return (
+    <form action={accion} className="grid gap-3">
+      <input type="hidden" name="sucursal_id" value={sucursalId} />
+      <Resultado estado={estado} />
+
+      <label className="block">
+        <span className="mb-1.5 block font-bold text-selva-2">Agregar foto</span>
+        <input
+          type="file"
+          name="archivo"
+          accept="image/jpeg,image/png,image/webp,image/avif"
+          className="w-full rounded-2xl border-2 border-dashed border-selva/25 bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-selva file:px-4 file:py-2 file:font-bold file:text-crema"
+        />
+        <span className="mt-1.5 block text-sm text-cacao/70">
+          Hasta 8 fotos. Se muestran en el orden en que las subes.
+        </span>
+      </label>
+
+      <BotonEnviar variante="secundario">Subir foto</BotonEnviar>
+    </form>
+  );
+}
+
+export function FormularioEvento({ sucursales }: { sucursales: Sucursal[] }) {
+  const [estado, accion] = useActionState(crearEvento, INICIAL);
+
+  return (
+    <form action={accion} className="grid gap-4">
+      <Resultado estado={estado} />
+
+      <Selector
+        nombre="sucursal_id"
+        etiqueta="Sucursal que publica"
+        opciones={sucursales.map((s) => ({ valor: s.id, texto: s.nombre_sucursal }))}
+      />
+
+      <Campo nombre="titulo" etiqueta="Título" />
+      <Campo nombre="subtitulo" etiqueta="Subtítulo" requerido={false} />
+      <Area
+        nombre="contenido"
+        etiqueta="Contenido"
+        ayuda="Hasta 1500 caracteres."
+        filas={5}
+      />
+      <Campo nombre="fecha_evento" etiqueta="Fecha del evento" tipo="datetime-local" />
+      <Selector
+        nombre="rango_exclusivo"
+        etiqueta="¿Exclusivo para algún rango?"
+        requerido={false}
+        opciones={[
+          { valor: "", texto: "Abierto a todos" },
+          { valor: "2", texto: "Solo Rango 2 o más" },
+          { valor: "3", texto: "Solo Rango 3 o más" },
+          { valor: "4", texto: "Solo Rango 4" },
+        ]}
+      />
+
+      <BotonEnviar>Publicar evento</BotonEnviar>
+    </form>
+  );
+}
+
+export function FormularioNoticia({ sucursales }: { sucursales: Sucursal[] }) {
+  const [estado, accion] = useActionState(crearNoticia, INICIAL);
+
+  return (
+    <form action={accion} className="grid gap-4">
+      <Resultado estado={estado} />
+
+      <Selector
+        nombre="sucursal_id"
+        etiqueta="Sucursal que publica"
+        opciones={sucursales.map((s) => ({ valor: s.id, texto: s.nombre_sucursal }))}
+      />
+
+      <Campo nombre="titulo" etiqueta="Título" />
+      <Campo nombre="subtitulo" etiqueta="Subtítulo" requerido={false} />
+      <Area
+        nombre="contenido"
+        etiqueta="Contenido"
+        ayuda="Hasta 1500 caracteres."
+        filas={5}
+      />
+
+      <BotonEnviar>Publicar noticia</BotonEnviar>
     </form>
   );
 }

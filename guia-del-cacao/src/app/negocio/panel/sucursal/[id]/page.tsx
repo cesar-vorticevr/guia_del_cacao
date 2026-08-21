@@ -4,13 +4,15 @@ import type { Metadata } from "next";
 import { BarraSesion } from "@/components/barra-sesion";
 import { InsigniaEstado } from "@/components/insignia-estado";
 import {
+  FormularioGaleria,
   FormularioImagen,
   FormularioMicrositio,
   FormularioProducto,
 } from "@/components/negocio/formularios";
-import { eliminarProducto } from "@/lib/negocio/acciones";
+import { eliminarProducto, quitarDeGaleria } from "@/lib/negocio/acciones";
 import { perfilActual } from "@/lib/auth/sesion";
-import { miSucursal, productosDe, urlPublica } from "@/lib/datos/sucursales";
+import { miSucursal, productosDe } from "@/lib/datos/sucursales";
+import { urlImagen } from "@/lib/imagenes";
 import { ESTADO, pesos } from "@/lib/tipos";
 
 export const metadata: Metadata = { title: "Editar micrositio · Guía del Cacao" };
@@ -33,11 +35,9 @@ export default async function EditorMicrositio({
   const sucursal = await miSucursal(perfil.id, id);
   if (!sucursal) redirect("/negocio/panel");
 
-  const [productos, logo, fondo] = await Promise.all([
-    productosDe(sucursal.id),
-    urlPublica(sucursal.logo),
-    urlPublica(sucursal.imagen_fondo),
-  ]);
+  const productos = await productosDe(sucursal.id);
+  const logo = urlImagen(sucursal.logo);
+  const fondo = urlImagen(sucursal.imagen_fondo);
 
   const editable = sucursal.estado !== "pendiente_aprobacion";
 
@@ -122,6 +122,43 @@ export default async function EditorMicrositio({
                   />
                 </div>
               </div>
+            </section>
+
+            <section className="grid gap-5">
+              <div>
+                <h2 className="font-display text-xl">Carrusel de fotos</h2>
+                <p className="mt-1 text-cacao">
+                  Se muestran en tu micrositio, en el orden en que las subes.
+                </p>
+              </div>
+
+              {sucursal.galeria.length > 0 && (
+                <ul className="flex gap-3 overflow-x-auto pb-2">
+                  {sucursal.galeria.map((ruta) => (
+                    <li key={ruta} className="relative shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={urlImagen(ruta) ?? ""}
+                        alt=""
+                        className="h-28 w-40 rounded-2xl object-cover"
+                      />
+                      <form action={quitarDeGaleria} className="absolute top-2 right-2">
+                        <input type="hidden" name="sucursal_id" value={sucursal.id} />
+                        <input type="hidden" name="ruta" value={ruta} />
+                        <button
+                          type="submit"
+                          aria-label="Quitar foto"
+                          className="grid size-8 place-items-center rounded-full bg-ink/70 font-bold text-crema"
+                        >
+                          ×
+                        </button>
+                      </form>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <FormularioGaleria sucursalId={sucursal.id} />
             </section>
 
             <section className="grid gap-5">

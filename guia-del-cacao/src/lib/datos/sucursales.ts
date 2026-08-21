@@ -4,7 +4,7 @@ import type { Producto, Sucursal, Tier } from "@/lib/tipos";
 const CAMPOS_SUCURSAL = `
   id, marca_id, nombre_sucursal, slug, logo, imagen_fondo, ubicacion_maps_url,
   acerca_de, whatsapp, facebook, instagram, youtube, tiktok, correo_contacto,
-  telefono, tier_id, estado, motivo_rechazo, fecha_publicacion
+  telefono, tier_id, estado, motivo_rechazo, fecha_publicacion, galeria
 `;
 
 /**
@@ -63,12 +63,3 @@ export async function listarTiers() {
   return (data ?? []) as Tier[];
 }
 
-/** URL pública de una imagen guardada en el bucket de micrositios. */
-export async function urlPublica(ruta: string | null) {
-  if (!ruta) return null;
-
-  const supabase = await crearClienteServidor();
-  const { data } = supabase.storage.from("micrositios").getPublicUrl(ruta);
-
-  return data.publicUrl;
-}
