@@ -44,6 +44,26 @@ La especificación funcional está en la raíz del repo:
 Este proyecto convive con otro Supabase local en la misma máquina, así que usa
 un rango propio: API `54421`, base `54422`, Studio `54423`, correo `54424`.
 
+## Cómo se llaman las cosas
+
+La unidad del pasaporte se llama **monedas de chocolate**, y ese nombre vive en
+`src/lib/vocabulario.ts`, no repartido por la interfaz. En la base las columnas
+siguen siendo `puntos_*`: ahí se guarda la unidad, en el vocabulario se le pone
+nombre comercial. Si mañana se llaman mazorcas, se cambia un archivo y no hace
+falta migración.
+
+## Imágenes
+
+Todo lo que se suba pasa por `src/lib/imagenes.ts`: tope de **5 MB**, formatos
+JPG/PNG/WebP/AVIF y las medidas recomendadas de cada campo. Las medidas son
+sugerencias —la plataforma recorta lo que le den—, pero se muestran para que
+nadie tenga que adivinar por qué su logo salió cortado.
+
+Dos límites tienen que coincidir o el resultado es un error sin explicación:
+el del bucket (`file_size_limit` en la migración de storage) y el de Next.js
+(`serverActions.bodySizeLimit` en `next.config.ts`, que por defecto es **1 MB**
+y cortaba cualquier foto de celular con un 500 mudo).
+
 ## Cuentas de demostración
 
 `supabase/seed.sql` las recrea en cada `db reset`, así que reiniciar la base

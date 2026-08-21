@@ -7,6 +7,7 @@ import { perfilActual } from "@/lib/auth/sesion";
 import { miSucursal } from "@/lib/datos/sucursales";
 import { generarSlug } from "@/lib/tipos";
 import { procesarPago, proximoCobro } from "@/lib/pagos";
+import { revisarImagen } from "@/lib/imagenes";
 
 export type EstadoAccion = { error?: string; ok?: string };
 
@@ -138,11 +139,11 @@ export async function subirImagen(
   }
 
   const archivo = datos.get("archivo");
-  if (!(archivo instanceof File) || archivo.size === 0) {
-    return { error: "Elige una imagen." };
-  }
+  const problemaImagen = revisarImagen(archivo);
+  if (problemaImagen) return { error: problemaImagen };
 
-  const extension = archivo.name.split(".").pop()?.toLowerCase() ?? "jpg";
+  const imagen = archivo as File;
+  const extension = imagen.name.split(".").pop()?.toLowerCase() ?? "jpg";
   const ruta = `${id}/${campo}-${Date.now()}.${extension}`;
 
   const supabase = await crearClienteServidor();
@@ -150,10 +151,10 @@ export async function subirImagen(
   // La política de storage exige que la primera carpeta sea una sucursal suya.
   const { error: errorSubida } = await supabase.storage
     .from("micrositios")
-    .upload(ruta, archivo, { upsert: true });
+    .upload(ruta, imagen, { upsert: true });
 
   if (errorSubida) {
-    return { error: "No se pudo subir la imagen. Revisa el formato y el tamaño." };
+    return { error: "No se pudo subir la imagen. Inténtalo de nuevo." };
   }
 
   const { error } = await supabase
@@ -313,21 +314,21 @@ export async function agregarAGaleria(
   }
 
   const archivo = datos.get("archivo");
-  if (!(archivo instanceof File) || archivo.size === 0) {
-    return { error: "Elige una imagen." };
-  }
+  const problemaImagen = revisarImagen(archivo);
+  if (problemaImagen) return { error: problemaImagen };
 
-  const extension = archivo.name.split(".").pop()?.toLowerCase() ?? "jpg";
+  const imagen = archivo as File;
+  const extension = imagen.name.split(".").pop()?.toLowerCase() ?? "jpg";
   const ruta = `${id}/galeria-${Date.now()}.${extension}`;
 
   const supabase = await crearClienteServidor();
 
   const { error: errorSubida } = await supabase.storage
     .from("micrositios")
-    .upload(ruta, archivo, { upsert: true });
+    .upload(ruta, imagen, { upsert: true });
 
   if (errorSubida) {
-    return { error: "No se pudo subir la foto. Revisa el formato y el tamaño." };
+    return { error: "No se pudo subir la foto. Inténtalo de nuevo." };
   }
 
   const { error } = await supabase

@@ -23,11 +23,11 @@ function traducir(mensaje: string, quienLee: "cliente" | "negocio" = "cliente") 
   // queda por dar.
   if (mensaje.includes("Tope alcanzado")) {
     return quienLee === "negocio"
-      ? "Esta persona ya recibió sus 3 puntos de hoy en tu negocio. Puedes dárselos mañana."
-      : "Ya juntaste los 3 puntos que este negocio puede darte hoy. Vuelve mañana.";
+      ? "Esta persona ya recibió sus 3 monedas de hoy en tu negocio. Puedes dárselas mañana."
+      : "Ya juntaste las 3 monedas que este negocio puede darte hoy. Vuelve mañana.";
   }
   if (mensaje.includes("no otorga puntos")) {
-    return "Este negocio todavía no participa en el pasaporte de puntos.";
+    return "Este negocio todavía no participa en el pasaporte de monedas de chocolate.";
   }
   if (mensaje.includes("no esta publicada")) {
     return "Este micrositio no está disponible.";
@@ -36,9 +36,9 @@ function traducir(mensaje: string, quienLee: "cliente" | "negocio" = "cliente") 
 }
 
 /**
- * El cliente escanea el QR, elige qué compró y pide sus puntos.
+ * El cliente escanea el QR, elige qué compró y pide sus monedas.
  *
- * No decide cuántos: eso lo hace la marca al revisar (spec §5.4.5). Aquí solo
+ * No decide cuántas: eso lo hace la marca al revisar (spec §5.4.5). Aquí solo
  * se deja constancia de la compra.
  */
 export async function pedirPuntos(
@@ -48,9 +48,9 @@ export async function pedirPuntos(
   const perfil = await perfilActual();
   const slug = datos.get("slug")?.toString() ?? "";
 
-  if (!perfil) redirect(`/login?volver=/puntos/${slug}`);
+  if (!perfil) redirect(`/login?volver=/monedas/${slug}`);
   if (perfil.rol !== "cliente") {
-    return { error: "Solo las cuentas de cliente juntan puntos." };
+    return { error: "Solo las cuentas de cliente juntan monedas de chocolate." };
   }
 
   const sucursalId = datos.get("sucursal_id")?.toString() ?? "";
@@ -83,18 +83,18 @@ export async function pedirPuntos(
     return { error: "No se pudo registrar lo que compraste. Inténtalo de nuevo." };
   }
 
-  revalidatePath(`/puntos/${slug}`);
+  revalidatePath(`/monedas/${slug}`);
   revalidatePath("/cuenta");
 
   // Se redirige en vez de devolver un mensaje: al revalidar, la página vuelve
   // a renderizarse mostrando "ya tienes una solicitud pendiente" y el
   // formulario —con su mensaje de éxito— desaparece. Justo en el momento del
   // acierto, esa frase se lee como un rechazo.
-  redirect(`/puntos/${slug}?enviado=1`);
+  redirect(`/monedas/${slug}?enviado=1`);
 }
 
 /**
- * La marca resuelve: otorga de 1 a 3 puntos, o rechaza.
+ * La marca resuelve: otorga de 1 a 3 monedas, o rechaza.
  *
  * El tope diario por marca lo vigila el trigger acreditar_puntos, y el rango
  * del cliente se recalcula solo al aprobar.
@@ -127,13 +127,13 @@ export async function resolverSolicitud(
 
     if (error) return { error: traducir(error.message, "negocio") };
 
-    revalidatePath("/negocio/panel/puntos");
+    revalidatePath("/negocio/panel/monedas");
     return { ok: "Solicitud rechazada." };
   }
 
   const puntos = Number(decision);
   if (!Number.isInteger(puntos) || puntos < 1 || puntos > 3) {
-    return { error: "Se otorgan entre 1 y 3 puntos." };
+    return { error: "Se otorgan entre 1 y 3 monedas." };
   }
 
   const { error } = await supabase
@@ -148,6 +148,6 @@ export async function resolverSolicitud(
 
   if (error) return { error: traducir(error.message, "negocio") };
 
-  revalidatePath("/negocio/panel/puntos");
-  return { ok: `Listo: ${puntos} ${puntos === 1 ? "punto otorgado" : "puntos otorgados"}.` };
+  revalidatePath("/negocio/panel/monedas");
+  return { ok: `Listo: ${puntos} ${puntos === 1 ? "moneda otorgada" : "monedas otorgadas"}.` };
 }

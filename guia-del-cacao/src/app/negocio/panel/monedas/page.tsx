@@ -9,7 +9,7 @@ import { misSucursales } from "@/lib/datos/sucursales";
 import { solicitudesPorResolver } from "@/lib/datos/puntos";
 import { pesos } from "@/lib/tipos";
 
-export const metadata: Metadata = { title: "Solicitudes de puntos · Guía del Cacao" };
+export const metadata: Metadata = { title: "Solicitudes de monedas · Guía del Cacao" };
 
 const CUANDO = new Intl.DateTimeFormat("es-MX", {
   day: "numeric",
@@ -36,8 +36,8 @@ export default async function PanelPuntos() {
     conPuntos.map(async (sucursal) => ({
       id: sucursal.id,
       nombre: sucursal.nombre_sucursal,
-      destino: `${origen}/puntos/${sucursal.slug}`,
-      qr: await QRCode.toString(`${origen}/puntos/${sucursal.slug}`, {
+      destino: `${origen}/monedas/${sucursal.slug}`,
+      qr: await QRCode.toString(`${origen}/monedas/${sucursal.slug}`, {
         type: "svg",
         margin: 1,
         color: { dark: "#106b46", light: "#ffffff" },
@@ -54,14 +54,14 @@ export default async function PanelPuntos() {
           <Link href="/negocio/panel" className="font-bold text-selva underline">
             ← Panel
           </Link>
-          <h1 className="mt-3 font-display text-3xl">Solicitudes de puntos</h1>
+          <h1 className="mt-3 font-display text-3xl">Solicitudes de monedas</h1>
         </div>
 
         {conPuntos.length === 0 ? (
           <p className="rounded-3xl bg-crema-2 p-6 text-cacao">
-            Dar puntos viene con el plan <strong>Tier 2</strong> o superior, y el
-            micrositio tiene que estar publicado. Ninguno de los tuyos cumple
-            todavía.
+            Dar monedas de chocolate viene con el plan <strong>Tier 2</strong> o
+            superior, y el micrositio tiene que estar publicado. Ninguno de los
+            tuyos cumple todavía.
           </p>
         ) : (
           <>
@@ -69,8 +69,8 @@ export default async function PanelPuntos() {
               <div>
                 <h2 className="font-display text-2xl">Por resolver</h2>
                 <p className="mt-1 text-cacao">
-                  Tú decides cuántos puntos dar, de 1 a 3, según lo que compraron.
-                  Máximo 3 por persona al día.
+                  Tú decides cuántas monedas dar, de 1 a 3, según lo que
+                  compraron. Máximo 3 por persona al día.
                 </p>
               </div>
 

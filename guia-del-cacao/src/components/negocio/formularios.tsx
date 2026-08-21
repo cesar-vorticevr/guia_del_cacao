@@ -14,6 +14,7 @@ import {
   type EstadoAccion,
 } from "@/lib/negocio/acciones";
 import { pesos, type Sucursal, type Tier } from "@/lib/tipos";
+import { ACEPTA, MEDIDAS, PESO } from "@/lib/imagenes";
 
 const INICIAL: EstadoAccion = {};
 
@@ -101,18 +102,49 @@ export function FormularioMicrositio({ sucursal }: { sucursal: Sucursal }) {
   );
 }
 
+/**
+ * Campo de archivo con las medidas a la vista.
+ *
+ * La medida es una recomendación, no un requisito: la plataforma acepta
+ * cualquier imagen y la recorta. Se dice de todos modos porque una foto en la
+ * proporción correcta se ve bien sola, sin que nadie tenga que adivinar por
+ * qué su logo salió cortado.
+ */
+function CampoImagen({
+  etiqueta,
+  medida,
+}: {
+  etiqueta: string;
+  medida: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block font-bold text-selva-2">{etiqueta}</span>
+      <input
+        type="file"
+        name="archivo"
+        accept={ACEPTA}
+        className="w-full rounded-2xl border-2 border-dashed border-selva/25 bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-selva file:px-4 file:py-2 file:font-bold file:text-crema"
+      />
+      <span className="mt-1.5 block text-sm text-cacao/70">{medida}</span>
+      <span className="block text-sm text-cacao/70">{PESO}</span>
+    </label>
+  );
+}
+
 export function FormularioImagen({
   sucursalId,
   campo,
   etiqueta,
-  ayuda,
+  uso,
 }: {
   sucursalId: string;
   campo: "logo" | "imagen_fondo";
   etiqueta: string;
-  ayuda: string;
+  uso: string;
 }) {
   const [estado, accion] = useActionState(subirImagen, INICIAL);
+  const medida = campo === "logo" ? MEDIDAS.logo : MEDIDAS.fondo;
 
   return (
     <form action={accion} className="grid gap-3">
@@ -120,16 +152,7 @@ export function FormularioImagen({
       <input type="hidden" name="campo" value={campo} />
       <Resultado estado={estado} />
 
-      <label className="block">
-        <span className="mb-1.5 block font-bold text-selva-2">{etiqueta}</span>
-        <input
-          type="file"
-          name="archivo"
-          accept="image/jpeg,image/png,image/webp,image/avif"
-          className="w-full rounded-2xl border-2 border-dashed border-selva/25 bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-selva file:px-4 file:py-2 file:font-bold file:text-crema"
-        />
-        <span className="mt-1.5 block text-sm text-cacao/70">{ayuda}</span>
-      </label>
+      <CampoImagen etiqueta={etiqueta} medida={`${uso} ${medida}`} />
 
       <BotonEnviar variante="secundario">Subir</BotonEnviar>
     </form>
@@ -199,7 +222,9 @@ export function FormularioPublicar({
             </span>
 
             <ul className="mt-1 ml-7 grid gap-0.5 text-cacao">
-              <li>{tier.puede_dar_puntos ? "✓ Da puntos a tus clientes" : "— Sin puntos"}</li>
+              <li>{tier.puede_dar_puntos
+                  ? "✓ Da monedas de chocolate a tus clientes"
+                  : "— Sin monedas de chocolate"}</li>
               <li>
                 {tier.puede_publicar_contenido
                   ? "✓ Publica eventos y noticias"
@@ -228,18 +253,10 @@ export function FormularioGaleria({ sucursalId }: { sucursalId: string }) {
       <input type="hidden" name="sucursal_id" value={sucursalId} />
       <Resultado estado={estado} />
 
-      <label className="block">
-        <span className="mb-1.5 block font-bold text-selva-2">Agregar foto</span>
-        <input
-          type="file"
-          name="archivo"
-          accept="image/jpeg,image/png,image/webp,image/avif"
-          className="w-full rounded-2xl border-2 border-dashed border-selva/25 bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-selva file:px-4 file:py-2 file:font-bold file:text-crema"
-        />
-        <span className="mt-1.5 block text-sm text-cacao/70">
-          Hasta 8 fotos. Se muestran en el orden en que las subes.
-        </span>
-      </label>
+      <CampoImagen
+        etiqueta="Agregar foto"
+        medida={`Hasta 8 fotos, en el orden en que las subes. ${MEDIDAS.galeria}`}
+      />
 
       <BotonEnviar variante="secundario">Subir foto</BotonEnviar>
     </form>

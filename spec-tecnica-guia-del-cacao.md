@@ -6,7 +6,7 @@ Este documento está pensado para entregarse a Claude Code (o a un equipo de des
 
 ## 1. Resumen del producto
 
-Directorio + red social + programa de fidelización para negocios relacionados con el cacao en Tabasco (productoras, comercializadoras, chocolaterías, museos, artesanías y otros servicios). Cada negocio tiene un micrositio. Los usuarios acumulan puntos ("mazorcas", nombre por confirmar) escaneando el QR de cada negocio, y suben de rango dentro de un año calendario. Turismo Tabasco es el cliente ancla y también participa como una marca más. Diseño mobile-first, tropical y divertido.
+Directorio + red social + programa de fidelización para negocios relacionados con el cacao en Tabasco (productoras, comercializadoras, chocolaterías, museos, artesanías y otros servicios). Cada negocio tiene un micrositio. Los usuarios acumulan **monedas de chocolate** escaneando el QR de cada negocio, y suben de rango dentro de un año calendario. Turismo Tabasco es el cliente ancla y también participa como una marca más. Diseño mobile-first, tropical y divertido.
 
 ---
 
@@ -80,7 +80,7 @@ Solo marcas **Tier 3** pueden publicarlos. Campos: título, subtítulo, contenid
 - **Eventos:** máximo 1 evento activo por semana por marca. Se muestran como "próximos" o "pasados" según la fecha (automático). Pueden marcarse como exclusivos para usuarios de cierto rango (ej. solo Rango 4).
 - **Noticias:** siempre ordenadas de más reciente a más antigua.
 
-### 5.4 Sistema de puntos ("mazorcas" — nombre por confirmar)
+### 5.4 Sistema de monedas de chocolate
 Solo marcas Tier 2 y Tier 3 pueden otorgar puntos.
 
 **Flujo:**
@@ -221,7 +221,8 @@ Administrador
 
 ## 10. Pendientes que no bloquean el desarrollo, pero conviene resolver pronto
 
-- Nombre final del punto ("mazorcas" / "monedas de chocolate" / otro) y nombre de cada rango.
-- Límite exacto de caracteres e imágenes en eventos y noticias.
+- ~~Nombre final del punto~~ → **decidido: monedas de chocolate**. Falta el nombre de cada rango (hoy son Rango 1 a 4).
+- Límite exacto de caracteres en eventos y noticias (hoy rige un tope de trabajo de 1500).
+- Peso de imágenes: **decidido, 5 MB** para todas. Medidas recomendadas, no obligatorias: logo 512 × 512 px (cuadrada), fondo 1600 × 600 px (horizontal, 8:3), galería 1200 × 800 px.
 - Proveedor de pasarela de pago definitivo (Stripe / Conekta / Mercado Pago).
 - Mecanismo anti-abuso adicional para solicitudes de puntos.

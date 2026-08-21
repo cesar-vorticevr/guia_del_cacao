@@ -101,7 +101,7 @@ export default async function EditorMicrositio({
                     sucursalId={sucursal.id}
                     campo="logo"
                     etiqueta="Logo"
-                    ayuda="Cuadrado. Se usa en el directorio y el buscador."
+                    uso="Se usa en el directorio y el buscador."
                   />
                 </div>
 
@@ -118,7 +118,7 @@ export default async function EditorMicrositio({
                     sucursalId={sucursal.id}
                     campo="imagen_fondo"
                     etiqueta="Imagen de fondo"
-                    ayuda="Horizontal. Encabeza tu micrositio."
+                    uso="Encabeza tu micrositio."
                   />
                 </div>
               </div>
@@ -170,8 +170,8 @@ export default async function EditorMicrositio({
               <div>
                 <h2 className="font-display text-xl">Catálogo</h2>
                 <p className="mt-1 text-cacao">
-                  Es lo que tus clientes eligen al escanear el QR para pedir
-                  puntos, así que conviene tenerlo completo.
+                  Es lo que tus clientes eligen al escanear el QR para pedir sus
+                  monedas, así que conviene tenerlo completo.
                 </p>
               </div>
 

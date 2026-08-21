@@ -9,7 +9,7 @@ import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { urlImagen } from "@/lib/imagenes";
 
-export const metadata: Metadata = { title: "Pedir puntos · Guía del Cacao" };
+export const metadata: Metadata = { title: "Pedir monedas · Guía del Cacao" };
 
 /**
  * Destino del QR fijo de cada micrositio (spec §5.4).
@@ -77,7 +77,8 @@ export default async function PedirPuntos({
       <div className="mt-6">
         {!tier?.puede_dar_puntos ? (
           <p className="rounded-3xl bg-crema-2 p-6 text-cacao">
-            Este negocio todavía no participa en el pasaporte de puntos.{" "}
+            Este negocio todavía no participa en el pasaporte de monedas de
+            chocolate.{" "}
             <Link href={`/marca/${slug}`} className="font-bold text-selva underline">
               Ver su micrositio
             </Link>
@@ -85,8 +86,8 @@ export default async function PedirPuntos({
         ) : !perfil ? (
           <div className="rounded-3xl bg-crema-2 p-6">
             <p className="text-cacao">
-              Para juntar puntos necesitas una cuenta de cliente. Es rápido y
-              sirve todo el año, no solo en la feria.
+              Para juntar monedas de chocolate necesitas una cuenta de cliente.
+              Es rápido y sirve todo el año, no solo en la feria.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               <Link
@@ -105,8 +106,8 @@ export default async function PedirPuntos({
           </div>
         ) : perfil.rol !== "cliente" ? (
           <p className="rounded-3xl bg-crema-2 p-6 text-cacao">
-            Estás con una cuenta de {perfil.rol}. Los puntos son para las cuentas
-            de cliente.
+            Estás con una cuenta de {perfil.rol}. Las monedas de chocolate son
+            para las cuentas de cliente.
           </p>
         ) : enviado === "1" ? (
           <div
@@ -117,7 +118,7 @@ export default async function PedirPuntos({
               Listo, ya quedó registrada
             </p>
             <p className="mt-2 text-cacao">
-              El negocio va a revisar qué compraste y decidir cuántos puntos
+              El negocio va a revisar qué compraste y decidir cuántas monedas
               darte. Lo verás en tu cuenta.
             </p>
             <Link
@@ -147,7 +148,7 @@ export default async function PedirPuntos({
       </div>
 
       <p className="mt-6 text-sm text-cacao/70">
-        El negocio decide cuántos puntos darte, entre 1 y 3, según lo que
+        El negocio decide cuántas monedas darte, entre 1 y 3, según lo que
         compraste. Máximo 3 por día en el mismo negocio.
       </p>
     </div>

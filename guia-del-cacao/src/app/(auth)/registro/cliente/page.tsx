@@ -11,7 +11,8 @@ export default function RegistroCliente() {
       <div>
         <h1 className="font-display text-3xl">Cuenta de cliente</h1>
         <p className="mt-2 text-cacao">
-          Para juntar puntos y dejar reseñas en los negocios que visites.
+          Para juntar monedas de chocolate y dejar reseñas en los negocios que
+          visites.
         </p>
       </div>
 

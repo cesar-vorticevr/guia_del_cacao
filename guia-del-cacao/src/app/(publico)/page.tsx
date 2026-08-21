@@ -29,7 +29,7 @@ export default async function Home() {
         </h1>
         <p className="mt-3 max-w-prose text-lg text-cacao">
           Productoras, chocolaterías y museos; eventos de la feria y un pasaporte
-          digital de puntos que funciona todo el año.
+          digital de monedas de chocolate que funciona todo el año.
         </p>
       </section>
 

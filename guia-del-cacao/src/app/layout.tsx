@@ -22,7 +22,7 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   title: "Guía del Cacao",
   description:
-    "Directorio, eventos y pasaporte digital de puntos de los negocios del cacao en Tabasco.",
+    "Directorio, eventos y pasaporte digital de monedas de chocolate de los negocios del cacao en Tabasco.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

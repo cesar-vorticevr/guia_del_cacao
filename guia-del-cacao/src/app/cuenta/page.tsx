@@ -5,6 +5,7 @@ import { BarraSesion } from "@/components/barra-sesion";
 import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { misResenas, misSolicitudes } from "@/lib/datos/puntos";
+import { MONEDA, monedas } from "@/lib/vocabulario";
 
 export const metadata: Metadata = { title: "Mi cuenta · Guía del Cacao" };
 
@@ -68,7 +69,7 @@ export default async function Cuenta() {
 
           <p className="mt-2 font-mono text-5xl font-bold text-selva">{puntos}</p>
           <p className="mt-1 text-cacao">
-            {puntos === 1 ? "punto acumulado" : "puntos acumulados"} · Rango {nivel}
+            {monedas(puntos)} · Rango {nivel}
           </p>
 
           {siguiente && (
@@ -76,7 +77,7 @@ export default async function Cuenta() {
               <div
                 className="h-3 overflow-hidden rounded-full bg-white"
                 role="img"
-                aria-label={`Te faltan ${faltan} puntos para el Rango ${siguiente.nivel}`}
+                aria-label={`Te faltan ${faltan} ${monedas(faltan, true)} para el Rango ${siguiente.nivel}`}
               >
                 <div
                   className="h-full rounded-full bg-lima"
@@ -87,14 +88,14 @@ export default async function Cuenta() {
               </div>
               <p className="mt-2 text-cacao">
                 Te {faltan === 1 ? "falta" : "faltan"} <strong>{faltan}</strong>{" "}
-                {faltan === 1 ? "punto" : "puntos"} para el Rango {siguiente.nivel}.
+                {monedas(faltan, true)} para el Rango {siguiente.nivel}.
               </p>
             </div>
           )}
 
           <p className="mt-4 text-sm text-cacao/70">
-            Cada negocio decide qué beneficio te da según tu rango. Los puntos se
-            reinician el 1 de enero.
+            Cada negocio decide qué beneficio te da según tu rango. Tus{" "}
+            {MONEDA.variasCortas} se reinician el 1 de enero.
           </p>
         </section>
 
@@ -103,7 +104,7 @@ export default async function Cuenta() {
 
           {solicitudes.length === 0 ? (
             <p className="rounded-3xl bg-crema-2 p-6 text-cacao">
-              Todavía no has pedido puntos. Escanea el QR de cualquier negocio
+              Todavía no has pedido {MONEDA.variasCortas}. Escanea el QR de cualquier negocio
               del{" "}
               <Link href="/directorio" className="font-bold text-selva underline">
                 directorio

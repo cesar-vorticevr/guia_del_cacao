@@ -73,7 +73,7 @@ export function FormularioPedirPuntos({
         ))}
       </fieldset>
 
-      <BotonEnviar>Pedir mis puntos</BotonEnviar>
+      <BotonEnviar>Pedir mis monedas</BotonEnviar>
     </form>
   );
 }
@@ -121,7 +121,7 @@ export function BotonesResolver({
               type="submit"
               className="min-h-14 w-full rounded-full bg-selva px-5 font-display text-lg font-semibold text-crema"
             >
-              {puntos} {puntos === 1 ? "punto" : "puntos"}
+              {puntos} {puntos === 1 ? "moneda" : "monedas"}
             </button>
           </form>
         ))}

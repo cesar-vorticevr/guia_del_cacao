@@ -98,7 +98,7 @@ Reemplaza el pasaporte físico sellado de la feria, y a diferencia del pasaporte
 
 Solo marcas **Tier 2 y Tier 3** pueden otorgar puntos (Tier 1 no).
 
-**Nombre del punto:** en vez de "puntos" a secas, se puede usar un nombre temático — por ejemplo **mazorcas** o **monedas de chocolate** — para reforzar la identidad tropical/lúdica de la plataforma. Pendiente elegir el nombre final.
+**Nombre del punto:** decidido — se llaman **monedas de chocolate**, para reforzar la identidad tropical y lúdica de la plataforma. En la interfaz se usa el nombre completo la primera vez y "monedas" a secas después.
 
 **Flujo:**
 1. El usuario escanea el QR fijo de la marca (impreso o en pantalla).
@@ -127,7 +127,7 @@ Cada rango no tiene un premio fijo definido centralmente — **cada marca decide
 **Entidades necesarias:** `Usuario`, `Marca`, `Producto/Servicio` (para la selección al escanear), `SolicitudDePuntos` (usuario, marca, productos seleccionados, puntos otorgados 1-3, estado: pendiente/aprobada/rechazada, fecha), `Rango` (calculado por año, no editable directamente).
 
 **Pendiente de decidir:**
-- Nombre final del punto (mazorcas / monedas de chocolate / otro)
+- ~~Nombre final del punto~~ → decidido: **monedas de chocolate**
 - Nombre de cada rango (además del rango numérico)
 - Mecanismo anti-abuso adicional si una marca y un usuario intentan generar solicitudes falsas repetidamente
 
@@ -188,6 +188,6 @@ Definida por ustedes: la plataforma debe sentirse **tropical, divertida y colori
 
 ## 10. Decisiones pendientes (resumen)
 
-- [ ] Nombre final del punto (mazorcas / monedas de chocolate / otro) y nombre de cada rango
+- [x] ~~Nombre final del punto~~ → **monedas de chocolate**. Falta el nombre de cada rango.
 - [ ] Límites de caracteres/imágenes en eventos y noticias
 - [ ] Mecanismo anti-abuso en solicitudes de puntos — **abierto, a definir**. Algunas ideas para cuando se retome: límite de solicitudes rechazadas antes de suspender temporalmente al usuario, revisión aleatoria por el Administrador, o requerir foto del ticket de compra como respaldo opcional. No es bloqueante para empezar a construir: se puede lanzar con el tope de 3/día por marca como única barrera inicial y ajustar según se vean patrones reales de abuso.
