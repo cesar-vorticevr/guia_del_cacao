@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Guía del Cacao — Aprende a elegir y disfrutar chocolate real</title>
+<meta name="description" content="Guía práctica para elegir, leer y disfrutar chocolate: tipos de cacao, cómo leer una etiqueta, rueda de sabores y el origen tabasqueño del cacao.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&family=Work+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cacao-950:#1c110a;
+    --cacao-900:#241509;
+    --cacao-800:#3a2313;
+    --cacao-700:#54331d;
+    --parchment:#f3e9d6;
+    --parchment-dim:#d8c8a8;
+    --achiote:#c1440e;
+    --achiote-bright:#e0632a;
+    --oro:#d4a24c;
+    --sage:#6b8158;
+    --sage-dim:#4a5d3a;
+    --ink:#1c110a;
+
+    --display:'Bitter', serif;
+    --body:'Work Sans', sans-serif;
+    --mono:'IBM Plex Mono', monospace;
+
+    --wrap: min(1120px, 92vw);
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
+  }
+
+  body{
+    margin:0;
+    background:var(--cacao-950);
+    color:var(--parchment);
+    font-family:var(--body);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  ::selection{background:var(--achiote); color:var(--parchment);}
+
+  a{color:inherit;}
+
+  h1,h2,h3{
+    font-family:var(--display);
+    margin:0;
+    line-height:1.05;
+    font-weight:700;
+  }
+
+  .wrap{width:var(--wrap); margin-inline:auto;}
+
+  .eyebrow{
+    font-family:var(--mono);
+    text-transform:uppercase;
+    letter-spacing:.14em;
+    font-size:0.72rem;
+    color:var(--oro);
+    display:flex;
+    align-items:center;
+    gap:.6em;
+  }
+  .eyebrow::before{
+    content:"";
+    width:1.6em;
+    height:1px;
+    background:var(--oro);
+    display:inline-block;
+  }
+
+  :focus-visible{
+    outline:2px solid var(--oro);
+    outline-offset:3px;
+  }
+
+  /* ---------- NAV ---------- */
+  header.site{
+    position:sticky; top:0; z-index:50;
+    background:rgba(28,17,10,0.86);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(212,162,76,0.18);
+  }
+  nav.wrap{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 0;
+  }
+  .brand{
+    font-family:var(--display);
+    font-weight:800;
+    font-size:1.15rem;
+    letter-spacing:.01em;
+    display:flex; align-items:baseline; gap:.4em;
+  }
+  .brand span{color:var(--achiote-bright); font-style:italic; font-weight:500;}
+  nav ul{
+    list-style:none; display:flex; gap:28px; margin:0; padding:0;
+    font-size:0.86rem;
+  }
+  nav ul li a{
+    text-decoration:none; color:var(--parchment-dim);
+    transition:color .2s ease;
+  }
+  nav ul li a:hover{color:var(--oro);}
+  .nav-toggle{display:none;}
+  @media (max-width:760px){
+    nav ul{display:none;}
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    padding:96px 0 72px;
+    overflow:hidden;
+  }
+  .hero .wrap{
+    display:grid;
+    grid-template-columns:1.05fr 0.95fr;
+    gap:48px;
+    align-items:center;
+  }
+  @media (max-width:860px){
+    .hero .wrap{grid-template-columns:1fr; text-align:left;}
+  }
+  .hero h1{
+    font-size:clamp(2.6rem, 5.6vw, 4.4rem);
+    color:var(--parchment);
+    margin-top:18px;
+  }
+  .hero h1 em{
+    font-style:italic; color:var(--achiote-bright); font-weight:500;
+  }
+  .hero p.lede{
+    margin-top:22px;
+    font-size:1.14rem;
+    color:var(--parchment-dim);
+    max-width:46ch;
+  }
+  .hero .cta-row{
+    margin-top:34px;
+    display:flex; gap:16px; flex-wrap:wrap; align-items:center;
+  }
+  .btn{
+    font-family:var(--body);
+    font-weight:600;
+    font-size:0.92rem;
+    padding:14px 26px;
+    border-radius:2px;
+    border:1px solid transparent;
+    cursor:pointer;
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+    gap:.5em;
+    transition:transform .15s ease, background .2s ease, border-color .2s ease;
+  }
+  .btn-primary{background:var(--achiote); color:var(--parchment);}
+  .btn-primary:hover{background:var(--achiote-bright); transform:translateY(-1px);}
+  .btn-ghost{border-color:rgba(243,233,214,0.3); color:var(--parchment-dim);}
+  .btn-ghost:hover{border-color:var(--oro); color:var(--oro);}
+
+  .pod-figure{
+    position:relative;
+  }
+  .pod-figure svg{width:100%; height:auto; display:block;}
+
+  /* ---------- SECTION SCAFFOLDING ---------- */
+  section{padding:88px 0;}
+  section.alt{background:var(--cacao-900);}
+  .section-head{
+    max-width:64ch;
+    margin-bottom:48px;
+  }
+  .section-head h2{
+    font-size:clamp(1.9rem, 3.4vw, 2.6rem);
+    margin-top:14px;
+    color:var(--parchment);
+  }
+  .section-head p{
+    margin-top:16px;
+    color:var(--parchment-dim);
+    font-size:1.02rem;
+    max-width:58ch;
+  }
+
+  /* ---------- TIPS GRID ---------- */
+  .tips-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(240px,1fr));
+    gap:1px;
+    background:rgba(212,162,76,0.18);
+    border:1px solid rgba(212,162,76,0.18);
+  }
+  .tip{
+    background:var(--cacao-950);
+    padding:32px 26px;
+  }
+  section.alt .tip{background:var(--cacao-900);}
+  .tip .num{
+    font-family:var(--mono);
+    color:var(--achiote-bright);
+    font-size:0.8rem;
+    letter-spacing:.08em;
+  }
+  .tip h3{
+    font-size:1.14rem;
+    margin-top:12px;
+    color:var(--parchment);
+  }
+  .tip p{
+    margin-top:10px;
+    font-size:0.92rem;
+    color:var(--parchment-dim);
+  }
+
+  /* ---------- LABEL ANATOMY ---------- */
+  .label-wrap{
+    display:grid;
+    grid-template-columns:0.9fr 1.1fr;
+    gap:56px;
+    align-items:center;
+  }
+  @media (max-width:860px){
+    .label-wrap{grid-template-columns:1fr;}
+  }
+  .label-art{
+    position:relative;
+    background:var(--cacao-800);
+    border:1px solid rgba(212,162,76,0.25);
+    padding:28px;
+  }
+  .label-art svg{width:100%; height:auto; display:block;}
+  .label-points{
+    display:flex; flex-direction:column; gap:0;
+  }
+  .label-point{
+    padding:18px 0;
+    border-bottom:1px solid rgba(212,162,76,0.16);
+    cursor:default;
+  }
+  .label-point:first-child{padding-top:0;}
+  .label-point .tag{
+    font-family:var(--mono);
+    font-size:0.75rem;
+    color:var(--oro);
+    text-transform:uppercase;
+    letter-spacing:.1em;
+  }
+  .label-point h3{
+    font-size:1.08rem;
+    margin-top:6px;
+    color:var(--parchment);
+    font-weight:600;
+    font-family:var(--body);
+  }
+  .label-point p{
+    margin-top:6px;
+    font-size:0.92rem;
+    color:var(--parchment-dim);
+  }
+  .flag{
+    display:inline-block;
+    margin-top:8px;
+    font-family:var(--mono);
+    font-size:0.72rem;
+    color:var(--achiote-bright);
+    border:1px solid rgba(193,68,14,0.5);
+    padding:3px 8px;
+  }
+
+  /* ---------- CACAO TYPES ---------- */
+  .type-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:24px;
+  }
+  @media (max-width:860px){
+    .type-grid{grid-template-columns:1fr;}
+  }
+  .type-card{
+    background:var(--cacao-950);
+    border:1px solid rgba(212,162,76,0.2);
+    padding:30px 26px 26px;
+    position:relative;
+  }
+  section.alt .type-card{background:var(--cacao-900);}
+  .type-card .pct{
+    font-family:var(--mono);
+    font-size:2.1rem;
+    color:var(--achiote-bright);
+    line-height:1;
+  }
+  .type-card .pct-label{
+    font-family:var(--mono);
+    font-size:0.7rem;
+    color:var(--parchment-dim);
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    margin-top:4px;
+  }
+  .type-card h3{
+    font-size:1.32rem;
+    margin-top:20px;
+    color:var(--parchment);
+  }
+  .type-card p{
+    margin-top:10px;
+    font-size:0.92rem;
+    color:var(--parchment-dim);
+  }
+  .type-card .notes{
+    margin-top:16px;
+    display:flex; flex-wrap:wrap; gap:8px;
+  }
+  .type-card .notes span{
+    font-family:var(--mono);
+    font-size:0.7rem;
+    padding:4px 9px;
+    border:1px solid rgba(212,162,76,0.35);
+    color:var(--oro);
+  }
+
+  /* ---------- FLAVOR WHEEL ---------- */
+  .wheel-section .wrap{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:56px;
+    align-items:center;
+  }
+  @media (max-width:900px){
+    .wheel-section .wrap{grid-template-columns:1fr;}
+  }
+  .wheel-holder{
+    position:relative;
+    display:flex; justify-content:center;
+  }
+  .wheel-holder svg{width:100%; max-width:440px; height:auto;}
+  .wheel-seg{
+    cursor:pointer;
+    transition:opacity .18s ease, transform .18s ease;
+    transform-origin:center;
+  }
+  .wheel-seg:hover, .wheel-seg.active{
+    opacity:0.86;
+  }
+  .wheel-seg text{
+    pointer-events:none;
+  }
+  .wheel-center{
+    font-family:var(--mono);
+    font-size:9px;
+    fill:var(--parchment);
+    text-anchor:middle;
+  }
+  .wheel-panel{
+    background:var(--cacao-800);
+    border:1px solid rgba(212,162,76,0.25);
+    padding:34px;
+    min-height:220px;
+  }
+  .wheel-panel .tag{
+    font-family:var(--mono);
+    font-size:0.75rem;
+    color:var(--oro);
+    text-transform:uppercase;
+    letter-spacing:.12em;
+  }
+  .wheel-panel h3{
+    font-size:1.5rem;
+    margin-top:10px;
+    color:var(--parchment);
+  }
+  .wheel-panel p{
+    margin-top:14px;
+    color:var(--parchment-dim);
+    font-size:0.96rem;
+  }
+  .wheel-panel .examples{
+    margin-top:18px;
+    display:flex; flex-wrap:wrap; gap:8px;
+  }
+  .wheel-panel .examples span{
+    font-family:var(--mono);
+    font-size:0.72rem;
+    padding:5px 10px;
+    background:rgba(212,162,76,0.1);
+    color:var(--parchment-dim);
+    border:1px solid rgba(212,162,76,0.22);
+  }
+  .wheel-hint{
+    margin-top:16px;
+    font-size:0.82rem;
+    color:var(--parchment-dim);
+    font-style:italic;
+  }
+
+  /* ---------- PROCESS TIMELINE ---------- */
+  .process{
+    display:flex;
+    flex-direction:column;
+  }
+  .proc-row{
+    display:grid;
+    grid-template-columns:64px 1fr;
+    gap:24px;
+    padding:22px 0;
+    border-top:1px solid rgba(212,162,76,0.16);
+  }
+  .process .proc-row:last-child{border-bottom:1px solid rgba(212,162,76,0.16);}
+  .proc-row .step-num{
+    font-family:var(--mono);
+    color:var(--achiote-bright);
+    font-size:1.1rem;
+  }
+  .proc-row h3{
+    font-size:1.08rem;
+    color:var(--parchment);
+    font-family:var(--body);
+    font-weight:600;
+  }
+  .proc-row p{
+    margin-top:6px;
+    font-size:0.92rem;
+    color:var(--parchment-dim);
+    max-width:62ch;
+  }
+  @media (max-width:640px){
+    .proc-row{grid-template-columns:40px 1fr;}
+  }
+
+  /* ---------- TABASCO ---------- */
+  .tabasco{
+    background:linear-gradient(135deg, var(--sage-dim), var(--cacao-900) 60%);
+    border:1px solid rgba(107,129,88,0.4);
+    padding:56px;
+  }
+  @media (max-width:640px){.tabasco{padding:36px 24px;}}
+  .tabasco .eyebrow{color:#cfe0c3;}
+  .tabasco .eyebrow::before{background:#cfe0c3;}
+  .tabasco h2{
+    font-size:clamp(1.8rem,3.2vw,2.3rem);
+    margin-top:14px;
+    color:var(--parchment);
+  }
+  .tabasco p{
+    margin-top:16px;
+    max-width:66ch;
+    color:#e8e2d2;
+    font-size:1rem;
+  }
+  .tabasco .stat-row{
+    margin-top:32px;
+    display:flex; gap:44px; flex-wrap:wrap;
+  }
+  .tabasco .stat b{
+    display:block;
+    font-family:var(--mono);
+    font-size:1.6rem;
+    color:var(--oro);
+  }
+  .tabasco .stat span{
+    font-size:0.78rem;
+    color:#cfe0c3;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+  }
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    padding:56px 0 40px;
+    border-top:1px solid rgba(212,162,76,0.18);
+  }
+  footer .wrap{
+    display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:24px;
+  }
+  footer .brand{font-size:1rem;}
+  footer p{
+    color:var(--parchment-dim);
+    font-size:0.84rem;
+    max-width:38ch;
+  }
+  footer .fine{
+    font-family:var(--mono);
+    font-size:0.72rem;
+    color:var(--parchment-dim);
+    opacity:0.7;
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <nav class="wrap">
+    <div class="brand">Guía del <span>Cacao</span></div>
+    <ul>
+      <li><a href="#elegir">Elegir</a></li>
+      <li><a href="#etiqueta">Etiqueta</a></li>
+      <li><a href="#tipos">Tipos</a></li>
+      <li><a href="#cata">Cata</a></li>
+      <li><a href="#proceso">Proceso</a></li>
+      <li><a href="#tabasco">Tabasco</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <p class="eyebrow">Guía para consumidores</p>
+        <h1>El chocolate se <em>lee</em><br>antes de comerse.</h1>
+        <p class="lede">Aprende a elegir chocolate por lo que de verdad importa: el cacao, el origen y lo que dice —o esconde— la etiqueta. Sin mitos, sin marketing.</p>
+        <div class="cta-row">
+          <a href="#elegir" class="btn btn-primary">Empezar a elegir mejor</a>
+          <a href="#cata" class="btn btn-ghost">Ir a la rueda de sabores →</a>
+        </div>
+      </div>
+      <div class="pod-figure" aria-hidden="true">
+        <svg viewBox="0 0 420 520" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="podGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#8a6a2f"/>
+              <stop offset="55%" stop-color="#c1440e"/>
+              <stop offset="100%" stop-color="#6b8158"/>
+            </linearGradient>
+          </defs>
+          <!-- pod outer shape -->
+          <path d="M210 20 C300 40 355 140 350 260 C345 380 290 470 210 500 C130 470 75 380 70 260 C65 140 120 40 210 20 Z"
+                fill="none" stroke="url(#podGrad)" stroke-width="3" opacity="0.9"/>
+          <!-- ridges -->
+          <path d="M210 24 C205 160 205 360 210 496" stroke="#d4a24c" stroke-width="1.4" opacity="0.55" fill="none"/>
+          <path d="M150 40 C130 170 130 350 150 480" stroke="#d4a24c" stroke-width="1" opacity="0.4" fill="none"/>
+          <path d="M270 40 C290 170 290 350 270 480" stroke="#d4a24c" stroke-width="1" opacity="0.4" fill="none"/>
+          <path d="M110 80 C95 190 95 330 110 440" stroke="#d4a24c" stroke-width="0.8" opacity="0.3" fill="none"/>
+          <path d="M310 80 C325 190 325 330 310 440" stroke="#d4a24c" stroke-width="0.8" opacity="0.3" fill="none"/>
+          <!-- cross-section cut revealing beans -->
+          <clipPath id="cutClip">
+            <path d="M210 20 C300 40 355 140 350 260 C345 380 290 470 210 500 C130 470 75 380 70 260 C65 140 120 40 210 20 Z"/>
+          </clipPath>
+          <g clip-path="url(#cutClip)">
+            <rect x="150" y="20" width="200" height="500" fill="#3a2313" opacity="0.92"/>
+            <!-- beans -->
+            <g fill="#e0632a" opacity="0.9">
+              <ellipse cx="215" cy="150" rx="19" ry="26" transform="rotate(15 215 150)"/>
+              <ellipse cx="252" cy="180" rx="19" ry="26" transform="rotate(-10 252 180)"/>
+              <ellipse cx="218" cy="215" rx="19" ry="26" transform="rotate(30 218 215)"/>
+              <ellipse cx="258" cy="250" rx="19" ry="26" transform="rotate(-5 258 250)"/>
+              <ellipse cx="220" cy="285" rx="19" ry="26" transform="rotate(18 220 285)"/>
+              <ellipse cx="255" cy="320" rx="19" ry="26" transform="rotate(-20 255 320)"/>
+              <ellipse cx="222" cy="355" rx="19" ry="26" transform="rotate(10 222 355)"/>
+              <ellipse cx="250" cy="390" rx="19" ry="26" transform="rotate(-15 250 390)"/>
+            </g>
+            <g fill="#d4a24c" opacity="0.5">
+              <ellipse cx="230" cy="165" rx="10" ry="14"/>
+              <ellipse cx="238" cy="235" rx="10" ry="14"/>
+              <ellipse cx="235" cy="300" rx="10" ry="14"/>
+              <ellipse cx="236" cy="368" rx="10" ry="14"/>
+            </g>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ELEGIR -->
+  <section id="elegir" class="alt">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Antes de comprar</p>
+        <h2>Cinco cosas que de verdad importan</h2>
+        <p>Olvida el empaque bonito. Esto es lo que separa un chocolate honesto de uno que solo lo parece.</p>
+      </div>
+      <div class="tips-grid">
+        <div class="tip">
+          <div class="num">01</div>
+          <h3>El % no es calidad, es estilo</h3>
+          <p>Un 70% no es "mejor" que un 55%: es más intenso. La calidad está en el bean-to-bar, no en el número.</p>
+        </div>
+        <div class="tip">
+          <div class="num">02</div>
+          <h3>Menos ingredientes, mejor señal</h3>
+          <p>Cacao, azúcar, manteca de cacao —y ya. Cada aditivo extra suele compensar un cacao de menor calidad.</p>
+        </div>
+        <div class="tip">
+          <div class="num">03</div>
+          <h3>"Grasa vegetal" es alerta roja</h3>
+          <p>Si sustituye la manteca de cacao, técnicamente ya no es chocolate: es un sucedáneo.</p>
+        </div>
+        <div class="tip">
+          <div class="num">04</div>
+          <h3>El origen cuenta una historia</h3>
+          <p>Single-origin te dice de qué tierra viene el sabor. Un blend prioriza consistencia sobre carácter.</p>
+        </div>
+        <div class="tip">
+          <div class="num">05</div>
+          <h3>El brillo y el "snap" no mienten</h3>
+          <p>Un temperado correcto se ve brillante y se rompe con un chasquido limpio, no se dobla ni se desmorona.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ETIQUETA -->
+  <section id="etiqueta">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Anatomía de una etiqueta</p>
+        <h2>Lo que la envoltura sí te dice</h2>
+        <p>Cuatro datos que vale la pena leer antes de decidir, y qué significa cada uno en la práctica.</p>
+      </div>
+      <div class="label-wrap">
+        <div class="label-art">
+          <svg viewBox="0 0 320 380" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="10" width="300" height="360" fill="#241509" stroke="#d4a24c" stroke-width="1.5" opacity="0.9"/>
+            <rect x="10" y="10" width="300" height="70" fill="#c1440e" opacity="0.9"/>
+            <text x="30" y="55" font-family="Bitter, serif" font-size="22" fill="#f3e9d6" font-weight="700">70% Cacao</text>
+            <text x="30" y="112" font-family="IBM Plex Mono, monospace" font-size="11" fill="#d4a24c">ORIGEN</text>
+            <text x="30" y="132" font-family="Work Sans, sans-serif" font-size="14" fill="#f3e9d6">Tabasco, México — Trinitario</text>
+            <line x1="30" y1="150" x2="290" y2="150" stroke="#d4a24c" stroke-width="0.5" opacity="0.4"/>
+            <text x="30" y="176" font-family="IBM Plex Mono, monospace" font-size="11" fill="#d4a24c">INGREDIENTES</text>
+            <text x="30" y="196" font-family="Work Sans, sans-serif" font-size="13" fill="#d8c8a8">Pasta de cacao, azúcar,</text>
+            <text x="30" y="214" font-family="Work Sans, sans-serif" font-size="13" fill="#d8c8a8">manteca de cacao.</text>
+            <line x1="30" y1="232" x2="290" y2="232" stroke="#d4a24c" stroke-width="0.5" opacity="0.4"/>
+            <text x="30" y="258" font-family="IBM Plex Mono, monospace" font-size="11" fill="#d4a24c">LOTE / COSECHA</text>
+            <text x="30" y="278" font-family="Work Sans, sans-serif" font-size="13" fill="#d8c8a8">L-2025-014 · Cosecha 2025</text>
+            <line x1="30" y1="296" x2="290" y2="296" stroke="#d4a24c" stroke-width="0.5" opacity="0.4"/>
+            <text x="30" y="322" font-family="IBM Plex Mono, monospace" font-size="11" fill="#d4a24c">DENOMINACIÓN</text>
+            <text x="30" y="342" font-family="Work Sans, sans-serif" font-size="13" fill="#d8c8a8">Chocolate oscuro — bean to bar</text>
+          </svg>
+        </div>
+        <div class="label-points">
+          <div class="label-point">
+            <p class="tag">% Cacao</p>
+            <h3>Indica intensidad, no calidad</h3>
+            <p>Marca la proporción total de derivados de cacao (pasta + manteca). Elige el % según cuánta intensidad quieres, no como sello de calidad.</p>
+          </div>
+          <div class="label-point">
+            <p class="tag">Lista de ingredientes</p>
+            <h3>Entre más corta, más honesta</h3>
+            <p>Un buen oscuro necesita solo tres cosas. La vainilla o la lecitina en pequeña cantidad son normales; una lista larga no lo es.</p>
+            <span class="flag">Ojo: "grasa vegetal"</span>
+          </div>
+          <div class="label-point">
+            <p class="tag">Origen y lote</p>
+            <h3>Trazabilidad real</h3>
+            <p>Un fabricante que indica región, cosecha y lote está mostrando que puede rastrear su cacao hasta la finca.</p>
+          </div>
+          <div class="label-point">
+            <p class="tag">Denominación</p>
+            <h3>"Chocolate" es una palabra protegida</h3>
+            <p>Si dice "sucedáneo", "sabor a chocolate" o "cobertura light", legalmente no es lo mismo que chocolate. Léelo con cuidado.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TIPOS -->
+  <section id="tipos" class="alt">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Tipos de cacao</p>
+        <h2>Criollo, Forastero y Trinitario</h2>
+        <p>No todo el cacao es igual. La variedad determina buena parte del carácter del chocolate antes de que intervenga el fabricante.</p>
+      </div>
+      <div class="type-grid">
+        <div class="type-card">
+          <div class="pct">~5%</div>
+          <div class="pct-label">de la producción mundial</div>
+          <h3>Criollo</h3>
+          <p>El más antiguo y delicado. Poco rendimiento, muy susceptible a enfermedades, pero con la aromática más fina del cacao.</p>
+          <div class="notes"><span>Floral</span><span>Frutal</span><span>Suave</span></div>
+        </div>
+        <div class="type-card">
+          <div class="pct">~80%</div>
+          <div class="pct-label">de la producción mundial</div>
+          <h3>Forastero</h3>
+          <p>Robusto y resistente. Base de la mayoría del chocolate comercial del mundo por su alto rendimiento agrícola.</p>
+          <div class="notes"><span>Terroso</span><span>Intenso</span><span>Amargo</span></div>
+        </div>
+        <div class="type-card">
+          <div class="pct">~15%</div>
+          <div class="pct-label">de la producción mundial</div>
+          <h3>Trinitario</h3>
+          <p>Híbrido de Criollo y Forastero. Combina resistencia con complejidad aromática. Común en Tabasco y el Caribe.</p>
+          <div class="notes"><span>Balanceado</span><span>Especiado</span><span>Frutal</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CATA / RUEDA DE SABORES -->
+  <section id="cata" class="wheel-section">
+    <div class="wrap">
+      <div>
+        <p class="eyebrow">Cata guiada</p>
+        <h2 style="font-size:clamp(1.9rem,3.4vw,2.6rem); margin-top:14px;">La rueda de sabores</h2>
+        <p style="margin-top:16px; color:var(--parchment-dim); max-width:52ch;">Las mismas seis familias que usan los catadores profesionales. Toca un segmento para ver qué buscar en tu próxima cata.</p>
+        <div class="wheel-holder">
+          <svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Rueda de sabores del chocolate, seis segmentos interactivos">
+            <g id="wheelGroup" transform="translate(150,150)"></g>
+            <circle cx="150" cy="150" r="34" fill="#1c110a" stroke="#d4a24c" stroke-width="1"/>
+            <text x="150" y="146" class="wheel-center" text-anchor="middle">TOCA UN</text>
+            <text x="150" y="158" class="wheel-center" text-anchor="middle">SEGMENTO</text>
+          </svg>
+        </div>
+        <p class="wheel-hint">Funciona también con teclado: navega con Tab y presiona Enter.</p>
+      </div>
+
+      <div class="wheel-panel" id="wheelPanel">
+        <p class="tag">Familia de sabor</p>
+        <h3 id="wpTitle">Selecciona una nota</h3>
+        <p id="wpDesc">Cada segmento representa una familia de sabor que puede aparecer en un chocolate oscuro, dependiendo del origen, la fermentación y el tueste.</p>
+        <div class="examples" id="wpExamples"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROCESO -->
+  <section id="proceso" class="alt">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Del árbol a la barra</p>
+        <h2>Ocho pasos que definen el sabor</h2>
+        <p>Un orden real: cada etapa construye sobre la anterior, y una falla temprana no se corrige después.</p>
+      </div>
+      <div class="process">
+        <div class="proc-row"><div class="step-num">01</div><div><h3>Cosecha</h3><p>Se cortan las mazorcas maduras a mano, con machete, sin dañar el tronco donde crecerán las siguientes flores.</p></div></div>
+        <div class="proc-row"><div class="step-num">02</div><div><h3>Fermentación</h3><p>Los granos con su pulpa reposan de 3 a 7 días en cajas de madera u hojas de plátano. Aquí nace la mayor parte del sabor futuro.</p></div></div>
+        <div class="proc-row"><div class="step-num">03</div><div><h3>Secado</h3><p>Al sol, entre 5 y 7 días, hasta bajar la humedad a un nivel seguro para almacenar y transportar.</p></div></div>
+        <div class="proc-row"><div class="step-num">04</div><div><h3>Tostado</h3><p>El calor desarrolla los aromas característicos del chocolate y reduce notas crudas o astringentes.</p></div></div>
+        <div class="proc-row"><div class="step-num">05</div><div><h3>Molienda</h3><p>El grano tostado se muele hasta convertirse en pasta o "licor" de cacao, líquido a temperatura ambiente cálida.</p></div></div>
+        <div class="proc-row"><div class="step-num">06</div><div><h3>Conchado</h3><p>Horas —o días— de mezcla continua que suavizan la textura y redondean el sabor final.</p></div></div>
+        <div class="proc-row"><div class="step-num">07</div><div><h3>Temperado</h3><p>Un control preciso de temperatura ordena los cristales de manteca de cacao: de ahí el brillo y el chasquido.</p></div></div>
+        <div class="proc-row"><div class="step-num">08</div><div><h3>Moldeado</h3><p>Se vierte, se enfría y se desmolda. La barra que compras es el resultado de los siete pasos anteriores.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TABASCO -->
+  <section id="tabasco">
+    <div class="wrap">
+      <div class="tabasco">
+        <p class="eyebrow">Origen</p>
+        <h2>Tabasco: donde nació el chocolate</h2>
+        <p>Mucho antes de convertirse en una barra envuelta en papel, el cacao ya era moneda, ofrenda y bebida ritual entre los olmecas y los mayas de esta región. El pozol, hecho con maíz y cacao, sigue bebiéndose hoy tal como se hacía hace siglos.</p>
+        <p>Actualmente, pequeños productores tabasqueños están recuperando cacao criollo y trinitario de finca, apostando por lotes trazables frente al cacao de mezcla anónima que domina el mercado industrial.</p>
+        <div class="stat-row">
+          <div class="stat"><b>+3,000</b><span>años de cultivo en la región</span></div>
+          <div class="stat"><b>Olmeca · Maya</b><span>civilizaciones que lo domesticaron</span></div>
+          <div class="stat"><b>Pozol</b><span>bebida ritual que aún se prepara</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <div class="brand">Guía del <span>Cacao</span></div>
+      <p>Una guía para elegir y disfrutar chocolate real, hecha con cariño desde Tabasco.</p>
+    </div>
+    <p class="fine">guiadelcacao.com — contenido educativo, no comercial</p>
+  </div>
+</footer>
+
+<script>
+  // ---- Flavor wheel data ----
+  const flavors = [
+    {
+      name: "Frutal",
+      desc: "Notas de fruta fresca o seca, típicas de cacaos bien fermentados de origen tropical.",
+      examples: ["Cítricos", "Frutos rojos", "Fruta tropical", "Pasas"]
+    },
+    {
+      name: "Floral",
+      desc: "Aromas delicados asociados casi siempre a cacao Criollo o Trinitario de alta calidad.",
+      examples: ["Jazmín", "Rosa", "Miel", "Azahar"]
+    },
+    {
+      name: "Especiado",
+      desc: "Notas cálidas que recuerdan al conchado prolongado o a un tueste bien llevado.",
+      examples: ["Canela", "Pimienta", "Clavo", "Regaliz"]
+    },
+    {
+      name: "Tostado",
+      desc: "El resultado directo del tueste: cuanto más oscuro el tueste, más presentes estas notas.",
+      examples: ["Café", "Pan tostado", "Humo", "Malta"]
+    },
+    {
+      name: "Nuez y lácteo",
+      desc: "Cremosidad y untuosidad, muchas veces ligada a un conchado largo y suave.",
+      examples: ["Almendra", "Avellana", "Caramelo", "Crema"]
+    },
+    {
+      name: "Terroso",
+      desc: "El carácter más rústico del cacao, común en Forastero o en fermentaciones cortas.",
+      examples: ["Tierra húmeda", "Madera", "Tabaco", "Champiñón"]
+    }
+  ];
+
+  const colors = ["#c1440e", "#e0632a", "#d4a24c", "#a9772f", "#6b8158", "#54331d"];
+
+  const svgNS = "http://www.w3.org/2000/svg";
+  const group = document.getElementById("wheelGroup");
+  const R_OUT = 148, R_IN = 36;
+  const n = flavors.length;
+
+  function polar(r, angle){
+    return [r * Math.cos(angle), r * Math.sin(angle)];
+  }
+
+  function arcPath(r0, r1, a0, a1){
+    const [x0,y0] = polar(r0, a0);
+    const [x1,y1] = polar(r0, a1);
+    const [x2,y2] = polar(r1, a1);
+    const [x3,y3] = polar(r1, a0);
+    const large = (a1 - a0) > Math.PI ? 1 : 0;
+    return `M ${x0} ${y0} A ${r0} ${r0} 0 ${large} 1 ${x1} ${y1} L ${x2} ${y2} A ${r1} ${r1} 0 ${large} 0 ${x3} ${y3} Z`;
+  }
+
+  const segPad = 0.018;
+  for(let i=0;i<n;i++){
+    const a0 = (i/n) * Math.PI*2 - Math.PI/2 + segPad;
+    const a1 = ((i+1)/n) * Math.PI*2 - Math.PI/2 - segPad;
+    const path = document.createElementNS(svgNS, "path");
+    path.setAttribute("d", arcPath(R_IN, R_OUT, a0, a1));
+    path.setAttribute("fill", colors[i]);
+    path.setAttribute("class", "wheel-seg");
+    path.setAttribute("tabindex", "0");
+    path.setAttribute("role", "button");
+    path.setAttribute("aria-label", flavors[i].name);
+    path.dataset.index = i;
+
+    const mid = (a0+a1)/2;
+    const [lx, ly] = polar((R_IN+R_OUT)/2, mid);
+    const label = document.createElementNS(svgNS, "text");
+    label.setAttribute("x", lx);
+    label.setAttribute("y", ly);
+    label.setAttribute("text-anchor", "middle");
+    label.setAttribute("dominant-baseline", "middle");
+    label.setAttribute("font-family", "IBM Plex Mono, monospace");
+    label.setAttribute("font-size", "9.5");
+    label.setAttribute("fill", "#1c110a");
+    label.setAttribute("font-weight", "600");
+    const words = flavors[i].name.split(" ");
+    words.forEach((w, wi) => {
+      const tspan = document.createElementNS(svgNS, "tspan");
+      tspan.setAttribute("x", lx);
+      tspan.setAttribute("dy", wi === 0 ? 0 : 11);
+      tspan.textContent = w;
+      label.appendChild(tspan);
+    });
+
+    group.appendChild(path);
+    group.appendChild(label);
+
+    function activate(){
+      document.querySelectorAll(".wheel-seg").forEach(s => s.classList.remove("active"));
+      path.classList.add("active");
+      const f = flavors[i];
+      document.getElementById("wpTitle").textContent = f.name;
+      document.getElementById("wpDesc").textContent = f.desc;
+      const ex = document.getElementById("wpExamples");
+      ex.innerHTML = "";
+      f.examples.forEach(e => {
+        const s = document.createElement("span");
+        s.textContent = e;
+        ex.appendChild(s);
+      });
+    }
+
+    path.addEventListener("click", activate);
+    path.addEventListener("keydown", (e) => {
+      if(e.key === "Enter" || e.key === " "){ e.preventDefault(); activate(); }
+    });
+  }
+</script>
+
+</body>
+</html>

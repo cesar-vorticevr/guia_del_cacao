@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guía del Cacao — Prototipo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --crema:#fff7e8;
+    --crema-2:#fdeecb;
+    --selva:#106b46;
+    --selva-2:#0c5236;
+    --lima:#a8d94a;
+    --mango:#ffb703;
+    --guayaba:#ff5d73;
+    --turquesa:#12b8ac;
+    --cacao:#4a2c1d;
+    --ink:#22150e;
+
+    --display:'Fredoka', sans-serif;
+    --body:'Nunito', sans-serif;
+    --mono:'Space Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important;} }
+
+  body{
+    margin:0;
+    background:var(--crema);
+    color:var(--ink);
+    font-family:var(--body);
+    padding-bottom:78px; /* space for bottom nav on mobile */
+  }
+  a{color:inherit; text-decoration:none;}
+  ::selection{background:var(--mango); color:var(--ink);}
+  :focus-visible{outline:3px solid var(--selva); outline-offset:2px;}
+
+  h1,h2,h3{font-family:var(--display); margin:0; font-weight:600; color:var(--selva-2);}
+
+  .wrap{width:min(1180px, 92vw); margin-inline:auto;}
+
+  /* ---------- TOP BAR ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:40;
+    background:var(--selva);
+    color:var(--crema);
+    padding:14px 0;
+  }
+  .topbar .wrap{display:flex; align-items:center; justify-content:space-between; gap:16px;}
+  .logo{
+    font-family:var(--display); font-weight:700; font-size:1.2rem;
+    display:flex; align-items:center; gap:8px;
+  }
+  .logo .pod{
+    width:22px; height:26px; background:var(--mango);
+    border-radius:60% 60% 55% 55% / 70% 70% 40% 40%;
+    display:inline-block;
+  }
+  .search{
+    flex:1; max-width:340px;
+    display:flex; align-items:center; gap:8px;
+    background:rgba(255,255,255,0.14);
+    border-radius:999px;
+    padding:9px 16px;
+    font-size:0.86rem;
+    color:rgba(255,247,232,0.75);
+  }
+  @media (max-width:640px){ .search{display:none;} }
+
+  /* ---------- BANNER ROTATIVO TIER 3 ---------- */
+  .banner-section{padding:18px 0 6px;}
+  .banner{
+    position:relative;
+    height:180px;
+    border-radius:20px;
+    overflow:hidden;
+    box-shadow:0 10px 24px -8px rgba(16,107,70,0.35);
+  }
+  @media (min-width:640px){ .banner{height:230px;} }
+  .banner-slide{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; justify-content:flex-end;
+    padding:22px;
+    opacity:0;
+    transition:opacity .6s ease;
+  }
+  .banner-slide.active{opacity:1;}
+  .banner-slide .tier-badge{
+    align-self:flex-start;
+    font-family:var(--mono); font-size:0.68rem;
+    background:rgba(34,21,14,0.35);
+    color:#fff;
+    padding:4px 10px;
+    border-radius:999px;
+    margin-bottom:auto;
+  }
+  .banner-slide h3{color:#fff; font-size:1.5rem;}
+  .banner-slide p{color:rgba(255,255,255,0.9); margin-top:4px; font-size:0.9rem;}
+  .banner-dots{
+    display:flex; gap:6px; justify-content:center; margin-top:10px;
+  }
+  .banner-dots span{
+    width:7px; height:7px; border-radius:50%;
+    background:rgba(16,107,70,0.25);
+    transition:background .3s ease, transform .3s ease;
+  }
+  .banner-dots span.active{background:var(--selva); transform:scale(1.3);}
+
+  /* ---------- CATEGORÍAS ---------- */
+  .chips{
+    display:flex; gap:10px; overflow-x:auto;
+    padding:20px 0 6px;
+    scrollbar-width:none;
+  }
+  .chips::-webkit-scrollbar{display:none;}
+  .chip{
+    flex:none;
+    font-family:var(--body); font-weight:700; font-size:0.84rem;
+    padding:9px 18px;
+    border-radius:999px;
+    background:#fff;
+    border:2px solid var(--crema-2);
+    color:var(--cacao);
+    white-space:nowrap;
+    cursor:pointer;
+  }
+  .chip.active{background:var(--lima); border-color:var(--lima); color:var(--selva-2);}
+
+  /* ---------- SECTION HEAD ---------- */
+  .section-head{padding:26px 0 14px; display:flex; align-items:baseline; justify-content:space-between; gap:12px;}
+  .section-head h2{font-size:1.4rem;}
+  .section-head .see-all{font-family:var(--mono); font-size:0.74rem; color:var(--selva); white-space:nowrap;}
+
+  /* ---------- DIRECTORIO ---------- */
+  .directory-grid{
+    display:grid;
+    grid-template-columns:repeat(2, 1fr);
+    gap:14px;
+    padding-bottom:8px;
+  }
+  @media (min-width:640px){ .directory-grid{grid-template-columns:repeat(3,1fr);} }
+  @media (min-width:900px){ .directory-grid{grid-template-columns:repeat(4,1fr);} }
+
+  .brand-card{
+    background:#fff;
+    border-radius:18px;
+    padding:14px;
+    box-shadow:0 6px 16px -8px rgba(74,44,29,0.18);
+    display:flex; flex-direction:column; gap:8px;
+    cursor:pointer;
+    transition:transform .15s ease;
+  }
+  .brand-card:hover{transform:translateY(-3px);}
+  .brand-card .logo-chip{
+    width:44px; height:44px; border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--display); font-weight:700; font-size:1.1rem; color:#fff;
+  }
+  .brand-card h3{font-size:0.98rem; color:var(--ink); font-family:var(--body); font-weight:800;}
+  .brand-card .cat{font-size:0.76rem; color:#8a7362;}
+  .tier-pill{
+    align-self:flex-start;
+    font-family:var(--mono); font-size:0.62rem;
+    padding:3px 9px; border-radius:999px;
+  }
+  .tier-pill.t1{background:#eee; color:#777;}
+  .tier-pill.t2{background:#fde7c8; color:#a15c00;}
+  .tier-pill.t3{background:var(--selva); color:#fff;}
+
+  /* ---------- MICROSITIO EJEMPLO ---------- */
+  .micrositio{
+    background:var(--cacao);
+    border-radius:24px;
+    color:var(--crema);
+    overflow:hidden;
+    margin-top:8px;
+  }
+  .micro-hero{
+    height:170px;
+    background:linear-gradient(135deg, var(--turquesa), var(--selva) 70%);
+    position:relative;
+    display:flex; align-items:flex-end; padding:18px;
+  }
+  .micro-hero .logo-chip{
+    width:64px; height:64px; border-radius:16px;
+    background:var(--mango);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--display); font-weight:700; color:var(--cacao); font-size:1.5rem;
+    border:3px solid var(--crema);
+    margin-right:14px;
+  }
+  .micro-hero h3{color:#fff; font-size:1.3rem;}
+  .micro-hero .cat{color:rgba(255,255,255,0.85); font-size:0.82rem;}
+  .micro-body{padding:22px;}
+  .micro-body .about{font-size:0.92rem; color:#e9dccb; max-width:60ch;}
+  .socials{display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;}
+  .socials span{
+    font-family:var(--mono); font-size:0.68rem;
+    background:rgba(255,247,232,0.1);
+    border:1px solid rgba(255,247,232,0.25);
+    padding:6px 11px; border-radius:999px;
+  }
+  .catalogo{margin-top:20px; display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px;}
+  .catalogo .item{
+    background:rgba(255,247,232,0.08);
+    border-radius:12px; padding:12px;
+  }
+  .catalogo .item .name{font-weight:700; font-size:0.86rem;}
+  .catalogo .item .price{font-family:var(--mono); font-size:0.78rem; color:var(--mango); margin-top:4px;}
+  .gallery{display:flex; gap:8px; margin-top:20px; overflow-x:auto;}
+  .gallery div{
+    flex:none; width:90px; height:64px; border-radius:10px;
+    background:linear-gradient(135deg, var(--guayaba), var(--mango));
+    opacity:0.85;
+  }
+  .gallery div:nth-child(2){background:linear-gradient(135deg, var(--lima), var(--turquesa));}
+  .gallery div:nth-child(3){background:linear-gradient(135deg, var(--mango), var(--selva));}
+  .gallery div:nth-child(4){background:linear-gradient(135deg, var(--turquesa), var(--guayaba));}
+  .maps-link{
+    display:inline-block; margin-top:18px;
+    font-family:var(--mono); font-size:0.76rem;
+    color:var(--lima); border-bottom:1px dashed var(--lima); padding-bottom:2px;
+  }
+
+  /* ---------- PASAPORTE / PUNTOS ---------- */
+  .pasaporte{
+    background:linear-gradient(160deg, var(--selva), var(--selva-2));
+    border-radius:24px;
+    padding:30px 26px;
+    color:var(--crema);
+    position:relative;
+    overflow:hidden;
+  }
+  .pasaporte .eyebrow{
+    font-family:var(--mono); font-size:0.72rem; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--lima);
+  }
+  .pasaporte h2{color:#fff; font-size:1.6rem; margin-top:8px;}
+  .pasaporte p.sub{color:rgba(255,247,232,0.8); font-size:0.9rem; margin-top:8px; max-width:46ch;}
+
+  .pods-row{display:flex; gap:14px; margin-top:26px; flex-wrap:wrap;}
+  .pod-stamp{
+    width:76px;
+    text-align:center;
+  }
+  .pod-stamp svg{width:44px; height:52px;}
+  .pod-stamp .label{
+    font-family:var(--mono); font-size:0.62rem; margin-top:6px; color:rgba(255,247,232,0.75);
+  }
+  .pod-stamp .range{
+    font-family:var(--mono); font-size:0.6rem; color:rgba(255,247,232,0.55);
+  }
+
+  .points-count{
+    margin-top:26px;
+    display:flex; align-items:baseline; gap:10px;
+  }
+  .points-count b{font-family:var(--mono); font-size:2.2rem; color:var(--mango);}
+  .points-count span{font-size:0.86rem; color:rgba(255,247,232,0.8);}
+
+  .progress-track{
+    margin-top:14px;
+    height:10px; border-radius:999px;
+    background:rgba(255,247,232,0.15);
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%; width:36%;
+    background:var(--mango);
+    border-radius:999px;
+  }
+  .progress-note{margin-top:8px; font-size:0.8rem; color:rgba(255,247,232,0.75);}
+
+  /* ---------- FOOTER ---------- */
+  footer{padding:44px 0 24px; text-align:center;}
+  footer p{font-size:0.8rem; color:#8a7362;}
+
+  /* ---------- BOTTOM NAV (mobile) ---------- */
+  .bottom-nav{
+    position:fixed; bottom:0; left:0; right:0; z-index:50;
+    background:#fff;
+    border-top:1px solid var(--crema-2);
+    display:flex;
+    padding:8px 4px calc(8px + env(safe-area-inset-bottom));
+  }
+  .bottom-nav a{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+    font-size:0.66rem; font-weight:700; color:#a89681;
+    padding:4px;
+  }
+  .bottom-nav a .dot{width:6px; height:6px; border-radius:50%; background:transparent;}
+  .bottom-nav a.active{color:var(--selva);}
+  .bottom-nav a.active .dot{background:var(--selva);}
+  @media (min-width:900px){ .bottom-nav{display:none;} body{padding-bottom:0;} }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <div class="logo"><span class="pod"></span> Guía del Cacao</div>
+    <div class="search">🔍 Buscar chocolatería, tour, museo…</div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- BANNER ROTATIVO -->
+  <section class="banner-section">
+    <div class="banner" id="banner">
+      <div class="banner-slide active" style="background:linear-gradient(135deg,#ff5d73,#ffb703);">
+        <span class="tier-badge">Tier 3 · Turismo Tabasco</span>
+        <h3>Semana del Chocolate 2026</h3>
+        <p>Descubre a todos los expositores de la Feria — del 12 al 19 de octubre.</p>
+      </div>
+      <div class="banner-slide" style="background:linear-gradient(135deg,#12b8ac,#106b46);">
+        <span class="tier-badge">Tier 3 · Hacienda Jesús María</span>
+        <h3>Tour de finca + cata guiada</h3>
+        <p>Recorre la plantación y conoce el proceso completo, de la mazorca a la barra.</p>
+      </div>
+      <div class="banner-slide" style="background:linear-gradient(135deg,#ffb703,#4a2c1d);">
+        <span class="tier-badge">Tier 3 · Cacao Origen</span>
+        <h3>Nueva línea single-origin</h3>
+        <p>Tabletas 70% y 85% con cacao trinitario de la región de Comalcalco.</p>
+      </div>
+    </div>
+    <div class="banner-dots" id="bannerDots"></div>
+  </section>
+
+  <!-- CATEGORÍAS -->
+  <div class="chips">
+    <div class="chip active">Todos</div>
+    <div class="chip">Chocolatería</div>
+    <div class="chip">Finca / Productora</div>
+    <div class="chip">Comercializadora</div>
+    <div class="chip">Museo</div>
+    <div class="chip">Artesanías</div>
+    <div class="chip">Otros servicios</div>
+  </div>
+
+  <!-- DIRECTORIO -->
+  <div class="section-head">
+    <h2>Directorio</h2>
+    <span class="see-all">VER TODOS →</span>
+  </div>
+  <div class="directory-grid">
+    <div class="brand-card">
+      <div class="logo-chip" style="background:#ff5d73;">CO</div>
+      <h3>Cacao Origen</h3>
+      <p class="cat">Chocolatería</p>
+      <span class="tier-pill t3">TIER 3</span>
+    </div>
+    <div class="brand-card">
+      <div class="logo-chip" style="background:#12b8ac;">HJ</div>
+      <h3>Hacienda Jesús María</h3>
+      <p class="cat">Finca / Productora</p>
+      <span class="tier-pill t3">TIER 3</span>
+    </div>
+    <div class="brand-card">
+      <div class="logo-chip" style="background:#a8d94a;">MC</div>
+      <h3>Museo del Cacao</h3>
+      <p class="cat">Museo</p>
+      <span class="tier-pill t2">TIER 2</span>
+    </div>
+    <div class="brand-card">
+      <div class="logo-chip" style="background:#ffb703;">TR</div>
+      <h3>Tablillas Rosario</h3>
+      <p class="cat">Comercializadora</p>
+      <span class="tier-pill t2">TIER 2</span>
+    </div>
+    <div class="brand-card">
+      <div class="logo-chip" style="background:#4a2c1d;">AC</div>
+      <h3>Artesanías Cacaoteras</h3>
+      <p class="cat">Artesanías</p>
+      <span class="tier-pill t1">TIER 1</span>
+    </div>
+    <div class="brand-card">
+      <div class="logo-chip" style="background:#106b46;">FC</div>
+      <h3>Finca Comalcalco</h3>
+      <p class="cat">Finca / Productora</p>
+      <span class="tier-pill t2">TIER 2</span>
+    </div>
+    <div class="brand-card">
+      <div class="logo-chip" style="background:#ff5d73;">DT</div>
+      <h3>Dulce Tabasco</h3>
+      <p class="cat">Chocolatería</p>
+      <span class="tier-pill t1">TIER 1</span>
+    </div>
+    <div class="brand-card">
+      <div class="logo-chip" style="background:#12b8ac;">RC</div>
+      <h3>Ruta del Cacao Tours</h3>
+      <p class="cat">Otros servicios</p>
+      <span class="tier-pill t3">TIER 3</span>
+    </div>
+  </div>
+
+  <!-- MICROSITIO DE EJEMPLO -->
+  <div class="section-head">
+    <h2>Vista previa de micrositio</h2>
+    <span class="see-all">EJEMPLO: CACAO ORIGEN</span>
+  </div>
+  <div class="micrositio">
+    <div class="micro-hero">
+      <div class="logo-chip">CO</div>
+      <div>
+        <h3>Cacao Origen</h3>
+        <p class="cat">Chocolatería · Villahermosa, Tabasco</p>
+      </div>
+    </div>
+    <div class="micro-body">
+      <p class="about">Chocolate bean-to-bar hecho con cacao trinitario de la región de Comalcalco. Tres generaciones dedicadas al cacao, ahora convertidas en tabletas de origen único.</p>
+      <div class="socials">
+        <span>💬 WhatsApp</span>
+        <span>📘 Facebook</span>
+        <span>📸 Instagram</span>
+        <span>🎵 TikTok</span>
+        <span>✉️ Correo</span>
+        <span>📞 Teléfono</span>
+      </div>
+      <a class="maps-link" href="#">📍 Ver ubicación en Google Maps</a>
+
+      <div class="catalogo">
+        <div class="item"><div class="name">Tablilla 70% Comalcalco</div><div class="price">$85 MXN</div></div>
+        <div class="item"><div class="name">Tablilla 85% Single Origin</div><div class="price">$95 MXN</div></div>
+        <div class="item"><div class="name">Cacao en grano tostado</div><div class="price">precio en tienda</div></div>
+        <div class="item"><div class="name">Caja de regalo x6</div><div class="price">$420 MXN</div></div>
+      </div>
+
+      <div class="gallery">
+        <div></div><div></div><div></div><div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PASAPORTE / PUNTOS -->
+  <div class="section-head">
+    <h2>Tu pasaporte cacaotero</h2>
+  </div>
+  <div class="pasaporte">
+    <p class="eyebrow">Mi cuenta</p>
+    <h2>¡Vas subiendo de rango!</h2>
+    <p class="sub">Acumula mazorcas escaneando el QR de cada marca cuando compres o asistas a un evento. Se reinician cada 1 de enero.</p>
+
+    <div class="pods-row">
+      <div class="pod-stamp">
+        <svg viewBox="0 0 40 48"><path d="M20 2C30 6 36 18 34 28C32 38 26 44 20 46C14 44 8 38 6 28C4 18 10 6 20 2Z" fill="#ffb703" stroke="#fff7e8" stroke-width="1.5"/></svg>
+        <div class="label">Rango 1</div>
+        <div class="range">0–19</div>
+      </div>
+      <div class="pod-stamp">
+        <svg viewBox="0 0 40 48"><path d="M20 2C30 6 36 18 34 28C32 38 26 44 20 46C14 44 8 38 6 28C4 18 10 6 20 2Z" fill="#ffb703" stroke="#fff7e8" stroke-width="1.5"/></svg>
+        <div class="label">Rango 2</div>
+        <div class="range">20–49</div>
+      </div>
+      <div class="pod-stamp">
+        <svg viewBox="0 0 40 48"><path d="M20 2C30 6 36 18 34 28C32 38 26 44 20 46C14 44 8 38 6 28C4 18 10 6 20 2Z" fill="rgba(255,247,232,0.15)" stroke="rgba(255,247,232,0.4)" stroke-width="1.5"/></svg>
+        <div class="label">Rango 3</div>
+        <div class="range">50–100</div>
+      </div>
+      <div class="pod-stamp">
+        <svg viewBox="0 0 40 48"><path d="M20 2C30 6 36 18 34 28C32 38 26 44 20 46C14 44 8 38 6 28C4 18 10 6 20 2Z" fill="rgba(255,247,232,0.15)" stroke="rgba(255,247,232,0.4)" stroke-width="1.5"/></svg>
+        <div class="label">Rango 4</div>
+        <div class="range">100–200</div>
+      </div>
+    </div>
+
+    <div class="points-count"><b>34</b><span>mazorcas acumuladas este año</span></div>
+    <div class="progress-track"><div class="progress-fill"></div></div>
+    <p class="progress-note">Te faltan 16 mazorcas para llegar a Rango 3.</p>
+  </div>
+
+</main>
+
+<footer>
+  <p>Prototipo visual — Guía del Cacao · Tabasco</p>
+</footer>
+
+<nav class="bottom-nav">
+  <a href="#" class="active"><span class="dot"></span>Inicio</a>
+  <a href="#"><span class="dot"></span>Directorio</a>
+  <a href="#"><span class="dot"></span>Eventos</a>
+  <a href="#"><span class="dot"></span>Noticias</a>
+  <a href="#"><span class="dot"></span>Cuenta</a>
+</nav>
+
+<script>
+  // Banner rotativo Tier 3, cada 3 segundos
+  const slides = document.querySelectorAll('.banner-slide');
+  const dotsHolder = document.getElementById('bannerDots');
+  slides.forEach((_, i) => {
+    const d = document.createElement('span');
+    if(i === 0) d.classList.add('active');
+    dotsHolder.appendChild(d);
+  });
+  const dots = dotsHolder.querySelectorAll('span');
+  let current = 0;
+  setInterval(() => {
+    slides[current].classList.remove('active');
+    dots[current].classList.remove('active');
+    current = (current + 1) % slides.length;
+    slides[current].classList.add('active');
+    dots[current].classList.add('active');
+  }, 3000);
+
+  // Chips de categoría (solo visual en el prototipo)
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>
