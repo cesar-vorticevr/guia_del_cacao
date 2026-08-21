@@ -44,6 +44,22 @@ La especificación funcional está en la raíz del repo:
 Este proyecto convive con otro Supabase local en la misma máquina, así que usa
 un rango propio: API `54421`, base `54422`, Studio `54423`, correo `54424`.
 
+## Cuentas de demostración
+
+`supabase/seed.sql` las recrea en cada `db reset`, así que reiniciar la base
+nunca obliga a darlas de alta a mano. Todas con contraseña `cacao12345`:
+
+| Rol | Correo |
+|---|---|
+| Cliente | `cliente@guiadelcacao.mx` |
+| Negocio | `negocio@guiadelcacao.mx` (marca *Chocolatería La Mazorca*) |
+| Administrador | `admin@guiadelcacao.mx` |
+
+Si alguna vez agregas usuarios ahí: `confirmation_token`, `recovery_token`,
+`email_change`, `email_change_token_new` y `email_change_token_current` deben ir
+en cadena vacía, no en NULL. GoTrue las lee como texto no nulable y el login
+falla con un opaco *"Database error querying schema"*.
+
 ## Pruebas de la base
 
 Las reglas de negocio y RLS se prueban en SQL, contra Postgres real, en

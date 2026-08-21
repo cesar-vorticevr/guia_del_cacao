@@ -9,6 +9,8 @@ type CampoProps = {
   ayuda?: string;
   requerido?: boolean;
   autoComplete?: string;
+  valor?: string | null;
+  marcador?: string;
 };
 
 export function Campo({
@@ -18,6 +20,8 @@ export function Campo({
   ayuda,
   requerido = true,
   autoComplete,
+  valor,
+  marcador,
 }: CampoProps) {
   return (
     <label className="block">
@@ -28,6 +32,8 @@ export function Campo({
         type={tipo}
         required={requerido}
         autoComplete={autoComplete}
+        defaultValue={valor ?? undefined}
+        placeholder={marcador}
         aria-describedby={ayuda ? `${nombre}-ayuda` : undefined}
         /* min-h-14: objetivo táctil grande, que es como se va a usar en la feria. */
         className="min-h-14 w-full rounded-2xl border-2 border-selva/20 bg-white px-4 text-base text-ink transition-colors placeholder:text-cacao/40 focus:border-selva"
@@ -37,6 +43,34 @@ export function Campo({
           {ayuda}
         </span>
       )}
+    </label>
+  );
+}
+
+export function Area({
+  nombre,
+  etiqueta,
+  ayuda,
+  valor,
+  filas = 4,
+}: {
+  nombre: string;
+  etiqueta: string;
+  ayuda?: string;
+  valor?: string | null;
+  filas?: number;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block font-bold text-selva-2">{etiqueta}</span>
+      <textarea
+        id={nombre}
+        name={nombre}
+        rows={filas}
+        defaultValue={valor ?? ""}
+        className="w-full rounded-2xl border-2 border-selva/20 bg-white px-4 py-3 text-base text-ink focus:border-selva"
+      />
+      {ayuda && <span className="mt-1.5 block text-sm text-cacao/70">{ayuda}</span>}
     </label>
   );
 }
