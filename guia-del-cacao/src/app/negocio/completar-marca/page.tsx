@@ -19,8 +19,15 @@ export default async function CompletarMarca() {
   if (!perfil) redirect("/login");
   if (perfil.rol !== "negocio") redirect("/cuenta");
 
+  // Mismo cuidado que en el panel: filtrar por dueño explícitamente. Sin el
+  // .eq, cualquier marca publicada de otro negocio contaría como propia y
+  // mandaría a este usuario al panel sin haber dado de alta la suya.
   const supabase = await crearClienteServidor();
-  const { data: marcas } = await supabase.from("marcas").select("id").limit(1);
+  const { data: marcas } = await supabase
+    .from("marcas")
+    .select("id")
+    .eq("perfil_id", perfil.id)
+    .limit(1);
 
   if (marcas && marcas.length > 0) redirect("/negocio/panel");
 

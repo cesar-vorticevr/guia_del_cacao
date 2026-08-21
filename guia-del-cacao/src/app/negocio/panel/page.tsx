@@ -15,10 +15,14 @@ export default async function PanelNegocio() {
 
   const supabase = await crearClienteServidor();
 
-  // RLS ya limita esto a las marcas del dueño: no hace falta filtrar aquí.
+  // Hay que filtrar por dueño a mano. La política de lectura de `marcas` es
+  // más amplia a propósito —el directorio público necesita ver las marcas con
+  // micrositio publicado—, así que apoyarse en RLS para acotar una vista
+  // privada le mostraría a este negocio las marcas de los demás.
   const { data: marcas } = await supabase
     .from("marcas")
-    .select("id, nombre_comercial, categorias(nombre)");
+    .select("id, nombre_comercial, categorias(nombre)")
+    .eq("perfil_id", perfil.id);
 
   if (!marcas || marcas.length === 0) redirect("/negocio/completar-marca");
 

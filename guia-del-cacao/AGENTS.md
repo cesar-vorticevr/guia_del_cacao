@@ -32,6 +32,11 @@ La especificación funcional está en la raíz del repo:
 - Las políticas que cruzan tablas usan funciones `security definer`
   (`posee_marca`, `posee_sucursal`, …). Consultarlas en línea provoca
   recursión infinita entre políticas.
+- **RLS autoriza, no acota.** Una vista privada siempre filtra a mano por su
+  dueño (`.eq("perfil_id", perfil.id)`). La política de lectura es tan ancha
+  como su lector legítimo más amplio: `marcas` es visible para el directorio
+  público, así que un panel que se apoye solo en RLS le enseña al negocio las
+  marcas de los demás. Ya pasó una vez.
 - El dominio se nombra **en español**, igual que el spec.
 
 ## Puertos locales
