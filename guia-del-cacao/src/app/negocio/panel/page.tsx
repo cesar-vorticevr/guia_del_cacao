@@ -47,6 +47,12 @@ export default async function PanelNegocio() {
 
           <div className="flex flex-wrap gap-3">
             <Link
+              href="/negocio/panel/puntos"
+              className="min-h-11 rounded-full border-2 border-selva/25 bg-white px-5 py-2.5 font-bold text-selva-2"
+            >
+              Puntos
+            </Link>
+            <Link
               href="/negocio/panel/contenido"
               className="min-h-11 rounded-full border-2 border-selva/25 bg-white px-5 py-2.5 font-bold text-selva-2"
             >

@@ -110,37 +110,44 @@ export function FormularioMarca({ categorias }: { categorias: Categoria[] }) {
 export function FormularioElegirRol() {
   const [estado, accion] = useActionState(elegirRol, INICIAL);
 
+  const OPCIONES = [
+    {
+      rol: "cliente",
+      titulo: "Soy cliente",
+      texto: "Quiero explorar el directorio, dejar reseñas y juntar puntos.",
+    },
+    {
+      rol: "negocio",
+      titulo: "Soy negocio",
+      texto: "Quiero mi micrositio, publicar y dar puntos a mis clientes.",
+    },
+  ];
+
+  /**
+   * Un formulario por opción, con el rol en un campo oculto.
+   *
+   * No sirve poner `name`/`value` en el botón: React los descarta cuando el
+   * botón lleva un `formAction` con función, así que el rol llegaría vacío y
+   * quien entra con Google no podría terminar de registrarse.
+   */
   return (
-    <form className="grid gap-4">
+    <div className="grid gap-4">
       <Aviso>{estado.error}</Aviso>
 
-      <button
-        formAction={accion}
-        name="rol"
-        value="cliente"
-        className="rounded-3xl border-2 border-selva/20 bg-white p-5 text-left transition-colors hover:border-selva"
-      >
-        <span className="block font-display text-xl font-semibold text-selva-2">
-          Soy cliente
-        </span>
-        <span className="mt-1 block text-cacao">
-          Quiero explorar el directorio, dejar reseñas y juntar puntos.
-        </span>
-      </button>
-
-      <button
-        formAction={accion}
-        name="rol"
-        value="negocio"
-        className="rounded-3xl border-2 border-selva/20 bg-white p-5 text-left transition-colors hover:border-selva"
-      >
-        <span className="block font-display text-xl font-semibold text-selva-2">
-          Soy negocio
-        </span>
-        <span className="mt-1 block text-cacao">
-          Quiero mi micrositio, publicar y dar puntos a mis clientes.
-        </span>
-      </button>
-    </form>
+      {OPCIONES.map((opcion) => (
+        <form key={opcion.rol} action={accion}>
+          <input type="hidden" name="rol" value={opcion.rol} />
+          <button
+            type="submit"
+            className="w-full rounded-3xl border-2 border-selva/20 bg-white p-5 text-left transition-colors hover:border-selva"
+          >
+            <span className="block font-display text-xl font-semibold text-selva-2">
+              {opcion.titulo}
+            </span>
+            <span className="mt-1 block text-cacao">{opcion.texto}</span>
+          </button>
+        </form>
+      ))}
+    </div>
   );
 }
