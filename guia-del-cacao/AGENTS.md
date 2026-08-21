@@ -53,7 +53,11 @@ son **Curioso · Catador · Conocedor · Maestro cacaotero**. Todo eso vive en
 Los cortes de la escalera (20, 50, 100) están dos veces: en
 `public.calcular_rango` y en `RANGOS`. La base es la que manda; el vocabulario
 solo los explica y dice cuánto falta para el siguiente. Si cambian, cambian en
-los dos lados. En la base las columnas
+los dos lados.
+
+Los rangos van en masculino genérico a propósito, es una decisión tomada: no se
+pregunta el género al registrarse y se prefirió eso antes que buscar nombres
+neutros. No hace falta volver a plantearlo. En la base las columnas
 siguen siendo `puntos_*`: ahí se guarda la unidad, en el vocabulario se le pone
 nombre comercial. Si mañana se llaman mazorcas, se cambia un archivo y no hace
 falta migración.
