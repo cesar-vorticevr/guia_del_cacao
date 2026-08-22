@@ -7,6 +7,7 @@ import { BotonesResolver } from "@/components/puntos/formularios";
 import { perfilActual, origenDelSitio } from "@/lib/auth/sesion";
 import { misSucursales } from "@/lib/datos/sucursales";
 import { solicitudesPorResolver } from "@/lib/datos/puntos";
+import { nombrarNegocio } from "@/lib/datos/publico";
 import { pesos } from "@/lib/tipos";
 
 export const metadata: Metadata = { title: "Solicitudes de monedas · Guía del Cacao" };
@@ -86,7 +87,9 @@ export default async function PanelPuntos() {
                         <p className="font-mono text-xs tracking-wide text-cacao/70 uppercase">
                           {CUANDO.format(new Date(solicitud.fecha_solicitud))}
                           {solicitud.sucursales &&
-                            ` · ${solicitud.sucursales.nombre_sucursal}`}
+                            ` · ${nombrarNegocio(solicitud.sucursales).marca}`}
+                          {nombrarNegocio(solicitud.sucursales).sucursal &&
+                            ` · ${nombrarNegocio(solicitud.sucursales).sucursal}`}
                         </p>
                         <p className="mt-1 font-display text-xl text-selva-2">
                           {solicitud.perfiles_publicos?.nombre ?? "Cliente"}
@@ -100,6 +103,11 @@ export default async function PanelPuntos() {
                             className="flex items-baseline justify-between gap-4 rounded-2xl bg-white px-4 py-3"
                           >
                             <span className="text-cacao">
+                              {/* La cantidad va delante y en mono: es el dato
+                                  que cambia cuántas monedas merece la compra. */}
+                              <span className="font-mono font-bold text-selva-2">
+                                {linea.cantidad}×
+                              </span>{" "}
                               {linea.productos_servicios?.nombre}
                             </span>
                             {linea.productos_servicios?.precio !== null &&

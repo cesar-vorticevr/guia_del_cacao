@@ -72,9 +72,19 @@ export async function pedirPuntos(
     return { error: traducir(error?.message ?? "") };
   }
 
+  // Cada producto trae su cantidad en un campo aparte, `cantidad-<id>`. Se
+  // acota aquí además del CHECK de la base: si llega basura, más vale registrar
+  // una pieza que reventar la solicitud entera después de la compra.
+  const lineas = productos.map((producto_id) => {
+    const cruda = Number(datos.get(`cantidad-${producto_id}`));
+    const cantidad = Number.isFinite(cruda) ? Math.min(99, Math.max(1, Math.trunc(cruda))) : 1;
+
+    return { solicitud_id: solicitud.id, producto_id, cantidad };
+  });
+
   const { error: errorProductos } = await supabase
     .from("solicitud_productos")
-    .insert(productos.map((producto_id) => ({ solicitud_id: solicitud.id, producto_id })));
+    .insert(lineas);
 
   if (errorProductos) {
     // La solicitud ya existe y sin productos no le sirve a la marca para

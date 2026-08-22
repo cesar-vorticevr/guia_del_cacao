@@ -3,8 +3,13 @@ import type { Metadata } from "next";
 import { TarjetaSucursal } from "@/components/publico/tarjeta-sucursal";
 import { listarDirectorio } from "@/lib/datos/publico";
 import { listarCategorias } from "@/lib/datos/categorias";
+import { tonoDeCategoria } from "@/lib/paleta";
 
 export const metadata: Metadata = { title: "Directorio · Guía del Cacao" };
+
+/** Clases comunes de las píldoras de filtro; lo único que cambia es el color. */
+const PILDORA =
+  "block rounded-full border-2 border-ink/10 px-4 py-2 text-sm font-bold shadow-dura-sm transition-transform active:translate-y-0.5";
 
 export default async function Directorio({
   searchParams,
@@ -23,44 +28,48 @@ export default async function Directorio({
 
   return (
     <>
-      <h1 className="pt-8 font-display text-3xl">Directorio</h1>
+      <h1 className="pt-8 font-display text-3xl">Explorar</h1>
       <p className="mt-2 text-cacao">
         {activa
           ? `Negocios en la categoría ${activa.nombre}.`
           : "Todos los negocios del cacao publicados en la plataforma."}
       </p>
 
+      {/*
+        Cada categoría trae su color puesto, no solo la que está activa: así la
+        fila de filtros se lee como una fila de colores y se reconoce de reojo
+        cuál es cuál. La seleccionada se distingue por el color pleno; las
+        demás lo llevan en voz baja.
+      */}
       <nav aria-label="Filtrar por categoría" className="pt-5">
         <ul className="flex gap-2.5 overflow-x-auto pb-2">
           <li className="shrink-0">
             <Link
               href="/directorio"
               aria-current={!categoriaId}
-              className={`block rounded-full border-2 px-4 py-2 text-sm font-bold ${
-                !categoriaId
-                  ? "border-selva bg-selva text-crema"
-                  : "border-selva/15 bg-crema-2 text-selva-2"
+              className={`${PILDORA} ${
+                !categoriaId ? "bg-selva text-crema" : "bg-crema-2 text-selva-2"
               }`}
             >
               Todas
             </Link>
           </li>
 
-          {categorias.map((c) => (
-            <li key={c.id} className="shrink-0">
-              <Link
-                href={`/directorio?categoria=${c.id}`}
-                aria-current={categoriaId === c.id}
-                className={`block rounded-full border-2 px-4 py-2 text-sm font-bold ${
-                  categoriaId === c.id
-                    ? "border-selva bg-selva text-crema"
-                    : "border-selva/15 bg-crema-2 text-selva-2"
-                }`}
-              >
-                {c.nombre}
-              </Link>
-            </li>
-          ))}
+          {categorias.map((c) => {
+            const tono = tonoDeCategoria(c.id);
+
+            return (
+              <li key={c.id} className="shrink-0">
+                <Link
+                  href={`/directorio?categoria=${c.id}`}
+                  aria-current={categoriaId === c.id}
+                  className={`${PILDORA} ${categoriaId === c.id ? tono.solido : tono.suave}`}
+                >
+                  {c.nombre}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </nav>
 

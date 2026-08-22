@@ -2,12 +2,18 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Promedio } from "@/components/publico/estrellas";
 
 export type Diapositiva = {
   slug: string;
+  /** El nombre de la marca: es lo que la gente reconoce. */
   nombre: string;
+  /** La sucursal, debajo y en chico. Null si la marca no tiene nombre propio. */
+  sucursal: string | null;
   imagen: string | null;
   texto: string | null;
+  /** Promedio de estrellas, o null si al negocio no lo ha calificado nadie. */
+  calificacion: { promedio: number; total: number } | null;
 };
 
 /**
@@ -58,6 +64,23 @@ export function BannerRotativo({ diapositivas }: { diapositivas: Diapositiva[] }
               <span className="block font-display text-2xl font-semibold text-white drop-shadow">
                 {slide.nombre}
               </span>
+
+              {slide.sucursal && (
+                <span className="block text-sm text-white/85 drop-shadow">
+                  {slide.sucursal}
+                </span>
+              )}
+
+              {/* Sobre una foto cualquiera el texto se pierde, así que el
+                  promedio va en su propia pastilla oscura. */}
+              {slide.calificacion && (
+                <span className="mt-1 inline-flex rounded-full bg-ink/50 px-2.5 py-1">
+                  <Promedio
+                    promedio={slide.calificacion.promedio}
+                    total={slide.calificacion.total}
+                  />
+                </span>
+              )}
               {slide.texto && (
                 <span className="mt-1 block text-white/90 drop-shadow">{slide.texto}</span>
               )}

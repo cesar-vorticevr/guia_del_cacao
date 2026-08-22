@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { urlImagen } from "@/lib/imagenes";
-import type { Publicacion } from "@/lib/datos/publico";
+import { nombrarNegocio, type Publicacion } from "@/lib/datos/publico";
 import { rango } from "@/lib/vocabulario";
 
 const FECHA = new Intl.DateTimeFormat("es-MX", {
@@ -9,6 +9,20 @@ const FECHA = new Intl.DateTimeFormat("es-MX", {
   year: "numeric",
 });
 
+/**
+ * Un evento o una noticia en una lista.
+ *
+ * Toda la tarjeta es el enlace, no un "ver más" al final: en celular el dedo
+ * cae sobre la tarjeta entera y obligar a apuntarle a un renglón de texto es
+ * pedirle puntería a alguien que va caminando.
+ *
+ * La miniatura va a la derecha y en cuadro fijo. Antes ocupaba todo el ancho
+ * arriba y una foto vertical de celular empujaba el título fuera de la
+ * pantalla; recortada en cuadrado, todas las tarjetas miden lo mismo.
+ *
+ * Y el nombre grande es el de la marca: "Chocolates Grijalva" es lo que la
+ * gente reconoce, "Matriz Villahermosa" es solo dónde queda.
+ */
 export function TarjetaPublicacion({
   publicacion,
   tipo,
@@ -19,44 +33,56 @@ export function TarjetaPublicacion({
   const portada = urlImagen(publicacion.imagenes?.[0]);
   const fecha =
     tipo === "evento" ? publicacion.fecha_evento! : publicacion.fecha_publicacion;
+  const { marca, sucursal } = nombrarNegocio(publicacion.sucursales);
 
   return (
-    <li className="overflow-hidden rounded-3xl bg-white">
-      {portada && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={portada} alt="" className="h-44 w-full object-cover" />
-      )}
+    <li>
+      <Link
+        href={`/${tipo === "evento" ? "eventos" : "noticias"}/${publicacion.id}`}
+        className="flex h-full gap-4 rounded-3xl border-2 border-ink/10 bg-white p-5 shadow-dura transition-all hover:-translate-y-0.5 hover:shadow-dura-alta"
+      >
+        <span className="min-w-0 flex-1">
+          <span className="block font-mono text-xs tracking-wide text-cacao/70 uppercase">
+            {FECHA.format(new Date(fecha))}
+          </span>
 
-      <div className="p-5">
-        <p className="font-mono text-xs tracking-wide text-cacao/70 uppercase">
-          {FECHA.format(new Date(fecha))}
-          {publicacion.sucursales && ` · ${publicacion.sucursales.nombre_sucursal}`}
-        </p>
+          <span className="mt-1.5 block font-display text-xl text-selva-2">
+            {publicacion.titulo}
+          </span>
 
-        <h3 className="mt-1.5 font-display text-xl">{publicacion.titulo}</h3>
-        {publicacion.subtitulo && (
-          <p className="mt-1 text-cacao/80">{publicacion.subtitulo}</p>
+          {marca && (
+            <span className="mt-1 block font-bold text-selva">
+              {marca}
+              {sucursal && (
+                <span className="font-normal text-cacao/70"> · {sucursal}</span>
+              )}
+            </span>
+          )}
+
+          {publicacion.subtitulo && (
+            <span className="mt-1 block text-cacao/80">{publicacion.subtitulo}</span>
+          )}
+
+          <span className="mt-2 line-clamp-3 block text-cacao">
+            {publicacion.contenido}
+          </span>
+
+          {publicacion.rango_exclusivo && (
+            <span className="mt-3 inline-block rounded-full bg-mango px-3 py-1 font-mono text-xs font-bold text-ink">
+              Solo para {rango(publicacion.rango_exclusivo).plural}
+            </span>
+          )}
+        </span>
+
+        {portada && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={portada}
+            alt=""
+            className="size-24 shrink-0 rounded-2xl border-2 border-selva/10 object-cover sm:size-28"
+          />
         )}
-
-        <p className="mt-2 whitespace-pre-line text-cacao">{publicacion.contenido}</p>
-
-        {publicacion.rango_exclusivo && (
-          <p className="mt-3 inline-block rounded-full bg-mango/25 px-3 py-1 font-mono text-xs font-bold text-cacao">
-            Solo para {rango(publicacion.rango_exclusivo).plural}
-          </p>
-        )}
-
-        {publicacion.sucursales && (
-          <p className="mt-3">
-            <Link
-              href={`/marca/${publicacion.sucursales.slug}`}
-              className="font-bold text-selva underline"
-            >
-              Ver el micrositio
-            </Link>
-          </p>
-        )}
-      </div>
+      </Link>
     </li>
   );
 }

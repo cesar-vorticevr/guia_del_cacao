@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { Logotipo } from "@/components/marca";
+import { BarraInferior } from "@/components/publico/barra-inferior";
+import { PastillaPasaporte } from "@/components/publico/pastilla-pasaporte";
 import { destinoSegunRol, perfilActual } from "@/lib/auth/sesion";
+import { pasaporteDe } from "@/lib/datos/puntos";
 
 const SECCIONES = [
-  { href: "/directorio", texto: "Directorio" },
+  { href: "/directorio", texto: "Explorar" },
   { href: "/eventos", texto: "Eventos" },
   { href: "/noticias", texto: "Noticias" },
 ];
@@ -11,6 +14,10 @@ const SECCIONES = [
 /**
  * Armazón del sitio público. Mobile-first: en celular la navegación vive en una
  * barra fija abajo, al alcance del pulgar; en escritorio sube al encabezado.
+ *
+ * El pasaporte se ve siempre, en las dos: pastilla en el encabezado y contador
+ * en la barra de abajo. Es a propósito — ver el número subir es lo que hace
+ * que la persona quiera seguir explorando.
  */
 export default async function LayoutPublico({
   children,
@@ -18,6 +25,11 @@ export default async function LayoutPublico({
   children: React.ReactNode;
 }) {
   const perfil = await perfilActual();
+
+  // Solo los clientes juntan monedas; un negocio o un administrador no tienen
+  // pasaporte que enseñar.
+  const esCliente = perfil?.rol === "cliente" && perfil.rol_confirmado;
+  const pasaporte = esCliente ? await pasaporteDe(perfil.id) : null;
 
   return (
     <>
@@ -37,7 +49,9 @@ export default async function LayoutPublico({
             ))}
           </nav>
 
-          {perfil ? (
+          {pasaporte ? (
+            <PastillaPasaporte puntos={pasaporte.puntos} nivel={pasaporte.nivel} />
+          ) : perfil ? (
             <Link
               href={destinoSegunRol(perfil)}
               className="min-h-10 rounded-full bg-mango px-4 py-2 text-sm font-bold text-ink"
@@ -60,27 +74,12 @@ export default async function LayoutPublico({
         </div>
       </header>
 
-      <main className="mx-auto w-[92vw] max-w-[1180px] pb-24 sm:pb-10">{children}</main>
+      <main className="mx-auto w-[92vw] max-w-[1180px] pb-28 sm:pb-10">{children}</main>
 
-      <nav
-        aria-label="Secciones"
-        className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-selva/10 bg-crema/95 backdrop-blur sm:hidden"
-      >
-        <div className="mx-auto grid max-w-md grid-cols-4">
-          <Link href="/" className="py-3 text-center text-sm font-bold text-selva-2">
-            Inicio
-          </Link>
-          {SECCIONES.map((seccion) => (
-            <Link
-              key={seccion.href}
-              href={seccion.href}
-              className="py-3 text-center text-sm font-bold text-selva-2"
-            >
-              {seccion.texto}
-            </Link>
-          ))}
-        </div>
-      </nav>
+      <BarraInferior
+        monedas={pasaporte?.puntos ?? null}
+        destinoPasaporte={perfil ? destinoSegunRol(perfil) : "/login"}
+      />
     </>
   );
 }

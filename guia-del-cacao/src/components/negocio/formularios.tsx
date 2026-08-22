@@ -1,13 +1,16 @@
 "use client";
 
 import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
 import { Area, Aviso, BotonEnviar, Campo, Selector } from "@/components/formulario";
 import {
   agregarAGaleria,
   agregarProducto,
+  cambiarFotoPublicacion,
   crearEvento,
   crearNoticia,
   crearSucursal,
+  eliminarPublicacion,
   guardarMicrositio,
   publicarSucursal,
   subirImagen,
@@ -178,6 +181,20 @@ export function FormularioProducto({ sucursalId }: { sucursalId: string }) {
         ayuda="Opcional. Déjalo vacío si prefieres no publicarlo."
       />
 
+      <label className="block">
+        <span className="mb-1.5 block font-bold text-selva-2">
+          Foto <span className="font-normal text-cacao/70">(opcional)</span>
+        </span>
+        <input
+          type="file"
+          name="imagen"
+          accept={ACEPTA}
+          className="w-full rounded-2xl border-2 border-dashed border-selva/25 bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-selva file:px-4 file:py-2 file:font-bold file:text-crema"
+        />
+        <span className="mt-1.5 block text-sm text-cacao/70">{MEDIDAS.producto}</span>
+        <span className="block text-sm text-cacao/70">{PESO}</span>
+      </label>
+
       <BotonEnviar variante="secundario">Agregar al catálogo</BotonEnviar>
     </form>
   );
@@ -285,6 +302,20 @@ export function FormularioEvento({ sucursales }: { sucursales: Sucursal[] }) {
         ayuda="Hasta 1500 caracteres."
         filas={5}
       />
+
+      <label className="block">
+        <span className="mb-1.5 block font-bold text-selva-2">
+          Foto <span className="font-normal text-cacao/70">(opcional)</span>
+        </span>
+        <input
+          type="file"
+          name="imagen"
+          accept={ACEPTA}
+          className="w-full rounded-2xl border-2 border-dashed border-selva/25 bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-selva file:px-4 file:py-2 file:font-bold file:text-crema"
+        />
+        <span className="mt-1.5 block text-sm text-cacao/70">{MEDIDAS.publicacion}</span>
+        <span className="block text-sm text-cacao/70">{PESO}</span>
+      </label>
       <Campo nombre="fecha_evento" etiqueta="Fecha del evento" tipo="datetime-local" />
       <Selector
         nombre="rango_exclusivo"
@@ -327,7 +358,126 @@ export function FormularioNoticia({ sucursales }: { sucursales: Sucursal[] }) {
         filas={5}
       />
 
+
+      <label className="block">
+        <span className="mb-1.5 block font-bold text-selva-2">
+          Foto <span className="font-normal text-cacao/70">(opcional)</span>
+        </span>
+        <input
+          type="file"
+          name="imagen"
+          accept={ACEPTA}
+          className="w-full rounded-2xl border-2 border-dashed border-selva/25 bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-selva file:px-4 file:py-2 file:font-bold file:text-crema"
+        />
+        <span className="mt-1.5 block text-sm text-cacao/70">{MEDIDAS.publicacion}</span>
+        <span className="block text-sm text-cacao/70">{PESO}</span>
+      </label>
+
       <BotonEnviar>Publicar noticia</BotonEnviar>
     </form>
+  );
+}
+
+/**
+ * Una publicación ya hecha, con lo que se puede hacerle: cambiar la foto o
+ * borrarla.
+ *
+ * Hasta ahora los eventos y las noticias solo se podían crear. Quien publicó
+ * antes de que existiera el campo de foto no tenía forma de agregarle una, y
+ * quien se equivocó en el título no tenía forma de deshacerlo.
+ */
+export function PublicacionPropia({
+  publicacion,
+  clase,
+  foto,
+}: {
+  publicacion: { id: string; titulo: string; fecha: string; sucursal: string; paso?: boolean };
+  clase: "evento" | "noticia";
+  /** URL de la portada, ya armada por el servidor. */
+  foto: string | null;
+}) {
+  const [estado, accion] = useActionState(cambiarFotoPublicacion, INICIAL);
+
+  return (
+    <li className="grid gap-3 rounded-2xl border-2 border-selva/15 bg-white p-4">
+      <div className="flex items-start gap-4">
+        {foto ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={foto}
+            alt=""
+            className="size-16 shrink-0 rounded-xl border-2 border-selva/10 object-cover"
+          />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="grid size-16 shrink-0 place-items-center rounded-xl border-2 border-dashed border-selva/25 text-xs text-cacao/50"
+          >
+            Sin foto
+          </span>
+        )}
+
+        <div className="min-w-0 flex-1">
+          <p className="font-bold text-selva-2">{publicacion.titulo}</p>
+          <p className="font-mono text-xs text-cacao/70">
+            {new Date(publicacion.fecha).toLocaleDateString("es-MX", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })}
+            {publicacion.sucursal && ` · ${publicacion.sucursal}`}
+          </p>
+
+          {publicacion.paso && (
+            <p className="mt-1 text-xs text-cacao/70">
+              Ya pasó: dejó de salir en tu micrositio, pero sigue en la sección
+              de eventos.
+            </p>
+          )}
+        </div>
+      </div>
+
+      <Resultado estado={estado} />
+
+      <form action={accion} className="flex flex-wrap items-center gap-2">
+        <input type="hidden" name="clase" value={clase} />
+        <input type="hidden" name="publicacion_id" value={publicacion.id} />
+
+        <input
+          type="file"
+          name="imagen"
+          accept={ACEPTA}
+          className="min-w-0 flex-1 rounded-2xl border-2 border-dashed border-selva/25 bg-white px-3 py-2 text-sm file:mr-2 file:rounded-full file:border-0 file:bg-selva file:px-3 file:py-1.5 file:font-bold file:text-crema"
+        />
+
+        <BotonEnviarChico>{foto ? "Cambiar foto" : "Subir foto"}</BotonEnviarChico>
+      </form>
+
+      <form action={eliminarPublicacion}>
+        <input type="hidden" name="clase" value={clase} />
+        <input type="hidden" name="publicacion_id" value={publicacion.id} />
+        <button
+          type="submit"
+          className="min-h-11 rounded-full border-2 border-guayaba/50 px-4 text-sm font-bold text-cacao"
+        >
+          Eliminar
+        </button>
+      </form>
+    </li>
+  );
+}
+
+/** Botón de envío que cabe al lado de un campo, no debajo. */
+function BotonEnviarChico({ children }: { children: React.ReactNode }) {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="min-h-11 shrink-0 rounded-full bg-selva px-4 text-sm font-bold text-crema disabled:opacity-60"
+    >
+      {pending ? "Subiendo…" : children}
+    </button>
   );
 }

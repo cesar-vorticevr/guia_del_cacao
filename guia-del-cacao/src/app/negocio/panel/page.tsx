@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { BarraSesion } from "@/components/barra-sesion";
 import { InsigniaEstado } from "@/components/insignia-estado";
+import { Promedio, SinCalificar } from "@/components/publico/estrellas";
+import { calificacionesDe } from "@/lib/datos/publico";
 import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { misSucursales } from "@/lib/datos/sucursales";
@@ -30,6 +32,7 @@ export default async function PanelNegocio() {
   if (!marcas || marcas.length === 0) redirect("/negocio/completar-marca");
 
   const sucursales = await misSucursales(perfil.id);
+  const promedios = await calificacionesDe(sucursales.map((s) => s.id));
   const marca = marcas[0];
 
   return (
@@ -77,9 +80,24 @@ export default async function PanelNegocio() {
             {sucursales.map((sucursal) => (
               <li key={sucursal.id} className="rounded-3xl bg-crema-2 p-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="font-display text-xl font-semibold text-selva-2">
-                    {sucursal.nombre_sucursal}
-                  </p>
+                  <div>
+                    <p className="font-display text-xl font-semibold text-selva-2">
+                      {sucursal.nombre_sucursal}
+                    </p>
+                    {/* Cómo lo están calificando es de lo primero que el
+                        negocio quiere ver al entrar, no algo que deba ir a
+                        buscar a su propio micrositio. */}
+                    <p className="mt-0.5">
+                      {promedios.get(sucursal.id) ? (
+                        <Promedio
+                          promedio={promedios.get(sucursal.id)!.promedio}
+                          total={promedios.get(sucursal.id)!.total}
+                        />
+                      ) : (
+                        <SinCalificar />
+                      )}
+                    </p>
+                  </div>
                   <InsigniaEstado estado={sucursal.estado} />
                 </div>
 

@@ -11,6 +11,8 @@ import { crearClienteServidor } from "@/lib/supabase/server";
 
 export type TarjetaDirectorio = {
   id: string;
+  /** Promedio de estrellas, o null si nadie la ha calificado. */
+  calificacion?: Calificacion | null;
   slug: string;
   nombre_sucursal: string;
   logo: string | null;
@@ -43,8 +45,31 @@ export type Publicacion = {
   fecha_evento?: string;
   fecha_publicacion: string;
   rango_exclusivo?: number | null;
-  sucursales: { slug: string; nombre_sucursal: string } | null;
+  sucursales: {
+    slug: string;
+    nombre_sucursal: string;
+    marcas: { nombre_comercial: string } | null;
+  } | null;
 };
+
+/**
+ * Cómo se nombra un negocio: primero la marca, luego la sucursal.
+ *
+ * La marca es lo que la gente reconoce —"Chocolates Grijalva"—; la sucursal es
+ * la dirección. Enseñar solo "Matriz Villahermosa" no le dice nada a nadie.
+ */
+export function nombrarNegocio(
+  sucursal: { nombre_sucursal: string; marcas: { nombre_comercial: string } | null } | null,
+) {
+  if (!sucursal) return { marca: null, sucursal: null };
+
+  return {
+    marca: sucursal.marcas?.nombre_comercial ?? sucursal.nombre_sucursal,
+    // Si no hay marca, el nombre de la sucursal ya se usó arriba y repetirlo
+    // debajo se vería como un error.
+    sucursal: sucursal.marcas ? sucursal.nombre_sucursal : null,
+  };
+}
 
 const CAMPOS_TARJETA =
   "id, slug, nombre_sucursal, logo, imagen_fondo, acerca_de, tier_id, marcas(nombre_comercial, categoria_id)";
@@ -67,8 +92,11 @@ export async function listarDirectorio(categoriaId?: number) {
 
   const todas = (data ?? []) as unknown as TarjetaDirectorio[];
 
-  if (!categoriaId) return todas;
-  return todas.filter((s) => s.marcas?.categoria_id === categoriaId);
+  const visibles = categoriaId
+    ? todas.filter((s) => s.marcas?.categoria_id === categoriaId)
+    : todas;
+
+  return conCalificaciones(visibles);
 }
 
 export async function micrositioPorSlug(slug: string) {
@@ -100,7 +128,9 @@ export async function bannersDePortada() {
 
   const { data } = await supabase
     .from("sucursales")
-    .select("id, slug, nombre_sucursal, imagen_fondo, banners(imagen, texto, orden_rotacion)")
+    .select(
+      "id, slug, nombre_sucursal, imagen_fondo, marcas(nombre_comercial), banners(imagen, texto, orden_rotacion)",
+    )
     .eq("estado", "publicado")
     .eq("tier_id", 3)
     .order("fecha_publicacion", { ascending: false });
@@ -110,15 +140,20 @@ export async function bannersDePortada() {
     slug: string;
     nombre_sucursal: string;
     imagen_fondo: string | null;
+    marcas: { nombre_comercial: string } | null;
     banners: { imagen: string; texto: string | null; orden_rotacion: number }[];
   };
 
   return ((data ?? []) as unknown as Fila[])
     .map((fila) => {
       const propio = fila.banners?.[0];
+      const nombres = nombrarNegocio(fila);
+
       return {
+        id: fila.id,
         slug: fila.slug,
-        nombre: fila.nombre_sucursal,
+        nombre: nombres.marca ?? fila.nombre_sucursal,
+        sucursal: nombres.sucursal,
         imagen: propio?.imagen ?? fila.imagen_fondo,
         texto: propio?.texto ?? null,
         orden: propio?.orden_rotacion ?? 99,
@@ -128,7 +163,7 @@ export async function bannersDePortada() {
 }
 
 const CAMPOS_PUBLICACION =
-  "id, titulo, subtitulo, contenido, imagenes, fecha_publicacion, sucursales(slug, nombre_sucursal)";
+  "id, titulo, subtitulo, contenido, imagenes, fecha_publicacion, sucursales(slug, nombre_sucursal, marcas(nombre_comercial))";
 
 export async function listarEventos() {
   const supabase = await crearClienteServidor();
@@ -169,6 +204,7 @@ export type Resena = {
   id: string;
   texto: string;
   fecha: string;
+  foto: string | null;
   respuesta_marca: string | null;
   fecha_respuesta: string | null;
   usuario_id: string;
@@ -188,10 +224,195 @@ export async function resenasDe(sucursalId: string) {
   const { data } = await supabase
     .from("resenas")
     .select(
-      "id, texto, fecha, respuesta_marca, fecha_respuesta, usuario_id, perfiles_publicos(nombre, foto_perfil)",
+      "id, texto, fecha, foto, respuesta_marca, fecha_respuesta, usuario_id, perfiles_publicos(nombre, foto_perfil)",
     )
     .eq("sucursal_id", sucursalId)
     .order("fecha", { ascending: false });
 
   return (data ?? []) as unknown as Resena[];
+}
+
+export type Calificacion = { promedio: number; total: number };
+
+/**
+ * El promedio de estrellas de una sucursal, ya calculado por la base.
+ *
+ * Sale de la vista `calificaciones_sucursal` y no de un `avg` aquí: sumar en
+ * el servidor obligaría a traerse todas las calificaciones para tirarlas
+ * enseguida, y en un negocio con cientos eso es tráfico regalado.
+ *
+ * Sin calificaciones no hay renglón en la vista; eso no es un error, es un
+ * negocio que nadie ha votado todavía.
+ */
+export async function calificacionDe(sucursalId: string): Promise<Calificacion | null> {
+  const supabase = await crearClienteServidor();
+
+  const { data } = await supabase
+    .from("calificaciones_sucursal")
+    .select("promedio, total")
+    .eq("sucursal_id", sucursalId)
+    .maybeSingle();
+
+  if (!data) return null;
+
+  // `promedio` viaja como numeric y PostgREST lo entrega en texto para no
+  // perder precisión; aquí sí conviene el número, que es para pintarlo.
+  return { promedio: Number(data.promedio), total: data.total };
+}
+
+/** Las estrellas que ya dio esta persona aquí, o null si todavía no vota. */
+export async function miCalificacion(usuarioId: string, sucursalId: string) {
+  const supabase = await crearClienteServidor();
+
+  const { data } = await supabase
+    .from("calificaciones")
+    .select("estrellas")
+    .eq("usuario_id", usuarioId)
+    .eq("sucursal_id", sucursalId)
+    .maybeSingle();
+
+  return data?.estrellas ?? null;
+}
+
+/**
+ * ¿Ya comentó hoy en este negocio?
+ *
+ * El tope de uno al día lo impone el trigger `limitar_resena_diaria`; esto es
+ * para decírselo antes de que escriba, no para sustituirlo. El día se cuenta
+ * en hora de Tabasco, igual que en la base, porque si aquí se contara en UTC
+ * la pantalla y el trigger no coincidirían en la madrugada.
+ */
+export async function comentoHoy(usuarioId: string, sucursalId: string) {
+  const supabase = await crearClienteServidor();
+
+  const hoy = new Date().toLocaleDateString("en-CA", {
+    timeZone: "America/Mexico_City",
+  });
+
+  const { data } = await supabase
+    .from("resenas")
+    .select("id, fecha")
+    .eq("usuario_id", usuarioId)
+    .eq("sucursal_id", sucursalId)
+    .order("fecha", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data) return false;
+
+  const dia = new Date(data.fecha).toLocaleDateString("en-CA", {
+    timeZone: "America/Mexico_City",
+  });
+
+  return dia === hoy;
+}
+
+/**
+ * Pega el promedio de estrellas a un puñado de tarjetas, en una sola consulta.
+ *
+ * Preguntar por cada tarjeta sería una consulta por negocio: con treinta en el
+ * directorio, treinta viajes a la base para pintar una fila de estrellas. Con
+ * un solo `in` se traen todos los promedios y se reparten aquí.
+ */
+export async function calificacionesDe(
+  sucursalIds: string[],
+): Promise<Map<string, Calificacion>> {
+  if (sucursalIds.length === 0) return new Map();
+
+  const supabase = await crearClienteServidor();
+
+  const { data } = await supabase
+    .from("calificaciones_sucursal")
+    .select("sucursal_id, promedio, total")
+    .in("sucursal_id", sucursalIds);
+
+  return new Map(
+    (data ?? []).map((fila) => [
+      fila.sucursal_id as string,
+      { promedio: Number(fila.promedio), total: fila.total as number },
+    ]),
+  );
+}
+
+async function conCalificaciones(
+  tarjetas: TarjetaDirectorio[],
+): Promise<TarjetaDirectorio[]> {
+  if (tarjetas.length === 0) return tarjetas;
+
+  const porSucursal = await calificacionesDe(tarjetas.map((t) => t.id));
+
+  return tarjetas.map((tarjeta) => ({
+    ...tarjeta,
+    calificacion: porSucursal.get(tarjeta.id) ?? null,
+  }));
+}
+
+/**
+ * Un evento o una noticia sueltos, para su propia página.
+ *
+ * Se apoyan en RLS: la política de lectura solo deja ver lo de un micrositio
+ * publicado, así que un evento de un borrador devuelve null y la página
+ * responde 404, igual que si no existiera.
+ */
+export async function eventoPorId(id: string) {
+  const supabase = await crearClienteServidor();
+
+  const { data } = await supabase
+    .from("eventos")
+    .select(`${CAMPOS_PUBLICACION}, fecha_evento, rango_exclusivo`)
+    .eq("id", id)
+    .maybeSingle();
+
+  return (data as unknown as Publicacion) ?? null;
+}
+
+export async function noticiaPorId(id: string) {
+  const supabase = await crearClienteServidor();
+
+  const { data } = await supabase
+    .from("noticias")
+    .select(CAMPOS_PUBLICACION)
+    .eq("id", id)
+    .maybeSingle();
+
+  return (data as unknown as Publicacion) ?? null;
+}
+
+/** Cuánto dura una noticia en el micrositio de quien la publicó. */
+export const DIAS_DE_NOTICIA = 30;
+
+/**
+ * Lo que el propio micrositio anuncia hoy.
+ *
+ * El micrositio no es un archivo histórico: enseña lo que todavía sirve. Un
+ * evento que ya pasó desaparece solo, y una noticia se cae al mes de
+ * publicada. Las dos siguen existiendo en sus secciones y en su propia página
+ * —nada se borra—, pero dejan de ocupar el espacio del negocio.
+ */
+export async function agendaDe(sucursalId: string) {
+  const supabase = await crearClienteServidor();
+  const ahora = new Date();
+
+  const desde = new Date(ahora);
+  desde.setDate(desde.getDate() - DIAS_DE_NOTICIA);
+
+  const [eventos, noticias] = await Promise.all([
+    supabase
+      .from("eventos")
+      .select(`${CAMPOS_PUBLICACION}, fecha_evento, rango_exclusivo`)
+      .eq("sucursal_id", sucursalId)
+      .gte("fecha_evento", ahora.toISOString())
+      .order("fecha_evento"),
+    supabase
+      .from("noticias")
+      .select(CAMPOS_PUBLICACION)
+      .eq("sucursal_id", sucursalId)
+      .gte("fecha_publicacion", desde.toISOString())
+      .order("fecha_publicacion", { ascending: false }),
+  ]);
+
+  return {
+    eventos: (eventos.data ?? []) as unknown as Publicacion[],
+    noticias: (noticias.data ?? []) as unknown as Publicacion[],
+  };
 }

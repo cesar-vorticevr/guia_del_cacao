@@ -2,12 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { FormularioPedirPuntos } from "@/components/puntos/formularios";
-import { micrositioPorSlug } from "@/lib/datos/publico";
+import { calificacionDe, micrositioPorSlug } from "@/lib/datos/publico";
 import { productosDe } from "@/lib/datos/sucursales";
 import { tienePendienteEn } from "@/lib/datos/puntos";
 import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { urlImagen } from "@/lib/imagenes";
+import { Promedio } from "@/components/publico/estrellas";
 
 export const metadata: Metadata = { title: "Pedir monedas · Guía del Cacao" };
 
@@ -40,9 +41,10 @@ export default async function PedirPuntos({
     .eq("id", sucursal.tier_id ?? 0)
     .maybeSingle();
 
-  const [productos, perfil] = await Promise.all([
+  const [productos, perfil, calificacion] = await Promise.all([
     productosDe(sucursal.id),
     perfilActual(),
+    calificacionDe(sucursal.id),
   ]);
 
   const logo = urlImagen(sucursal.logo);
@@ -71,6 +73,11 @@ export default async function PedirPuntos({
         <div className="min-w-0">
           <h1 className="font-display text-2xl">{sucursal.marcas?.nombre_comercial}</h1>
           <p className="text-cacao">{sucursal.nombre_sucursal}</p>
+          {calificacion && (
+            <p className="mt-1">
+              <Promedio promedio={calificacion.promedio} total={calificacion.total} />
+            </p>
+          )}
         </div>
       </div>
 
@@ -143,6 +150,9 @@ export default async function PedirPuntos({
             sucursalId={sucursal.id}
             slug={slug}
             productos={productos}
+            fotos={Object.fromEntries(
+              productos.map((producto) => [producto.id, urlImagen(producto.imagen)]),
+            )}
           />
         )}
       </div>

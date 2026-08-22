@@ -1,4 +1,6 @@
-const BUCKET = "micrositios";
+/** Los dos buckets: en uno escribe el negocio, en el otro el cliente. */
+export const BUCKET_MICROSITIOS = "micrositios";
+export const BUCKET_RESENAS = "resenas";
 
 /** Tope de peso, igual al que impone el bucket en la migración de storage. */
 export const TOPE_MB = 5;
@@ -24,6 +26,9 @@ export const MEDIDAS = {
   fondo: "Horizontal. Lo ideal: 1600 × 600 px (proporción 8:3).",
   galeria: "Horizontal se ve mejor. Lo ideal: 1200 × 800 px.",
   producto: "Cuadrada. Lo ideal: 800 × 800 px.",
+  resena: "La que tengas. Se muestra recortada a lo ancho.",
+  publicacion:
+    "En la lista se recorta en cuadrado; completa se ve al abrir la publicación.",
 } as const;
 
 export const PESO = `Máximo ${TOPE_MB} MB. JPG, PNG, WebP o AVIF.`;
@@ -58,9 +63,12 @@ export function revisarImagen(archivo: unknown): string | null {
  * plantilla fija: en un directorio con decenas de tarjetas, crear un cliente
  * por imagen sería trabajo tirado.
  */
-export function urlImagen(ruta: string | null | undefined) {
+export function urlImagen(
+  ruta: string | null | undefined,
+  bucket: string = BUCKET_MICROSITIOS,
+) {
   if (!ruta) return null;
 
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  return `${base}/storage/v1/object/public/${BUCKET}/${ruta}`;
+  return `${base}/storage/v1/object/public/${bucket}/${ruta}`;
 }

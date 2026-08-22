@@ -2,9 +2,14 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { BarraSesion } from "@/components/barra-sesion";
-import { FormularioEvento, FormularioNoticia } from "@/components/negocio/formularios";
+import {
+  FormularioEvento,
+  FormularioNoticia,
+  PublicacionPropia,
+} from "@/components/negocio/formularios";
 import { perfilActual } from "@/lib/auth/sesion";
-import { misSucursales } from "@/lib/datos/sucursales";
+import { misPublicaciones, misSucursales } from "@/lib/datos/sucursales";
+import { urlImagen } from "@/lib/imagenes";
 
 export const metadata: Metadata = { title: "Eventos y noticias · Guía del Cacao" };
 
@@ -23,6 +28,11 @@ export default async function Contenido() {
   const conTier3 = sucursales.filter(
     (s) => s.tier_id === 3 && s.estado === "publicado",
   );
+
+  // Lo ya publicado se busca sobre todas sus sucursales, no solo las Tier 3:
+  // si una bajó de plan, sus publicaciones viejas siguen existiendo y el
+  // negocio tiene que poder borrarlas.
+  const publicadas = await misPublicaciones(sucursales.map((s) => s.id));
 
   return (
     <>
@@ -68,6 +78,43 @@ export default async function Contenido() {
               <FormularioNoticia sucursales={conTier3} />
             </section>
           </>
+        )}
+
+        {publicadas.eventos.length > 0 && (
+          <section className="grid gap-4">
+            <div>
+              <h2 className="font-display text-2xl">Tus eventos</h2>
+              <p className="mt-1 text-cacao">
+                Puedes ponerles foto después de publicarlos, o borrarlos.
+              </p>
+            </div>
+            <ul className="grid gap-3">
+              {publicadas.eventos.map((evento) => (
+                <PublicacionPropia
+                  key={evento.id}
+                  publicacion={evento}
+                  clase="evento"
+                  foto={urlImagen(evento.imagenes[0])}
+                />
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {publicadas.noticias.length > 0 && (
+          <section className="grid gap-4">
+            <h2 className="font-display text-2xl">Tus noticias</h2>
+            <ul className="grid gap-3">
+              {publicadas.noticias.map((noticia) => (
+                <PublicacionPropia
+                  key={noticia.id}
+                  publicacion={noticia}
+                  clase="noticia"
+                  foto={urlImagen(noticia.imagenes[0])}
+                />
+              ))}
+            </ul>
+          </section>
         )}
       </main>
     </>

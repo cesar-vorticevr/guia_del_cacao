@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { InsigniaEstado } from "@/components/insignia-estado";
+import { Promedio, SinCalificar } from "@/components/publico/estrellas";
+import { calificacionesDe } from "@/lib/datos/publico";
 import { pausarSucursal, reactivarSucursal } from "@/lib/admin/acciones";
 import { todasLasSucursales } from "@/lib/datos/admin";
 
@@ -8,6 +10,7 @@ export const metadata: Metadata = { title: "Micrositios · Guía del Cacao" };
 
 export default async function Micrositios() {
   const sucursales = await todasLasSucursales();
+  const promedios = await calificacionesDe(sucursales.map((s) => s.id));
 
   return (
     <>
@@ -33,6 +36,18 @@ export default async function Micrositios() {
                   </p>
                   <p className="mt-1 font-display text-xl font-semibold text-selva-2">
                     {sucursal.nombre_sucursal}
+                  </p>
+                  {/* Un promedio que se desploma es la señal más temprana de
+                      que un micrositio necesita una mirada. */}
+                  <p className="mt-0.5">
+                    {promedios.get(sucursal.id) ? (
+                      <Promedio
+                        promedio={promedios.get(sucursal.id)!.promedio}
+                        total={promedios.get(sucursal.id)!.total}
+                      />
+                    ) : (
+                      <SinCalificar />
+                    )}
                   </p>
                 </div>
 

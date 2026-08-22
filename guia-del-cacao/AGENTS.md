@@ -74,6 +74,66 @@ el del bucket (`file_size_limit` en la migración de storage) y el de Next.js
 (`serverActions.bodySizeLimit` en `next.config.ts`, que por defecto es **1 MB**
 y cortaba cualquier foto de celular con un 500 mudo).
 
+## Primero la marca, luego la sucursal
+
+En cualquier pantalla donde se nombre un negocio, el nombre grande es el de la
+**marca** ("Chocolates Grijalva") y la **sucursal** va debajo y en chico
+("Matriz Villahermosa"). La marca es lo que la gente reconoce; la sucursal es la
+dirección. Sale de `nombrarNegocio()` en `lib/datos/publico.ts`, que además
+oculta la sucursal cuando no hay marca, para no repetir el mismo texto dos
+veces. Toda consulta que traiga una sucursal para enseñarla debe pedir también
+`marcas(nombre_comercial)`.
+
+## El micrositio enseña lo vigente, no el archivo
+
+`agendaDe()` es lo que el negocio anuncia hoy: eventos que todavía no ocurren y
+noticias de los últimos `DIAS_DE_NOTICIA` días (hoy, 30). Lo que caduca
+desaparece **del micrositio**, no de la base: sigue en `/eventos`, `/noticias` y
+en su propia página `/eventos/[id]`. Nada se borra.
+
+## Publicar lo autoriza el pago
+
+Desde la migración **000012** ya no hay revisión previa: quien paga, sale en el
+directorio. El trigger `proteger_estado_sucursal` deja pasar a `publicado` si
+existe una fila en `suscripciones` con `estado = 'activo'` para esa sucursal.
+Que la sucursal sea suya no se comprueba ahí: de eso se encarga la política
+`sucursales_edita_propia`, la única vía por la que un UPDATE llega al trigger.
+
+Lo que **no** cambió y no debe cambiar:
+
+- **Rechazar** sigue siendo del administrador. Ya no es el paso normal de nadie,
+  pero es como se saca del directorio a un negocio que no debía estar.
+- **Una pausa de moderación no se levanta pagando.** Si faltara esa rama,
+  bastaría un mes más de suscripción para deshacer la decisión del
+  administrador. La pausa que se puso el propio negocio sí se levanta sola.
+
+`pendiente_aprobacion` quedó en desuso pero sigue en el enum: puede haber filas
+viejas y quitar un valor de un enum obliga a recrear el tipo.
+
+## Reseñas: son dos cosas, no una
+
+Calificar y comentar tienen reglas distintas, y por eso son dos tablas:
+
+- **`calificaciones`** — de 1 a 5 estrellas, **una sola vez** por persona y
+  negocio. La llave primaria es `(usuario_id, sucursal_id)` y **no existe
+  política de UPDATE**: la ausencia de la política *es* la regla, porque RLS
+  niega por omisión. Si alguien agrega una, rompe el spec sin darse cuenta.
+- **`resenas`** — texto y foto opcional, **una al día** por persona y negocio,
+  contado en hora de Tabasco por el trigger `limitar_resena_diaria`. Es
+  `before insert` nada más: corregir el comentario de hoy no cuenta como dejar
+  otro, y la marca sigue pudiendo responder.
+
+El promedio sale de la vista `calificaciones_sucursal`, que va con
+`security_invoker = true` para que respete la política de lectura y el promedio
+de un micrositio en borrador no se asome al público. En el directorio se pega a
+las tarjetas con un solo `in` (`conCalificaciones`), no con una consulta por
+negocio.
+
+Las fotos de reseña van a su propio bucket **`resenas`** (`{usuario_id}/…`),
+aparte de `micrositios` (`{sucursal_id}/…`): en uno escribe el cliente y en el
+otro el dueño del negocio, y una sola política tendría que dejar escribir a los
+dos.
+
 ## Cuentas de demostración
 
 `supabase/seed.sql` las recrea en cada `db reset`, así que reiniciar la base

@@ -49,15 +49,15 @@ export default async function Publicar({ params }: { params: Promise<{ id: strin
           <p className="rounded-3xl border-2 border-mango/50 bg-mango/15 p-5 text-cacao">
             <strong>Cobro simulado.</strong> Todavía no hay pasarela de pago
             conectada, así que no se te va a cobrar nada. El resto del flujo sí
-            es el definitivo: al confirmar, tu micrositio pasa a revisión.
+            es el definitivo: al confirmar, tu micrositio se publica.
           </p>
         )}
 
         <FormularioPublicar sucursalId={sucursal.id} tiers={tiers} />
 
         <p className="text-sm text-cacao/70">
-          Después de pagar, un administrador revisa tu micrositio antes de que
-          aparezca en el directorio.
+          En cuanto se registre el pago tu micrositio aparece en el directorio,
+          sin esperar a que nadie lo apruebe. Puedes seguir editándolo después.
         </p>
       </main>
     </>

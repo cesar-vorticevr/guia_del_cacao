@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { BarraSesion } from "@/components/barra-sesion";
 import { perfilActual } from "@/lib/auth/sesion";
-import { crearClienteServidor } from "@/lib/supabase/server";
-import { misResenas, misSolicitudes } from "@/lib/datos/puntos";
+import { cerrarSesion } from "@/lib/auth/acciones";
+import { misResenas, misSolicitudes, pasaporteDe } from "@/lib/datos/puntos";
+import { calificacionesDe, nombrarNegocio } from "@/lib/datos/publico";
+import { Promedio } from "@/components/publico/estrellas";
+import { BUCKET_RESENAS, urlImagen } from "@/lib/imagenes";
 import { MONEDA, monedas, rango as nombreRango, siguienteRango } from "@/lib/vocabulario";
 
 export const metadata: Metadata = { title: "Mi cuenta · Guía del Cacao" };
@@ -27,34 +29,35 @@ export default async function Cuenta() {
   if (!perfil) redirect("/login");
   if (!perfil.rol_confirmado) redirect("/elegir-rol");
 
-  const supabase = await crearClienteServidor();
   const anio = new Date().getFullYear();
 
-  // Filtrar por usuario, no solo por año: un administrador puede leer los
-  // rangos de todo el mundo, así que sin el .eq acabaría viendo los puntos de
-  // otra persona como si fueran suyos.
-  const [{ data: rango }, solicitudes, resenas] = await Promise.all([
-    supabase
-      .from("rangos_usuario")
-      .select("puntos_acumulados, rango_actual")
-      .eq("usuario_id", perfil.id)
-      .eq("anio", anio)
-      .maybeSingle(),
+  const [pasaporte, solicitudes, resenas] = await Promise.all([
+    pasaporteDe(perfil.id, anio),
     misSolicitudes(perfil.id),
     misResenas(perfil.id),
   ]);
 
-  const puntos = rango?.puntos_acumulados ?? 0;
-  const nivel = rango?.rango_actual ?? 1;
+  const { puntos, nivel } = pasaporte;
+
+  // Cada negocio que aparece en esta pantalla —en las solicitudes y en las
+  // reseñas— se enseña con su promedio, igual que en el directorio. Se piden
+  // todos de una vez y sin repetir ids.
+  const negocios = [...solicitudes, ...resenas]
+    .map((fila) => fila.sucursales?.id)
+    .filter((id): id is string => Boolean(id));
+
+  const promedios = await calificacionesDe([...new Set(negocios)]);
+
+  const pendientes = solicitudes.filter((s) => s.estado === "pendiente").length;
+
+  const promedio = (sucursalId: string | undefined) =>
+    sucursalId ? (promedios.get(sucursalId) ?? null) : null;
   const actual = nombreRango(nivel);
   const siguiente = siguienteRango(nivel);
   const faltan = siguiente ? siguiente.desde - puntos : 0;
 
   return (
-    <>
-      <BarraSesion nombre={perfil.nombre} />
-
-      <main className="mx-auto grid w-[92vw] max-w-2xl gap-8 py-8">
+    <div className="mx-auto grid max-w-2xl gap-8 py-8">
         <h1 className="font-display text-3xl">Hola, {perfil.nombre}</h1>
 
         <section className="rounded-3xl bg-crema-2 p-6">
@@ -92,6 +95,24 @@ export default async function Cuenta() {
           </p>
         </section>
 
+        {/* Las pendientes van arriba y aparte: son monedas que ya pediste y
+            todavía no cuentan en el marcador, y no saberlo se siente como que
+            se perdieron. */}
+        {pendientes > 0 && (
+          <p
+            role="status"
+            className="rounded-3xl border-2 border-turquesa/40 bg-turquesa/15 p-5 text-cacao"
+          >
+            <strong className="block font-display text-lg text-selva-2">
+              {pendientes === 1
+                ? "Tienes 1 solicitud pendiente"
+                : `Tienes ${pendientes} solicitudes pendientes`}
+            </strong>
+            Todavía no suman a tu marcador: el negocio tiene que revisarlas y
+            decidir cuántas {MONEDA.variasCortas} te toca.
+          </p>
+        )}
+
         <section className="grid gap-4">
           <h2 className="font-display text-2xl">Tus solicitudes</h2>
 
@@ -116,8 +137,23 @@ export default async function Cuenta() {
                   >
                     <div>
                       <p className="font-bold text-selva-2">
-                        {solicitud.sucursales?.nombre_sucursal ?? "Negocio"}
+                        {nombrarNegocio(solicitud.sucursales).marca ?? "Negocio"}
                       </p>
+                      {nombrarNegocio(solicitud.sucursales).sucursal && (
+                        <p className="text-sm text-cacao/70">
+                          {nombrarNegocio(solicitud.sucursales).sucursal}
+                        </p>
+                      )}
+
+                      {promedio(solicitud.sucursales?.id) && (
+                        <p className="mt-0.5">
+                          <Promedio
+                            promedio={promedio(solicitud.sucursales?.id)!.promedio}
+                            total={promedio(solicitud.sucursales?.id)!.total}
+                          />
+                        </p>
+                      )}
+
                       <p className="font-mono text-xs text-cacao/70">
                         {CUANDO.format(new Date(solicitud.fecha_solicitud))}
                       </p>
@@ -147,14 +183,38 @@ export default async function Cuenta() {
             <h2 className="font-display text-2xl">Tus reseñas</h2>
             <ul className="grid gap-3">
               {resenas.map((resena) => (
-                <li key={resena.id} className="rounded-2xl bg-white p-4">
+                <li key={resena.id} className="rounded-2xl bg-white p-4 shadow-dura">
                   <Link
                     href={`/marca/${resena.sucursales?.slug}`}
                     className="font-bold text-selva-2 underline"
                   >
-                    {resena.sucursales?.nombre_sucursal}
+                    {nombrarNegocio(resena.sucursales).marca}
                   </Link>
+                  {nombrarNegocio(resena.sucursales).sucursal && (
+                    <span className="ml-1.5 text-sm text-cacao/70">
+                      {nombrarNegocio(resena.sucursales).sucursal}
+                    </span>
+                  )}
+
+                  {promedio(resena.sucursales?.id) && (
+                    <p className="mt-0.5">
+                      <Promedio
+                        promedio={promedio(resena.sucursales?.id)!.promedio}
+                        total={promedio(resena.sucursales?.id)!.total}
+                      />
+                    </p>
+                  )}
+
                   <p className="mt-1 text-cacao">{resena.texto}</p>
+
+                  {resena.foto && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={urlImagen(resena.foto, BUCKET_RESENAS) ?? ""}
+                      alt="La foto que subiste con esta reseña"
+                      className="mt-2 max-h-56 w-full rounded-2xl object-cover"
+                    />
+                  )}
                   {resena.respuesta_marca && (
                     <p className="mt-2 rounded-xl bg-crema-2 p-3 text-cacao">
                       <span className="block font-bold text-selva-2">Te respondieron</span>
@@ -166,7 +226,20 @@ export default async function Cuenta() {
             </ul>
           </section>
         )}
-      </main>
-    </>
+      {/*
+        Salir vive aquí, al final del pasaporte, y ya no en una barra propia:
+        esta pantalla ahora usa el mismo armazón que el resto del sitio, con su
+        encabezado arriba y su barra de navegación abajo. Tener dos encabezados
+        era lo que hacía que al entrar al pasaporte se perdiera la navegación.
+      */}
+      <form action={cerrarSesion}>
+        <button
+          type="submit"
+          className="min-h-14 w-full rounded-full border-2 border-selva/25 bg-white px-6 font-display text-lg font-semibold text-selva-2 transition-colors hover:border-selva"
+        >
+          Cerrar sesión
+        </button>
+      </form>
+    </div>
   );
 }

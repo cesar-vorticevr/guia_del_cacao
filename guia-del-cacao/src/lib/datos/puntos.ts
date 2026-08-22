@@ -6,8 +6,14 @@ export type SolicitudPendiente = {
   usuario_id: string;
   sucursal_id: string;
   perfiles_publicos: { nombre: string; foto_perfil: string | null } | null;
-  sucursales: { nombre_sucursal: string } | null;
-  solicitud_productos: { productos_servicios: { nombre: string; precio: number | null } | null }[];
+  sucursales: {
+    nombre_sucursal: string;
+    marcas: { nombre_comercial: string } | null;
+  } | null;
+  solicitud_productos: {
+    cantidad: number;
+    productos_servicios: { nombre: string; precio: number | null } | null;
+  }[];
 };
 
 export type SolicitudDelCliente = {
@@ -15,14 +21,19 @@ export type SolicitudDelCliente = {
   estado: "pendiente" | "aprobada" | "rechazada";
   puntos_otorgados: number | null;
   fecha_solicitud: string;
-  sucursales: { nombre_sucursal: string; slug: string } | null;
+  sucursales: {
+    id: string;
+    nombre_sucursal: string;
+    slug: string;
+    marcas: { nombre_comercial: string } | null;
+  } | null;
 };
 
 const CAMPOS_PENDIENTE = `
   id, fecha_solicitud, usuario_id, sucursal_id,
   perfiles_publicos(nombre, foto_perfil),
-  sucursales(nombre_sucursal),
-  solicitud_productos(productos_servicios(nombre, precio))
+  sucursales(nombre_sucursal, marcas(nombre_comercial)),
+  solicitud_productos(cantidad, productos_servicios(nombre, precio))
 `;
 
 /**
@@ -53,7 +64,9 @@ export async function misSolicitudes(usuarioId: string) {
 
   const { data } = await supabase
     .from("solicitudes_puntos")
-    .select("id, estado, puntos_otorgados, fecha_solicitud, sucursales(nombre_sucursal, slug)")
+    .select(
+      "id, estado, puntos_otorgados, fecha_solicitud, sucursales(id, nombre_sucursal, slug, marcas(nombre_comercial))",
+    )
     .eq("usuario_id", usuarioId)
     .order("fecha_solicitud", { ascending: false })
     .limit(30);
@@ -67,7 +80,9 @@ export async function misResenas(usuarioId: string) {
 
   const { data } = await supabase
     .from("resenas")
-    .select("id, texto, fecha, respuesta_marca, sucursales(nombre_sucursal, slug)")
+    .select(
+      "id, texto, fecha, foto, respuesta_marca, sucursales(id, nombre_sucursal, slug, marcas(nombre_comercial))",
+    )
     .eq("usuario_id", usuarioId)
     .order("fecha", { ascending: false });
 
@@ -75,8 +90,14 @@ export async function misResenas(usuarioId: string) {
     id: string;
     texto: string;
     fecha: string;
+    foto: string | null;
     respuesta_marca: string | null;
-    sucursales: { nombre_sucursal: string; slug: string } | null;
+    sucursales: {
+      id: string;
+      nombre_sucursal: string;
+      slug: string;
+      marcas: { nombre_comercial: string } | null;
+    } | null;
   }[];
 }
 
@@ -99,4 +120,30 @@ export async function tienePendienteEn(usuarioId: string, sucursalId: string) {
     .maybeSingle();
 
   return data !== null;
+}
+
+export type Pasaporte = { puntos: number; nivel: number };
+
+/**
+ * Monedas y rango del año en curso de un cliente.
+ *
+ * El `.eq("usuario_id")` no sobra aunque ya se filtre por año: un
+ * administrador puede leer los rangos de todo el mundo, así que sin él la
+ * consulta devolvería el pasaporte de cualquiera como si fuera el propio.
+ * Ya pasó una vez (ver AGENTS.md, "RLS autoriza, no acota").
+ */
+export async function pasaporteDe(
+  usuarioId: string,
+  anio = new Date().getFullYear(),
+): Promise<Pasaporte> {
+  const supabase = await crearClienteServidor();
+
+  const { data } = await supabase
+    .from("rangos_usuario")
+    .select("puntos_acumulados, rango_actual")
+    .eq("usuario_id", usuarioId)
+    .eq("anio", anio)
+    .maybeSingle();
+
+  return { puntos: data?.puntos_acumulados ?? 0, nivel: data?.rango_actual ?? 1 };
 }

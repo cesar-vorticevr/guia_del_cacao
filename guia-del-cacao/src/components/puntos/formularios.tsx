@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Aviso, BotonEnviar } from "@/components/formulario";
 import { pedirPuntos, resolverSolicitud, type EstadoPuntos } from "@/lib/puntos/acciones";
 import { pesos, type Producto } from "@/lib/tipos";
@@ -23,7 +23,107 @@ function Resultado({ estado }: { estado: EstadoPuntos }) {
 }
 
 /**
- * Lo que ve el cliente después de escanear el QR: elige qué compró.
+ * Una línea del menú: qué compró y cuánto.
+ *
+ * La cantidad solo aparece cuando el producto está marcado. Enseñar seis
+ * contadores en cero al abrir el menú convierte una lista en un formulario, y
+ * esto se usa de pie, en un stand, con una mano.
+ */
+function LineaProducto({ producto, foto }: { producto: Producto; foto: string | null }) {
+  const [elegido, setElegido] = useState(false);
+  const [cantidad, setCantidad] = useState(1);
+
+  const cambiar = (paso: number) =>
+    setCantidad((actual) => Math.min(99, Math.max(1, actual + paso)));
+
+  return (
+    <li
+      className={`rounded-2xl border-2 bg-white transition-colors ${
+        elegido ? "border-selva bg-crema-2" : "border-selva/20"
+      }`}
+    >
+      <label className="flex min-h-16 cursor-pointer items-center gap-4 p-4">
+        <input
+          type="checkbox"
+          name="producto"
+          value={producto.id}
+          checked={elegido}
+          onChange={(evento) => setElegido(evento.target.checked)}
+          className="size-6 shrink-0 accent-selva"
+        />
+
+        {foto && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={foto}
+            alt=""
+            className="size-14 shrink-0 rounded-xl border-2 border-selva/10 object-cover"
+          />
+        )}
+
+        <span className="min-w-0 flex-1">
+          <span className="block font-bold text-selva-2">{producto.nombre}</span>
+          {producto.descripcion && (
+            <span className="block text-sm text-cacao">{producto.descripcion}</span>
+          )}
+        </span>
+
+        {producto.precio !== null && (
+          <span className="shrink-0 font-mono font-bold text-selva">
+            {pesos(producto.precio)}
+          </span>
+        )}
+      </label>
+
+      {elegido && (
+        <div className="flex items-center justify-between gap-4 border-t-2 border-selva/10 px-4 py-3">
+          <span className="font-bold text-selva-2">¿Cuántos?</span>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => cambiar(-1)}
+              aria-label={`Quitar uno de ${producto.nombre}`}
+              className="grid size-12 place-items-center rounded-full border-2 border-selva/25 bg-white text-2xl font-bold text-selva-2"
+            >
+              −
+            </button>
+
+            {/*
+              El número es un campo de verdad, no solo texto entre botones:
+              quien compró doce no debería tener que picar doce veces.
+            */}
+            <input
+              type="number"
+              name={`cantidad-${producto.id}`}
+              value={cantidad}
+              min={1}
+              max={99}
+              onChange={(evento) =>
+                setCantidad(Math.min(99, Math.max(1, Number(evento.target.value) || 1)))
+              }
+              aria-label={`Cuántos ${producto.nombre}`}
+              className="min-h-12 w-16 rounded-2xl border-2 border-selva/20 bg-white text-center font-mono text-lg font-bold text-ink"
+            />
+
+            <button
+              type="button"
+              onClick={() => cambiar(1)}
+              aria-label={`Agregar uno de ${producto.nombre}`}
+              className="grid size-12 place-items-center rounded-full border-2 border-selva/25 bg-white text-2xl font-bold text-selva-2"
+            >
+              +
+            </button>
+          </div>
+        </div>
+      )}
+    </li>
+  );
+}
+
+/**
+ * Lo que ve el cliente después de escanear el QR o tocar el botón: elige qué
+ * compró y cuánto de cada cosa.
  *
  * Casillas grandes a propósito: esto se usa de pie, en un stand, con una mano.
  */
@@ -31,10 +131,13 @@ export function FormularioPedirPuntos({
   sucursalId,
   slug,
   productos,
+  fotos,
 }: {
   sucursalId: string;
   slug: string;
   productos: Producto[];
+  /** URL de la foto de cada producto, por id. Las arma el servidor. */
+  fotos: Record<string, string | null>;
 }) {
   const [estado, accion] = useActionState(pedirPuntos, INICIAL);
 
@@ -47,30 +150,15 @@ export function FormularioPedirPuntos({
       <fieldset className="grid gap-3">
         <legend className="mb-1 font-bold text-selva-2">¿Qué compraste?</legend>
 
-        {productos.map((producto) => (
-          <label
-            key={producto.id}
-            className="flex min-h-16 cursor-pointer items-center gap-4 rounded-2xl border-2 border-selva/20 bg-white p-4 has-[:checked]:border-selva has-[:checked]:bg-crema-2"
-          >
-            <input
-              type="checkbox"
-              name="producto"
-              value={producto.id}
-              className="size-6 shrink-0 accent-selva"
+        <ul className="grid gap-3">
+          {productos.map((producto) => (
+            <LineaProducto
+              key={producto.id}
+              producto={producto}
+              foto={fotos[producto.id] ?? null}
             />
-            <span className="min-w-0 flex-1">
-              <span className="block font-bold text-selva-2">{producto.nombre}</span>
-              {producto.descripcion && (
-                <span className="block text-sm text-cacao">{producto.descripcion}</span>
-              )}
-            </span>
-            {producto.precio !== null && (
-              <span className="shrink-0 font-mono font-bold text-selva">
-                {pesos(producto.precio)}
-              </span>
-            )}
-          </label>
-        ))}
+          ))}
+        </ul>
       </fieldset>
 
       <BotonEnviar>Pedir mis monedas</BotonEnviar>

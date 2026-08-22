@@ -49,6 +49,13 @@ rollback;
 
 \echo '--- el dueno pausa lo suyo y lo reactiva sin permiso de nadie ---'
 begin;
+  -- Desde la migracion 000012 volver al directorio exige suscripcion activa,
+  -- asi que un micrositio publicado tiene que tener una. En la vida real la
+  -- tiene siempre: es lo que lo publico en primer lugar.
+  set local role postgres;
+  insert into public.suscripciones (sucursal_id, tier_id, monto_mensual, fecha_proximo_cobro)
+  values ('55555555-5555-5555-5555-555555555555', 3, 499.00, now() + interval '1 month');
+
   set local role authenticated;
   set local request.jwt.claims to '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';
   do $$

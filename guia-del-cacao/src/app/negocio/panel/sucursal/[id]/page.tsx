@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { BarraSesion } from "@/components/barra-sesion";
 import { InsigniaEstado } from "@/components/insignia-estado";
+import { Promedio, SinCalificar } from "@/components/publico/estrellas";
+import { calificacionDe } from "@/lib/datos/publico";
 import {
   FormularioGaleria,
   FormularioImagen,
@@ -22,7 +24,7 @@ export default async function EditorMicrositio({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ enviado?: string }>;
+  searchParams: Promise<{ publicado?: string }>;
 }) {
   const perfil = await perfilActual();
 
@@ -30,12 +32,13 @@ export default async function EditorMicrositio({
   if (perfil.rol !== "negocio") redirect("/cuenta");
 
   const { id } = await params;
-  const { enviado } = await searchParams;
+  const { publicado } = await searchParams;
 
   const sucursal = await miSucursal(perfil.id, id);
   if (!sucursal) redirect("/negocio/panel");
 
   const productos = await productosDe(sucursal.id);
+  const calificacion = await calificacionDe(sucursal.id);
   const logo = urlImagen(sucursal.logo);
   const fondo = urlImagen(sucursal.imagen_fondo);
 
@@ -56,15 +59,23 @@ export default async function EditorMicrositio({
             <InsigniaEstado estado={sucursal.estado} />
           </div>
 
+          <p className="mt-1.5">
+            {calificacion ? (
+              <Promedio promedio={calificacion.promedio} total={calificacion.total} />
+            ) : (
+              <SinCalificar />
+            )}
+          </p>
+
           <p className="mt-2 text-cacao">{ESTADO[sucursal.estado].explicacion}</p>
 
-          {enviado === "1" && (
+          {publicado === "1" && (
             <p
               role="status"
               className="mt-4 rounded-2xl border-2 border-lima/50 bg-lima/15 px-4 py-3 font-bold text-selva-2"
             >
-              Listo: tu micrositio quedó en revisión. Te avisamos cuando lo
-              aprueben.
+              Listo: tu micrositio ya está en el directorio. No hace falta que
+              nadie lo apruebe.
             </p>
           )}
 

@@ -22,6 +22,17 @@
   --font-display: var(--font-fredoka), ui-sans-serif, system-ui, sans-serif;
   --font-body: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-space-mono), ui-monospace, monospace;
+
+  /*
+    Sombra dura, sin difuminado: se lee como un bloque de color debajo del
+    objeto, no como una nube. Es lo que hace que una tarjeta se sienta algo
+    que se puede empujar con el dedo, y es la única sombra del sistema —
+    si algún día hace falta una difuminada, es señal de que el diseño se
+    está yendo por otro lado.
+  */
+  --shadow-dura: 0 4px 0 0 rgb(12 82 54 / 0.15);
+  --shadow-dura-sm: 0 2px 0 0 rgb(12 82 54 / 0.15);
+  --shadow-dura-alta: 0 7px 0 0 rgb(12 82 54 / 0.18);
 }
 
 @layer base {

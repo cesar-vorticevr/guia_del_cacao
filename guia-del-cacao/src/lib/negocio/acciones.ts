@@ -192,14 +192,42 @@ export async function agregarProducto(
 
   const supabase = await crearClienteServidor();
 
+  // La foto es opcional: un campo de archivo vacío llega como un File de 0
+  // bytes, no como null, así que se mira el tamaño y no la existencia.
+  const archivo = datos.get("imagen");
+  let imagen: string | null = null;
+
+  if (archivo instanceof File && archivo.size > 0) {
+    const problema = revisarImagen(archivo);
+    if (problema) return { error: problema };
+
+    const extension = archivo.name.split(".").pop()?.toLowerCase() ?? "jpg";
+    const ruta = `${id}/producto-${Date.now()}.${extension}`;
+
+    const { error: errorSubida } = await supabase.storage
+      .from("micrositios")
+      .upload(ruta, archivo);
+
+    if (errorSubida) {
+      return { error: "No se pudo subir la foto del producto. Inténtalo de nuevo." };
+    }
+
+    imagen = ruta;
+  }
+
   const { error } = await supabase.from("productos_servicios").insert({
     sucursal_id: id,
     nombre,
     descripcion: texto(datos, "descripcion"),
     precio,
+    imagen,
   });
 
-  if (error) return { error: "No se pudo agregar el producto." };
+  if (error) {
+    // Sin esto quedaría una foto huérfana en el bucket cada vez que falla.
+    if (imagen) await supabase.storage.from("micrositios").remove([imagen]);
+    return { error: "No se pudo agregar el producto." };
+  }
 
   revalidatePath(`/negocio/panel/sucursal/${id}`);
   return { ok: "Producto agregado." };
@@ -282,17 +310,19 @@ export async function publicarSucursal(
     return { error: "El pago pasó pero no se registró la suscripción. Avísanos." };
   }
 
-  // A 'publicado' solo lo mueve un administrador: el trigger de la base lo
-  // impide desde aquí aunque se intentara.
+  // Con la suscripción activa el micrositio se publica solo: desde la
+  // migración 000012 la puerta del directorio la abre el pago y no una
+  // revisión. El trigger de la base vuelve a exigir esa suscripción, así que
+  // esto no es la única barrera.
   const { error } = await supabase
     .from("sucursales")
-    .update({ estado: "pendiente_aprobacion", motivo_rechazo: null })
+    .update({ estado: "publicado", motivo_rechazo: null })
     .eq("id", id);
 
-  if (error) return { error: "No se pudo enviar a revisión." };
+  if (error) return { error: "El pago pasó pero no se pudo publicar. Avísanos." };
 
   revalidatePath("/negocio/panel");
-  redirect(`/negocio/panel/sucursal/${id}?enviado=1`);
+  redirect(`/negocio/panel/sucursal/${id}?publicado=1`);
 }
 
 // ---------------------------------------------------------------------------
@@ -394,6 +424,35 @@ function traducirErrorContenido(mensaje: string) {
   return "No se pudo publicar. Inténtalo de nuevo.";
 }
 
+/**
+ * Sube la foto de portada de un evento o una noticia, si viene alguna.
+ *
+ * Devuelve el arreglo que espera la columna `imagenes`: vacío cuando no hay
+ * foto. Es un arreglo y no una columna suelta porque el esquema ya preveía
+ * varias; hoy la interfaz solo pide una y usa la primera como portada.
+ */
+async function subirPortada(
+  supabase: Awaited<ReturnType<typeof crearClienteServidor>>,
+  sucursalId: string,
+  archivo: FormDataEntryValue | null,
+  clase: "evento" | "noticia",
+): Promise<{ error: string } | { imagenes: string[] }> {
+  if (!(archivo instanceof File) || archivo.size === 0) return { imagenes: [] };
+
+  const problema = revisarImagen(archivo);
+  if (problema) return { error: problema };
+
+  const extension = archivo.name.split(".").pop()?.toLowerCase() ?? "jpg";
+  // La política de storage exige que la primera carpeta sea una sucursal suya.
+  const ruta = `${sucursalId}/${clase}-${Date.now()}.${extension}`;
+
+  const { error } = await supabase.storage.from("micrositios").upload(ruta, archivo);
+
+  if (error) return { error: "No se pudo subir la foto. Inténtalo de nuevo." };
+
+  return { imagenes: [ruta] };
+}
+
 export async function crearEvento(
   _previo: EstadoAccion,
   datos: FormData,
@@ -412,16 +471,27 @@ export async function crearEvento(
 
   const supabase = await crearClienteServidor();
 
+  const portada = await subirPortada(supabase, id, datos.get("imagen"), "evento");
+  if ("error" in portada) return portada;
+
   const { error } = await supabase.from("eventos").insert({
     sucursal_id: id,
     titulo: texto(datos, "titulo"),
     subtitulo: texto(datos, "subtitulo"),
     contenido: texto(datos, "contenido"),
+    imagenes: portada.imagenes,
     fecha_evento: new Date(fecha).toISOString(),
     rango_exclusivo: rango ? Number(rango) : null,
   });
 
-  if (error) return { error: traducirErrorContenido(error.message) };
+  if (error) {
+    // Sin esto quedaría una foto huérfana en el bucket cada vez que el trigger
+    // del Tier rechaza la publicación.
+    if (portada.imagenes.length > 0) {
+      await supabase.storage.from("micrositios").remove(portada.imagenes);
+    }
+    return { error: traducirErrorContenido(error.message) };
+  }
 
   revalidatePath("/negocio/panel/contenido");
   revalidatePath("/eventos");
@@ -441,16 +511,137 @@ export async function crearNoticia(
 
   const supabase = await crearClienteServidor();
 
+  const portada = await subirPortada(supabase, id, datos.get("imagen"), "noticia");
+  if ("error" in portada) return portada;
+
   const { error } = await supabase.from("noticias").insert({
     sucursal_id: id,
     titulo: texto(datos, "titulo"),
     subtitulo: texto(datos, "subtitulo"),
     contenido: texto(datos, "contenido"),
+    imagenes: portada.imagenes,
   });
 
-  if (error) return { error: traducirErrorContenido(error.message) };
+  if (error) {
+    if (portada.imagenes.length > 0) {
+      await supabase.storage.from("micrositios").remove(portada.imagenes);
+    }
+    return { error: traducirErrorContenido(error.message) };
+  }
 
   revalidatePath("/negocio/panel/contenido");
   revalidatePath("/noticias");
   return { ok: "Noticia publicada." };
+}
+
+// ---------------------------------------------------------------------------
+// Mantenimiento de lo ya publicado
+// ---------------------------------------------------------------------------
+
+/** Las dos tablas que comparten forma; se distinguen por el nombre. */
+type Clase = "evento" | "noticia";
+
+const TABLA: Record<Clase, "eventos" | "noticias"> = {
+  evento: "eventos",
+  noticia: "noticias",
+};
+
+function claseDe(datos: FormData): Clase | null {
+  const valor = datos.get("clase")?.toString();
+  return valor === "evento" || valor === "noticia" ? valor : null;
+}
+
+/**
+ * Comprueba que la publicación sea de una sucursal del negocio.
+ *
+ * RLS ya lo impide, pero sin este paso el error llegaría como un "no se pudo"
+ * genérico y sin decir por qué. Además devuelve la sucursal, que hace falta
+ * para armar la ruta de la foto.
+ */
+async function exigirPublicacionPropia(perfilId: string, clase: Clase, id: string) {
+  const supabase = await crearClienteServidor();
+
+  const { data } = await supabase
+    .from(TABLA[clase])
+    .select("id, sucursal_id, imagenes")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (!data) redirect("/negocio/panel/contenido");
+
+  await exigirSucursalPropia(perfilId, data.sucursal_id);
+
+  return data as { id: string; sucursal_id: string; imagenes: string[] };
+}
+
+/**
+ * Cambia (o pone por primera vez) la foto de un evento o una noticia.
+ *
+ * La anterior se borra del bucket: si solo se reemplazara la ruta en la fila,
+ * cada cambio de portada dejaría un archivo pagando espacio para siempre.
+ */
+export async function cambiarFotoPublicacion(
+  _previo: EstadoAccion,
+  datos: FormData,
+): Promise<EstadoAccion> {
+  const perfil = await exigirNegocio();
+
+  const clase = claseDe(datos);
+  if (!clase) return { error: "Publicación no reconocida." };
+
+  const id = datos.get("publicacion_id")?.toString() ?? "";
+  const publicacion = await exigirPublicacionPropia(perfil.id, clase, id);
+
+  const supabase = await crearClienteServidor();
+
+  const portada = await subirPortada(
+    supabase,
+    publicacion.sucursal_id,
+    datos.get("imagen"),
+    clase,
+  );
+
+  if ("error" in portada) return portada;
+  if (portada.imagenes.length === 0) return { error: "Elige una imagen." };
+
+  const { error } = await supabase
+    .from(TABLA[clase])
+    .update({ imagenes: portada.imagenes })
+    .eq("id", id);
+
+  if (error) {
+    await supabase.storage.from("micrositios").remove(portada.imagenes);
+    return { error: "La foto subió pero no se pudo asociar." };
+  }
+
+  const anteriores = publicacion.imagenes ?? [];
+  if (anteriores.length > 0) {
+    await supabase.storage.from("micrositios").remove(anteriores);
+  }
+
+  revalidatePath("/negocio/panel/contenido");
+  revalidatePath(clase === "evento" ? "/eventos" : "/noticias");
+  return { ok: "Foto actualizada." };
+}
+
+export async function eliminarPublicacion(datos: FormData) {
+  const perfil = await exigirNegocio();
+
+  const clase = claseDe(datos);
+  if (!clase) redirect("/negocio/panel/contenido");
+
+  const id = datos.get("publicacion_id")?.toString() ?? "";
+  const publicacion = await exigirPublicacionPropia(perfil.id, clase, id);
+
+  const supabase = await crearClienteServidor();
+
+  await supabase.from(TABLA[clase]).delete().eq("id", id);
+
+  // La foto se va con la publicación; nadie más la referencia.
+  if (publicacion.imagenes?.length > 0) {
+    await supabase.storage.from("micrositios").remove(publicacion.imagenes);
+  }
+
+  revalidatePath("/negocio/panel/contenido");
+  revalidatePath(clase === "evento" ? "/eventos" : "/noticias");
 }
