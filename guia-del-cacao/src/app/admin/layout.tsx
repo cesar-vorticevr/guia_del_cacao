@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BarraSesion } from "@/components/barra-sesion";
+import { BarraInferior } from "@/components/publico/barra-inferior";
 import { perfilActual } from "@/lib/auth/sesion";
+import { pestanaDePerfil } from "@/lib/auth/navegacion";
 
 const SECCIONES = [
   { href: "/admin", texto: "Por revisar" },
@@ -20,6 +22,8 @@ export default async function LayoutAdmin({ children }: LayoutProps<"/admin">) {
 
   if (!perfil) redirect("/login");
   if (perfil.rol !== "admin") redirect("/cuenta");
+
+  const pestana = pestanaDePerfil(perfil);
 
   return (
     <>
@@ -40,7 +44,14 @@ export default async function LayoutAdmin({ children }: LayoutProps<"/admin">) {
         </ul>
       </nav>
 
-      <main className="mx-auto w-[92vw] max-w-3xl py-8">{children}</main>
+      <main className="mx-auto w-[92vw] max-w-3xl py-8 pb-28 sm:pb-8">{children}</main>
+
+      <BarraInferior
+        monedas={null}
+        destinoPerfil={pestana.destino}
+        etiquetaPerfil={pestana.etiqueta}
+        iconoPerfil={pestana.icono}
+      />
     </>
   );
 }

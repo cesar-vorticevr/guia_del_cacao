@@ -8,6 +8,7 @@ import {
   IconoCasa,
   IconoMoneda,
   IconoPeriodico,
+  IconoPersona,
 } from "@/components/iconos";
 import { MONEDA } from "@/lib/vocabulario";
 
@@ -56,11 +57,20 @@ function estaEn(ruta: string, pestana: Pestana) {
 
 export function BarraInferior({
   monedas,
-  destinoPasaporte,
+  destinoPerfil,
+  etiquetaPerfil,
+  iconoPerfil,
 }: {
   /** Monedas del cliente que navega, o null si no hay sesión de cliente. */
   monedas: number | null;
-  destinoPasaporte: string;
+  destinoPerfil: string;
+  /**
+   * "Pasaporte" para un cliente, "Perfil" para un negocio o un administrador.
+   * A quien no junta monedas, llamarle pasaporte a su panel le promete algo
+   * que ahí no existe.
+   */
+  etiquetaPerfil: string;
+  iconoPerfil: "moneda" | "persona";
 }) {
   const ruta = usePathname();
 
@@ -82,7 +92,7 @@ export function BarraInferior({
     );
   };
 
-  const enPasaporte = ruta === destinoPasaporte;
+  const enPerfil = ruta === destinoPerfil || ruta.startsWith(`${destinoPerfil}/`);
 
   return (
     <nav
@@ -110,14 +120,18 @@ export function BarraInferior({
         {DERECHA.map(pestana)}
 
         <Link
-          href={destinoPasaporte}
-          aria-current={enPasaporte ? "page" : undefined}
+          href={destinoPerfil}
+          aria-current={enPerfil ? "page" : undefined}
           className={`flex min-h-14 flex-col items-center justify-center gap-1 text-[0.68rem] font-bold transition-colors ${
-            enPasaporte ? "text-selva-2" : "text-cacao/55"
+            enPerfil ? "text-selva-2" : "text-cacao/55"
           }`}
         >
           {monedas === null ? (
-            <IconoMoneda className="size-6" />
+            iconoPerfil === "persona" ? (
+              <IconoPersona className="size-6" />
+            ) : (
+              <IconoMoneda className="size-6" />
+            )
           ) : (
             <span
               className="grid size-6 place-items-center rounded-full bg-mango font-mono text-[0.7rem] font-bold text-ink"
@@ -126,7 +140,7 @@ export function BarraInferior({
               {monedas > 99 ? "99+" : monedas}
             </span>
           )}
-          Pasaporte
+          {etiquetaPerfil}
         </Link>
       </div>
     </nav>

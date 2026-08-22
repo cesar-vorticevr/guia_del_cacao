@@ -13,7 +13,7 @@ import { useState } from "react";
 
 const NUMEROS = [1, 2, 3, 4, 5] as const;
 
-function Estrella({ className = "size-5" }: { className?: string }) {
+export function Estrella({ className = "size-5" }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 24 24"

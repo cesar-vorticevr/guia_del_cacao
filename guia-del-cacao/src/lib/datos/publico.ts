@@ -416,3 +416,23 @@ export async function agendaDe(sucursalId: string) {
     noticias: (noticias.data ?? []) as unknown as Publicacion[],
   };
 }
+
+/**
+ * Las estrellas que dio cada persona en una sucursal, por usuario.
+ *
+ * Sirve para poner la calificación al lado de cada reseña: son dos tablas
+ * distintas —el comentario y el voto— y esto es lo que las une. Se trae de un
+ * jalón y no una consulta por reseña.
+ */
+export async function estrellasPorUsuario(sucursalId: string) {
+  const supabase = await crearClienteServidor();
+
+  const { data } = await supabase
+    .from("calificaciones")
+    .select("usuario_id, estrellas")
+    .eq("sucursal_id", sucursalId);
+
+  return new Map<string, number>(
+    (data ?? []).map((fila) => [fila.usuario_id as string, fila.estrellas as number]),
+  );
+}

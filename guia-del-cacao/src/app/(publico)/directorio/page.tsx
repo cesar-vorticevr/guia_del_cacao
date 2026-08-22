@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { TarjetaSucursal } from "@/components/publico/tarjeta-sucursal";
+import { BuscadorDirectorio } from "@/components/publico/buscador-directorio";
 import { listarDirectorio } from "@/lib/datos/publico";
 import { listarCategorias } from "@/lib/datos/categorias";
 import { tonoDeCategoria } from "@/lib/paleta";
@@ -26,6 +26,10 @@ export default async function Directorio({
 
   const activa = categorias.find((c) => c.id === categoriaId);
 
+  const nombresDeCategoria = Object.fromEntries(
+    categorias.map((c) => [c.id, c.nombre]),
+  );
+
   return (
     <>
       <h1 className="pt-8 font-display text-3xl">Explorar</h1>
@@ -35,56 +39,61 @@ export default async function Directorio({
           : "Todos los negocios del cacao publicados en la plataforma."}
       </p>
 
-      {/*
-        Cada categoría trae su color puesto, no solo la que está activa: así la
-        fila de filtros se lee como una fila de colores y se reconoce de reojo
-        cuál es cuál. La seleccionada se distingue por el color pleno; las
-        demás lo llevan en voz baja.
+      <BuscadorDirectorio
+        sucursales={sucursales}
+        categorias={nombresDeCategoria}
+      >
+        {/*
+        Las categorías se acomodan en varios renglones en vez de irse a un
+        carril horizontal. El carril escondía la mitad de las opciones detrás de
+        un gesto que en celular casi nadie hace: si no se ven, no existen.
+
+        Cada una trae su color puesto, no solo la activa: así la fila se lee
+        como una fila de colores y se reconoce de reojo cuál es cuál.
       */}
-      <nav aria-label="Filtrar por categoría" className="pt-5">
-        <ul className="flex gap-2.5 overflow-x-auto pb-2">
-          <li className="shrink-0">
-            <Link
-              href="/directorio"
-              aria-current={!categoriaId}
-              className={`${PILDORA} ${
-                !categoriaId ? "bg-selva text-crema" : "bg-crema-2 text-selva-2"
-              }`}
-            >
-              Todas
-            </Link>
-          </li>
+        <nav aria-label="Filtrar por categoría" className="pt-5">
+          <p className="mb-2 font-bold text-selva-2">Por tipo de negocio</p>
 
-          {categorias.map((c) => {
-            const tono = tonoDeCategoria(c.id);
+          <ul className="flex flex-wrap gap-2.5">
+            <li>
+              <Link
+                href="/directorio"
+                aria-current={!categoriaId}
+                className={`${PILDORA} ${
+                  !categoriaId
+                    ? "bg-selva text-crema"
+                    : "bg-crema-2 text-selva-2"
+                }`}
+              >
+                Todas
+              </Link>
+            </li>
 
-            return (
-              <li key={c.id} className="shrink-0">
-                <Link
-                  href={`/directorio?categoria=${c.id}`}
-                  aria-current={categoriaId === c.id}
-                  className={`${PILDORA} ${categoriaId === c.id ? tono.solido : tono.suave}`}
-                >
-                  {c.nombre}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+            {categorias.map((c) => {
+              const tono = tonoDeCategoria(c.id);
 
-      {sucursales.length === 0 ? (
+              return (
+                <li key={c.id}>
+                  <Link
+                    href={`/directorio?categoria=${c.id}`}
+                    aria-current={categoriaId === c.id}
+                    className={`${PILDORA} ${categoriaId === c.id ? tono.solido : tono.suave}`}
+                  >
+                    {c.nombre}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+      </BuscadorDirectorio>
+
+      {sucursales.length === 0 && (
         <p className="mt-6 rounded-3xl bg-crema-2 p-6 text-cacao">
           {activa
             ? "Todavía no hay negocios publicados en esta categoría."
             : "Todavía no hay micrositios publicados."}
         </p>
-      ) : (
-        <ul className="mt-6 grid gap-4 sm:grid-cols-2">
-          {sucursales.map((sucursal) => (
-            <TarjetaSucursal key={sucursal.id} sucursal={sucursal} />
-          ))}
-        </ul>
       )}
     </>
   );

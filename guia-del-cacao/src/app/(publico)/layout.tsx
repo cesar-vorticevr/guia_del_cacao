@@ -3,6 +3,7 @@ import { Logotipo } from "@/components/marca";
 import { BarraInferior } from "@/components/publico/barra-inferior";
 import { PastillaPasaporte } from "@/components/publico/pastilla-pasaporte";
 import { destinoSegunRol, perfilActual } from "@/lib/auth/sesion";
+import { pestanaDePerfil } from "@/lib/auth/navegacion";
 import { pasaporteDe } from "@/lib/datos/puntos";
 
 const SECCIONES = [
@@ -30,6 +31,8 @@ export default async function LayoutPublico({
   // pasaporte que enseñar.
   const esCliente = perfil?.rol === "cliente" && perfil.rol_confirmado;
   const pasaporte = esCliente ? await pasaporteDe(perfil.id) : null;
+
+  const pestana = pestanaDePerfil(perfil);
 
   return (
     <>
@@ -78,7 +81,9 @@ export default async function LayoutPublico({
 
       <BarraInferior
         monedas={pasaporte?.puntos ?? null}
-        destinoPasaporte={perfil ? destinoSegunRol(perfil) : "/login"}
+        destinoPerfil={pestana.destino}
+        etiquetaPerfil={pestana.etiqueta}
+        iconoPerfil={pestana.icono}
       />
     </>
   );

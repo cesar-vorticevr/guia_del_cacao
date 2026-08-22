@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { FormularioResena, FormularioRespuesta } from "@/components/publico/resenas";
+import { FormularioResena } from "@/components/publico/resenas";
+import { ListaResenas } from "@/components/publico/lista-resenas";
 import { Estrellas, Promedio } from "@/components/publico/estrellas";
 import { Galeria } from "@/components/publico/galeria";
 import {
   agendaDe,
   calificacionDe,
   comentoHoy,
+  estrellasPorUsuario,
   miCalificacion,
   micrositioPorSlug,
   resenasDe,
@@ -36,6 +38,12 @@ export async function generateMetadata({
   };
 }
 
+const CUANDO = new Intl.DateTimeFormat("es-MX", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
 const REDES = [
   { campo: "whatsapp", texto: "WhatsApp" },
   { campo: "facebook", texto: "Facebook" },
@@ -63,6 +71,10 @@ export default async function Micrositio({
     calificacionDe(sucursal.id),
     agendaDe(sucursal.id),
   ]);
+
+  // El voto y el comentario viven en tablas distintas; esto es lo que los une
+  // para poder enseñar las estrellas al lado de cada reseña y filtrar por ellas.
+  const estrellas = await estrellasPorUsuario(sucursal.id);
 
   // Qué le toca ver a un cliente —reseñas y monedas— depende de cosas que solo
   // se pueden preguntar una vez que se sabe quién es.
@@ -378,36 +390,19 @@ export default async function Micrositio({
         {resenas.length === 0 ? (
           <p className="mt-3 text-cacao">Todavía nadie ha dejado una reseña.</p>
         ) : (
-          <ul className="mt-4 grid gap-4">
-            {resenas.map((resena) => (
-              <li key={resena.id} className="rounded-3xl bg-white p-5 shadow-dura">
-                <p className="font-bold text-selva-2">
-                  {resena.perfiles_publicos?.nombre ?? "Visitante"}
-                </p>
-                <p className="mt-1.5 whitespace-pre-line text-cacao">{resena.texto}</p>
-
-                {resena.foto && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={urlImagen(resena.foto, BUCKET_RESENAS) ?? ""}
-                    alt={`Foto de la reseña de ${resena.perfiles_publicos?.nombre ?? "un visitante"}`}
-                    className="mt-3 max-h-72 w-full rounded-2xl object-cover"
-                  />
-                )}
-
-                {resena.respuesta_marca ? (
-                  <p className="mt-3 rounded-2xl bg-crema-2 p-4 text-cacao">
-                    <span className="block font-bold text-selva-2">
-                      Respuesta del negocio
-                    </span>
-                    {resena.respuesta_marca}
-                  </p>
-                ) : (
-                  esDuenio && <FormularioRespuesta resenaId={resena.id} slug={slug} />
-                )}
-              </li>
-            ))}
-          </ul>
+          <ListaResenas
+            resenas={resenas.map((resena) => ({
+              id: resena.id,
+              nombre: resena.perfiles_publicos?.nombre ?? "Visitante",
+              texto: resena.texto,
+              fechaTexto: CUANDO.format(new Date(resena.fecha)),
+              fotoUrl: urlImagen(resena.foto, BUCKET_RESENAS),
+              estrellas: estrellas.get(resena.usuario_id) ?? null,
+              respuesta: resena.respuesta_marca,
+            }))}
+            esDuenio={esDuenio}
+            slug={slug}
+          />
         )}
 
         <div className="mt-6 grid gap-4">
