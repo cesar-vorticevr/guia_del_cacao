@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Estrella, Estrellas } from "@/components/publico/estrellas";
 import { FormularioRespuesta } from "@/components/publico/resenas";
+import { Medio } from "@/components/publico/medio";
 
 export type ResenaEnLista = {
   id: string;
@@ -10,7 +11,10 @@ export type ResenaEnLista = {
   texto: string;
   /** Ya formateada en el servidor, para que no baile entre servidor y navegador. */
   fechaTexto: string;
-  fotoUrl: string | null;
+  /** Foto o video que subió con su reseña, ya como URL. */
+  medioUrl: string | null;
+  /** Si la cambió después de escribirla. */
+  editada: boolean;
   /** Las estrellas que esa persona le dio al negocio, si votó. */
   estrellas: number | null;
   respuesta: string | null;
@@ -116,7 +120,7 @@ export function ListaResenas({
             <li key={resena.id} className="rounded-3xl bg-white p-5 shadow-dura">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <p className="font-bold text-selva-2">{resena.nombre}</p>
-                <p className="font-mono text-xs text-cacao/70">{resena.fechaTexto}</p>
+                <p className="font-mono text-xs text-cacao/70">{resena.fechaTexto}{resena.editada && " · editada"}</p>
               </div>
 
               {resena.estrellas !== null && (
@@ -130,14 +134,10 @@ export function ListaResenas({
 
               <p className="mt-1.5 whitespace-pre-line text-cacao">{resena.texto}</p>
 
-              {resena.fotoUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={resena.fotoUrl}
-                  alt={`Foto de la reseña de ${resena.nombre}`}
-                  className="mt-3 max-h-72 w-full rounded-2xl object-cover"
-                />
-              )}
+              <Medio
+                ruta={resena.medioUrl}
+                alt={`Lo que subió ${resena.nombre} con su reseña`}
+              />
 
               {resena.respuesta ? (
                 <p className="mt-3 rounded-2xl bg-crema-2 p-4 text-cacao">

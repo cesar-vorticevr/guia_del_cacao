@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { DetallePublicacion } from "@/components/publico/detalle-publicacion";
+import { ComentariosDePublicacion } from "@/components/publico/comentarios-de-publicacion";
 import { eventoPorId } from "@/lib/datos/publico";
 
 export async function generateMetadata({
@@ -27,5 +28,10 @@ export default async function Evento({ params }: { params: Promise<{ id: string 
   // RLS ya devolvió nada, y la misma respuesta evita delatar cuáles existen.
   if (!evento) notFound();
 
-  return <DetallePublicacion publicacion={evento} tipo="evento" />;
+  return (
+    <div className="mx-auto max-w-2xl">
+      <DetallePublicacion publicacion={evento} tipo="evento" />
+      <ComentariosDePublicacion contexto="evento" referenciaId={id} />
+    </div>
+  );
 }

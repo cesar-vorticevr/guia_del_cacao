@@ -7,12 +7,14 @@ const nextConfig: NextConfig = {
      * 1 MB por defecto: sin esto, cualquier foto de celular fallaba con un 500
      * y sin explicación, aunque el bucket aceptara hasta 5 MB.
      *
-     * Va en 6 MB y no en 5: el envío viaja como multipart y las cabeceras de
-     * cada parte pesan también. Con el límite exacto, una imagen de justo 5 MB
-     * se rechazaría por unos cuantos bytes de sobre.
+     * Va por encima del tope del bucket y no exacto: el envío viaja como
+     * multipart y las cabeceras de cada parte pesan también. Con el límite
+     * justo, un archivo de justo 20 MB se rechazaría por unos bytes de sobre.
+     *
+     * Son 22 y no 6 desde que se aceptan videos en reseñas y comprobantes.
      */
     serverActions: {
-      bodySizeLimit: "6mb",
+      bodySizeLimit: "22mb",
     },
   },
 };

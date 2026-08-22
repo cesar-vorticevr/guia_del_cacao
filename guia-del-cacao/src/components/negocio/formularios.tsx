@@ -117,9 +117,12 @@ export function FormularioMicrositio({ sucursal }: { sucursal: Sucursal }) {
 function CampoImagen({
   etiqueta,
   medida,
+  varias = false,
 }: {
   etiqueta: string;
   medida: string;
+  /** Para el carrusel: se eligen todas de un jalón, no una por una. */
+  varias?: boolean;
 }) {
   return (
     <label className="block">
@@ -128,6 +131,7 @@ function CampoImagen({
         type="file"
         name="archivo"
         accept={ACEPTA}
+        multiple={varias}
         className="w-full rounded-2xl border-2 border-dashed border-selva/25 bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-selva file:px-4 file:py-2 file:font-bold file:text-crema"
       />
       <span className="mt-1.5 block text-sm text-cacao/70">{medida}</span>
@@ -258,7 +262,7 @@ export function FormularioPublicar({
         ))}
       </fieldset>
 
-      <BotonEnviar>Pagar y enviar a revisión</BotonEnviar>
+      <BotonEnviar>Pagar y publicar</BotonEnviar>
     </form>
   );
 }
@@ -272,11 +276,12 @@ export function FormularioGaleria({ sucursalId }: { sucursalId: string }) {
       <Resultado estado={estado} />
 
       <CampoImagen
-        etiqueta="Agregar foto"
-        medida={`Hasta 8 fotos, en el orden en que las subes. ${MEDIDAS.galeria}`}
+        etiqueta="Agregar fotos"
+        varias
+        medida={`Puedes elegir varias de una vez. Hasta 8 en total, en el orden en que las subes. ${MEDIDAS.galeria}`}
       />
 
-      <BotonEnviar variante="secundario">Subir foto</BotonEnviar>
+      <BotonEnviar variante="secundario">Subir fotos</BotonEnviar>
     </form>
   );
 }

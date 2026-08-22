@@ -59,3 +59,35 @@ export function rango(nivel: number): Rango {
 export function siguienteRango(nivel: number): Rango | undefined {
   return RANGOS.find((r) => r.nivel === nivel + 1);
 }
+
+/**
+ * Cuántos temas del foro puede tener abiertos alguien.
+ *
+ * Los cortes son los mismos de la escalera —Conocedor a las 50, Maestro
+ * cacaotero a las 100—, así que abrir un tema no es una regla aparte: es lo que
+ * desbloquea subir de rango. Por eso se calcula desde `RANGOS` y no con
+ * números sueltos.
+ *
+ * En la base vive `public.temas_permitidos`, que hace lo mismo apoyándose en
+ * `calcular_rango`. La base es la que manda y rechaza lo que no cumpla; esto
+ * existe para poder decirlo antes, en la pantalla. Si cambian los topes,
+ * cambian en los dos lados.
+ */
+export const TEMAS_POR_RANGO: Record<number, number> = {
+  1: 0, // Curioso
+  2: 0, // Catador
+  3: 1, // Conocedor
+  4: 3, // Maestro cacaotero
+};
+
+export function temasPermitidos(monedas: number) {
+  const nivel = [...RANGOS].reverse().find((r) => monedas >= r.desde)?.nivel ?? 1;
+  return TEMAS_POR_RANGO[nivel] ?? 0;
+}
+
+/** Cuántas monedas faltan para poder abrir el primer tema. */
+export function monedasParaAbrirTema(monedas: number) {
+  const primero = RANGOS.find((r) => (TEMAS_POR_RANGO[r.nivel] ?? 0) > 0);
+  if (!primero) return 0;
+  return Math.max(0, primero.desde - monedas);
+}

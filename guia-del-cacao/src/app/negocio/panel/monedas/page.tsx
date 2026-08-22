@@ -8,6 +8,7 @@ import { perfilActual, origenDelSitio } from "@/lib/auth/sesion";
 import { misSucursales } from "@/lib/datos/sucursales";
 import { solicitudesPorResolver } from "@/lib/datos/puntos";
 import { nombrarNegocio } from "@/lib/datos/publico";
+import { crearClienteServidor } from "@/lib/supabase/server";
 import { pesos } from "@/lib/tipos";
 
 export const metadata: Metadata = { title: "Solicitudes de monedas · Guía del Cacao" };
@@ -30,6 +31,22 @@ export default async function PanelPuntos() {
   // Solo las publicadas y con plan que otorgue puntos tienen QR que valga.
   const conPuntos = sucursales.filter((s) => s.estado === "publicado" && (s.tier_id ?? 0) >= 2);
   const pendientes = await solicitudesPorResolver(conPuntos.map((s) => s.id));
+
+  // El bucket de comprobantes es privado —un ticket puede traer datos de la
+  // persona—, asi que se firma una URL corta en vez de exponer el archivo.
+  const supabase = await crearClienteServidor();
+
+  const comprobantes = new Map<string, string>();
+
+  for (const solicitud of pendientes) {
+    if (!solicitud.comprobante) continue;
+
+    const { data } = await supabase.storage
+      .from("comprobantes")
+      .createSignedUrl(solicitud.comprobante, 60 * 10);
+
+    if (data?.signedUrl) comprobantes.set(solicitud.id, data.signedUrl);
+  }
 
   const origen = await origenDelSitio();
 
@@ -120,9 +137,36 @@ export default async function PanelPuntos() {
                         ))}
                       </ul>
 
+                      {solicitud.resenas && (
+                        <div className="rounded-2xl border-2 border-lima/50 bg-lima/15 p-4">
+                          <p className="font-bold text-selva-2">
+                            Dejó reseña · vale una moneda extra
+                          </p>
+                          <p className="mt-1 text-cacao">{solicitud.resenas.texto}</p>
+                        </div>
+                      )}
+
+                      {comprobantes.get(solicitud.id) && (
+                        <a
+                          href={comprobantes.get(solicitud.id)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 rounded-2xl bg-white p-3 font-bold text-selva-2"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={comprobantes.get(solicitud.id)}
+                            alt=""
+                            className="size-16 shrink-0 rounded-xl border-2 border-selva/10 object-cover"
+                          />
+                          Ver el ticket que mandó
+                        </a>
+                      )}
+
                       <BotonesResolver
                         solicitudId={solicitud.id}
                         sucursalId={solicitud.sucursal_id}
+                        sugeridas={solicitud.resenas ? 2 : 1}
                       />
                     </li>
                   ))}

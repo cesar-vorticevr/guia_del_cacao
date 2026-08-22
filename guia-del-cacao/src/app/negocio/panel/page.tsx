@@ -5,6 +5,8 @@ import { BarraSesion } from "@/components/barra-sesion";
 import { InsigniaEstado } from "@/components/insignia-estado";
 import { Promedio, SinCalificar } from "@/components/publico/estrellas";
 import { calificacionesDe } from "@/lib/datos/publico";
+import { avisosSinLeer, misAvisos } from "@/lib/datos/notificaciones";
+import { marcarAvisosLeidos } from "@/lib/negocio/acciones";
 import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { misSucursales } from "@/lib/datos/sucursales";
@@ -33,6 +35,10 @@ export default async function PanelNegocio() {
 
   const sucursales = await misSucursales(perfil.id);
   const promedios = await calificacionesDe(sucursales.map((s) => s.id));
+
+  // Lo que paso mientras no estaba: hasta ahora, para enterarse de una resena
+  // tenia que ir a ver su propio micrositio como si fuera un visitante.
+  const [avisos, pendientes] = await Promise.all([misAvisos(), avisosSinLeer()]);
   const marca = marcas[0];
 
   return (
@@ -69,6 +75,71 @@ export default async function PanelNegocio() {
             </Link>
           </div>
         </div>
+
+        {avisos.length > 0 && (
+          <section className="grid gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="font-display text-2xl">
+                Novedades
+                {pendientes > 0 && (
+                  <span className="ml-2 rounded-full bg-guayaba px-3 py-1 align-middle font-mono text-sm font-bold text-ink">
+                    {pendientes}
+                  </span>
+                )}
+              </h2>
+
+              {pendientes > 0 && (
+                <form action={marcarAvisosLeidos}>
+                  <button
+                    type="submit"
+                    className="min-h-11 rounded-full border-2 border-selva/25 bg-white px-4 text-sm font-bold text-selva-2"
+                  >
+                    Marcar todo como leído
+                  </button>
+                </form>
+              )}
+            </div>
+
+            <ul className="grid gap-3">
+              {avisos.map((aviso) => (
+                <li
+                  key={aviso.id}
+                  className={`rounded-3xl border-2 p-5 ${
+                    aviso.leida
+                      ? "border-ink/10 bg-white"
+                      : "border-mango/60 bg-mango/15"
+                  }`}
+                >
+                  <p className="font-bold text-selva-2">{aviso.titulo}</p>
+                  {aviso.detalle && (
+                    <p className="mt-1 text-cacao">“{aviso.detalle}”</p>
+                  )}
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <Link
+                      href={aviso.enlace}
+                      className="min-h-11 rounded-full bg-selva px-5 py-2.5 font-bold text-crema"
+                    >
+                      Verla
+                    </Link>
+
+                    {!aviso.leida && (
+                      <form action={marcarAvisosLeidos}>
+                        <input type="hidden" name="aviso_id" value={aviso.id} />
+                        <button
+                          type="submit"
+                          className="min-h-11 rounded-full px-4 text-sm font-bold text-cacao underline"
+                        >
+                          Marcar como leído
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {sucursales.length === 0 ? (
           <p className="mt-6 rounded-3xl bg-crema-2 p-6 text-cacao">

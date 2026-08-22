@@ -129,3 +129,21 @@ export async function misPublicaciones(sucursalIds: string[]) {
     noticias: armar((noticias.data ?? []) as unknown as Fila[], false),
   };
 }
+
+/**
+ * Qué le falta a un micrositio para poder publicarse, en palabras.
+ *
+ * La regla vive en la base (`que_le_falta_al_micrositio`) y se pregunta desde
+ * aquí en vez de reimplementarla: si la pantalla tuviera su propia versión,
+ * tarde o temprano diría que está listo algo que el trigger rechaza, o al
+ * revés. Devuelve null cuando no le falta nada.
+ */
+export async function queLeFalta(sucursalId: string): Promise<string | null> {
+  const supabase = await crearClienteServidor();
+
+  const { data } = await supabase.rpc("que_le_falta_al_micrositio", {
+    p_sucursal: sucursalId,
+  });
+
+  return (data as string | null) ?? null;
+}

@@ -80,3 +80,15 @@ export function IconoPersona({ className = "size-6" }: Props) {
     </svg>
   );
 }
+
+/** Dos siluetas: la comunidad, que no es una persona sino varias. */
+export function IconoPersonas({ className = "size-6" }: Props) {
+  return (
+    <svg {...BASE} className={className}>
+      <circle cx="9" cy="8.5" r="3.2" />
+      <path d="M3 19.5c0-3.2 2.7-5.3 6-5.3s6 2.1 6 5.3" />
+      <path d="M16 6.2a3.2 3.2 0 0 1 0 6" />
+      <path d="M17.5 14.6c2.1.6 3.5 2.2 3.5 4.4" />
+    </svg>
+  );
+}

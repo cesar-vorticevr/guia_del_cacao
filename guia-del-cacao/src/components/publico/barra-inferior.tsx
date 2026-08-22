@@ -7,7 +7,7 @@ import {
   IconoCalendario,
   IconoCasa,
   IconoMoneda,
-  IconoPeriodico,
+  IconoPersonas,
   IconoPersona,
 } from "@/components/iconos";
 import { MONEDA } from "@/lib/vocabulario";
@@ -38,7 +38,14 @@ const IZQUIERDA: Pestana[] = [
 ];
 
 const DERECHA: Pestana[] = [
-  { href: "/noticias", texto: "Noticias", Icono: IconoPeriodico },
+  // Comunidad se quedo con el lugar que tenia Noticias, y con las noticias
+  // dentro: eran tres pestanias que casi nadie abria por separado.
+  {
+    href: "/comunidad",
+    texto: "Comunidad",
+    Icono: IconoPersonas,
+    tambien: ["/noticias"],
+  },
 ];
 
 const EXPLORAR: Pestana = {

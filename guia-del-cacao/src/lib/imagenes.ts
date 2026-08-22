@@ -72,3 +72,53 @@ export function urlImagen(
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
   return `${base}/storage/v1/object/public/${bucket}/${ruta}`;
 }
+
+// ---------------------------------------------------------------------------
+// Video
+// ---------------------------------------------------------------------------
+
+/**
+ * Lo que se puede mandar con una reseña o como comprobante: foto o video.
+ *
+ * El video pesa otra cosa —con 5 MB no cabe nada grabado con celular—, así que
+ * tiene su propio tope. Los dos límites tienen que coincidir con los del bucket
+ * o el error llega en inglés y sin decir cuál fue el problema.
+ */
+export const TOPE_MEDIO_MB = 20;
+export const TOPE_MEDIO_BYTES = TOPE_MEDIO_MB * 1024 * 1024;
+
+export const FORMATOS_VIDEO = ["video/mp4", "video/webm", "video/quicktime"];
+export const FORMATOS_MEDIO = [...FORMATOS, ...FORMATOS_VIDEO];
+
+export const ACEPTA_MEDIO = FORMATOS_MEDIO.join(",");
+
+export const PESO_MEDIO = `Máximo ${TOPE_MEDIO_MB} MB. Foto (JPG, PNG, WebP, AVIF) o video (MP4, WebM, MOV).`;
+
+export function revisarMedio(archivo: unknown): string | null {
+  if (!(archivo instanceof File) || archivo.size === 0) {
+    return "Elige una foto o un video.";
+  }
+
+  if (archivo.size > TOPE_MEDIO_BYTES) {
+    const pesa = (archivo.size / 1024 / 1024).toFixed(1);
+    return `Eso pesa ${pesa} MB y el máximo son ${TOPE_MEDIO_MB} MB. Graba algo más corto o baja la calidad.`;
+  }
+
+  if (!FORMATOS_MEDIO.includes(archivo.type)) {
+    return "Ese formato no se acepta. Manda una foto (JPG, PNG, WebP, AVIF) o un video (MP4, WebM, MOV).";
+  }
+
+  return null;
+}
+
+/**
+ * ¿La ruta apunta a un video?
+ *
+ * Se decide por la extensión y no por una columna aparte porque el nombre del
+ * archivo lo pone la aplicación al subirlo: guardarlo dos veces sería tener dos
+ * versiones de la misma verdad, con una destinada a quedarse atrás.
+ */
+export function esVideo(ruta: string | null | undefined) {
+  if (!ruta) return false;
+  return /\.(mp4|webm|mov|m4v)$/i.test(ruta);
+}

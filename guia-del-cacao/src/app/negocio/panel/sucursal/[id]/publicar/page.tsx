@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { BarraSesion } from "@/components/barra-sesion";
 import { FormularioPublicar } from "@/components/negocio/formularios";
 import { perfilActual } from "@/lib/auth/sesion";
-import { listarTiers, miSucursal } from "@/lib/datos/sucursales";
+import { listarTiers, miSucursal, queLeFalta } from "@/lib/datos/sucursales";
 import { PAGO_SIMULADO } from "@/lib/pagos";
 
 export const metadata: Metadata = { title: "Publicar micrositio · Guía del Cacao" };
@@ -24,6 +24,11 @@ export default async function Publicar({ params }: { params: Promise<{ id: strin
   }
 
   const tiers = await listarTiers();
+
+  // Lo que falta lo dice la base, no esta pantalla: la misma funcion que usa
+  // el trigger al publicar. Asi no puede pasar que aqui se vea listo y alla se
+  // rechace.
+  const falta = await queLeFalta(sucursal.id);
 
   return (
     <>
@@ -53,7 +58,25 @@ export default async function Publicar({ params }: { params: Promise<{ id: strin
           </p>
         )}
 
-        <FormularioPublicar sucursalId={sucursal.id} tiers={tiers} />
+        {falta ? (
+          <div className="rounded-3xl border-2 border-guayaba/40 bg-guayaba/10 p-6">
+            <p className="font-display text-xl font-semibold text-selva-2">
+              Te falta algo antes de publicar
+            </p>
+            <p className="mt-2 text-cacao">
+              Un micrositio sin esto no le sirve a quien lo encuentre. Falta{" "}
+              <strong>{falta}</strong>.
+            </p>
+            <Link
+              href={`/negocio/panel/sucursal/${id}`}
+              className="mt-4 inline-block min-h-11 rounded-full bg-selva px-5 py-2.5 font-bold text-crema"
+            >
+              Volver a completarlo
+            </Link>
+          </div>
+        ) : (
+          <FormularioPublicar sucursalId={sucursal.id} tiers={tiers} />
+        )}
 
         <p className="text-sm text-cacao/70">
           En cuanto se registre el pago tu micrositio aparece en el directorio,

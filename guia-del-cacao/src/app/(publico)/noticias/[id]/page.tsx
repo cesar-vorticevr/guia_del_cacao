@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { DetallePublicacion } from "@/components/publico/detalle-publicacion";
+import { ComentariosDePublicacion } from "@/components/publico/comentarios-de-publicacion";
 import { noticiaPorId } from "@/lib/datos/publico";
 
 export async function generateMetadata({
@@ -25,5 +26,10 @@ export default async function Noticia({ params }: { params: Promise<{ id: string
 
   if (!noticia) notFound();
 
-  return <DetallePublicacion publicacion={noticia} tipo="noticia" />;
+  return (
+    <div className="mx-auto max-w-2xl">
+      <DetallePublicacion publicacion={noticia} tipo="noticia" />
+      <ComentariosDePublicacion contexto="noticia" referenciaId={id} />
+    </div>
+  );
 }

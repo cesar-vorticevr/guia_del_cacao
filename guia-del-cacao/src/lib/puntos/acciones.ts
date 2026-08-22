@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { perfilActual } from "@/lib/auth/sesion";
 import { miSucursal } from "@/lib/datos/sucursales";
+import { miCalificacion, miResena } from "@/lib/datos/publico";
+import { revisarMedio } from "@/lib/imagenes";
 
 export type EstadoPuntos = { error?: string; ok?: string };
 
@@ -36,10 +38,12 @@ function traducir(mensaje: string, quienLee: "cliente" | "negocio" = "cliente") 
 }
 
 /**
- * El cliente escanea el QR, elige qué compró y pide sus monedas.
+ * El cliente escanea el QR, dice qué compró y pide sus monedas.
  *
- * No decide cuántas: eso lo hace la marca al revisar (spec §5.4.5). Aquí solo
- * se deja constancia de la compra.
+ * No decide cuántas: eso lo hace la marca al revisar (spec §5.4.5). Lo que sí
+ * hace es armar el expediente con el que la marca decide — qué compró, el
+ * ticket si lo mandó, y la reseña si la dejó, que es la que vale la segunda
+ * moneda.
  */
 export async function pedirPuntos(
   _previo: EstadoPuntos,
@@ -62,13 +66,95 @@ export async function pedirPuntos(
 
   const supabase = await crearClienteServidor();
 
+  // El comprobante llega por uno de dos campos: el que abre la cámara y el que
+  // elige un archivo. Es el mismo dato con dos maneras de darlo, y es opcional:
+  // ayuda a que le crean, no es requisito para pedir.
+  const archivo = [datos.get("comprobante"), datos.get("comprobante_archivo")].find(
+    (valor): valor is File => valor instanceof File && valor.size > 0,
+  );
+
+  let comprobante: string | null = null;
+
+  if (archivo) {
+    const problema = revisarMedio(archivo);
+    if (problema) return { error: problema };
+
+    const extension = archivo.name.split(".").pop()?.toLowerCase() ?? "jpg";
+    // La política del bucket exige que las dos primeras carpetas sean quien
+    // sube y a quién se lo manda: una por cada lado del mostrador.
+    const ruta = `${perfil.id}/${sucursalId}/${Date.now()}.${extension}`;
+
+    const { error } = await supabase.storage.from("comprobantes").upload(ruta, archivo);
+
+    if (error) return { error: "No se pudo subir el comprobante." };
+
+    comprobante = ruta;
+  }
+
+  // La reseña es opcional y vale la segunda moneda. Si topa con el tope de un
+  // cambio al día, la solicitud sigue adelante valiendo una: sería absurdo
+  // tirar toda la compra por un comentario de más.
+  //
+  // Desde la migración 000017 la reseña y la calificación son una sola por
+  // negocio y se actualizan, así que aquí no siempre se inserta: si ya tenía,
+  // se corrige lo que tenía.
+  const textoResena = (datos.get("resena")?.toString() ?? "").trim();
+  const estrellas = Number(datos.get("estrellas"));
+  let resenaId: string | null = null;
+
+  if (Number.isInteger(estrellas) && estrellas >= 1 && estrellas <= 5) {
+    const nota = await miCalificacion(perfil.id, sucursalId);
+
+    if (nota === null) {
+      await supabase
+        .from("calificaciones")
+        .insert({ usuario_id: perfil.id, sucursal_id: sucursalId, estrellas });
+    } else if (nota !== estrellas) {
+      await supabase
+        .from("calificaciones")
+        .update({ estrellas })
+        .eq("usuario_id", perfil.id)
+        .eq("sucursal_id", sucursalId);
+    }
+  }
+
+  if (textoResena.length >= 10) {
+    const yaTengo = await miResena(perfil.id, sucursalId);
+
+    if (!yaTengo) {
+      const { data: resena } = await supabase
+        .from("resenas")
+        .insert({ usuario_id: perfil.id, sucursal_id: sucursalId, texto: textoResena })
+        .select("id")
+        .maybeSingle();
+
+      resenaId = resena?.id ?? null;
+    } else if (yaTengo.puedeCambiarla) {
+      const { error } = await supabase
+        .from("resenas")
+        .update({ texto: textoResena })
+        .eq("id", yaTengo.id)
+        .eq("usuario_id", perfil.id);
+
+      // Si el cambio pasó, la reseña cuenta para la segunda moneda igual que
+      // una nueva: el negocio recibe una opinión fresca de esta visita.
+      if (!error) resenaId = yaTengo.id;
+    }
+  }
+
   const { data: solicitud, error } = await supabase
     .from("solicitudes_puntos")
-    .insert({ usuario_id: perfil.id, sucursal_id: sucursalId })
+    .insert({
+      usuario_id: perfil.id,
+      sucursal_id: sucursalId,
+      comprobante,
+      resena_id: resenaId,
+    })
     .select("id")
     .maybeSingle();
 
   if (error || !solicitud) {
+    if (comprobante) await supabase.storage.from("comprobantes").remove([comprobante]);
     return { error: traducir(error?.message ?? "") };
   }
 
@@ -90,10 +176,12 @@ export async function pedirPuntos(
     // La solicitud ya existe y sin productos no le sirve a la marca para
     // decidir, así que se deshace en vez de dejarla coja.
     await supabase.from("solicitudes_puntos").delete().eq("id", solicitud.id);
+    if (comprobante) await supabase.storage.from("comprobantes").remove([comprobante]);
     return { error: "No se pudo registrar lo que compraste. Inténtalo de nuevo." };
   }
 
   revalidatePath(`/monedas/${slug}`);
+  revalidatePath(`/marca/${slug}`);
   revalidatePath("/cuenta");
 
   // Se redirige en vez de devolver un mensaje: al revalidar, la página vuelve
@@ -106,8 +194,10 @@ export async function pedirPuntos(
 /**
  * La marca resuelve: otorga de 1 a 3 monedas, o rechaza.
  *
- * El tope diario por marca lo vigila el trigger acreditar_puntos, y el rango
- * del cliente se recalcula solo al aprobar.
+ * Cuántas le tocan sale de la solicitud —una por la compra, dos si además dejó
+ * reseña— y la tercera es decisión del negocio. El tope diario por marca lo
+ * vigila el trigger acreditar_puntos, y el rango del cliente se recalcula solo
+ * al aprobar.
  */
 export async function resolverSolicitud(
   _previo: EstadoPuntos,

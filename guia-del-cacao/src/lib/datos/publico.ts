@@ -204,6 +204,7 @@ export type Resena = {
   id: string;
   texto: string;
   fecha: string;
+  fecha_edicion: string | null;
   foto: string | null;
   respuesta_marca: string | null;
   fecha_respuesta: string | null;
@@ -224,7 +225,7 @@ export async function resenasDe(sucursalId: string) {
   const { data } = await supabase
     .from("resenas")
     .select(
-      "id, texto, fecha, foto, respuesta_marca, fecha_respuesta, usuario_id, perfiles_publicos(nombre, foto_perfil)",
+      "id, texto, fecha, fecha_edicion, foto, respuesta_marca, fecha_respuesta, usuario_id, perfiles_publicos(nombre, foto_perfil)",
     )
     .eq("sucursal_id", sucursalId)
     .order("fecha", { ascending: false });
@@ -435,4 +436,50 @@ export async function estrellasPorUsuario(sucursalId: string) {
   return new Map<string, number>(
     (data ?? []).map((fila) => [fila.usuario_id as string, fila.estrellas as number]),
   );
+}
+
+export type MiResena = {
+  id: string;
+  texto: string;
+  foto: string | null;
+  /** Falso si ya la cambió hoy: el tope es un cambio al día. */
+  puedeCambiarla: boolean;
+};
+
+/**
+ * La reseña que esta persona tiene en este negocio, si tiene.
+ *
+ * Desde la migración 000017 es una sola y se actualiza: no hay historial de
+ * comentarios de la misma persona, hay lo que piensa hoy. Cambiarla cuesta el
+ * mismo tope que pedir monedas —una vez al día—, y eso se calcula aquí en hora
+ * de Tabasco para que la pantalla y el trigger digan lo mismo de madrugada.
+ */
+export async function miResena(
+  usuarioId: string,
+  sucursalId: string,
+): Promise<MiResena | null> {
+  const supabase = await crearClienteServidor();
+
+  const { data } = await supabase
+    .from("resenas")
+    .select("id, texto, foto, fecha, fecha_edicion")
+    .eq("usuario_id", usuarioId)
+    .eq("sucursal_id", sucursalId)
+    .maybeSingle();
+
+  if (!data) return null;
+
+  const enTabasco = (fecha: string) =>
+    new Date(fecha).toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
+
+  const hoy = new Date().toLocaleDateString("en-CA", {
+    timeZone: "America/Mexico_City",
+  });
+
+  return {
+    id: data.id,
+    texto: data.texto,
+    foto: data.foto,
+    puedeCambiarla: enTabasco(data.fecha_edicion ?? data.fecha) !== hoy,
+  };
 }

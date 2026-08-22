@@ -339,37 +339,76 @@ export async function agregarAGaleria(
   const id = datos.get("sucursal_id")?.toString() ?? "";
   const sucursal = await exigirSucursalPropia(perfil.id, id);
 
-  if (sucursal.galeria.length >= TOPE_GALERIA) {
+  const lugares = TOPE_GALERIA - sucursal.galeria.length;
+
+  if (lugares <= 0) {
     return { error: `El carrusel admite hasta ${TOPE_GALERIA} fotos.` };
   }
 
-  const archivo = datos.get("archivo");
-  const problemaImagen = revisarImagen(archivo);
-  if (problemaImagen) return { error: problemaImagen };
+  // Se eligen varias de un jalón: subir ocho fotos de una en una es de las
+  // cosas que hacen que un negocio deje el micrositio a medias.
+  const archivos = datos
+    .getAll("archivo")
+    .filter((valor): valor is File => valor instanceof File && valor.size > 0);
 
-  const imagen = archivo as File;
-  const extension = imagen.name.split(".").pop()?.toLowerCase() ?? "jpg";
-  const ruta = `${id}/galeria-${Date.now()}.${extension}`;
+  if (archivos.length === 0) return { error: "Elige al menos una imagen." };
+
+  if (archivos.length > lugares) {
+    return {
+      error:
+        lugares === 1
+          ? `Solo te queda lugar para 1 foto más y elegiste ${archivos.length}.`
+          : `Solo te quedan ${lugares} lugares y elegiste ${archivos.length}.`,
+    };
+  }
+
+  // Se revisan todas antes de subir ninguna: si la sexta pesa de más, más vale
+  // decirlo antes que dejar cinco arriba y la mitad del trabajo hecho.
+  for (const imagen of archivos) {
+    const problema = revisarImagen(imagen);
+    if (problema) return { error: `${imagen.name}: ${problema}` };
+  }
 
   const supabase = await crearClienteServidor();
+  const subidas: string[] = [];
 
-  const { error: errorSubida } = await supabase.storage
-    .from("micrositios")
-    .upload(ruta, imagen, { upsert: true });
+  for (const [indice, imagen] of archivos.entries()) {
+    const extension = imagen.name.split(".").pop()?.toLowerCase() ?? "jpg";
+    // El índice va en el nombre porque varias subidas del mismo lote comparten
+    // el milisegundo y se pisarían entre ellas.
+    const ruta = `${id}/galeria-${Date.now()}-${indice}.${extension}`;
 
-  if (errorSubida) {
-    return { error: "No se pudo subir la foto. Inténtalo de nuevo." };
+    const { error } = await supabase.storage
+      .from("micrositios")
+      .upload(ruta, imagen, { upsert: true });
+
+    if (error) {
+      // Lo que ya subió de este lote se retira: media galería a medias es peor
+      // que ninguna, porque nadie sabe cuáles entraron.
+      if (subidas.length > 0) {
+        await supabase.storage.from("micrositios").remove(subidas);
+      }
+      return { error: `No se pudo subir ${imagen.name}. Inténtalo de nuevo.` };
+    }
+
+    subidas.push(ruta);
   }
 
   const { error } = await supabase
     .from("sucursales")
-    .update({ galeria: [...sucursal.galeria, ruta] })
+    .update({ galeria: [...sucursal.galeria, ...subidas] })
     .eq("id", id);
 
-  if (error) return { error: "La foto subió pero no se pudo agregar al carrusel." };
+  if (error) {
+    await supabase.storage.from("micrositios").remove(subidas);
+    return { error: "Las fotos subieron pero no se pudieron agregar al carrusel." };
+  }
 
   revalidatePath(`/negocio/panel/sucursal/${id}`);
-  return { ok: "Foto agregada." };
+
+  return {
+    ok: subidas.length === 1 ? "Foto agregada." : `${subidas.length} fotos agregadas.`,
+  };
 }
 
 export async function quitarDeGaleria(datos: FormData) {
@@ -644,4 +683,28 @@ export async function eliminarPublicacion(datos: FormData) {
 
   revalidatePath("/negocio/panel/contenido");
   revalidatePath(clase === "evento" ? "/eventos" : "/noticias");
+}
+
+// ---------------------------------------------------------------------------
+// Avisos
+// ---------------------------------------------------------------------------
+
+/**
+ * Marca los avisos como leídos.
+ *
+ * Sin `id` los marca todos. El trigger `proteger_notificacion` impide que por
+ * esta vía se cambie cualquier otra cosa del aviso, y RLS ya limita a los
+ * propios, así que no hace falta acotar por perfil aquí.
+ */
+export async function marcarAvisosLeidos(datos: FormData) {
+  await exigirNegocio();
+
+  const id = datos.get("aviso_id")?.toString();
+  const supabase = await crearClienteServidor();
+
+  const consulta = supabase.from("notificaciones").update({ leida: true });
+
+  await (id ? consulta.eq("id", id) : consulta.eq("leida", false));
+
+  revalidatePath("/negocio/panel");
 }

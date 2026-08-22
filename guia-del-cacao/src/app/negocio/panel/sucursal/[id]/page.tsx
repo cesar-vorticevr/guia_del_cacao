@@ -5,6 +5,9 @@ import { BarraSesion } from "@/components/barra-sesion";
 import { InsigniaEstado } from "@/components/insignia-estado";
 import { Promedio, SinCalificar } from "@/components/publico/estrellas";
 import { calificacionDe } from "@/lib/datos/publico";
+import { estrellasPorUsuario, resenasDe } from "@/lib/datos/publico";
+import { ListaResenas } from "@/components/publico/lista-resenas";
+import { BUCKET_RESENAS } from "@/lib/imagenes";
 import {
   FormularioGaleria,
   FormularioImagen,
@@ -18,6 +21,12 @@ import { urlImagen } from "@/lib/imagenes";
 import { ESTADO, pesos } from "@/lib/tipos";
 
 export const metadata: Metadata = { title: "Editar micrositio · Guía del Cacao" };
+
+const CUANDO = new Intl.DateTimeFormat("es-MX", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
 
 export default async function EditorMicrositio({
   params,
@@ -39,6 +48,13 @@ export default async function EditorMicrositio({
 
   const productos = await productosDe(sucursal.id);
   const calificacion = await calificacionDe(sucursal.id);
+
+  // Todo lo que le han dicho, en su propia pantalla: antes tenia que ir a ver
+  // su micrositio como si fuera un visitante para leer sus resenas.
+  const [resenas, estrellas] = await Promise.all([
+    resenasDe(sucursal.id),
+    estrellasPorUsuario(sucursal.id),
+  ]);
   const logo = urlImagen(sucursal.logo);
   const fondo = urlImagen(sucursal.imagen_fondo);
 
@@ -235,6 +251,31 @@ export default async function EditorMicrositio({
             )}
           </>
         )}
+        <section className="grid gap-3">
+          <h2 className="font-display text-2xl">Lo que dicen de ti</h2>
+
+          {resenas.length === 0 ? (
+            <p className="rounded-3xl bg-crema-2 p-6 text-cacao">
+              Todavia nadie ha dejado resena en esta sucursal.
+            </p>
+          ) : (
+            <ListaResenas
+              resenas={resenas.map((resena) => ({
+                id: resena.id,
+                nombre: resena.perfiles_publicos?.nombre ?? "Visitante",
+                texto: resena.texto,
+                fechaTexto: CUANDO.format(new Date(resena.fecha)),
+                medioUrl: urlImagen(resena.foto, BUCKET_RESENAS),
+                editada: resena.fecha_edicion !== null,
+                estrellas: estrellas.get(resena.usuario_id) ?? null,
+                respuesta: resena.respuesta_marca,
+              }))}
+              esDuenio
+              slug={sucursal.slug}
+            />
+          )}
+        </section>
+
       </main>
     </>
   );

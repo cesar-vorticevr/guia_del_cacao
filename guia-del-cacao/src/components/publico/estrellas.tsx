@@ -67,8 +67,15 @@ export function Estrellas({
  * teclado y con lector de pantalla sin tener que reinventar nada. Lo que se ve
  * es la estrella; lo que se opera es el radio.
  */
-export function SelectorEstrellas({ name = "estrellas" }: { name?: string }) {
-  const [valor, setValor] = useState(0);
+export function SelectorEstrellas({
+  name = "estrellas",
+  inicial = 0,
+}: {
+  name?: string;
+  /** Lo que ya había votado, para poder corregirlo sin empezar de cero. */
+  inicial?: number;
+}) {
+  const [valor, setValor] = useState(inicial);
 
   return (
     <fieldset>

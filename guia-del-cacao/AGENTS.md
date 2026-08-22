@@ -74,6 +74,105 @@ el del bucket (`file_size_limit` en la migración de storage) y el de Next.js
 (`serverActions.bodySizeLimit` en `next.config.ts`, que por defecto es **1 MB**
 y cortaba cualquier foto de celular con un 500 mudo).
 
+## Pedir monedas: qué vale cada solicitud
+
+El QR sigue siendo la puerta — a `/monedas/{slug}` no se llega de otro modo — y
+la foto del ticket es **opcional**: ayuda a que le crean, no es requisito.
+
+| Trae | Vale |
+|---|---|
+| La compra | 1 moneda |
+| Compra + reseña | 2 monedas |
+| Lo anterior + cortesía del negocio | 3 monedas |
+
+`public.monedas_sugeridas()` lo calcula en la base porque lo lee el panel del
+negocio para marcar el botón que toca. El tope de 3 por persona, por marca y por
+día (spec §5.4.6) es el que hace que 3 sea el máximo de una solicitud.
+
+Si la reseña topa con su propio límite de una al día, **la solicitud sigue
+adelante valiendo una**: sería absurdo tirar toda la compra por un comentario de
+más.
+
+**`comprobantes` es el único bucket privado.** Un ticket puede traer el nombre
+de quien pagó o una tarjeta terminada en. Ruta `{usuario_id}/{sucursal_id}/…`:
+las dos primeras carpetas son la llave, una por cada lado del mostrador, y el
+panel del negocio lo ve con URL firmada de diez minutos.
+
+## Comunidad: un muro, no tres pestañas
+
+`/comunidad` junta temas del foro, eventos y noticias en una sola lista
+ordenada por fecha, con filtro por clase. Reemplazó a Noticias en la barra de
+abajo. **Eventos conserva su pestaña propia** porque es lo único con fecha de
+caducidad: quien busca qué hacer el sábado no debería filtrar para llegar.
+
+Los temas viven en `/comunidad/tema/[id]`.
+
+## Reseñas: una por negocio, y se actualiza
+
+Desde la migración **000017** cada quien tiene **una** reseña y **una**
+calificación por negocio, y las dos **se corrigen** en vez de acumularse. Lo
+que se lee en un micrositio es lo que la gente piensa hoy, no un historial de
+visitas de la misma persona.
+
+Cambiar cualquiera de las dos cuesta el mismo tope que pedir monedas: **una vez
+al día**, en hora de Tabasco (`limitar_cambio_de_resena` y
+`limitar_cambio_de_calificacion`). Los triggers se saltan solos cuando la marca
+responde: eso toca otra columna.
+
+Esto **revierte** la regla de la migración 000011, donde calificar era para
+siempre y no había política de UPDATE. Ahora sí la hay, a propósito.
+
+Estrellas y texto se piden **juntos**, en el mismo formulario, tanto en el
+micrositio como en el paso 3 de pedir monedas.
+
+## Foto o video
+
+Las reseñas y los comprobantes aceptan las dos cosas: 20 MB, y
+`serverActions.bodySizeLimit` en 22mb para que quepan con las cabeceras del
+multipart. El tipo se deduce de la extensión (`esVideo()`), no de una columna:
+el nombre del archivo lo pone la aplicación al subirlo, así que guardarlo dos
+veces sería tener dos versiones de la misma verdad.
+
+El video se pinta con `<video controls>` y sin `autoPlay`. Los controles del
+navegador ya traen play, pausa, volumen y barra, funcionan con teclado y en
+celular abren el reproductor que la persona ya sabe usar.
+
+## Comentarios: dos tablas, reglas opuestas
+
+- **`comentarios_publicacion`** — en un evento o una noticia se comenta **una
+  vez**. Es "qué me parece esto", no una conversación; quien quiera decir más,
+  edita el suyo. Lo imponen dos índices únicos parciales, uno por columna.
+- **`comentarios_foro`** — en un tema se puede ir y venir **hasta cinco veces**.
+
+Las dos se **ocultan, no se borran** por quien modera (el negocio en su
+publicación, el autor en su tema). Un comentario oculto **lo sigue viendo quien
+lo escribió**: borrarlo en silencio se lee como censura y además confunde, la
+persona lo vuelve a escribir. Quien lo escribió no puede desocultarse solo.
+
+Ambas se leen y moderan igual, y eso vive en `lib/datos/comentarios.ts` y
+`lib/comentarios/acciones.ts`, con un `contexto` de tres valores.
+
+## El foro
+
+Abrir un tema **se gana**: un cliente con 50 monedas abre uno y con 100 hasta
+tres; un negocio lo desbloquea con el **Tier 3**, y tambien son tres. Quien
+puede lo resuelve `public.temas_permitidos_de()`, que despacha por rol. Los
+cortes de la escalera no se escriben otra vez — `public.temas_permitidos` se
+apoya en `calcular_rango`, y `temasPermitidos()` en `RANGOS`. Si cambian,
+cambian en los dos lados.
+
+**Apoyar mueve una moneda de verdad**: quien apoya se queda con una menos y el
+autor con una más, en una sola transacción (`mover_moneda_de_apoyo`), con los
+dos rangos recalculados. Es a propósito que no sea una moneda nueva: si el
+sistema las regalara, un tema con cien apoyos crearía cien monedas de la nada y
+el rango dejaría de significar "cuánto visitaste". Una por persona y por tema, y
+sin política de DELETE: una moneda regalada no se devuelve.
+
+**Cuidado con `perfiles_publicos` desde `temas_foro`**: hay dos caminos —el
+autor y la tabla de apoyos— y PostgREST responde `PGRST201` si no se dice cuál.
+Por eso la consulta pide `perfiles_publicos!temas_foro_autor_id_fkey`. El error
+llega como data vacía, así que se ve igual que "no hay temas".
+
 ## Primero la marca, luego la sucursal
 
 En cualquier pantalla donde se nombre un negocio, el nombre grande es el de la
@@ -92,6 +191,27 @@ desaparece **del micrositio**, no de la base: sigue en `/eventos`, `/noticias` y
 en su propia página `/eventos/[id]`. Nada se borra.
 
 ## Publicar lo autoriza el pago
+
+**Y exige micrositio completo** (migración 000018): nombre, "acerca de", logo
+y al menos un producto. Desde que nadie revisa antes, era lo único que impedía
+que saliera al directorio una ficha vacía con suscripción activa.
+
+Qué falta lo dice `public.que_le_falta_al_micrositio()`, que devuelve **texto y
+no un booleano**: el trigger lo usa para explicar el rechazo y la pantalla de
+pago para poner la lista de pendientes antes de cobrar. Con un booleano, la
+pantalla tendría que reimplementar la regla para decir cuál falta, y las dos
+versiones se separarían.
+
+## Avisos
+
+`notificaciones` los escribe **un trigger**, nunca la aplicación: no hay
+política de INSERT. Lo único que puede hacer quien los recibe es marcarlos
+leídos, y eso lo acota `proteger_notificacion` — la política sola dejaría
+reescribir el texto del aviso.
+
+Hoy solo avisa de reseñas nuevas, y solo al crearlas: como la reseña se
+actualiza (000017), avisar de cada corrección volvería el panel un ruido. El
+tipo `solicitud` ya está declarado en la restricción para cuando se conecte.
 
 Desde la migración **000012** ya no hay revisión previa: quien paga, sale en el
 directorio. El trigger `proteger_estado_sucursal` deja pasar a `publicado` si

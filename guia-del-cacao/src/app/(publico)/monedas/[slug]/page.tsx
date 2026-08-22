@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { FormularioPedirPuntos } from "@/components/puntos/formularios";
+import { PedirMonedas } from "@/components/puntos/pedir";
 import { calificacionDe, micrositioPorSlug } from "@/lib/datos/publico";
 import { productosDe } from "@/lib/datos/sucursales";
 import { tienePendienteEn } from "@/lib/datos/puntos";
+import { miCalificacion, miResena } from "@/lib/datos/publico";
 import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { urlImagen } from "@/lib/imagenes";
@@ -48,8 +49,20 @@ export default async function PedirPuntos({
   ]);
 
   const logo = urlImagen(sucursal.logo);
-  const pendiente =
-    perfil?.rol === "cliente" ? await tienePendienteEn(perfil.id, sucursal.id) : false;
+  const esCliente = perfil?.rol === "cliente";
+
+  // Lo de la resena se pregunta aqui y no en el componente: si ya comento hoy,
+  // la moneda extra no esta en juego y hay que decirlo antes de que escriba.
+  const [pendiente, resenaPropia, misEstrellas] = esCliente
+    ? await Promise.all([
+        tienePendienteEn(perfil.id, sucursal.id),
+        miResena(perfil.id, sucursal.id),
+        miCalificacion(perfil.id, sucursal.id),
+      ])
+    : [false, null, null];
+
+  // Puede reseñar si no tiene una todavia, o si le queda su cambio del dia.
+  const puedeResenar = !resenaPropia || resenaPropia.puedeCambiarla;
 
   return (
     <div className="mx-auto max-w-md py-6">
@@ -146,20 +159,23 @@ export default async function PedirPuntos({
             registrar qué compraste. Pídeles que lo suban.
           </p>
         ) : (
-          <FormularioPedirPuntos
+          <PedirMonedas
             sucursalId={sucursal.id}
             slug={slug}
+            negocio={sucursal.marcas?.nombre_comercial ?? sucursal.nombre_sucursal}
             productos={productos}
             fotos={Object.fromEntries(
               productos.map((producto) => [producto.id, urlImagen(producto.imagen)]),
             )}
+            puedeResenar={puedeResenar}
+            misEstrellas={misEstrellas}
           />
         )}
       </div>
 
       <p className="mt-6 text-sm text-cacao/70">
-        El negocio decide cuántas monedas darte, entre 1 y 3, según lo que
-        compraste. Máximo 3 por día en el mismo negocio.
+        Una moneda por tu compra y otra si dejas reseña. El negocio puede
+        agregarte una tercera si quiere. Máximo 3 por día en el mismo negocio.
       </p>
     </div>
   );

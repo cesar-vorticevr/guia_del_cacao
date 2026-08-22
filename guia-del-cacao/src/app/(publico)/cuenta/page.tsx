@@ -3,9 +3,16 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { perfilActual } from "@/lib/auth/sesion";
 import { cerrarSesion } from "@/lib/auth/acciones";
-import { misResenas, misSolicitudes, pasaporteDe } from "@/lib/datos/puntos";
+import {
+  misEstrellasPorSucursal,
+  misResenas,
+  misSolicitudes,
+  pasaporteDe,
+} from "@/lib/datos/puntos";
 import { calificacionesDe, nombrarNegocio } from "@/lib/datos/publico";
 import { Promedio } from "@/components/publico/estrellas";
+import { Estrellas } from "@/components/publico/estrellas";
+import { Medio } from "@/components/publico/medio";
 import { BUCKET_RESENAS, urlImagen } from "@/lib/imagenes";
 import { MONEDA, monedas, rango as nombreRango, siguienteRango } from "@/lib/vocabulario";
 
@@ -47,6 +54,9 @@ export default async function Cuenta() {
     .filter((id): id is string => Boolean(id));
 
   const promedios = await calificacionesDe([...new Set(negocios)]);
+
+  // Las estrellas que puse yo, para que mi resena salga con su nota.
+  const misNotas = await misEstrellasPorSucursal(perfil.id);
 
   const pendientes = solicitudes.filter((s) => s.estado === "pendiente").length;
 
@@ -205,16 +215,22 @@ export default async function Cuenta() {
                     </p>
                   )}
 
+                  {misNotas.get(resena.sucursales?.id ?? "") && (
+                    <p className="mt-1 flex items-center gap-2">
+                      <Estrellas valor={misNotas.get(resena.sucursales!.id)!} />
+                      <span className="font-mono text-sm font-bold text-cacao">
+                        {misNotas.get(resena.sucursales!.id)}/5
+                      </span>
+                    </p>
+                  )}
+
                   <p className="mt-1 text-cacao">{resena.texto}</p>
 
-                  {resena.foto && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={urlImagen(resena.foto, BUCKET_RESENAS) ?? ""}
-                      alt="La foto que subiste con esta reseña"
-                      className="mt-2 max-h-56 w-full rounded-2xl object-cover"
-                    />
-                  )}
+                  <Medio
+                    ruta={urlImagen(resena.foto, BUCKET_RESENAS)}
+                    alt="Lo que subiste con esta reseña"
+                    className="mt-2 max-h-56 w-full rounded-2xl object-cover"
+                  />
                   {resena.respuesta_marca && (
                     <p className="mt-2 rounded-xl bg-crema-2 p-3 text-cacao">
                       <span className="block font-bold text-selva-2">Te respondieron</span>

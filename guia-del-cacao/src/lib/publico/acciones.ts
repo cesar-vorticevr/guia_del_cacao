@@ -4,22 +4,21 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { perfilActual } from "@/lib/auth/sesion";
-import { comentoHoy, miCalificacion } from "@/lib/datos/publico";
-import { BUCKET_RESENAS, revisarImagen } from "@/lib/imagenes";
+import { miCalificacion, miResena } from "@/lib/datos/publico";
+import { BUCKET_RESENAS, revisarMedio } from "@/lib/imagenes";
 
 export type EstadoResena = { error?: string; ok?: string };
 
 /**
  * Reseñar: la calificación y el comentario, en un solo envío.
  *
- * Van juntos porque es un solo acto —"cómo me fue en este negocio"— aunque por
- * debajo sean dos tablas con dos reglas distintas: las estrellas se dan una vez
- * y para siempre; el comentario, una vez al día. De ahí que el formulario
- * cambie de forma según lo que ya hiciste, en vez de pedirte dos veces lo
- * mismo.
+ * Van juntos porque es un solo acto —"cómo me fue en este negocio"— y desde la
+ * migración 000017 los dos se **actualizan**: cada quien tiene una calificación
+ * y una reseña por negocio, no una colección. Lo que se lee en el micrositio es
+ * lo que la gente piensa hoy, no un historial de visitas.
  *
- * Qué te falta por hacer se decide aquí, contra la base, y no con lo que mande
- * el formulario: un campo oculto se edita, la consulta no.
+ * Cambiarlas cuesta el mismo tope que pedir monedas: una vez al día. Ese tope
+ * lo imponen los triggers `limitar_cambio_de_*`; aquí solo se traduce.
  */
 export async function publicarResena(
   _previo: EstadoResena,
@@ -35,106 +34,123 @@ export async function publicarResena(
 
   const sucursalId = datos.get("sucursal_id")?.toString() ?? "";
 
-  const [yaCalifico, yaComento] = await Promise.all([
+  const [estrellasActuales, resenaActual] = await Promise.all([
     miCalificacion(perfil.id, sucursalId),
-    comentoHoy(perfil.id, sucursalId),
+    miResena(perfil.id, sucursalId),
   ]);
 
   const estrellas = Number(datos.get("estrellas"));
   const texto = (datos.get("texto")?.toString() ?? "").trim();
 
-  const faltaCalificar = yaCalifico === null;
-  const faltaComentar = !yaComento;
-
-  if (!faltaCalificar && !faltaComentar) {
-    return { error: "Ya calificaste este negocio y ya comentaste hoy." };
-  }
-
-  if (faltaCalificar && (!Number.isInteger(estrellas) || estrellas < 1 || estrellas > 5)) {
+  if (!Number.isInteger(estrellas) || estrellas < 1 || estrellas > 5) {
     return { error: "Elige de 1 a 5 estrellas." };
   }
 
-  if (faltaComentar && texto.length < 10) {
+  if (texto.length < 10) {
     return { error: "Escribe al menos unas palabras sobre tu visita." };
   }
 
   const supabase = await crearClienteServidor();
 
-  // La calificación primero: es la que no se puede repetir nunca. Si el
-  // comentario falla después, al menos el voto quedó y se dice claramente.
-  if (faltaCalificar) {
+  // Las estrellas primero: son lo que alimenta el promedio, y si el comentario
+  // falla después al menos la nota quedó y se dice claramente.
+  const cambiaLaNota = estrellasActuales !== estrellas;
+
+  if (estrellasActuales === null) {
     const { error } = await supabase.from("calificaciones").insert({
       usuario_id: perfil.id,
       sucursal_id: sucursalId,
       estrellas,
     });
 
-    // 23505 es la llave duplicada: alguien mandó el formulario dos veces
-    // seguidas. No es un fallo, es la regla funcionando.
+    // 23505 es la llave duplicada: mandaron el formulario dos veces seguidas.
     if (error && error.code !== "23505") {
       return { error: "No se pudo guardar tu calificación. Inténtalo de nuevo." };
     }
+  } else if (cambiaLaNota) {
+    const { error } = await supabase
+      .from("calificaciones")
+      .update({ estrellas })
+      .eq("usuario_id", perfil.id)
+      .eq("sucursal_id", sucursalId);
+
+    if (error) {
+      return {
+        error: error.message.includes("hoy en este negocio")
+          ? "Ya cambiaste tu calificación hoy. Puedes volver a hacerlo mañana."
+          : "No se pudo cambiar tu calificación.",
+      };
+    }
   }
 
-  if (!faltaComentar) {
-    revalidatePath(`/marca/${slug}`);
-    return { ok: "Gracias, ya quedó tu calificación. El comentario, mañana." };
-  }
-
-  // La foto es opcional: un campo de archivo vacío llega como un File de 0
+  // El medio es opcional: un campo de archivo vacío llega como un File de 0
   // bytes, no como null, así que se mira el tamaño y no la existencia.
-  const archivo = datos.get("foto");
-  let foto: string | null = null;
+  const archivo = datos.get("medio");
+  let medio: string | null = null;
 
   if (archivo instanceof File && archivo.size > 0) {
-    const problema = revisarImagen(archivo);
+    const problema = revisarMedio(archivo);
     if (problema) return { error: problema };
 
     const extension = archivo.name.split(".").pop()?.toLowerCase() ?? "jpg";
     // La política de storage exige que la primera carpeta sea la de quien sube.
     const ruta = `${perfil.id}/${sucursalId}-${Date.now()}.${extension}`;
 
-    const { error: errorSubida } = await supabase.storage
-      .from(BUCKET_RESENAS)
-      .upload(ruta, archivo);
+    const { error } = await supabase.storage.from(BUCKET_RESENAS).upload(ruta, archivo);
 
-    if (errorSubida) {
-      return { error: "No se pudo subir la foto. Inténtalo de nuevo." };
-    }
+    if (error) return { error: "No se pudo subir la foto o el video." };
 
-    foto = ruta;
+    medio = ruta;
   }
 
-  const { error } = await supabase.from("resenas").insert({
-    usuario_id: perfil.id,
-    sucursal_id: sucursalId,
-    texto,
-    foto,
-  });
+  const cambiaElTexto = resenaActual?.texto !== texto;
 
-  if (error) {
-    // La foto ya está arriba y la reseña no entró: sin esto quedaría una
-    // imagen huérfana en el bucket cada vez que alguien topa con el límite.
-    if (foto) await supabase.storage.from(BUCKET_RESENAS).remove([foto]);
+  if (!resenaActual) {
+    const { error } = await supabase.from("resenas").insert({
+      usuario_id: perfil.id,
+      sucursal_id: sucursalId,
+      texto,
+      foto: medio,
+    });
 
-    if (error.message.includes("maximo 1 por dia")) {
-      return {
-        error: faltaCalificar
-          ? "Tu calificación quedó, pero ya habías comentado hoy en este negocio."
-          : "Ya dejaste un comentario hoy en este negocio. Vuelve mañana.",
-      };
+    if (error) {
+      // Sin esto quedaría un archivo huérfano en el bucket cada vez que falla.
+      if (medio) await supabase.storage.from(BUCKET_RESENAS).remove([medio]);
+      return { error: "No se pudo publicar tu reseña. Inténtalo de nuevo." };
     }
 
-    return { error: "No se pudo publicar tu reseña. Inténtalo de nuevo." };
+    revalidatePath(`/marca/${slug}`);
+    return { ok: "Gracias, ya quedaron tu calificación y tu reseña." };
+  }
+
+  if (!cambiaElTexto && !medio) {
+    revalidatePath(`/marca/${slug}`);
+    return { ok: cambiaLaNota ? "Actualizamos tu calificación." : "No cambiaste nada." };
+  }
+
+  const { error } = await supabase
+    .from("resenas")
+    .update({ texto, ...(medio ? { foto: medio } : {}) })
+    .eq("id", resenaActual.id)
+    .eq("usuario_id", perfil.id);
+
+  if (error) {
+    if (medio) await supabase.storage.from(BUCKET_RESENAS).remove([medio]);
+
+    return {
+      error: error.message.includes("hoy en este negocio")
+        ? "Ya cambiaste tu reseña hoy. Puedes volver a hacerlo mañana."
+        : "No se pudo guardar tu reseña.",
+    };
+  }
+
+  // El medio anterior ya no lo referencia nadie: se va con el que reemplazó.
+  if (medio && resenaActual.foto) {
+    await supabase.storage.from(BUCKET_RESENAS).remove([resenaActual.foto]);
   }
 
   revalidatePath(`/marca/${slug}`);
-
-  return {
-    ok: faltaCalificar
-      ? "Gracias, ya quedaron tu calificación y tu reseña."
-      : "Gracias, tu reseña ya está publicada.",
-  };
+  return { ok: "Listo, actualizamos tu reseña." };
 }
 
 /**

@@ -9,7 +9,7 @@ import { pasaporteDe } from "@/lib/datos/puntos";
 const SECCIONES = [
   { href: "/directorio", texto: "Explorar" },
   { href: "/eventos", texto: "Eventos" },
-  { href: "/noticias", texto: "Noticias" },
+  { href: "/comunidad", texto: "Comunidad" },
 ];
 
 /**

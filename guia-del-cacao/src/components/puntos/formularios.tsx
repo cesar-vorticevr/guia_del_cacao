@@ -175,9 +175,16 @@ export function FormularioPedirPuntos({
 export function BotonesResolver({
   solicitudId,
   sucursalId,
+  sugeridas,
 }: {
   solicitudId: string;
   sucursalId: string;
+  /**
+   * Cuantas le tocan por lo que trae la solicitud: una por la compra, dos si
+   * ademas dejo resena. Se marca ese boton para que quien atiende no tenga que
+   * calcularlo, pero los tres siguen ahi: la tercera es cortesia del negocio.
+   */
+  sugeridas: number;
 }) {
   const [estado, accion] = useActionState(resolverSolicitud, INICIAL);
 
@@ -207,9 +214,16 @@ export function BotonesResolver({
             <input type="hidden" name="decision" value={String(puntos)} />
             <button
               type="submit"
-              className="min-h-14 w-full rounded-full bg-selva px-5 font-display text-lg font-semibold text-crema"
+              className={`min-h-14 w-full rounded-full px-5 font-display text-lg font-semibold ${
+                puntos === sugeridas
+                  ? "bg-selva text-crema"
+                  : "border-2 border-selva/25 bg-white text-selva-2"
+              }`}
             >
               {puntos} {puntos === 1 ? "moneda" : "monedas"}
+              {puntos === sugeridas && (
+                <span className="block text-xs font-normal">le tocan</span>
+              )}
             </button>
           </form>
         ))}

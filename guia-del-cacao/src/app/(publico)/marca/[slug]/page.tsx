@@ -8,7 +8,7 @@ import { Galeria } from "@/components/publico/galeria";
 import {
   agendaDe,
   calificacionDe,
-  comentoHoy,
+  miResena,
   estrellasPorUsuario,
   miCalificacion,
   micrositioPorSlug,
@@ -79,13 +79,13 @@ export default async function Micrositio({
   // Qué le toca ver a un cliente —reseñas y monedas— depende de cosas que solo
   // se pueden preguntar una vez que se sabe quién es.
   let misEstrellas: number | null = null;
-  let yaComentoHoy = false;
+  let resenaPropia: Awaited<ReturnType<typeof miResena>> = null;
   let tienePendiente = false;
 
   if (perfil?.rol === "cliente" && perfil.rol_confirmado) {
-    [misEstrellas, yaComentoHoy, tienePendiente] = await Promise.all([
+    [misEstrellas, resenaPropia, tienePendiente] = await Promise.all([
       miCalificacion(perfil.id, sucursal.id),
-      comentoHoy(perfil.id, sucursal.id),
+      miResena(perfil.id, sucursal.id),
       tienePendienteEn(perfil.id, sucursal.id),
     ]);
   }
@@ -396,7 +396,8 @@ export default async function Micrositio({
               nombre: resena.perfiles_publicos?.nombre ?? "Visitante",
               texto: resena.texto,
               fechaTexto: CUANDO.format(new Date(resena.fecha)),
-              fotoUrl: urlImagen(resena.foto, BUCKET_RESENAS),
+              medioUrl: urlImagen(resena.foto, BUCKET_RESENAS),
+              editada: resena.fecha_edicion !== null,
               estrellas: estrellas.get(resena.usuario_id) ?? null,
               respuesta: resena.respuesta_marca,
             }))}
@@ -420,7 +421,13 @@ export default async function Micrositio({
               sucursalId={sucursal.id}
               slug={slug}
               misEstrellas={misEstrellas}
-              yaComentoHoy={yaComentoHoy}
+              miResena={
+                resenaPropia && {
+                  texto: resenaPropia.texto,
+                  medioUrl: urlImagen(resenaPropia.foto, BUCKET_RESENAS),
+                  puedeCambiarla: resenaPropia.puedeCambiarla,
+                }
+              }
             />
           )}
         </div>

@@ -5,6 +5,11 @@ export type SolicitudPendiente = {
   fecha_solicitud: string;
   usuario_id: string;
   sucursal_id: string;
+  /** Ruta del ticket en el bucket privado, si lo mando. */
+  comprobante: string | null;
+  resena_id: string | null;
+  /** La resena que dejo con la solicitud: es la que vale la segunda moneda. */
+  resenas: { texto: string } | null;
   perfiles_publicos: { nombre: string; foto_perfil: string | null } | null;
   sucursales: {
     nombre_sucursal: string;
@@ -30,7 +35,8 @@ export type SolicitudDelCliente = {
 };
 
 const CAMPOS_PENDIENTE = `
-  id, fecha_solicitud, usuario_id, sucursal_id,
+  id, fecha_solicitud, usuario_id, sucursal_id, comprobante, resena_id,
+  resenas(texto),
   perfiles_publicos(nombre, foto_perfil),
   sucursales(nombre_sucursal, marcas(nombre_comercial)),
   solicitud_productos(cantidad, productos_servicios(nombre, precio))
@@ -146,4 +152,24 @@ export async function pasaporteDe(
     .maybeSingle();
 
   return { puntos: data?.puntos_acumulados ?? 0, nivel: data?.rango_actual ?? 1 };
+}
+
+/**
+ * Las estrellas que esta persona le puso a cada negocio.
+ *
+ * Va aparte de las resenas porque son dos tablas; se junta en la pantalla del
+ * pasaporte para que cada resena propia salga con su nota, igual que en el
+ * micrositio.
+ */
+export async function misEstrellasPorSucursal(usuarioId: string) {
+  const supabase = await crearClienteServidor();
+
+  const { data } = await supabase
+    .from("calificaciones")
+    .select("sucursal_id, estrellas")
+    .eq("usuario_id", usuarioId);
+
+  return new Map<string, number>(
+    (data ?? []).map((fila) => [fila.sucursal_id as string, fila.estrellas as number]),
+  );
 }
