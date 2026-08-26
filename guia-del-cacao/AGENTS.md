@@ -294,6 +294,41 @@ credenciales de Google Cloud. En producción hay que fijar además
 `NEXT_PUBLIC_SITE_URL`: detrás de un proxy la cabecera host no es el dominio
 real y la URL de retorno saldría mal.
 
+## El fondo de cacao
+
+Ramas, hojas y mazorcas que se desplazan a distinta velocidad al hacer scroll,
+detrás del sitio público. Viven en `components/publico/fondo-cacao.tsx` (mira
+qué PNG existen en `public/parallax/`) y `fondo-cacao-capas.tsx` (el
+movimiento). El encargo de las ilustraciones está en la raíz del repo:
+`guia-de-estilo-ilustraciones.pdf` y `prompts-imagenes-parallax.md`.
+
+**Mientras un PNG no exista, su capa se pinta con un marcador de color.** Es
+para poder ajustar tamaños y velocidades sin tener el arte. Basta con dejar el
+archivo con su nombre exacto en `public/parallax/` y recargar; no hay lista que
+actualizar a mano.
+
+No es una posición fija en el documento sino **una cinta infinita**: cada pieza
+entra por abajo, sube a su velocidad y al salir por arriba reaparece abajo. Se
+eligió así porque no depende del alto de la página — el directorio mide tres
+pantallas y un micrositio quince, y con posiciones absolutas la mitad de abajo
+del sitio se quedaba pelona. El salto del módulo no se ve porque ocurre fuera
+de la pantalla.
+
+Dos cosas que se rompen solas si alguien las toca sin saber:
+
+- **El `main` del layout público lleva `relative z-10`.** El fondo es una capa
+  fija en `z-0`; sin eso el contenido, que no está posicionado, se pinta por
+  debajo de las hojas.
+- **La columna interior de `fondo-cacao-capas` repite el ancho del `main`**
+  (`w-[92vw] max-w-[1180px]`). Las piezas se cuelgan de sus bordes hacia afuera,
+  no de los de la pantalla, para que el margen que ocupan crezca con el monitor.
+  Anclado a la pantalla, en 1280 la mitad de la rama caía sobre el texto. Si
+  cambia el ancho del `main`, cambia con él.
+
+Las opacidades son bajas a propósito: esto pasa por detrás de párrafos sobre
+fondo crema. Y todo se apaga con `motion-reduce:hidden` — es decoración, quien
+pidió menos movimiento no se pierde nada.
+
 ## Antes de cerrar trabajo
 
 ```

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logotipo } from "@/components/marca";
 import { BarraInferior } from "@/components/publico/barra-inferior";
+import { FondoDeCacao } from "@/components/publico/fondo-cacao";
 import { PastillaPasaporte } from "@/components/publico/pastilla-pasaporte";
 import { destinoSegunRol, perfilActual } from "@/lib/auth/sesion";
 import { pestanaDePerfil } from "@/lib/auth/navegacion";
@@ -36,6 +37,8 @@ export default async function LayoutPublico({
 
   return (
     <>
+      <FondoDeCacao />
+
       <header className="sticky top-0 z-40 bg-selva py-3.5 text-crema">
         <div className="mx-auto flex w-[92vw] max-w-[1180px] items-center justify-between gap-4">
           <Logotipo />
@@ -77,7 +80,14 @@ export default async function LayoutPublico({
         </div>
       </header>
 
-      <main className="mx-auto w-[92vw] max-w-[1180px] pb-28 sm:pb-10">{children}</main>
+      {/*
+        `relative z-10` no es decorativo: el fondo de cacao es una capa fija en
+        z-0, y sin esto el contenido —que no está posicionado— se pintaría por
+        debajo de las hojas.
+      */}
+      <main className="relative z-10 mx-auto w-[92vw] max-w-[1180px] pb-28 sm:pb-10">
+        {children}
+      </main>
 
       <BarraInferior
         monedas={pasaporte?.puntos ?? null}
