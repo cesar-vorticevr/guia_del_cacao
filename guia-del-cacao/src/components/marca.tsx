@@ -1,12 +1,26 @@
+import Image from "next/image";
 import Link from "next/link";
 
-/** La mazorca del prototipo: un óvalo con la punta hacia abajo. */
-export function Mazorca({ className = "h-6 w-5" }: { className?: string }) {
+/**
+ * La mazorca de la marca. Era un óvalo de CSS mientras no hubo ilustración;
+ * ahora es el mismo dibujo del favicon, que se diseñó para leerse en chico.
+ *
+ * Va la mazorca sola y no el logotipo completo: ese es un escudo casi cuadrado
+ * con el nombre, un mapa y granos adentro, y a la altura de un encabezado —
+ * unos 28 px— sus letras quedarían en tres píxeles. El nombre lo pone el texto
+ * de al lado, en Fredoka, que a ese tamaño sí se lee.
+ *
+ * Se guarda a 96 px porque se ve a 28 y hay pantallas de 3×.
+ */
+export function Mazorca({ className = "size-7" }: { className?: string }) {
   return (
-    <span
-      aria-hidden="true"
-      className={`inline-block bg-mango ${className}`}
-      style={{ borderRadius: "60% 60% 55% 55% / 70% 70% 40% 40%" }}
+    <Image
+      src="/marca/mazorca.png"
+      alt=""
+      width={96}
+      height={96}
+      priority
+      className={className}
     />
   );
 }
