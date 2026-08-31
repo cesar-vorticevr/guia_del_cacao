@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { BarraSesion } from "@/components/barra-sesion";
 import {
   BotonEliminarProducto,
   FormularioNuevoProducto,
@@ -48,124 +47,119 @@ export default async function Catalogo({
   ]);
 
   return (
-    <>
-      <BarraSesion nombre={perfil.nombre} />
+    <div className="grid gap-8">
+      <div>
+        <h1 className="font-display text-3xl">Catálogo</h1>
+        <p className="mt-2 max-w-prose text-cacao">
+          Lo que vende {marca.nombre_comercial}, en un solo lugar. Cada sucursal
+          elige de aquí lo que maneja, y lo que corrijas se actualiza en todas.
+        </p>
+      </div>
 
-      <main className="mx-auto grid w-[92vw] max-w-3xl gap-8 py-8">
-        <div>
-          <Link href="/negocio/panel" className="font-bold text-selva underline">
-            ← Panel
-          </Link>
+      {guardado === "1" && (
+        <p
+          role="status"
+          className="rounded-2xl border-2 border-lima/50 bg-lima/15 px-4 py-3 font-bold text-selva-2"
+        >
+          Producto actualizado en el catálogo y en las sucursales que lo
+          manejan.
+        </p>
+      )}
 
-          <h1 className="mt-3 font-display text-3xl">Catálogo</h1>
-          <p className="mt-2 text-cacao">
-            Lo que vende {marca.nombre_comercial}, en un solo lugar. Cada sucursal
-            elige de aquí lo que maneja, y lo que corrijas se actualiza en todas.
+      <section className="grid gap-4">
+        <h2 className="font-display text-xl">
+          Tus productos{" "}
+          <span className="font-body font-mono text-sm font-normal text-cacao/70">
+            {productos.length}
+          </span>
+        </h2>
+
+        {productos.length === 0 ? (
+          <p className="rounded-3xl bg-crema-2 p-6 text-cacao">
+            Todavía no tienes productos. Agrega el primero aquí abajo: hace
+            falta al menos uno para poder crear una sucursal.
           </p>
-        </div>
+        ) : (
+          <ul className="grid gap-3">
+            {productos.map((producto) => {
+              const foto = urlImagen(producto.imagen);
+              const enSucursales = uso.get(producto.id) ?? 0;
 
-        {guardado === "1" && (
-          <p
-            role="status"
-            className="rounded-2xl border-2 border-lima/50 bg-lima/15 px-4 py-3 font-bold text-selva-2"
-          >
-            Producto actualizado en el catálogo y en las sucursales que lo manejan.
-          </p>
-        )}
+              return (
+                <li
+                  key={producto.id}
+                  className="flex flex-wrap items-center gap-4 rounded-3xl border-2 border-ink/10 bg-white p-4"
+                >
+                  {foto ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={foto}
+                      alt=""
+                      className="size-16 shrink-0 rounded-2xl border-2 border-selva/10 object-cover"
+                    />
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className="grid size-16 shrink-0 place-items-center rounded-2xl bg-crema-2 font-display text-xl text-selva-2"
+                    >
+                      {producto.nombre.charAt(0)}
+                    </span>
+                  )}
 
-        <section className="grid gap-4">
-          <h2 className="font-display text-xl">
-            Tus productos{" "}
-            <span className="font-body font-mono text-sm font-normal text-cacao/70">
-              {productos.length}
-            </span>
-          </h2>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-selva-2">{producto.nombre}</p>
 
-          {productos.length === 0 ? (
-            <p className="rounded-3xl bg-crema-2 p-6 text-cacao">
-              Todavía no tienes productos. Agrega el primero aquí abajo: hace
-              falta al menos uno para poder crear una sucursal.
-            </p>
-          ) : (
-            <ul className="grid gap-3">
-              {productos.map((producto) => {
-                const foto = urlImagen(producto.imagen);
-                const enSucursales = uso.get(producto.id) ?? 0;
+                    {producto.sku && (
+                      <p className="font-mono text-xs text-cacao/70">
+                        SKU {producto.sku}
+                      </p>
+                    )}
 
-                return (
-                  <li
-                    key={producto.id}
-                    className="flex flex-wrap items-center gap-4 rounded-3xl border-2 border-ink/10 bg-white p-4"
-                  >
-                    {foto ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={foto}
-                        alt=""
-                        className="size-16 shrink-0 rounded-2xl border-2 border-selva/10 object-cover"
-                      />
-                    ) : (
-                      <span
-                        aria-hidden="true"
-                        className="grid size-16 shrink-0 place-items-center rounded-2xl bg-crema-2 font-display text-xl text-selva-2"
-                      >
-                        {producto.nombre.charAt(0)}
+                    {producto.descripcion && (
+                      <p className="line-clamp-1 text-cacao">
+                        {producto.descripcion}
+                      </p>
+                    )}
+
+                    {/* Saber dónde se usa evita el borrado a ciegas, y de paso
+                        señala los productos que no llegaron a ninguna sucursal. */}
+                    <p className="mt-0.5 font-mono text-xs text-cacao/70">
+                      {enSucursales === 0
+                        ? "En ninguna sucursal todavía"
+                        : `En ${enSucursales} ${enSucursales === 1 ? "sucursal" : "sucursales"}`}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    {producto.precio !== null && (
+                      <span className="font-mono font-bold text-selva">
+                        {pesos(producto.precio)}
                       </span>
                     )}
 
-                    <div className="min-w-0 flex-1">
-                      <p className="font-bold text-selva-2">{producto.nombre}</p>
+                    <Link
+                      href={`/negocio/panel/catalogo/${producto.id}`}
+                      className="min-h-10 rounded-full border-2 border-selva/25 bg-white px-4 py-2 text-sm font-bold text-selva-2"
+                    >
+                      Editar
+                    </Link>
 
-                      {producto.sku && (
-                        <p className="font-mono text-xs text-cacao/70">
-                          SKU {producto.sku}
-                        </p>
-                      )}
+                    <BotonEliminarProducto
+                      producto={producto}
+                      enSucursales={enSucursales}
+                    />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
-                      {producto.descripcion && (
-                        <p className="line-clamp-1 text-cacao">{producto.descripcion}</p>
-                      )}
-
-                      {/* Saber dónde se usa evita el borrado a ciegas, y de paso
-                          señala los productos que no llegaron a ninguna sucursal. */}
-                      <p className="mt-0.5 font-mono text-xs text-cacao/70">
-                        {enSucursales === 0
-                          ? "En ninguna sucursal todavía"
-                          : `En ${enSucursales} ${enSucursales === 1 ? "sucursal" : "sucursales"}`}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      {producto.precio !== null && (
-                        <span className="font-mono font-bold text-selva">
-                          {pesos(producto.precio)}
-                        </span>
-                      )}
-
-                      <Link
-                        href={`/negocio/panel/catalogo/${producto.id}`}
-                        className="min-h-10 rounded-full border-2 border-selva/25 bg-white px-4 py-2 text-sm font-bold text-selva-2"
-                      >
-                        Editar
-                      </Link>
-
-                      <BotonEliminarProducto
-                        producto={producto}
-                        enSucursales={enSucursales}
-                      />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
-
-        <section className="grid gap-4 rounded-3xl bg-crema-2 p-6">
-          <h2 className="font-display text-xl">Agregar un producto</h2>
-          <FormularioNuevoProducto />
-        </section>
-      </main>
-    </>
+      <section className="grid max-w-2xl gap-4 rounded-3xl bg-crema-2 p-6">
+        <h2 className="font-display text-xl">Agregar un producto</h2>
+        <FormularioNuevoProducto />
+      </section>
+    </div>
   );
 }

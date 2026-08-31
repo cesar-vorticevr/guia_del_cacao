@@ -27,7 +27,7 @@ export async function ComentariosDePublicacion({
   contexto,
   referenciaId,
 }: {
-  contexto: Exclude<Contexto, "foro">;
+  contexto: Exclude<Contexto, "publicacion">;
   referenciaId: string;
 }) {
   const perfil = await perfilActual();

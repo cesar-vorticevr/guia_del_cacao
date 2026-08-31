@@ -1,79 +1,100 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { FormularioTema } from "@/components/publico/foro";
+import { AvisosDeMonedas } from "@/components/negocio/avisos-de-monedas";
 import { MuroComunidad } from "@/components/publico/muro-comunidad";
+import { MiPublicacion } from "@/components/publico/mi-publicacion";
+import { SubeAPremier } from "@/components/publico/sube-a-premier";
 import { perfilActual } from "@/lib/auth/sesion";
 import { muroDeComunidad } from "@/lib/datos/comunidad";
-import { miCupo } from "@/lib/datos/foro";
-import { MONEDA, monedasParaAbrirTema } from "@/lib/vocabulario";
+import { misSucursales } from "@/lib/datos/sucursales";
+import { MONEDA } from "@/lib/vocabulario";
 
 export const metadata: Metadata = { title: "Comunidad · Guía del Cacao" };
 
 /**
  * El muro de la comunidad.
  *
- * Reemplazó a la pestaña de Noticias en la barra de abajo, y se quedó con lo
- * que había en tres pantallas sueltas: los temas del foro, los eventos que
- * vienen y las noticias de los negocios. Eventos conserva su propia pestaña
- * porque es lo único con fecha de caducidad: quien busca "qué hago el sábado"
- * no debería tener que filtrar para llegar.
+ * Tenía tres formatos —temas, eventos y noticias— con su filtro por clase y su
+ * formulario cada uno. Desde fuera eran lo mismo: alguien cuenta algo y los
+ * demás comentan. Lo único distinto de verdad era el evento, que tiene fecha y
+ * caduca, y se quedó en su agenda. Aquí solo hay publicaciones.
+ *
+ * Arriba va la última de quien mira, porque lo primero que se viene a ver es si
+ * le respondieron; debajo, todo lo demás.
  */
 export default async function Comunidad() {
-  const [entradas, perfil] = await Promise.all([muroDeComunidad(), perfilActual()]);
+  const perfil = await perfilActual();
+  const entradas = await muroDeComunidad(perfil?.id);
 
   const puedeParticipar =
-    perfil?.rol_confirmado && (perfil.rol === "cliente" || perfil.rol === "negocio");
-
-  const cupo = puedeParticipar ? await miCupo(perfil.id) : null;
-  const puedeAbrir = cupo !== null && cupo.abiertos < cupo.permitidos;
+    perfil?.rol_confirmado &&
+    (perfil.rol === "cliente" || perfil.rol === "negocio");
   const esNegocio = perfil?.rol === "negocio";
+
+  // Publicar como negocio es del plan Premier y con la sucursal en el
+  // directorio: lo mismo que exige la base, para no ofrecer un formulario que
+  // va a ser rechazado al guardar.
+  const sucursales = esNegocio ? await misSucursales(perfil.id) : [];
+  const conPremier = sucursales.filter(
+    (s) => s.tier_id === 3 && s.estado === "publicado",
+  );
+
+  const puedePublicar = esNegocio
+    ? conPremier.length > 0
+    : Boolean(puedeParticipar);
+  const ultima = entradas.find((entrada) => entrada.mia);
 
   return (
     <>
+      <AvisosDeMonedas />
+
       <h1 className="pt-8 font-display text-3xl">Comunidad</h1>
       <p className="mt-2 max-w-prose text-cacao">
-        Lo que se está diciendo y lo que viene: temas de la gente, eventos y
-        noticias de los negocios del cacao.
+        Lo que se está diciendo: publica lo tuyo y comenta lo de los demás.
       </p>
 
       <div className="pt-5">
         {!perfil ? (
           <p className="rounded-3xl bg-crema-2 p-5 text-cacao">
-            <Link href="/login?volver=/comunidad" className="font-bold text-selva underline">
+            <Link
+              href="/login?volver=/comunidad"
+              className="font-bold text-selva underline"
+            >
               Inicia sesión
             </Link>{" "}
-            para comentar y abrir temas.
+            para publicar y comentar.
           </p>
-        ) : puedeAbrir ? (
-          <FormularioTema />
-        ) : cupo === null ? null : cupo.permitidos === 0 ? (
-          // Decirle cuánto le falta es lo que convierte el "no" en una meta.
-          esNegocio ? (
-            <p className="rounded-3xl bg-crema-2 p-5 text-cacao">
-              Abrir temas viene con el plan <strong>Barra</strong>. Comentar sí
-              puedes desde cualquier plan.
-            </p>
-          ) : (
-            <p className="rounded-3xl bg-crema-2 p-5 text-cacao">
-              Te faltan{" "}
-              <strong>
-                {monedasParaAbrirTema(cupo.monedas)} {MONEDA.variasCortas}
-              </strong>{" "}
-              para abrir tu primer tema. Llevas {cupo.monedas}. Comentar es libre.
-            </p>
-          )
-        ) : (
-          <p className="rounded-3xl bg-crema-2 p-5 text-cacao">
-            Ya tienes {cupo.abiertos} de {cupo.permitidos}{" "}
-            {cupo.permitidos === 1 ? "tema" : "temas"}.{" "}
-            {esNegocio
-              ? "El plan Barra permite hasta tres."
-              : `Con 100 ${MONEDA.plural} puedes tener hasta tres.`}
-          </p>
-        )}
+        ) : esNegocio && !puedePublicar ? (
+          <SubeAPremier que="noticias" />
+        ) : puedePublicar ? (
+          <FormularioTema sucursales={conPremier} />
+        ) : null}
       </div>
 
-      <MuroComunidad entradas={entradas} />
+      {perfil && !esNegocio && (
+        /*
+          El precio se dice antes de escribir, no al fallar el guardado. Es la
+          misma mazorca que devuelve un apoyo, así que decirlo aquí también
+          explica para qué sirve apoyar.
+        */
+        <p className="mt-3 text-sm text-cacao/70">
+          Publicar cuesta una {MONEDA.singular}. Si a alguien le gusta y te
+          apoya, la recuperas.
+        </p>
+      )}
+
+      {ultima && (
+        <section className="pt-8">
+          <h2 className="font-display text-2xl">Tu última publicación</h2>
+          <MiPublicacion entrada={ultima} />
+        </section>
+      )}
+
+      <section className="pt-8">
+        <h2 className="font-display text-2xl">Todas las publicaciones</h2>
+        <MuroComunidad entradas={entradas} haySesion={Boolean(perfil)} />
+      </section>
     </>
   );
 }

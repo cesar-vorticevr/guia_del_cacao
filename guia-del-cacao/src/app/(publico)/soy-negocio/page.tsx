@@ -6,7 +6,7 @@ import { perfilActual } from "@/lib/auth/sesion";
 export const metadata: Metadata = { title: "Agregar mi negocio · Guía del Cacao" };
 
 /**
- * El aviso entre el pasaporte y la cuenta de negocio.
+ * El aviso entre la cuenta de cliente y la de negocio.
  *
  * Un cliente que toca "Agregar mi negocio" espera que su cuenta cambie de
  * sombrero, y no es así: el rol se fija al registrarse y no se cambia después
@@ -32,13 +32,13 @@ export default async function SoyNegocio() {
         </p>
         <p className="mt-2 text-cacao">
           Ahora mismo estás dentro con <strong>{perfil.correo}</strong>, que es
-          una cuenta de cliente: junta monedas de chocolate y deja reseñas. Una
+          una cuenta de cliente: junta mazorcas de cacao y deja reseñas. Una
           cuenta de negocio hace lo contrario —publica el micrositio y{" "}
-          <em>abona</em> esas monedas—, y por eso las dos no caben en la misma.
+          <em>abona</em> esas mazorcas—, y por eso las dos no caben en la misma.
         </p>
         <p className="mt-3 text-cacao">
           Regístrate con <strong>otro correo</strong> para tu negocio. Tu
-          pasaporte se queda como está y puedes seguir usándolo.
+          cuenta se queda como está y puedes seguir usándola.
         </p>
       </div>
 
@@ -54,7 +54,7 @@ export default async function SoyNegocio() {
           href="/cuenta"
           className="inline-flex min-h-12 items-center rounded-full border-2 border-selva/25 bg-white px-6 py-3 font-bold text-selva-2 transition-transform active:translate-y-0.5"
         >
-          Volver a mi pasaporte
+          Volver a mi cuenta
         </Link>
       </div>
 

@@ -396,12 +396,18 @@ export async function agendaDe(sucursalId: string) {
       .eq("sucursal_id", sucursalId)
       .gte("fecha_evento", ahora.toISOString())
       .order("fecha_evento"),
+    // Desde la migración 000029 las noticias son publicaciones de la comunidad
+    // firmadas por una sucursal. La tabla `noticias` sigue ahí para poder mirar
+    // atrás, pero nadie la lee: leerla ahora enseñaría cada una dos veces.
     supabase
-      .from("noticias")
-      .select(CAMPOS_PUBLICACION)
+      .from("publicaciones")
+      .select(
+        "id, titulo, contenido, imagenes, fecha_publicacion:fecha, sucursales(nombre_sucursal, slug, marcas(nombre_comercial))",
+      )
       .eq("sucursal_id", sucursalId)
-      .gte("fecha_publicacion", desde.toISOString())
-      .order("fecha_publicacion", { ascending: false }),
+      .is("oculta_en", null)
+      .gte("fecha", desde.toISOString())
+      .order("fecha", { ascending: false }),
   ]);
 
   return {
@@ -443,7 +449,7 @@ export type MiResena = {
  *
  * Desde la migración 000017 es una sola y se actualiza: no hay historial de
  * comentarios de la misma persona, hay lo que piensa hoy. Cambiarla cuesta el
- * mismo tope que pedir monedas —una vez al día—, y eso se calcula aquí en hora
+ * mismo tope que pedir mazorcas —una vez al día—, y eso se calcula aquí en hora
  * de Tabasco para que la pantalla y el trigger digan lo mismo de madrugada.
  */
 export async function miResena(

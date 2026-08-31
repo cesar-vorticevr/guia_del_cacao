@@ -1,24 +1,36 @@
 /**
  * Cómo se llaman las cosas de cara al público.
  *
- * El nombre de la unidad del pasaporte era una decisión abierta del spec §10
- * ("mazorcas / monedas de chocolate / otro"). Quedó en monedas de chocolate,
- * pero vive aquí y no repartido por la interfaz: si algún día cambia, se
- * cambia en un solo lugar.
+ * El nombre de la unidad era una decisión abierta del spec §10 ("mazorcas /
+ * monedas de chocolate / otro"). Empezó siendo *monedas de chocolate* y hoy son
+ * **mazorcas de cacao**: la mazorca fue moneda de verdad en Mesoamérica, así
+ * que juntarlas cuenta una historia que la moneda genérica no contaba.
  *
- * En la base de datos las columnas siguen llamándose `puntos_*`. Es a
- * propósito: ahí se guarda la unidad, aquí se le pone nombre comercial. Mezclar
- * las dos cosas obligaría a una migración cada vez que cambie la marca.
+ * El nombre vive aquí y no repartido por la interfaz. En el código y en la base
+ * se le sigue diciendo `monedas` y `puntos_*`: ahí se guarda la unidad, aquí se
+ * le pone nombre comercial. Mezclar las dos cosas obligaría a una migración —y a
+ * renombrar medio proyecto— cada vez que cambie la marca.
  */
 export const MONEDA = {
-  singular: "moneda de chocolate",
-  plural: "monedas de chocolate",
+  singular: "mazorca de cacao",
+  plural: "mazorcas de cacao",
   /** Para espacios cortos, cuando ya quedó claro de qué se habla. */
-  unaCorta: "moneda",
-  variasCortas: "monedas",
+  unaCorta: "mazorca",
+  variasCortas: "mazorcas",
 } as const;
 
-/** "1 moneda de chocolate" / "3 monedas de chocolate". */
+/**
+ * Dónde las junta quien visita.
+ *
+ * Se llamaba "pasaporte", por el de sellos de las ferias, pero nadie que
+ * entraba por primera vez sabía qué iba a encontrar ahí. Es su cuenta.
+ */
+export const LIBRETA = {
+  titulo: "cuenta",
+  posesivo: "tu cuenta",
+} as const;
+
+/** "1 mazorca de cacao" / "3 mazorcas de cacao". */
 export function conMonedas(cantidad: number, corto = false) {
   const una = corto ? MONEDA.unaCorta : MONEDA.singular;
   const varias = corto ? MONEDA.variasCortas : MONEDA.plural;
@@ -47,7 +59,12 @@ export const RANGOS = [
   { nivel: 1, nombre: "Curioso", plural: "Curiosos", desde: 0 },
   { nivel: 2, nombre: "Catador", plural: "Catadores", desde: 20 },
   { nivel: 3, nombre: "Conocedor", plural: "Conocedores", desde: 50 },
-  { nivel: 4, nombre: "Maestro cacaotero", plural: "Maestros cacaoteros", desde: 100 },
+  {
+    nivel: 4,
+    nombre: "Maestro cacaotero",
+    plural: "Maestros cacaoteros",
+    desde: 100,
+  },
 ] as const;
 
 export type Rango = (typeof RANGOS)[number];
@@ -81,7 +98,8 @@ export const TEMAS_POR_RANGO: Record<number, number> = {
 };
 
 export function temasPermitidos(monedas: number) {
-  const nivel = [...RANGOS].reverse().find((r) => monedas >= r.desde)?.nivel ?? 1;
+  const nivel =
+    [...RANGOS].reverse().find((r) => monedas >= r.desde)?.nivel ?? 1;
   return TEMAS_POR_RANGO[nivel] ?? 0;
 }
 

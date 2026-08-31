@@ -121,7 +121,7 @@ export async function contratarPlan(
   if (error) return { error: "El cobro pasó pero no se registró el plan. Avísanos." };
 
   // El `tier_id` de cada sucursal es el reflejo del plan de su marca: de ahí
-  // leen el micrositio y el panel si reparte monedas o sale en el banner.
+  // leen el micrositio y el panel si reparte mazorcas o sale en el banner.
   await supabase
     .from("sucursales")
     .update({ tier_id: tier.id })

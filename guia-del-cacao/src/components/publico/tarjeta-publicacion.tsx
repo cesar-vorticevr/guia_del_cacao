@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { urlImagen } from "@/lib/imagenes";
-import { nombrarNegocio, type Publicacion } from "@/lib/datos/publico";
+import { nombrarNegocio } from "@/lib/nombres";
+import type { Publicacion } from "@/lib/datos/publico";
 import { rango } from "@/lib/vocabulario";
 
 const FECHA = new Intl.DateTimeFormat("es-MX", {

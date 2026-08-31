@@ -49,7 +49,7 @@ export async function PieDePagina() {
 
   /*
     La invitación es para quien todavía no está dentro. A quien ya tiene cuenta
-    se le ofrecía "crear mi pasaporte" teniéndolo ya, que es ruido y hace dudar
+    se le ofrecía "crear mi cuenta" teniéndola ya, que es ruido y hace dudar
     de si se registró bien.
 
     Al cliente sí se le sigue ofreciendo dar de alta un negocio —mucha gente
@@ -60,17 +60,17 @@ export async function PieDePagina() {
     ? {
         titulo: "Únete a la Guía del Cacao",
         texto:
-          "Si produces, transformas o cuentas el cacao de Tabasco, este es tu lugar. Y si solo vienes a visitar, tu pasaporte junta monedas todo el año.",
+          "Si produces, transformas o cuentas el cacao de Tabasco, este es tu lugar. Y si solo vienes a visitar, tu cuenta junta mazorcas todo el año.",
         botones: [
           { href: "/registro/negocio", texto: "Agregar mi negocio", principal: true },
-          { href: "/registro/cliente", texto: "Crear mi pasaporte", principal: false },
+          { href: "/registro/cliente", texto: "Crear mi cuenta", principal: false },
         ],
       }
     : perfil.rol === "cliente"
       ? {
           titulo: "¿Tienes un negocio de cacao?",
           texto:
-            "Publica tu micrositio y aparece donde la gente ya está buscando. Se da de alta aparte de tu pasaporte.",
+            "Publica tu micrositio y aparece donde la gente ya está buscando. Se da de alta aparte de tu cuenta de visitante.",
           botones: [
             { href: "/soy-negocio", texto: "Agregar mi negocio", principal: true },
           ],

@@ -61,12 +61,19 @@ export function IconoPeriodico({ className = "size-6" }: Props) {
   );
 }
 
-/** La moneda de chocolate del pasaporte. */
-export function IconoMoneda({ className = "size-6" }: Props) {
+/**
+ * La mazorca de cacao que se junta al visitar.
+ *
+ * Eran dos círculos concéntricos, de cuando la unidad era una moneda. Ahora es
+ * la fruta: el óvalo apuntado por arriba y por abajo, con los surcos que la
+ * hacen reconocible aun dibujada a una línea, y el rabillo con su hoja.
+ */
+export function IconoMazorca({ className = "size-6" }: Props) {
   return (
     <svg {...BASE} className={className}>
-      <circle cx="12" cy="12" r="8.5" />
-      <circle cx="12" cy="12" r="4.5" />
+      <path d="M12 4.2c3 2 4.6 4.6 4.6 7.8S15 18 12 20.2C9 18 7.4 15.2 7.4 12S9 6.2 12 4.2Z" />
+      <path d="M12 4.6v15.2M9.6 6.6c-.7 3.4-.7 7.4 0 10.8M14.4 6.6c.7 3.4.7 7.4 0 10.8" />
+      <path d="M12 4.2c-.4-1 0-1.9 1.1-2.2" />
     </svg>
   );
 }

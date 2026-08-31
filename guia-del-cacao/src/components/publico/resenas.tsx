@@ -33,7 +33,7 @@ function Confirmacion({ estado }: { estado: EstadoResena }) {
  *
  * Es una sola por negocio y **se actualiza**. No hay historial de comentarios
  * de la misma persona: lo que se lee es lo que piensas hoy. Cambiarla cuesta
- * el mismo tope que pedir monedas —una vez al día—, y cuando ya lo gastaste el
+ * el mismo tope que pedir mazorcas —una vez al día—, y cuando ya lo gastaste el
  * formulario se convierte en lo que escribiste, para que puedas verlo.
  */
 export function FormularioResena({
@@ -143,7 +143,7 @@ export function FormularioResena({
 
       {yaLaTengo && (
         <p className="text-sm text-cacao/70">
-          Se puede cambiar una vez al día, igual que pedir monedas.
+          Se puede cambiar una vez al día, igual que pedir mazorcas.
         </p>
       )}
     </form>

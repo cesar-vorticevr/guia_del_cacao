@@ -3,20 +3,19 @@ import { crearClienteServidor } from "@/lib/supabase/server";
 /**
  * Los comentarios, que son de dos clases con las mismas palabras.
  *
- * En un evento o una noticia se comenta UNA vez: es "qué me parece esto", no
- * una conversación. En un tema del foro se puede ir y venir hasta cinco veces.
- * Por eso son dos tablas y no una con una bandera: las reglas son opuestas y
- * mezclarlas obligaría a preguntar "¿de cuál eres?" en cada consulta.
+ * En un evento se comenta UNA vez: es "qué me parece esto", no una
+ * conversación. En una publicación de la comunidad se puede ir y venir hasta
+ * cinco veces. Por eso son dos tablas y no una con una bandera: las reglas son
+ * opuestas y mezclarlas obligaría a preguntar "¿de cuál eres?" en cada consulta.
  *
  * Lo que sí comparten es la forma de leerse y de moderarse, y eso vive aquí.
  */
 
-export type Contexto = "evento" | "noticia" | "foro";
+export type Contexto = "evento" | "publicacion";
 
 export const TOPE_COMENTARIOS: Record<Contexto, number> = {
   evento: 1,
-  noticia: 1,
-  foro: 5,
+  publicacion: 5,
 };
 
 export type Comentario = {
@@ -26,23 +25,20 @@ export type Comentario = {
   oculto: boolean;
   fecha: string;
   fecha_edicion: string | null;
+  /** El comentario al que contesta, si contesta a alguno. Un solo nivel. */
+  responde_a: string | null;
   perfiles_publicos: { nombre: string; foto_perfil: string | null } | null;
 };
 
 const CAMPOS =
-  "id, usuario_id, texto, oculto, fecha, fecha_edicion, perfiles_publicos(nombre, foto_perfil)";
+  "id, usuario_id, texto, oculto, fecha, fecha_edicion, responde_a, perfiles_publicos(nombre, foto_perfil)";
 
 function tablaYLlave(contexto: Contexto) {
-  if (contexto === "foro") {
-    return { tabla: "comentarios_foro" as const, llave: "tema_id" as const };
+  if (contexto === "publicacion") {
+    return { tabla: "comentarios" as const, llave: "publicacion_id" as const };
   }
 
-  return {
-    tabla: "comentarios_publicacion" as const,
-    llave: (contexto === "evento" ? "evento_id" : "noticia_id") as
-      | "evento_id"
-      | "noticia_id",
-  };
+  return { tabla: "comentarios_publicacion" as const, llave: "evento_id" as const };
 }
 
 /**
@@ -60,7 +56,7 @@ export async function comentariosDe(contexto: Contexto, referenciaId: string) {
     .from(tabla)
     .select(CAMPOS)
     .eq(llave, referenciaId)
-    .order("fecha", { ascending: contexto === "foro" });
+    .order("fecha", { ascending: contexto === "publicacion" });
 
   return (data ?? []) as unknown as Comentario[];
 }

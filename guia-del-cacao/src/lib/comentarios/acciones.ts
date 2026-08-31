@@ -22,15 +22,15 @@ const MAXIMO = 1000;
 
 function contextoDe(datos: FormData): Contexto | null {
   const valor = datos.get("contexto")?.toString();
-  return valor === "evento" || valor === "noticia" || valor === "foro" ? valor : null;
+  return valor === "evento" || valor === "publicacion" ? valor : null;
 }
 
 function dondeVive(contexto: Contexto, referenciaId: string) {
-  if (contexto === "foro") {
+  if (contexto === "publicacion") {
     return {
-      tabla: "comentarios_foro" as const,
-      fila: { tema_id: referenciaId },
-      ruta: `/comunidad/tema/${referenciaId}`,
+      tabla: "comentarios" as const,
+      fila: { publicacion_id: referenciaId },
+      ruta: `/comunidad/${referenciaId}`,
     };
   }
 
@@ -53,7 +53,7 @@ function traducir(mensaje: string, contexto: Contexto) {
     return "Ya dejaste tus 5 comentarios en este tema.";
   }
   if (mensaje.includes("row-level security")) {
-    return contexto === "foro"
+    return contexto === "publicacion"
       ? "Comentar en el foro es de los clientes y de los negocios Tier 3."
       : "Solo las cuentas de cliente pueden comentar, y solo en micrositios publicados.";
   }
@@ -79,7 +79,7 @@ export async function comentar(
 
   // En una publicacion comentan los clientes; en el foro tambien los negocios
   // de Tier 3, que si no abririan una conversacion en la que no pueden estar.
-  if (perfil.rol !== "cliente" && !(contexto === "foro" && perfil.rol === "negocio")) {
+  if (perfil.rol !== "cliente" && !(contexto === "publicacion" && perfil.rol === "negocio")) {
     return { error: "Solo las cuentas de cliente pueden comentar aquí." };
   }
 
@@ -90,9 +90,21 @@ export async function comentar(
   const { tabla, fila, ruta } = dondeVive(contexto, referenciaId);
   const supabase = await crearClienteServidor();
 
+  /*
+    A quién contesta, si contesta a alguien. Que sea un solo nivel lo impone el
+    trigger : responder a una respuesta cuelga del comentario
+    de arriba, y así la conversación se lee de corrido en un celular.
+  */
+  const respondeA = datos.get("responde_a")?.toString() || null;
+
   const { error } = await supabase
     .from(tabla)
-    .insert({ ...fila, usuario_id: perfil.id, texto });
+    .insert({
+      ...fila,
+      usuario_id: perfil.id,
+      texto,
+      ...(contexto === "publicacion" ? { responde_a: respondeA } : {}),
+    });
 
   if (error) return { error: traducir(error.message, contexto) };
 

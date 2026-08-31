@@ -33,6 +33,51 @@
   --shadow-dura: 0 4px 0 0 rgb(12 82 54 / 0.15);
   --shadow-dura-sm: 0 2px 0 0 rgb(12 82 54 / 0.15);
   --shadow-dura-alta: 0 7px 0 0 rgb(12 82 54 / 0.18);
+
+  /*
+    El festejo de dar monedas. Son tres piezas y ninguna sirve sola: la tarjeta
+    entra rebotando, el montón de monedas de dentro late una vez, y las que
+    caen atraviesan la pantalla girando. Viven aquí y no en el componente
+    porque son animaciones de marca: si algún día se celebra otra cosa, se
+    celebra igual.
+  */
+  --animate-brinca: brinca 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  --animate-late: late 0.7s ease-out 0.15s both;
+  --animate-cae: cae 2.6s linear forwards;
+
+  @keyframes brinca {
+    from {
+      opacity: 0;
+      transform: scale(0.7) translateY(28px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  @keyframes late {
+    0% {
+      transform: scale(0.5) rotate(-12deg);
+    }
+    60% {
+      transform: scale(1.25) rotate(6deg);
+    }
+    100% {
+      transform: scale(1) rotate(0deg);
+    }
+  }
+
+  @keyframes cae {
+    from {
+      opacity: 1;
+      transform: translateY(-12vh) rotate(0deg);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(105vh) rotate(540deg);
+    }
+  }
 }
 
 @layer base {

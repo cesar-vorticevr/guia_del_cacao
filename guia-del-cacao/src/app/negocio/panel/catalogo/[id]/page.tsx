@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { BarraSesion } from "@/components/barra-sesion";
 import { FormularioEditarProducto } from "@/components/negocio/catalogo";
 import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
@@ -31,7 +30,9 @@ export default async function EditarProducto({
   */
   const { data: producto } = await supabase
     .from("productos_servicios")
-    .select("id, nombre, sku, descripcion, precio, imagen, marcas!inner(perfil_id)")
+    .select(
+      "id, nombre, sku, descripcion, precio, imagen, marcas!inner(perfil_id)",
+    )
     .eq("id", id)
     .eq("marcas.perfil_id", perfil.id)
     .maybeSingle();
@@ -41,36 +42,32 @@ export default async function EditarProducto({
   const foto = urlImagen(producto.imagen);
 
   return (
-    <>
-      <BarraSesion nombre={perfil.nombre} />
+    <div className="mx-auto grid max-w-xl gap-6">
+      <div>
+        <Link
+          href="/negocio/panel/catalogo"
+          className="font-bold text-selva underline"
+        >
+          ← Catálogo
+        </Link>
 
-      <main className="mx-auto grid w-[92vw] max-w-xl gap-6 py-8">
-        <div>
-          <Link
-            href="/negocio/panel/catalogo"
-            className="font-bold text-selva underline"
-          >
-            ← Catálogo
-          </Link>
+        <h1 className="mt-3 font-display text-3xl">{producto.nombre}</h1>
+        <p className="mt-2 text-cacao">
+          Lo que cambies aquí se ve en todas las sucursales que manejan este
+          producto.
+        </p>
+      </div>
 
-          <h1 className="mt-3 font-display text-3xl">{producto.nombre}</h1>
-          <p className="mt-2 text-cacao">
-            Lo que cambies aquí se ve en todas las sucursales que manejan este
-            producto.
-          </p>
-        </div>
+      {foto && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={foto}
+          alt={`Foto actual de ${producto.nombre}`}
+          className="size-32 rounded-3xl border-2 border-selva/15 bg-white object-cover"
+        />
+      )}
 
-        {foto && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={foto}
-            alt={`Foto actual de ${producto.nombre}`}
-            className="size-32 rounded-3xl border-2 border-selva/15 bg-white object-cover"
-          />
-        )}
-
-        <FormularioEditarProducto producto={producto as unknown as Producto} />
-      </main>
-    </>
+      <FormularioEditarProducto producto={producto as unknown as Producto} />
+    </div>
   );
 }

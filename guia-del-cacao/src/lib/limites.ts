@@ -23,6 +23,15 @@
  */
 export const MINIMO_CONTRASENA = 8;
 
+/**
+ * Cuántas fotos lleva una publicación de la comunidad: de una a cuatro.
+ *
+ * Vive aquí y no en `foro/acciones.ts` por lo mismo que el mínimo de la
+ * contraseña: ese archivo es `"use server"` y ahí solo pueden exportarse
+ * funciones asíncronas. El mismo `check` está en la base, que es la que manda.
+ */
+export const TOPE_FOTOS = 4;
+
 export const LIMITES = {
   /** Un párrafo largo: alcanza para contar el negocio sin volverse un folleto. */
   acercaDe: 600,
@@ -30,6 +39,9 @@ export const LIMITES = {
   descripcionProducto: 160,
   /** Lo que cabe en la tarjeta de un evento o una noticia antes del "ver más". */
   cuerpoPublicacion: 1200,
+  /** Los mismos que impone la base en `publicaciones`. */
+  tituloPublicacion: 120,
+  contenidoPublicacion: 3000,
 } as const;
 
 /**

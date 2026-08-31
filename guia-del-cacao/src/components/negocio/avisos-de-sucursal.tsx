@@ -2,7 +2,7 @@ import { abrirResenas } from "@/lib/negocio/acciones";
 import { IconoCampana } from "@/components/iconos";
 
 /**
- * Los dos avisos de una sucursal: reseñas nuevas y solicitudes de monedas.
+ * Los dos avisos de una sucursal: reseñas nuevas y solicitudes de mazorcas.
  *
  * **Solo aparecen cuando hay algo.** Un icono permanente deja de mirarse: si la
  * campana está siempre ahí, su presencia no dice nada y hay que leer el número
@@ -12,7 +12,7 @@ import { IconoCampana } from "@/components/iconos";
  * Los dos se distinguen a propósito:
  *
  * - La campana **se apaga al abrirla**: leer una reseña es atenderla.
- * - La moneda **se queda mientras la solicitud siga sin resolver**, aunque ya se
+ * - La mazorca **se queda mientras la solicitud siga sin resolver**, aunque ya se
  *   haya visto; lo que se apaga al entrar es el destello de "nueva". Una
  *   solicitud vista pero sin contestar sigue siendo trabajo pendiente, y
  *   apagarle el aviso la haría desaparecer de la vista.
@@ -54,21 +54,24 @@ export function AvisosDeSucursal({
       {solicitudesPendientes > 0 && (
         <a
           /*
-            A la pantalla de monedas, no a `?ver=monedas`: esa sección no existe
-            dentro del panel —Monedas es una página propia— y el enlace dejaba a
+            A la pantalla de monedas, no a `?ver=mazorcas`: esa sección no existe
+            dentro del panel —Mazorcas es una página propia— y el enlace dejaba a
             la persona donde ya estaba, con el aviso encendido y sin entender por
             qué no pasaba nada.
           */
           href="/negocio/panel/monedas"
-          aria-label={`${solicitudesPendientes} ${solicitudesPendientes === 1 ? "solicitud de monedas" : "solicitudes de monedas"} sin resolver${solicitudesNuevas > 0 ? `, ${solicitudesNuevas} sin ver` : ""}`}
+          aria-label={`${solicitudesPendientes} ${solicitudesPendientes === 1 ? "solicitud de mazorcas" : "solicitudes de mazorcas"} sin resolver${solicitudesNuevas > 0 ? `, ${solicitudesNuevas} sin ver` : ""}`}
           className="relative grid size-11 place-items-center rounded-full border-2 border-selva/25 bg-white transition-colors hover:border-selva"
         >
-          {/* El emoji y no el icono de trazo: dibujado a una línea se leía como
-              un círculo cualquiera, y aquí lo que tiene que reconocerse de
-              reojo es que hay una moneda esperando. */}
-          <span aria-hidden="true" className="text-lg">
-            🪙
-          </span>
+          {/* La mazorca ilustrada y no el icono de trazo: dibujada a una línea
+              se leía como un círculo cualquiera, y aquí lo que tiene que
+              reconocerse de reojo es que hay una mazorca esperando. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/marca/mazorca.png"
+            alt=""
+            className="size-6"
+          />
 
           {/*
             El destello solo cuando hay alguna que no se ha visto. Si latiera

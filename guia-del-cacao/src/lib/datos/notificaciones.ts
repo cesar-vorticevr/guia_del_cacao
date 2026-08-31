@@ -74,7 +74,7 @@ export async function sinLeerPorSucursal(): Promise<Map<string, number>> {
 export type SolicitudesDeSucursal = { pendientes: number; nuevas: number };
 
 /**
- * Solicitudes de monedas sin resolver, por sucursal.
+ * Solicitudes de mazorcas sin resolver, por sucursal.
  *
  * Distingue **pendientes** de **nuevas**: la primera cuenta lo que falta por
  * atender y la segunda, lo que llegó desde la última vez que el negocio abrió
@@ -98,7 +98,7 @@ export async function solicitudesPorSucursal(): Promise<
 }
 
 /**
- * Deja constancia de que este negocio ya miró sus solicitudes de monedas.
+ * Deja constancia de que este negocio ya miró sus solicitudes de mazorcas.
  *
  * Vive aquí y no entre las acciones a propósito: **se llama desde el render** de
  * la pantalla de monedas, y una acción con `revalidatePath` dentro revienta ahí

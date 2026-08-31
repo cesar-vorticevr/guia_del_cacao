@@ -43,17 +43,17 @@ export default function Terminos() {
         </li>
       </ul>
 
-      <h2 className="mt-8 font-display text-2xl">Monedas de chocolate</h2>
+      <h2 className="mt-8 font-display text-2xl">Mazorcas de cacao</h2>
       <p className="mt-3 text-cacao">
-        Las monedas son un reconocimiento de la plataforma, no dinero: no se
+        Las mazorcas son un reconocimiento de la plataforma, no dinero: no se
         compran, no se venden, no se cambian por efectivo y no caducan mientras
         la cuenta siga activa. Las abona el negocio que visitas cuando confirma
         tu solicitud, con un tope de tres por persona, por marca y por día. Una
-        moneda usada para apoyar un tema del foro se transfiere a quien lo
+        mazorca usada para apoyar un tema del foro se transfiere a quien lo
         escribió y no se devuelve.
       </p>
       <p className="mt-3 text-cacao">
-        Pedir monedas por visitas que no ocurrieron, o con comprobantes ajenos o
+        Pedir mazorcas por visitas que no ocurrieron, o con comprobantes ajenos o
         alterados, es motivo para retirarlas y suspender la cuenta.
       </p>
 

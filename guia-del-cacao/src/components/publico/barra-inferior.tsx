@@ -6,7 +6,7 @@ import {
   IconoBrujula,
   IconoCalendario,
   IconoCasa,
-  IconoMoneda,
+  IconoMazorca,
   IconoPersonas,
   IconoPersona,
 } from "@/components/iconos";
@@ -19,7 +19,7 @@ import { MONEDA } from "@/lib/vocabulario";
  *
  * 1. **Explorar va al centro y levantado.** El directorio es la razón de ser
  *    del sitio; si queda como una pestaña más, se pierde entre las otras.
- * 2. **El pasaporte enseña el número.** Ver las monedas subir es el enganche
+ * 2. **La cuenta enseña el número.** Ver las mazorcas subir es el enganche
  *    del programa, así que el marcador viaja con la persona por todo el sitio
  *    en vez de vivir escondido en /cuenta.
  */
@@ -68,16 +68,16 @@ export function BarraInferior({
   etiquetaPerfil,
   iconoPerfil,
 }: {
-  /** Monedas del cliente que navega, o null si no hay sesión de cliente. */
+  /** Mazorcas del cliente que navega, o null si no hay sesión de cliente. */
   monedas: number | null;
   destinoPerfil: string;
   /**
-   * "Pasaporte" para un cliente, "Perfil" para un negocio o un administrador.
-   * A quien no junta monedas, llamarle pasaporte a su panel le promete algo
+   * "Mi cacao" para un cliente, "Perfil" para un negocio o un administrador.
+   * A quien no junta mazorcas, llamarle así a su panel le promete algo
    * que ahí no existe.
    */
   etiquetaPerfil: string;
-  iconoPerfil: "moneda" | "persona";
+  iconoPerfil: "mazorca" | "persona";
 }) {
   const ruta = usePathname();
 
@@ -137,7 +137,7 @@ export function BarraInferior({
             iconoPerfil === "persona" ? (
               <IconoPersona className="size-6" />
             ) : (
-              <IconoMoneda className="size-6" />
+              <IconoMazorca className="size-6" />
             )
           ) : (
             <span

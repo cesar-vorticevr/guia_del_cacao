@@ -18,7 +18,7 @@ const SECCIONES = [
  * Armazón del sitio público. Mobile-first: en celular la navegación vive en una
  * barra fija abajo, al alcance del pulgar; en escritorio sube al encabezado.
  *
- * El pasaporte se ve siempre, en las dos: pastilla en el encabezado y contador
+ * La cuenta se ve siempre, en las dos: pastilla en el encabezado y contador
  * en la barra de abajo. Es a propósito — ver el número subir es lo que hace
  * que la persona quiera seguir explorando.
  */
@@ -29,8 +29,8 @@ export default async function LayoutPublico({
 }) {
   const perfil = await perfilActual();
 
-  // Solo los clientes juntan monedas; un negocio o un administrador no tienen
-  // pasaporte que enseñar.
+  // Solo los clientes juntan mazorcas; un negocio o un administrador no tienen
+  // cuenta que enseñar.
   const esCliente = perfil?.rol === "cliente" && perfil.rol_confirmado;
   const pasaporte = esCliente ? await pasaporteDe(perfil.id) : null;
 

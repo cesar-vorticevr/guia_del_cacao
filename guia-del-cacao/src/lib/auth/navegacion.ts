@@ -4,8 +4,8 @@ import { destinoSegunRol } from "@/lib/auth/sesion";
 /**
  * Cómo se llama y a dónde lleva la última pestaña de la barra de abajo.
  *
- * Un cliente tiene pasaporte —monedas y rango—; un negocio y un administrador
- * tienen panel. Llamarle "Pasaporte" al panel de un negocio le promete algo
+ * Un cliente junta mazorcas y sube de rango; un negocio y un administrador
+ * tienen panel. Llamarle "Mi cacao" al panel de un negocio le promete algo
  * que ahí no existe, y fue justo lo que se veía.
  *
  * Vive aparte de los layouts porque lo necesitan los tres: el público, el de
@@ -15,8 +15,8 @@ export function pestanaDePerfil(perfil: Perfil | null) {
   if (!perfil) {
     return {
       destino: "/login",
-      etiqueta: "Pasaporte",
-      icono: "moneda" as const,
+      etiqueta: "Mi cacao",
+      icono: "mazorca" as const,
     };
   }
 
@@ -24,7 +24,7 @@ export function pestanaDePerfil(perfil: Perfil | null) {
 
   return {
     destino: destinoSegunRol(perfil),
-    etiqueta: esCliente ? "Pasaporte" : "Perfil",
-    icono: esCliente ? ("moneda" as const) : ("persona" as const),
+    etiqueta: esCliente ? "Mi cacao" : "Perfil",
+    icono: esCliente ? ("mazorca" as const) : ("persona" as const),
   };
 }

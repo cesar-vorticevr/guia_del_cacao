@@ -17,7 +17,7 @@ export type Paso = {
  * El camino de un negocio nuevo, dibujado.
  *
  * Existe porque el panel recién creado enseñaba tres botones al mismo nivel
- * —Monedas, Eventos y noticias, Nueva sucursal— y un aviso de que no había
+ * —Mazorcas, Eventos y noticias, Nueva sucursal— y un aviso de que no había
  * nada. Los tres se ven igual de importantes y solo uno se puede usar: quien
  * llega por primera vez tiene que adivinar por dónde empezar.
  *

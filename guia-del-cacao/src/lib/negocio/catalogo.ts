@@ -167,7 +167,7 @@ export async function editarDelCatalogo(
  *
  * Las filas de `productos_sucursal` se van solas por `on delete cascade`, que es
  * justo lo que se pidió: lo que se borra del catálogo desaparece de todos lados.
- * Lo que no se toca son las solicitudes de monedas ya cursadas — ahí el producto
+ * Lo que no se toca son las solicitudes de mazorcas ya cursadas — ahí el producto
  * es parte de un recibo, no del catálogo de hoy.
  */
 export async function eliminarDelCatalogo(datos: FormData) {

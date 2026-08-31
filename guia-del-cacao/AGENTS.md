@@ -46,9 +46,20 @@ un rango propio: API `54421`, base `54422`, Studio `54423`, correo `54424`.
 
 ## Cómo se llaman las cosas
 
-La unidad del pasaporte se llama **monedas de chocolate** y los cuatro rangos
-son **Curioso · Catador · Conocedor · Maestro cacaotero**. Todo eso vive en
+La unidad se llama **mazorcas de cacao** y los cuatro rangos son
+**Curioso · Catador · Conocedor · Maestro cacaotero**. Todo eso vive en
 `src/lib/vocabulario.ts`, no repartido por la interfaz.
+
+Fueron *monedas de chocolate* hasta que se cambiaron: la mazorca fue moneda de
+verdad en Mesoamérica, así que juntarlas cuenta una historia que la moneda
+genérica no contaba. Y lo que era el **pasaporte** ahora es **tu cuenta**:
+nadie que entraba por primera vez sabía qué iba a encontrar detrás de esa
+palabra.
+
+El símbolo es la **mazorca ilustrada** (`public/marca/mazorca.png`, 5 KB), la
+misma del logotipo, y no un emoji: el 🪙 dejó de tener sentido y el 🫘 se lee
+como un frijol. Aparece en el botón que se pulsa, en la lluvia del festejo y en
+la campanita de cada sucursal.
 
 Los cortes de la escalera (20, 50, 100) están dos veces: en
 `public.calcular_rango` y en `RANGOS`. La base es la que manda; el vocabulario
@@ -57,10 +68,14 @@ los dos lados.
 
 Los rangos van en masculino genérico a propósito, es una decisión tomada: no se
 pregunta el género al registrarse y se prefirió eso antes que buscar nombres
-neutros. No hace falta volver a plantearlo. En la base las columnas
-siguen siendo `puntos_*`: ahí se guarda la unidad, en el vocabulario se le pone
-nombre comercial. Si mañana se llaman mazorcas, se cambia un archivo y no hace
-falta migración.
+neutros. No hace falta volver a plantearlo.
+
+**El código y la base siguen diciendo `monedas` y `puntos_*`,** y es a propósito:
+ahí se guarda la unidad, en el vocabulario se le pone nombre comercial. Por eso
+el cambio a mazorcas no tocó ni una migración ni un identificador — solo los
+textos y cuatro cadenas del vocabulario. Las rutas tampoco cambiaron:
+**`/monedas/{slug}` es la que llevan los QR ya impresos** y renombrarla dejaría
+carteles muertos en los mostradores.
 
 ## Imágenes
 
@@ -152,9 +167,13 @@ persona lo vuelve a escribir. Quien lo escribió no puede desocultarse solo.
 Ambas se leen y moderan igual, y eso vive en `lib/datos/comentarios.ts` y
 `lib/comentarios/acciones.ts`, con un `contexto` de tres valores.
 
-## El foro
+## El foro (histórico)
 
-Abrir un tema **se gana**: un cliente con 50 monedas abre uno y con 100 hasta
+Lo que sigue describe cómo funcionaba **antes de la migración 000029**, cuando
+el foro era una cosa aparte y la comunidad tenía tres formatos. Se conserva
+porque explica de dónde vienen los apoyos, que siguen vigentes.
+
+Abrir un tema **se ganaba**: un cliente con 50 monedas abría uno y con 100 hasta
 tres; un negocio lo desbloquea con el plan **Barra**, y tambien son tres. Quien
 puede lo resuelve `public.temas_permitidos_de()`, que despacha por rol. Los
 cortes de la escalera no se escriben otra vez — `public.temas_permitidos` se
@@ -208,6 +227,200 @@ es la que se arma sin pagar, para que un negocio recien llegado tenga por donde
 empezar. Lo exige `exigir_tope_de_sucursales` al insertar, y la pantalla lo
 consulta con la misma funcion (`tope_de_sucursales`) en vez de contar por su
 cuenta.
+
+## Las fotos se editan, no se reemplazan
+
+Editar dejaba **cambiar la portada** y nada más: mandar una foto nueva borraba
+las demás, y quitar una sola era imposible. Quien subía cuatro y quería tirar la
+borrosa tenía que volver a subir las otras tres.
+
+`EditarFotos` manda las que se conservan en campos ocultos —uno por ruta— y las
+nuevas en el mismo `imagenes` de siempre. El servidor recompone la lista con lo
+que llega, sin comparar con lo que había: **si no viene ningún `conservar` ni
+ninguna foto nueva, no se toca la columna**, que es lo que permite corregir una
+falta de ortografía sin quedarse sin portada.
+
+Se usa igual en una publicación de la comunidad y en un evento. La diferencia
+está en el mínimo: una publicación **exige al menos una** (lo pide la acción y lo
+exige el `check` de la base), y un evento puede quedarse sin ninguna — por eso
+`obligatoria={false}` allí, para no reprochar algo que está permitido.
+
+Y ojo con el bucket: las fotos de la comunidad viven en `comunidad/` y las de
+eventos en `micrositios/`. Las rutas de la comunidad se guardan **con el bucket
+escrito delante** (`urlDePublicacion` lo lee) porque las dos empiezan por un uuid
+y no hay forma de distinguirlas mirándolas.
+
+## La comunidad: un solo formato
+
+Había tres —temas del foro, noticias de negocio y eventos— con su tabla, su
+formulario y su regla de quién podía escribir. Desde fuera eran lo mismo:
+alguien cuenta algo y los demás comentan. Desde la migración **000029** todo
+eso es **`publicaciones`**: título, contenido y comentarios.
+
+Los **eventos se quedaron fuera** porque son lo único distinto de verdad: tienen
+fecha y caducan, y se ordenan por cuándo ocurren. Viven en `/eventos`.
+
+No se creó una tabla nueva: **`temas_foro` se renombró**. Ya era exactamente
+esto —autor, título, contenido— y renombrar conservó los 25 comentarios, los
+apoyos y sus llaves. Las 4 noticias se migraron dentro con sus comentarios, y
+`noticias` quedó **en desuso** (como `productos_servicios.sucursal_id`): sigue
+ahí para poder mirar atrás, pero nadie la lee — leerla enseñaría cada una dos
+veces.
+
+### Publicar cuesta una mazorca
+
+Se acabó la escalera de rangos para abrir un tema. Publica quien quiera, pero a
+una persona **le cuesta una mazorca** (`cobrar_publicacion`), la misma que
+recupera si alguien le apoya la publicación. Es lo que sostiene que las mazorcas
+signifiquen algo: si publicar fuera gratis, el muro se llenaría sin que nadie
+visitara un negocio, que es de donde salen.
+
+Un negocio no junta mazorcas, así que para él sigue siendo cosa del plan:
+publicar viene con **Premier**, igual que los eventos.
+
+### Comentarios nuevos
+
+`vistas_publicacion` guarda **cuándo abrió cada quien cada publicación**. «Hay
+comentarios nuevos» es que alguno es posterior a esa hora — no un contador
+guardado. Un contador habría que corregirlo al comentar, al visitar y al borrar,
+y basta con que falle una vez para que el aviso mienta para siempre.
+
+La visita se anota **al entrar** y no al salir: quien abre y cierra sin bajar ya
+vio lo que había, y la hora de salida dependería de un evento del navegador que
+no siempre llega.
+
+### Ocultar no es borrar
+
+`oculta_en` saca la publicación del muro pero **su autor la sigue viendo**, con
+su etiqueta, y puede devolverla. Es lo mismo que ya se hacía con los comentarios
+ocultos: esconderla en silencio de quien la escribió se lee como que se borró.
+Eliminar existe aparte, detrás de un despliegue, porque es la única de las tres
+que no tiene vuelta atrás.
+
+## Publicar es del plan, y se apaga solo al bajar
+
+Eventos y noticias los incluye **Premier** (`tiers.puede_publicar_contenido`).
+Hasta la migración **000028** esa columna no la comprobaba nadie: la política de
+escritura solo pedía ser dueño de la sucursal, así que un plan Básico publicaba
+lo mismo que uno Premier.
+
+**Lo que se ve no se copia a una columna «oculto»: se deriva del plan de hoy**
+(`public.marca_publica_contenido`). Con una columna habría que acordarse de
+apagarla al bajar y de encenderla al volver, y el día que alguien olvide una de
+las dos quedan eventos visibles sin plan o eventos pagados sin ver. Derivándolo,
+bajar oculta y subir devuelve, sin proceso que mantener y sin borrar nada.
+
+- La política de lectura pide `sucursal_publicada AND marca_publica_contenido`,
+  **pero deja pasar a `posee_sucursal`**: eso es lo que permite que el negocio
+  vea sus propias publicaciones marcadas como ocultas en vez de perderlas.
+- Crear y editar los frena `exigir_plan_de_contenido`, un trigger y no solo el
+  `WITH CHECK` de la política: un WITH CHECK que falla llega como *«new row
+  violates row-level security policy»*, que no dice que falta un plan.
+- **Borrar sí se puede sin plan.** Son sus publicaciones, y cobrarle por tirar
+  algo que ya no se ve sería cobrarle por limpiar. Por eso el trigger es solo
+  de insert y update.
+
+En la interfaz, lo propio que está oculto **no sale en el muro ni en la agenda**
+aunque su dueño lo vea por RLS: ahí, entre lo de los demás, se leería como
+publicado. Sale en su sección —«Tus eventos», «Tus noticias»— y con su aviso.
+
+## Lo que se publica se maneja donde se lee
+
+Eventos y Foro **dejaron de ser pestañas del panel**. Editar en un cuarto aparte
+obligaba a salir del sitio público para escribir sobre él, y comprobar cómo
+había quedado algo era navegar a otra pantalla.
+
+- **`/eventos`** trae, para quien tiene negocio, «Tus eventos» arriba —próximos
+  y ya pasados, con su buscador— y debajo la agenda de todos, también buscable.
+  El editor vive en `/eventos/[id]/editar`.
+- **`/comunidad`** es donde se publica: un solo botón «Publicar algo» con
+  noticia y evento en pestañas, porque desde fuera es la misma decisión y lo
+  único que cambia es si tiene fecha. Los dos formularios se montan a la vez y
+  se esconde el que no toca: cambiar de pestaña a media redacción no debe borrar
+  lo escrito.
+- `/negocio/panel/eventos` y `/negocio/panel/foro` se quedan como **redirecciones**
+  para los enlaces que alguien tuviera guardados.
+
+`SubeAPremier` va donde el negocio se topa con el límite y no en la página de
+planes: es el único momento en que la ventaja se entiende sola. Dice qué gana,
+no qué le falta.
+
+## La bandeja de solicitudes
+
+Veinte solicitudes en una columna eran ocho pantallas de scroll y la de abajo no
+la veía nadie. Hoy la lista se **filtra por sucursal**, va **de dos en dos** y se
+**pagina de seis en seis** (`POR_PAGINA` en `components/negocio/solicitudes.tsx`).
+
+- Las que **traen reseña ocupan la fila entera** (`sm:col-span-2`): la reseña es
+  un párrafo que en media columna sale en ocho renglones, y además es la que hay
+  que leer con calma antes de decidir.
+- Es **paginación y no «ver más»**: lo que molestaba era bajar, y cargar más
+  debajo de lo que ya hay alarga justo eso.
+- El filtro cuenta sobre **todas** las pendientes, no sobre las filtradas; si no,
+  al elegir una sucursal las demás saldrían en cero.
+- Los comprobantes se firman **solo para lo que se pinta**: antes se pedía una URL
+  al storage por cada solicitud de la lista y casi ninguna se abría.
+
+En la tarjeta **no hay precio por renglón, hay un total al final**. Al resolver no
+se cobra nada —eso pasó en la caja—, así que la columna de precios era ruido; lo
+que ayuda a decidir cuántas mazorcas dar es cuánto gastó en total.
+
+La cantidad que le toca **no lleva letrero**: va en verde con su mazorca y un aro
+de color. «Le tocan» en letra chica explicaba lo que el color ya dice y hacía ese
+botón más alto que los otros dos.
+
+## Dar mazorcas se celebra, y el aviso vive fuera de la tarjeta
+
+Al resolver una solicitud, `revalidatePath` recarga la lista y esa tarjeta
+desaparece — y con ella desaparecía el aviso de «listo» que llevaba dentro. Dar
+monedas se sentía como si la solicitud se hubiera esfumado.
+
+Por eso `AvisosDeMonedas` va suelto en la página, no dentro de la lista, y se
+entera por un evento del `window` (`festejarMonedas()`). Es la única forma de
+que sobreviva a la recarga.
+
+**Rechazar tiene el mismo problema y no el mismo remedio.** También deja rastro
+—`avisarRechazo()`—, pero en una nota pequeña en una esquina: es una decisión que
+se toma y se olvida, no algo que celebrar.
+
+Y por eso **se festeja al pulsar, no al confirmar**: al confirmar, los botones
+que lo dispararían ya no existen. El precio es desdecirse si la base rechaza —
+`cancelarFestejo()` lo retira y el error se queda escrito en la tarjeta, que en
+ese caso sigue ahí.
+
+Las tres animaciones (`brinca`, `late`, `cae`) están en `@theme`, no en el
+componente: son de marca, y si algún día se celebra otra cosa se celebra igual.
+La lluvia de monedas lleva posiciones fijas y no `Math.random()`, que en render
+daría una pintada en el servidor y otra en el navegador.
+
+## El panel del negocio: un layout, cinco pestañas
+
+Sucursales, Catálogo, Monedas, Eventos y Foro son **cinco rutas** bajo
+`/negocio/panel`, y la fila de pestañas que las une vive en el **layout**
+(`app/negocio/panel/layout.tsx`), no en cada página. Antes cada una la pintaba
+por su cuenta y las que tenían ruta propia se quedaban sin menú: entrar en
+Eventos era perder las pestañas y volver era el botón de atrás.
+
+La sección activa la deduce de la ruta un componente de cliente
+(`PestanasDelPanel`), porque el layout no sabe qué página está pintando. En las
+pantallas de detalle —editar una sucursal, un producto, un evento— se queda
+marcada su sección.
+
+Tres cosas que se rompen si alguien las toca sin saber:
+
+- **El layout no protege nada.** Las comprobaciones de sesión y rol se repiten
+  en cada página a propósito: Next puede pintar la página sin volver a pasar por
+  el layout en una navegación de cliente.
+- **El h1 lo pone cada pestaña**, no el layout. Arriba solo va la tira que dice
+  de quién es el panel (categoría y marca), y por eso no es un encabezado.
+- **Empezando —sin ninguna sucursal— no hay pestañas**, serían cinco caminos a
+  listas vacías; en su lugar queda «Volver a los primeros pasos», porque el
+  recorrido de alta manda al catálogo y sin eso se llega y no se sale.
+
+Las cuatro pantallas de pestaña arrancan **pegadas al borde izquierdo**, sin
+`mx-auto`: centradas en una columna estrecha quedaban descolgadas de las
+pestañas, y cambiar de pestaña movía el título de sitio. Lo que se acota es la
+línea de texto (`max-w-prose`) y los formularios, no la pantalla.
 
 ## El catálogo es de la marca
 

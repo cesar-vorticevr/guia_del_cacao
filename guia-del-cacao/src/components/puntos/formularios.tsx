@@ -1,11 +1,31 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { Aviso, BotonEnviar } from "@/components/formulario";
-import { pedirPuntos, resolverSolicitud, type EstadoPuntos } from "@/lib/puntos/acciones";
+import {
+  avisarRechazo,
+  cancelarFestejo,
+  festejarMonedas,
+} from "@/components/negocio/avisos-de-monedas";
+import {
+  pedirPuntos,
+  resolverSolicitud,
+  type EstadoPuntos,
+} from "@/lib/puntos/acciones";
 import { pesos, type Producto } from "@/lib/tipos";
 
 const INICIAL: EstadoPuntos = {};
+
+/**
+ * Rechazar, en el mismo hueco que guarda cuántas mazorcas se pulsaron.
+ *
+ * Es cero porque no se da ninguna, y así los cuatro botones se bloquean con la
+ * misma comprobación mientras la decisión va y viene.
+ */
+const RECHAZO = 0;
+
+/** El tope de la spec §5.4.6: 3 por persona, marca y día. */
+const TOPE_DIARIO = 3;
 
 function Resultado({ estado }: { estado: EstadoPuntos }) {
   if (estado.error) return <Aviso>{estado.error}</Aviso>;
@@ -29,7 +49,13 @@ function Resultado({ estado }: { estado: EstadoPuntos }) {
  * contadores en cero al abrir el menú convierte una lista en un formulario, y
  * esto se usa de pie, en un stand, con una mano.
  */
-function LineaProducto({ producto, foto }: { producto: Producto; foto: string | null }) {
+function LineaProducto({
+  producto,
+  foto,
+}: {
+  producto: Producto;
+  foto: string | null;
+}) {
   const [elegido, setElegido] = useState(false);
   const [cantidad, setCantidad] = useState(1);
 
@@ -62,9 +88,13 @@ function LineaProducto({ producto, foto }: { producto: Producto; foto: string | 
         )}
 
         <span className="min-w-0 flex-1">
-          <span className="block font-bold text-selva-2">{producto.nombre}</span>
+          <span className="block font-bold text-selva-2">
+            {producto.nombre}
+          </span>
           {producto.descripcion && (
-            <span className="block text-sm text-cacao">{producto.descripcion}</span>
+            <span className="block text-sm text-cacao">
+              {producto.descripcion}
+            </span>
           )}
         </span>
 
@@ -100,7 +130,9 @@ function LineaProducto({ producto, foto }: { producto: Producto; foto: string | 
               min={1}
               max={99}
               onChange={(evento) =>
-                setCantidad(Math.min(99, Math.max(1, Number(evento.target.value) || 1)))
+                setCantidad(
+                  Math.min(99, Math.max(1, Number(evento.target.value) || 1)),
+                )
               }
               aria-label={`Cuántos ${producto.nombre}`}
               className="min-h-12 w-16 rounded-2xl border-2 border-selva/20 bg-white text-center font-mono text-lg font-bold text-ink"
@@ -161,7 +193,7 @@ export function FormularioPedirPuntos({
         </ul>
       </fieldset>
 
-      <BotonEnviar>Pedir mis monedas</BotonEnviar>
+      <BotonEnviar>Pedir mis mazorcas</BotonEnviar>
     </form>
   );
 }
@@ -176,6 +208,8 @@ export function BotonesResolver({
   solicitudId,
   sucursalId,
   sugeridas,
+  cliente,
+  dadasHoy,
 }: {
   solicitudId: string;
   sucursalId: string;
@@ -185,8 +219,36 @@ export function BotonesResolver({
    * calcularlo, pero los tres siguen ahi: la tercera es cortesia del negocio.
    */
   sugeridas: number;
+  /** A quién se le dan: el festejo lo dice por su nombre. */
+  cliente: string;
+  /**
+   * Cuántas lleva ya hoy en esta marca.
+   *
+   * El tope son 3 por persona, marca y día. Al llegar, los botones se van en
+   * vez de quedarse ahí para que la base los rechace: ofrecer algo que va a
+   * fallar es peor que no ofrecerlo.
+   */
+  dadasHoy: number;
 }) {
-  const [estado, accion] = useActionState(resolverSolicitud, INICIAL);
+  const [estado, accion, pendiente] = useActionState(
+    resolverSolicitud,
+    INICIAL,
+  );
+
+  /** El botón que se acaba de pulsar, para que se note cuál fue. */
+  const [pulsado, setPulsado] = useState<number | null>(null);
+
+  // Cuál se está dando ahora mismo. Sale de `pendiente` y no de un estado
+  // propio: así, al acabar, el botón vuelve solo sin tener que acordarse de
+  // limpiarlo desde un efecto.
+  const dando = pendiente ? pulsado : null;
+
+  // Si la base rechaza lo que ya estábamos celebrando, se retira el festejo. El
+  // festejo es de fuera de React —un aviso al `window`—, que es justo lo que un
+  // efecto sirve para sincronizar.
+  useEffect(() => {
+    if (estado.error) cancelarFestejo();
+  }, [estado.error]);
 
   /**
    * Cada opción va en su propio formulario, con la decisión en un campo oculto.
@@ -203,42 +265,110 @@ export function BotonesResolver({
     </>
   );
 
+  const cupo = Math.max(0, TOPE_DIARIO - dadasHoy);
+
+  if (cupo === 0) {
+    return (
+      <p className="rounded-2xl border-2 border-mango/50 bg-mango/15 px-4 py-3 text-cacao">
+        <strong className="text-selva-2">
+          {cliente} ya recibió sus {TOPE_DIARIO} mazorcas de hoy
+        </strong>{" "}
+        en tu negocio. Esta solicitud se puede resolver mañana, cuando el tope
+        vuelva a cero.
+      </p>
+    );
+  }
+
   return (
     <div className="grid gap-3">
       <Resultado estado={estado} />
 
-      <div className="flex flex-wrap gap-2.5">
-        {[1, 2, 3].map((puntos) => (
-          <form key={puntos} action={accion} className="min-w-24 flex-1">
-            {comunes}
-            <input type="hidden" name="decision" value={String(puntos)} />
-            <button
-              type="submit"
-              className={`min-h-14 w-full rounded-full px-5 font-display text-lg font-semibold ${
-                puntos === sugeridas
-                  ? "bg-selva text-crema"
-                  : "border-2 border-selva/25 bg-white text-selva-2"
-              }`}
+      {/*
+        Los tres de dar, en una fila para ellos solos. Con rechazar al lado eran
+        cuatro botones repartiéndose media columna —la tarjeta va a dos por
+        fila— y el número acababa partido en dos renglones.
+      */}
+      <div className="flex gap-2.5">
+        {/*
+          Solo las que caben en lo que le queda hoy. Si ya lleva dos, dar tres
+          la rechazaría la base: el botón sobra.
+        */}
+        {[1, 2, 3]
+          .filter((puntos) => puntos <= cupo)
+          .map((puntos) => (
+            <form
+              key={puntos}
+              action={accion}
+              className="min-w-0 flex-1"
+              /*
+              El festejo arranca aquí, al enviar, y no cuando la acción
+              responde: al responder, la lista se recarga sin esta solicitud y
+              estos botones ya no existen para contarlo.
+            */
+              onSubmit={() => {
+                setPulsado(puntos);
+                festejarMonedas({ puntos, cliente });
+              }}
             >
-              {puntos} {puntos === 1 ? "moneda" : "monedas"}
-              {puntos === sugeridas && (
-                <span className="block text-xs font-normal">le tocan</span>
-              )}
-            </button>
-          </form>
-        ))}
+              {comunes}
+              <input type="hidden" name="decision" value={String(puntos)} />
+              {/*
+              La que le toca no lleva letrero: va en verde, con su mazorca
+              delante y un aro de color alrededor. "Le tocan" en letra chica
+              debajo del número explicaba algo que el color ya dice, y encima
+              hacía el botón sugerido más alto que los otros dos.
+            */}
+              <button
+                type="submit"
+                disabled={dando !== null}
+                className={`flex min-h-14 w-full items-center justify-center gap-2 rounded-full px-5 font-display text-lg font-semibold transition-transform disabled:opacity-60 ${
+                  dando === puntos
+                    ? "scale-105 bg-lima text-ink disabled:opacity-100"
+                    : puntos === sugeridas
+                      ? "bg-selva text-crema ring-3 ring-mango active:translate-y-0.5"
+                      : "border-2 border-selva/25 bg-white text-selva-2 active:translate-y-0.5"
+                }`}
+              >
+                {(dando === puntos || puntos === sugeridas) && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src="/marca/mazorca.png" alt="" className="size-6" />
+                )}
 
-        <form action={accion}>
-          {comunes}
-          <input type="hidden" name="decision" value="rechazar" />
-          <button
-            type="submit"
-            className="min-h-14 rounded-full border-2 border-guayaba/50 px-5 font-bold text-cacao"
-          >
-            Rechazar
-          </button>
-        </form>
+                {dando === puntos ? (
+                  "¡Va!"
+                ) : (
+                  <>
+                    {puntos} {puntos === 1 ? "mazorca" : "mazorcas"}
+                  </>
+                )}
+              </button>
+            </form>
+          ))}
       </div>
+
+      {/*
+        Rechazar va debajo y en letra pequeña: es la salida, no lo que se viene
+        a hacer aquí. Deja su propia nota —discreta, abajo— por la misma razón
+        que dar deja el festejo: la tarjeta se va con la recarga y sin eso la
+        solicitud parecía esfumarse.
+      */}
+      <form
+        action={accion}
+        onSubmit={() => {
+          setPulsado(RECHAZO);
+          avisarRechazo(cliente);
+        }}
+      >
+        {comunes}
+        <input type="hidden" name="decision" value="rechazar" />
+        <button
+          type="submit"
+          disabled={dando !== null}
+          className="min-h-11 w-full rounded-full text-sm font-bold text-cacao/70 underline underline-offset-4 transition-colors hover:text-cacao disabled:opacity-60"
+        >
+          {dando === RECHAZO ? "Rechazando…" : "Rechazar esta solicitud"}
+        </button>
+      </form>
     </div>
   );
 }

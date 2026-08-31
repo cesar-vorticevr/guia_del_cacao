@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { BarraSesion } from "@/components/barra-sesion";
 import { FormularioCancelarSuscripcion } from "@/components/negocio/formularios";
 import { FormularioDatosPersonales } from "@/components/negocio/cuenta";
 import { PlanesDesplegables } from "@/components/negocio/planes-desplegables";
@@ -10,7 +9,11 @@ import { FormularioContrasenaNueva } from "@/components/formularios-auth";
 import { cerrarSesion } from "@/lib/auth/acciones";
 import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
-import { listarTiers, misSucursales, suscripcionDeMarca } from "@/lib/datos/sucursales";
+import {
+  listarTiers,
+  misSucursales,
+  suscripcionDeMarca,
+} from "@/lib/datos/sucursales";
 import { PAGO_SIMULADO } from "@/lib/pagos";
 import { pesos } from "@/lib/tipos";
 
@@ -69,198 +72,198 @@ export default async function CuentaNegocio({
 
   const publicadas = sucursales.filter((s) => s.estado === "publicado").length;
 
-  const seccion = ver === "datos" ? "datos" : ver === "sesion" ? "sesion" : "plan";
+  const seccion =
+    ver === "datos" ? "datos" : ver === "sesion" ? "sesion" : "plan";
 
   return (
-    <>
-      <BarraSesion nombre={perfil.nombre} />
+    <div className="grid max-w-2xl gap-6">
+      <div>
+        <Link href="/negocio/panel" className="font-bold text-selva underline">
+          ← Panel
+        </Link>
+        <h1 className="mt-3 font-display text-3xl">Mi cuenta</h1>
+      </div>
 
-      <main className="mx-auto grid w-[92vw] max-w-2xl gap-6 py-8">
-        <div>
-          <Link href="/negocio/panel" className="font-bold text-selva underline">
-            ← Panel
-          </Link>
-          <h1 className="mt-3 font-display text-3xl">Mi cuenta</h1>
-          <p className="mt-2 text-cacao">{marca.nombre_comercial}</p>
-        </div>
+      <Pestanas
+        base="/negocio/panel/cuenta"
+        actual={seccion}
+        pestanas={[
+          { clave: "plan", texto: "Tu plan" },
+          { clave: "datos", texto: "Tus datos" },
+          { clave: "sesion", texto: "Sesión" },
+        ]}
+      />
 
-        <Pestanas
-          base="/negocio/panel/cuenta"
-          actual={seccion}
-          pestanas={[
-            { clave: "plan", texto: "Tu plan" },
-            { clave: "datos", texto: "Tus datos" },
-            { clave: "sesion", texto: "Sesión" },
-          ]}
-        />
+      {seccion === "plan" && (
+        <div className="grid gap-8">
+          {PAGO_SIMULADO && (
+            <p className="rounded-3xl border-2 border-mango/50 bg-mango/15 p-5 text-cacao">
+              <strong>Cobro simulado.</strong> Todavía no hay pasarela
+              conectada, así que ni se cobra ni se devuelve dinero de verdad. El
+              resto del flujo sí es el definitivo.
+            </p>
+          )}
 
-        {seccion === "plan" && (
-          <div className="grid gap-8">
-            {PAGO_SIMULADO && (
-              <p className="rounded-3xl border-2 border-mango/50 bg-mango/15 p-5 text-cacao">
-                <strong>Cobro simulado.</strong> Todavía no hay pasarela
-                conectada, así que ni se cobra ni se devuelve dinero de verdad.
-                El resto del flujo sí es el definitivo.
-              </p>
-            )}
-
-            {suscripcion ? (
-              <div className="rounded-3xl bg-crema-2 p-6">
-                <div className="flex flex-wrap items-baseline justify-between gap-3">
-                  <p className="font-display text-2xl text-selva-2">{plan?.nombre}</p>
-                  <p className="font-mono text-lg font-bold text-selva">
-                    {pesos(suscripcion.monto_mensual)}
-                    <span className="text-sm font-normal text-cacao/70">/mes</span>
-                  </p>
-                </div>
-
-                {/*
-                  El próximo cobro va en letra chica: es un dato de consulta, no
-                  una advertencia. En el mismo cuerpo que el plan competía con él
-                  y hacía leer la caja como si algo estuviera por vencer.
-                */}
-                <p className="mt-1 text-sm text-cacao/70">
-                  Hasta {plan?.max_sucursales}{" "}
-                  {plan?.max_sucursales === 1 ? "sucursal" : "sucursales"} ·
-                  Próximo cobro el{" "}
-                  {CUANDO.format(new Date(suscripcion.fecha_proximo_cobro))}
-                </p>
-              </div>
-            ) : (
-              <p className="rounded-3xl bg-crema-2 p-6 text-cacao">
-                No tienes un plan activo, así que tus micrositios no están en el
-                directorio. Elige uno aquí abajo.
-              </p>
-            )}
-
-            <PlanesDesplegables
-              tiers={tiers}
-              tierActual={suscripcion?.tier_id}
-              siguiente={
-                siguiente
-                  ? {
-                      id: siguiente.id,
-                      nombre: siguiente.nombre,
-                      ventajas:
-                        [
-                          `${siguiente.max_sucursales} sucursales`,
-                          siguiente.puede_dar_puntos && !plan?.puede_dar_puntos
-                            ? "monedas de chocolate para tus clientes"
-                            : null,
-                          siguiente.puede_publicar_contenido &&
-                          !plan?.puede_publicar_contenido
-                            ? "eventos y noticias"
-                            : null,
-                          siguiente.en_banner_principal &&
-                          !plan?.en_banner_principal
-                            ? "tu negocio en el banner de la portada"
-                            : null,
-                        ]
-                          .filter(Boolean)
-                          .join(", ") + ".",
-                      precio: pesos(siguiente.precio_mensual),
-                    }
-                  : undefined
-              }
-            >
-              {/*
-                Cancelar vive dentro de los planes, en letra pequeña: es una
-                decisión sobre el plan, y su sitio es donde se deciden los planes.
-              */}
-              {suscripcion && (
-                <details>
-                  <summary className="cursor-pointer list-none text-sm text-cacao/70 underline underline-offset-4 hover:text-cacao">
-                    Cancelar mi plan
-                  </summary>
-
-                  <div className="mt-3 grid gap-4 rounded-3xl bg-crema-2 p-5">
-                    <p className="text-cacao">
-                      Dejas de pagar y{" "}
-                      {publicadas > 0 ? (
-                        <>
-                          tus{" "}
-                          <strong className="text-selva-2">
-                            {publicadas === 1
-                              ? "sucursal sale"
-                              : `${publicadas} sucursales salen`}
-                          </strong>{" "}
-                          del directorio
-                        </>
-                      ) : (
-                        "tus micrositios no vuelven al directorio"
-                      )}
-                      , pero{" "}
-                      <strong className="text-selva-2">no pierdes nada</strong> de
-                      lo que armaste: todo vuelve a borrador con sus fotos, sus
-                      datos y su catálogo.
-                    </p>
-
-                    <FormularioCancelarSuscripcion />
-                  </div>
-                </details>
-              )}
-            </PlanesDesplegables>
-          </div>
-        )}
-
-        {seccion === "datos" && (
-          <div className="grid gap-10">
-            <section className="grid gap-4">
-              <h2 className="font-display text-xl">Tus datos</h2>
-              <FormularioDatosPersonales
-                nombre={perfil.nombre}
-                correo={perfil.correo}
-                nombreComercial={marca.nombre_comercial}
-              />
-            </section>
-
-            {/*
-              La contraseña va con los datos y no en pestaña propia: se entra a
-              "tus datos" a corregir lo que la plataforma sabe de uno, y la
-              contraseña es parte de eso. Una pestaña para un formulario de dos
-              campos sería una parada de más.
-            */}
-            <section className="grid gap-4">
-              <div>
-                <h2 className="font-display text-xl">Cambiar mi contraseña</h2>
-                <p className="mt-1 text-cacao">
-                  Escríbela dos veces. La anterior deja de servir en cuanto
-                  guardes.
-                </p>
-              </div>
-
-              <FormularioContrasenaNueva />
-            </section>
-          </div>
-        )}
-
-        {seccion === "sesion" && (
-          <section className="grid gap-4">
-            <h2 className="font-display text-xl">Tu sesión</h2>
-
+          {suscripcion ? (
             <div className="rounded-3xl bg-crema-2 p-6">
-              <p className="text-cacao">
-                Estás dentro como{" "}
-                <strong className="text-selva-2">{perfil.nombre}</strong>, con{" "}
-                {perfil.correo}.
+              <div className="flex flex-wrap items-baseline justify-between gap-3">
+                <p className="font-display text-2xl text-selva-2">
+                  {plan?.nombre}
+                </p>
+                <p className="font-mono text-lg font-bold text-selva">
+                  {pesos(suscripcion.monto_mensual)}
+                  <span className="text-sm font-normal text-cacao/70">
+                    /mes
+                  </span>
+                </p>
+              </div>
+
+              {/*
+                El próximo cobro va en letra chica: es un dato de consulta, no
+                una advertencia. En el mismo cuerpo que el plan competía con él
+                y hacía leer la caja como si algo estuviera por vencer.
+              */}
+              <p className="mt-1 text-sm text-cacao/70">
+                Hasta {plan?.max_sucursales}{" "}
+                {plan?.max_sucursales === 1 ? "sucursal" : "sucursales"} ·
+                Próximo cobro el{" "}
+                {CUANDO.format(new Date(suscripcion.fecha_proximo_cobro))}
               </p>
-              <p className="mt-2 text-cacao">
-                Al salir no se pierde nada: tus micrositios siguen publicados y
-                tus solicitudes de monedas te esperan.
+            </div>
+          ) : (
+            <p className="rounded-3xl bg-crema-2 p-6 text-cacao">
+              No tienes un plan activo, así que tus micrositios no están en el
+              directorio. Elige uno aquí abajo.
+            </p>
+          )}
+
+          <PlanesDesplegables
+            tiers={tiers}
+            tierActual={suscripcion?.tier_id}
+            siguiente={
+              siguiente
+                ? {
+                    id: siguiente.id,
+                    nombre: siguiente.nombre,
+                    ventajas:
+                      [
+                        `${siguiente.max_sucursales} sucursales`,
+                        siguiente.puede_dar_puntos && !plan?.puede_dar_puntos
+                          ? "mazorcas de cacao para tus clientes"
+                          : null,
+                        siguiente.puede_publicar_contenido &&
+                        !plan?.puede_publicar_contenido
+                          ? "eventos y noticias"
+                          : null,
+                        siguiente.en_banner_principal &&
+                        !plan?.en_banner_principal
+                          ? "tu negocio en el banner de la portada"
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(", ") + ".",
+                    precio: pesos(siguiente.precio_mensual),
+                  }
+                : undefined
+            }
+          >
+            {/*
+              Cancelar vive dentro de los planes, en letra pequeña: es una
+              decisión sobre el plan, y su sitio es donde se deciden los planes.
+            */}
+            {suscripcion && (
+              <details>
+                <summary className="cursor-pointer list-none text-sm text-cacao/70 underline underline-offset-4 hover:text-cacao">
+                  Cancelar mi plan
+                </summary>
+
+                <div className="mt-3 grid gap-4 rounded-3xl bg-crema-2 p-5">
+                  <p className="text-cacao">
+                    Dejas de pagar y{" "}
+                    {publicadas > 0 ? (
+                      <>
+                        tus{" "}
+                        <strong className="text-selva-2">
+                          {publicadas === 1
+                            ? "sucursal sale"
+                            : `${publicadas} sucursales salen`}
+                        </strong>{" "}
+                        del directorio
+                      </>
+                    ) : (
+                      "tus micrositios no vuelven al directorio"
+                    )}
+                    , pero{" "}
+                    <strong className="text-selva-2">no pierdes nada</strong> de
+                    lo que armaste: todo vuelve a borrador con sus fotos, sus
+                    datos y su catálogo.
+                  </p>
+
+                  <FormularioCancelarSuscripcion />
+                </div>
+              </details>
+            )}
+          </PlanesDesplegables>
+        </div>
+      )}
+
+      {seccion === "datos" && (
+        <div className="grid gap-10">
+          <section className="grid gap-4">
+            <h2 className="font-display text-xl">Tus datos</h2>
+            <FormularioDatosPersonales
+              nombre={perfil.nombre}
+              correo={perfil.correo}
+              nombreComercial={marca.nombre_comercial}
+            />
+          </section>
+
+          {/*
+            La contraseña va con los datos y no en pestaña propia: se entra a
+            "tus datos" a corregir lo que la plataforma sabe de uno, y la
+            contraseña es parte de eso. Una pestaña para un formulario de dos
+            campos sería una parada de más.
+          */}
+          <section className="grid gap-4">
+            <div>
+              <h2 className="font-display text-xl">Cambiar mi contraseña</h2>
+              <p className="mt-1 text-cacao">
+                Escríbela dos veces. La anterior deja de servir en cuanto
+                guardes.
               </p>
             </div>
 
-            <form action={cerrarSesion}>
-              <button
-                type="submit"
-                className="min-h-12 w-full rounded-full border-2 border-selva/25 bg-white px-6 font-bold text-selva-2 transition-transform active:translate-y-0.5"
-              >
-                Cerrar sesión
-              </button>
-            </form>
+            <FormularioContrasenaNueva />
           </section>
-        )}
-      </main>
-    </>
+        </div>
+      )}
+
+      {seccion === "sesion" && (
+        <section className="grid gap-4">
+          <h2 className="font-display text-xl">Tu sesión</h2>
+
+          <div className="rounded-3xl bg-crema-2 p-6">
+            <p className="text-cacao">
+              Estás dentro como{" "}
+              <strong className="text-selva-2">{perfil.nombre}</strong>, con{" "}
+              {perfil.correo}.
+            </p>
+            <p className="mt-2 text-cacao">
+              Al salir no se pierde nada: tus micrositios siguen publicados y
+              tus solicitudes de mazorcas te esperan.
+            </p>
+          </div>
+
+          <form action={cerrarSesion}>
+            <button
+              type="submit"
+              className="min-h-12 w-full rounded-full border-2 border-selva/25 bg-white px-6 font-bold text-selva-2 transition-transform active:translate-y-0.5"
+            >
+              Cerrar sesión
+            </button>
+          </form>
+        </section>
+      )}
+    </div>
   );
 }

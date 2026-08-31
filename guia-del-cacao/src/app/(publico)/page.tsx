@@ -53,8 +53,8 @@ export default async function Home() {
         </h1>
 
         <p className="mx-auto mt-4 max-w-2xl text-pretty text-lg text-cacao">
-          Productoras, chocolaterías y museos; eventos de la feria y un pasaporte
-          digital de monedas de chocolate que funciona todo el año.
+          Productoras, chocolaterías y museos; eventos de la feria y mazorcas
+          de cacao que juntas todo el año.
         </p>
 
         {/*

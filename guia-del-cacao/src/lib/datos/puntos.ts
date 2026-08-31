@@ -8,7 +8,7 @@ export type SolicitudPendiente = {
   /** Ruta del ticket en el bucket privado, si lo mando. */
   comprobante: string | null;
   resena_id: string | null;
-  /** La resena que dejo con la solicitud: es la que vale la segunda moneda. */
+  /** La resena que dejo con la solicitud: es la que vale la segunda mazorca. */
   resenas: { texto: string } | null;
   perfiles_publicos: { nombre: string; foto_perfil: string | null } | null;
   sucursales: {
@@ -62,6 +62,36 @@ export async function solicitudesPorResolver(sucursalIds: string[]) {
     .order("fecha_solicitud");
 
   return (data ?? []) as unknown as SolicitudPendiente[];
+}
+
+/**
+ * Cuántas mazorcas lleva hoy cada una de estas personas en esta marca.
+ *
+ * El tope de 3 por persona, marca y día (spec §5.4.6) lo impone el trigger
+ * `acreditar_puntos`, pero solo saltaba al pulsar: el panel ofrecía los tres
+ * botones y el error llegaba después. Esto permite decirlo antes.
+ */
+export async function dadasHoyPorPersona(
+  marcaId: string,
+  usuarios: string[],
+) {
+  const cuenta = new Map<string, number>();
+  if (usuarios.length === 0) return cuenta;
+
+  const supabase = await crearClienteServidor();
+
+  await Promise.all(
+    [...new Set(usuarios)].map(async (usuario) => {
+      const { data } = await supabase.rpc("mazorcas_dadas_hoy", {
+        p_usuario: usuario,
+        p_marca: marcaId,
+      });
+
+      cuenta.set(usuario, Number(data ?? 0));
+    }),
+  );
+
+  return cuenta;
 }
 
 /** Historial del cliente: qué pidió, dónde y en qué quedó. */
@@ -131,11 +161,11 @@ export async function tienePendienteEn(usuarioId: string, sucursalId: string) {
 export type Pasaporte = { puntos: number; nivel: number };
 
 /**
- * Monedas y rango del año en curso de un cliente.
+ * Mazorcas y rango del año en curso de un cliente.
  *
  * El `.eq("usuario_id")` no sobra aunque ya se filtre por año: un
  * administrador puede leer los rangos de todo el mundo, así que sin él la
- * consulta devolvería el pasaporte de cualquiera como si fuera el propio.
+ * consulta devolvería la cuenta de cualquiera como si fuera la propia.
  * Ya pasó una vez (ver AGENTS.md, "RLS autoriza, no acota").
  */
 export async function pasaporteDe(
@@ -158,7 +188,7 @@ export async function pasaporteDe(
  * Las estrellas que esta persona le puso a cada negocio.
  *
  * Va aparte de las resenas porque son dos tablas; se junta en la pantalla del
- * pasaporte para que cada resena propia salga con su nota, igual que en el
+ * cuenta para que cada resena propia salga con su nota, igual que en el
  * micrositio.
  */
 export async function misEstrellasPorSucursal(usuarioId: string) {

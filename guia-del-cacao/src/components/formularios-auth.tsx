@@ -133,12 +133,12 @@ export function FormularioElegirRol() {
     {
       rol: "cliente",
       titulo: "Soy cliente",
-      texto: "Quiero explorar el directorio, dejar reseñas y juntar monedas de chocolate.",
+      texto: "Quiero explorar el directorio, dejar reseñas y juntar mazorcas de cacao.",
     },
     {
       rol: "negocio",
       titulo: "Soy negocio",
-      texto: "Quiero mi micrositio, publicar y dar monedas de chocolate a mis clientes.",
+      texto: "Quiero mi micrositio, publicar y dar mazorcas de cacao a mis clientes.",
     },
   ];
 

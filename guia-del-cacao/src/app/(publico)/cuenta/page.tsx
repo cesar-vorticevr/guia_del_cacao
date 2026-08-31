@@ -71,7 +71,7 @@ export default async function Cuenta() {
         <h1 className="font-display text-3xl">Hola, {perfil.nombre}</h1>
 
         <section className="rounded-3xl bg-crema-2 p-6">
-          <p className="font-bold text-selva-2">Tu pasaporte {anio}</p>
+          <p className="font-bold text-selva-2">Tu cuenta {anio}</p>
 
           <p className="mt-2 font-mono text-5xl font-bold text-selva">{puntos}</p>
           <p className="mt-1 text-cacao">
@@ -105,7 +105,7 @@ export default async function Cuenta() {
           </p>
         </section>
 
-        {/* Las pendientes van arriba y aparte: son monedas que ya pediste y
+        {/* Las pendientes van arriba y aparte: son mazorcas que ya pediste y
             todavía no cuentan en el marcador, y no saberlo se siente como que
             se perdieron. */}
         {pendientes > 0 && (
@@ -243,10 +243,10 @@ export default async function Cuenta() {
           </section>
         )}
       {/*
-        Salir vive aquí, al final del pasaporte, y ya no en una barra propia:
+        Salir vive aquí, al final de la cuenta, y ya no en una barra propia:
         esta pantalla ahora usa el mismo armazón que el resto del sitio, con su
         encabezado arriba y su barra de navegación abajo. Tener dos encabezados
-        era lo que hacía que al entrar al pasaporte se perdiera la navegación.
+        era lo que hacía que al entrar a la cuenta se perdiera la navegación.
       */}
       <form action={cerrarSesion}>
         <button

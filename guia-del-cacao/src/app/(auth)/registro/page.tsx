@@ -24,7 +24,7 @@ export default function Registro() {
           Soy cliente
         </span>
         <span className="mt-1 block text-cacao">
-          Explora el directorio, deja reseñas y junta monedas de chocolate
+          Explora el directorio, deja reseñas y junta mazorcas de cacao
           escaneando el QR de cada negocio.
         </span>
       </Link>

@@ -2,7 +2,13 @@
 
 import { useActionState, useState } from "react";
 import { Aviso, BotonEnviar } from "@/components/formulario";
-import { apoyarTema, borrarTema, crearTema, type EstadoForo } from "@/lib/foro/acciones";
+import {
+  apoyarTema,
+  borrarTema,
+  crearTema,
+  type EstadoForo,
+} from "@/lib/foro/acciones";
+import { ElegirFotos } from "@/components/publico/elegir-fotos";
 import { MONEDA } from "@/lib/vocabulario";
 
 const INICIAL: EstadoForo = {};
@@ -28,7 +34,17 @@ function Resultado({ estado }: { estado: EstadoForo }) {
  * El formulario está plegado hasta que se pide: en una lista de temas, un
  * cuadro de texto grande abierto compite con lo que la gente vino a leer.
  */
-export function FormularioTema() {
+export function FormularioTema({
+  sucursales = [],
+}: {
+  /**
+   * Las sucursales con las que un negocio puede firmar.
+   *
+   * Vacío para una persona, que publica a su nombre. Con una sola no se
+   * pregunta: elegir entre una opción no es elegir.
+   */
+  sucursales?: { id: string; nombre_sucursal: string }[];
+}) {
   const [abierto, setAbierto] = useState(false);
   const [estado, accion] = useActionState(crearTema, INICIAL);
 
@@ -39,14 +55,39 @@ export function FormularioTema() {
         onClick={() => setAbierto(true)}
         className="min-h-14 w-full rounded-full bg-mango px-6 font-display text-lg font-semibold text-ink shadow-dura transition-transform active:translate-y-0.5"
       >
-        Abrir un tema
+        Publicar algo
       </button>
     );
   }
 
   return (
-    <form action={accion} className="grid gap-3 rounded-3xl bg-white p-5 shadow-dura">
+    <form
+      action={accion}
+      className="grid gap-3 rounded-3xl bg-white p-5 shadow-dura"
+    >
       <Resultado estado={estado} />
+
+      {sucursales.length > 0 && (
+        <input type="hidden" name="sucursal_id" value={sucursales[0].id} />
+      )}
+
+      {sucursales.length > 1 && (
+        <label className="block">
+          <span className="mb-1.5 block font-bold text-selva-2">
+            Publicas como
+          </span>
+          <select
+            name="sucursal_id"
+            className="min-h-14 w-full rounded-2xl border-2 border-selva/20 bg-white px-4 text-base text-ink"
+          >
+            {sucursales.map((sucursal) => (
+              <option key={sucursal.id} value={sucursal.id}>
+                {sucursal.nombre_sucursal}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <label className="block">
         <span className="mb-1.5 block font-bold text-selva-2">Título</span>
@@ -59,7 +100,7 @@ export function FormularioTema() {
       </label>
 
       <label className="block">
-        <span className="mb-1.5 block font-bold text-selva-2">Tu tema</span>
+        <span className="mb-1.5 block font-bold text-selva-2">Contenido</span>
         <textarea
           name="contenido"
           rows={5}
@@ -69,7 +110,9 @@ export function FormularioTema() {
         />
       </label>
 
-      <BotonEnviar>Publicar el tema</BotonEnviar>
+      <ElegirFotos />
+
+      <BotonEnviar>Publicar</BotonEnviar>
 
       <button
         type="button"
@@ -85,7 +128,7 @@ export function FormularioTema() {
 /**
  * El botón de apoyo.
  *
- * Dice claramente que la moneda sale de las tuyas: es una transferencia, no un
+ * Dice claramente que la mazorca sale de las tuyas: es una transferencia, no un
  * "me gusta". Quien apoya se queda con una menos y el autor con una más.
  */
 export function BotonApoyar({
@@ -116,7 +159,8 @@ export function BotonApoyar({
       <div className="grid gap-2 rounded-3xl bg-crema-2 p-5">
         {cuenta}
         <p className="text-sm text-cacao/70">
-          Cada quien puede regalarte una {MONEDA.singular} para apoyar tu tema.
+          Cada quien puede regalarte una {MONEDA.singular} para apoyar tu
+          publicación. Es la que te costó publicarla.
         </p>
       </div>
     );
@@ -126,7 +170,9 @@ export function BotonApoyar({
     return (
       <div className="grid gap-2 rounded-3xl border-2 border-lima/50 bg-lima/15 p-5">
         {cuenta}
-        <p className="font-bold text-selva-2">Ya le diste tu {MONEDA.singular}.</p>
+        <p className="font-bold text-selva-2">
+          Ya le diste tu {MONEDA.singular}.
+        </p>
       </div>
     );
   }
@@ -135,7 +181,7 @@ export function BotonApoyar({
     <form action={accion} className="grid gap-3 rounded-3xl bg-crema-2 p-5">
       <Resultado estado={estado} />
       {cuenta}
-      <input type="hidden" name="tema_id" value={temaId} />
+      <input type="hidden" name="publicacion_id" value={temaId} />
 
       <BotonEnviar variante={monedas > 0 ? "principal" : "secundario"}>
         Regalar una {MONEDA.unaCorta}
@@ -151,12 +197,12 @@ export function BotonApoyar({
 export function BotonBorrarTema({ temaId }: { temaId: string }) {
   return (
     <form action={borrarTema}>
-      <input type="hidden" name="tema_id" value={temaId} />
+      <input type="hidden" name="publicacion_id" value={temaId} />
       <button
         type="submit"
         className="min-h-11 rounded-full border-2 border-guayaba/50 px-4 text-sm font-bold text-cacao"
       >
-        Eliminar mi tema
+        Eliminar mi publicación
       </button>
     </form>
   );

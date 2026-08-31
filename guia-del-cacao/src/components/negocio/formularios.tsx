@@ -1,8 +1,15 @@
 "use client";
 
+import { EditarFotos } from "@/components/publico/editar-fotos";
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { Area, Aviso, BotonEnviar, Campo, Selector } from "@/components/formulario";
+import {
+  Area,
+  Aviso,
+  BotonEnviar,
+  Campo,
+  Selector,
+} from "@/components/formulario";
 import {
   agregarAGaleria,
   cambiarFotoPublicacion,
@@ -71,7 +78,9 @@ export function FormularioMicrositio({
   return (
     <form action={accion} className="grid gap-4">
       <input type="hidden" name="sucursal_id" value={sucursal.id} />
-      {continuarA && <input type="hidden" name="continuar_a" value={continuarA} />}
+      {continuarA && (
+        <input type="hidden" name="continuar_a" value={continuarA} />
+      )}
       <Resultado estado={estado} />
 
       <Campo
@@ -100,8 +109,20 @@ export function FormularioMicrositio({
         <legend className="px-2 font-display text-lg font-semibold text-selva-2">
           Contacto y redes
         </legend>
-        <Campo nombre="telefono" etiqueta="Teléfono" tipo="tel" requerido={false} valor={sucursal.telefono} />
-        <Campo nombre="whatsapp" etiqueta="WhatsApp" tipo="tel" requerido={false} valor={sucursal.whatsapp} />
+        <Campo
+          nombre="telefono"
+          etiqueta="Teléfono"
+          tipo="tel"
+          requerido={false}
+          valor={sucursal.telefono}
+        />
+        <Campo
+          nombre="whatsapp"
+          etiqueta="WhatsApp"
+          tipo="tel"
+          requerido={false}
+          valor={sucursal.whatsapp}
+        />
         <Campo
           nombre="correo_contacto"
           etiqueta="Correo de contacto"
@@ -109,10 +130,30 @@ export function FormularioMicrositio({
           requerido={false}
           valor={sucursal.correo_contacto}
         />
-        <Campo nombre="facebook" etiqueta="Facebook" requerido={false} valor={sucursal.facebook} />
-        <Campo nombre="instagram" etiqueta="Instagram" requerido={false} valor={sucursal.instagram} />
-        <Campo nombre="youtube" etiqueta="YouTube" requerido={false} valor={sucursal.youtube} />
-        <Campo nombre="tiktok" etiqueta="TikTok" requerido={false} valor={sucursal.tiktok} />
+        <Campo
+          nombre="facebook"
+          etiqueta="Facebook"
+          requerido={false}
+          valor={sucursal.facebook}
+        />
+        <Campo
+          nombre="instagram"
+          etiqueta="Instagram"
+          requerido={false}
+          valor={sucursal.instagram}
+        />
+        <Campo
+          nombre="youtube"
+          etiqueta="YouTube"
+          requerido={false}
+          valor={sucursal.youtube}
+        />
+        <Campo
+          nombre="tiktok"
+          etiqueta="TikTok"
+          requerido={false}
+          valor={sucursal.tiktok}
+        />
       </fieldset>
 
       <BotonEnviar>
@@ -169,7 +210,10 @@ function CampoImagen({
       />
 
       {pending ? (
-        <span role="status" className="mt-1.5 block text-sm font-bold text-selva">
+        <span
+          role="status"
+          className="mt-1.5 block text-sm font-bold text-selva"
+        >
           Subiendo…
         </span>
       ) : (
@@ -247,7 +291,10 @@ export function FormularioEvento({ sucursales }: { sucursales: Sucursal[] }) {
       <Selector
         nombre="sucursal_id"
         etiqueta="Sucursal que publica"
-        opciones={sucursales.map((s) => ({ valor: s.id, texto: s.nombre_sucursal }))}
+        opciones={sucursales.map((s) => ({
+          valor: s.id,
+          texto: s.nombre_sucursal,
+        }))}
       />
 
       <Campo nombre="titulo" etiqueta="Título" />
@@ -269,10 +316,16 @@ export function FormularioEvento({ sucursales }: { sucursales: Sucursal[] }) {
           accept={ACEPTA}
           className="w-full rounded-2xl border-2 border-dashed border-selva/25 bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-selva file:px-4 file:py-2 file:font-bold file:text-crema"
         />
-        <span className="mt-1.5 block text-sm text-cacao/70">{MEDIDAS.publicacion}</span>
+        <span className="mt-1.5 block text-sm text-cacao/70">
+          {MEDIDAS.publicacion}
+        </span>
         <span className="block text-sm text-cacao/70">{PESO}</span>
       </label>
-      <Campo nombre="fecha_evento" etiqueta="Fecha del evento" tipo="datetime-local" />
+      <Campo
+        nombre="fecha_evento"
+        etiqueta="Fecha del evento"
+        tipo="datetime-local"
+      />
       <Selector
         nombre="rango_exclusivo"
         etiqueta="¿Exclusivo para algún rango?"
@@ -281,8 +334,7 @@ export function FormularioEvento({ sucursales }: { sucursales: Sucursal[] }) {
           { valor: "", texto: "Abierto a todos" },
           ...RANGOS.filter((r) => r.nivel > 1).map((r) => ({
             valor: String(r.nivel),
-            texto:
-              r.nivel === 4 ? `Solo ${r.plural}` : `${r.plural} o más`,
+            texto: r.nivel === 4 ? `Solo ${r.plural}` : `${r.plural} o más`,
           })),
         ]}
       />
@@ -302,7 +354,10 @@ export function FormularioNoticia({ sucursales }: { sucursales: Sucursal[] }) {
       <Selector
         nombre="sucursal_id"
         etiqueta="Sucursal que publica"
-        opciones={sucursales.map((s) => ({ valor: s.id, texto: s.nombre_sucursal }))}
+        opciones={sucursales.map((s) => ({
+          valor: s.id,
+          texto: s.nombre_sucursal,
+        }))}
       />
 
       <Campo nombre="titulo" etiqueta="Título" />
@@ -314,7 +369,6 @@ export function FormularioNoticia({ sucursales }: { sucursales: Sucursal[] }) {
         filas={5}
       />
 
-
       <label className="block">
         <span className="mb-1.5 block font-bold text-selva-2">
           Foto <span className="font-normal text-cacao/70">(opcional)</span>
@@ -325,7 +379,9 @@ export function FormularioNoticia({ sucursales }: { sucursales: Sucursal[] }) {
           accept={ACEPTA}
           className="w-full rounded-2xl border-2 border-dashed border-selva/25 bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-selva file:px-4 file:py-2 file:font-bold file:text-crema"
         />
-        <span className="mt-1.5 block text-sm text-cacao/70">{MEDIDAS.publicacion}</span>
+        <span className="mt-1.5 block text-sm text-cacao/70">
+          {MEDIDAS.publicacion}
+        </span>
         <span className="block text-sm text-cacao/70">{PESO}</span>
       </label>
 
@@ -346,11 +402,26 @@ export function PublicacionPropia({
   publicacion,
   clase,
   foto,
+  editable = true,
 }: {
-  publicacion: { id: string; titulo: string; fecha: string; sucursal: string; paso?: boolean };
+  publicacion: {
+    id: string;
+    titulo: string;
+    fecha: string;
+    sucursal: string;
+    paso?: boolean;
+  };
   clase: "evento" | "noticia";
   /** URL de la portada, ya armada por el servidor. */
   foto: string | null;
+  /**
+   * Si el plan de la marca deja tocarla.
+   *
+   * Cambiar la foto es una edición y la base la rechaza sin plan, así que el
+   * formulario no se pinta. Eliminar sí se queda: son sus publicaciones y
+   * cobrarle por poder tirar algo que ya no se ve sería cobrarle por limpiar.
+   */
+  editable?: boolean;
 }) {
   const [estado, accion] = useActionState(cambiarFotoPublicacion, INICIAL);
 
@@ -393,21 +464,25 @@ export function PublicacionPropia({
         </div>
       </div>
 
-      <Resultado estado={estado} />
+      {editable && <Resultado estado={estado} />}
 
-      <form action={accion} className="flex flex-wrap items-center gap-2">
-        <input type="hidden" name="clase" value={clase} />
-        <input type="hidden" name="publicacion_id" value={publicacion.id} />
+      {editable && (
+        <form action={accion} className="flex flex-wrap items-center gap-2">
+          <input type="hidden" name="clase" value={clase} />
+          <input type="hidden" name="publicacion_id" value={publicacion.id} />
 
-        <input
-          type="file"
-          name="imagen"
-          accept={ACEPTA}
-          className="min-w-0 flex-1 rounded-2xl border-2 border-dashed border-selva/25 bg-white px-3 py-2 text-sm file:mr-2 file:rounded-full file:border-0 file:bg-selva file:px-3 file:py-1.5 file:font-bold file:text-crema"
-        />
+          <input
+            type="file"
+            name="imagen"
+            accept={ACEPTA}
+            className="min-w-0 flex-1 rounded-2xl border-2 border-dashed border-selva/25 bg-white px-3 py-2 text-sm file:mr-2 file:rounded-full file:border-0 file:bg-selva file:px-3 file:py-1.5 file:font-bold file:text-crema"
+          />
 
-        <BotonEnviarChico>{foto ? "Cambiar foto" : "Subir foto"}</BotonEnviarChico>
-      </form>
+          <BotonEnviarChico>
+            {foto ? "Cambiar foto" : "Subir foto"}
+          </BotonEnviarChico>
+        </form>
+      )}
 
       <form action={eliminarPublicacion}>
         <input type="hidden" name="clase" value={clase} />
@@ -480,9 +555,15 @@ function Planes({
           ? "Una sucursal"
           : `Hasta ${tier.max_sucursales} sucursales`,
     },
-    { hay: tier.puede_dar_puntos, texto: "Da monedas de chocolate a tus clientes" },
+    {
+      hay: tier.puede_dar_puntos,
+      texto: "Da mazorcas de cacao a tus clientes",
+    },
     { hay: tier.puede_publicar_contenido, texto: "Publica eventos y noticias" },
-    { hay: tier.en_banner_principal, texto: "Aparece en el banner de la portada" },
+    {
+      hay: tier.en_banner_principal,
+      texto: "Aparece en el banner de la portada",
+    },
   ];
 
   return (
@@ -604,9 +685,10 @@ export function FormularioCancelarSuscripcion() {
           className="mt-0.5 size-5 shrink-0 accent-selva"
         />
         <span className="text-cacao">
-          Entiendo que al cancelar <strong>dejo de aparecer en el directorio</strong>{" "}
-          y que no se me volverá a cobrar. Mi micrositio vuelve a borrador con
-          todo lo que armé, y puedo publicarlo otra vez cuando quiera.
+          Entiendo que al cancelar{" "}
+          <strong>dejo de aparecer en el directorio</strong> y que no se me
+          volverá a cobrar. Mi micrositio vuelve a borrador con todo lo que
+          armé, y puedo publicarlo otra vez cuando quiera.
         </span>
       </label>
 
@@ -623,6 +705,8 @@ export function FormularioCancelarSuscripcion() {
  */
 export function FormularioEditarEvento({
   evento,
+  fotos = [],
+  urlDeFoto = {},
 }: {
   evento: {
     id: string;
@@ -631,6 +715,9 @@ export function FormularioEditarEvento({
     contenido?: string;
     fechaEvento?: string;
   };
+  /** Las rutas que ya tiene, para poder quitarlas una por una. */
+  fotos?: string[];
+  urlDeFoto?: Record<string, string>;
 }) {
   const [estado, accion] = useActionState(editarEvento, INICIAL);
 
@@ -644,7 +731,11 @@ export function FormularioEditarEvento({
       <input type="hidden" name="evento_id" value={evento.id} />
       <Resultado estado={estado} />
 
-      <Campo nombre="titulo" etiqueta="Nombre del evento" valor={evento.titulo} />
+      <Campo
+        nombre="titulo"
+        etiqueta="Nombre del evento"
+        valor={evento.titulo}
+      />
       <Campo
         nombre="subtitulo"
         etiqueta="Subtítulo"
@@ -665,22 +756,12 @@ export function FormularioEditarEvento({
         valor={fecha}
       />
 
-      <label className="block">
-        <span className="mb-1.5 block font-bold text-selva-2">
-          Cambiar la foto{" "}
-          <span className="font-normal text-cacao/70">(opcional)</span>
-        </span>
-        <input
-          type="file"
-          name="imagen"
-          accept={ACEPTA}
-          className="w-full rounded-2xl border-2 border-dashed border-selva/25 bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-selva file:px-4 file:py-2 file:font-bold file:text-crema"
-        />
-        <span className="mt-1.5 block text-sm text-cacao/70">
-          Si no eliges ninguna se conserva la que ya tiene. {MEDIDAS.publicacion}
-        </span>
-        <span className="block text-sm text-cacao/70">{PESO}</span>
-      </label>
+      {/*
+        Las fotos se editan como en la comunidad: se quitan una por una y se
+        suman otras. Antes solo se podía reemplazar la portada, así que para
+        tirar una foto había que subir otra encima.
+      */}
+      <EditarFotos actuales={fotos} urlDe={urlDeFoto} obligatoria={false} />
 
       <BotonEnviar>Guardar cambios</BotonEnviar>
     </form>

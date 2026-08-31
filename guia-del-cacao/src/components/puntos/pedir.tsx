@@ -23,7 +23,7 @@ const PASOS = ["Tu compra", "Qué compraste", "Tu reseña"] as const;
  * primer paso no lo pide otra vez: ofrece la foto del ticket, que es opcional y
  * sirve para que le crean, no como requisito.
  */
-export function PedirMonedas({
+export function PedirMazorcas({
   sucursalId,
   slug,
   negocio,
@@ -37,7 +37,7 @@ export function PedirMonedas({
   negocio: string;
   productos: Producto[];
   fotos: Record<string, string | null>;
-  /** Falso si ya comentó hoy aquí: entonces la moneda extra no está en juego. */
+  /** Falso si ya comentó hoy aquí: entonces la mazorca extra no está en juego. */
   puedeResenar: boolean;
   /** Las estrellas que ya le dio a este negocio, para no empezar de cero. */
   misEstrellas: number | null;

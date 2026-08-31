@@ -4,7 +4,7 @@ import { conMonedas, rango as nombreRango } from "@/lib/vocabulario";
 /**
  * El marcador del pasaporte, en el encabezado de todo el sitio público.
  *
- * Es el enganche del programa: si las monedas solo se ven al entrar a
+ * Es el enganche del programa: si las mazorcas solo se ven al entrar a
  * /cuenta, nadie se entera de que está a tres de subir de rango. Aquí viajan
  * con la persona.
  *

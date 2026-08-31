@@ -25,11 +25,11 @@ function traducir(mensaje: string, quienLee: "cliente" | "negocio" = "cliente") 
   // queda por dar.
   if (mensaje.includes("Tope alcanzado")) {
     return quienLee === "negocio"
-      ? "Esta persona ya recibió sus 3 monedas de hoy en tu negocio. Puedes dárselas mañana."
-      : "Ya juntaste las 3 monedas que este negocio puede darte hoy. Vuelve mañana.";
+      ? "Esta persona ya recibió sus 3 mazorcas de hoy en tu negocio. Puedes dárselas mañana."
+      : "Ya juntaste las 3 mazorcas que este negocio puede darte hoy. Vuelve mañana.";
   }
   if (mensaje.includes("no otorga puntos")) {
-    return "Este negocio todavía no participa en el pasaporte de monedas de chocolate.";
+    return "Este negocio todavía no reparte mazorcas de cacao.";
   }
   if (mensaje.includes("no esta publicada")) {
     return "Este micrositio no está disponible.";
@@ -38,12 +38,12 @@ function traducir(mensaje: string, quienLee: "cliente" | "negocio" = "cliente") 
 }
 
 /**
- * El cliente escanea el QR, dice qué compró y pide sus monedas.
+ * El cliente escanea el QR, dice qué compró y pide sus mazorcas.
  *
  * No decide cuántas: eso lo hace la marca al revisar (spec §5.4.5). Lo que sí
  * hace es armar el expediente con el que la marca decide — qué compró, el
  * ticket si lo mandó, y la reseña si la dejó, que es la que vale la segunda
- * moneda.
+ * mazorca.
  */
 export async function pedirPuntos(
   _previo: EstadoPuntos,
@@ -54,7 +54,7 @@ export async function pedirPuntos(
 
   if (!perfil) redirect(`/login?volver=/monedas/${slug}`);
   if (perfil.rol !== "cliente") {
-    return { error: "Solo las cuentas de cliente juntan monedas de chocolate." };
+    return { error: "Solo las cuentas de cliente juntan mazorcas de cacao." };
   }
 
   const sucursalId = datos.get("sucursal_id")?.toString() ?? "";
@@ -91,7 +91,7 @@ export async function pedirPuntos(
     comprobante = ruta;
   }
 
-  // La reseña es opcional y vale la segunda moneda. Si topa con el tope de un
+  // La reseña es opcional y vale la segunda mazorca. Si topa con el tope de un
   // cambio al día, la solicitud sigue adelante valiendo una: sería absurdo
   // tirar toda la compra por un comentario de más.
   //
@@ -136,7 +136,7 @@ export async function pedirPuntos(
         .eq("id", yaTengo.id)
         .eq("usuario_id", perfil.id);
 
-      // Si el cambio pasó, la reseña cuenta para la segunda moneda igual que
+      // Si el cambio pasó, la reseña cuenta para la segunda mazorca igual que
       // una nueva: el negocio recibe una opinión fresca de esta visita.
       if (!error) resenaId = yaTengo.id;
     }
@@ -233,7 +233,7 @@ export async function resolverSolicitud(
 
   const puntos = Number(decision);
   if (!Number.isInteger(puntos) || puntos < 1 || puntos > 3) {
-    return { error: "Se otorgan entre 1 y 3 monedas." };
+    return { error: "Se otorgan entre 1 y 3 mazorcas." };
   }
 
   const { error } = await supabase
@@ -249,5 +249,5 @@ export async function resolverSolicitud(
   if (error) return { error: traducir(error.message, "negocio") };
 
   revalidatePath("/negocio/panel/monedas");
-  return { ok: `Listo: ${puntos} ${puntos === 1 ? "moneda otorgada" : "monedas otorgadas"}.` };
+  return { ok: `Listo: ${puntos} ${puntos === 1 ? "mazorca otorgada" : "mazorcas otorgadas"}.` };
 }

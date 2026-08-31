@@ -9,6 +9,8 @@ export type Tema = {
   contenido: string;
   fecha: string;
   fecha_edicion: string | null;
+  /** Las fotos, ya como rutas del bucket. La primera es la portada. */
+  imagenes: string[];
   perfiles_publicos: { nombre: string; foto_perfil: string | null } | null;
   /** Cuántos comentarios y cuántos apoyos lleva. */
   comentarios: number;
@@ -20,12 +22,12 @@ export type Tema = {
 // autor y la tabla de apoyos—, y sin decir cual, PostgREST responde un error
 // que aqui se veria como "no hay temas".
 const CAMPOS =
-  "id, autor_id, titulo, contenido, fecha, fecha_edicion, perfiles_publicos!temas_foro_autor_id_fkey(nombre, foto_perfil)";
+  "id, autor_id, titulo, contenido, fecha, fecha_edicion, imagenes, perfiles_publicos!publicaciones_autor_id_fkey(nombre, foto_perfil)";
 
 /**
  * Pega los conteos a una lista de temas, en una sola consulta.
  *
- * Los cuenta la vista `temas_foro_resumen`, que corre con los permisos de
+ * Los cuenta la vista `publicaciones_resumen`, que corre con los permisos de
  * quien pregunta: un comentario oculto no debe sumar para quien no lo ve.
  */
 async function conConteos(
@@ -35,16 +37,16 @@ async function conConteos(
   if (filas.length === 0) return [];
 
   const { data } = await supabase
-    .from("temas_foro_resumen")
-    .select("tema_id, comentarios, apoyos")
+    .from("publicaciones_resumen")
+    .select("publicacion_id, comentarios, apoyos")
     .in(
-      "tema_id",
+      "publicacion_id",
       filas.map((f) => f.id),
     );
 
   const porTema = new Map(
     (data ?? []).map((fila) => [
-      fila.tema_id as string,
+      fila.publicacion_id as string,
       { comentarios: Number(fila.comentarios), apoyos: Number(fila.apoyos) },
     ]),
   );
@@ -61,7 +63,7 @@ export async function listarTemas() {
   const supabase = await crearClienteServidor();
 
   const { data } = await supabase
-    .from("temas_foro")
+    .from("publicaciones")
     .select(CAMPOS)
     .order("fecha", { ascending: false });
 
@@ -71,7 +73,7 @@ export async function listarTemas() {
 export async function temaPorId(id: string) {
   const supabase = await crearClienteServidor();
 
-  const { data } = await supabase.from("temas_foro").select(CAMPOS).eq("id", id).maybeSingle();
+  const { data } = await supabase.from("publicaciones").select(CAMPOS).eq("id", id).maybeSingle();
 
   if (!data) return null;
 
@@ -84,7 +86,7 @@ export async function temaPorId(id: string) {
 
 export type Cupo = {
   monedas: number;
-  /** Cuántos temas puede tener abiertos con esas monedas. */
+  /** Cuántos temas puede tener abiertos con esas mazorcas. */
   permitidos: number;
   abiertos: number;
 };
@@ -103,7 +105,7 @@ export async function miCupo(usuarioId: string): Promise<Cupo> {
   const [pasaporte, { count }] = await Promise.all([
     pasaporteDe(usuarioId),
     supabase
-      .from("temas_foro")
+      .from("publicaciones")
       .select("id", { count: "exact", head: true })
       .eq("autor_id", usuarioId),
   ]);
@@ -115,15 +117,15 @@ export async function miCupo(usuarioId: string): Promise<Cupo> {
   };
 }
 
-/** ¿Ya le regaló su moneda a este tema? Una por persona y por tema. */
+/** ¿Ya le regaló su mazorca a este tema? Una por persona y por tema. */
 export async function yaApoye(usuarioId: string, temaId: string) {
   const supabase = await crearClienteServidor();
 
   const { data } = await supabase
-    .from("apoyos_tema")
-    .select("tema_id")
+    .from("apoyos")
+    .select("publicacion_id")
     .eq("usuario_id", usuarioId)
-    .eq("tema_id", temaId)
+    .eq("publicacion_id", temaId)
     .maybeSingle();
 
   return data !== null;

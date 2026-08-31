@@ -113,7 +113,7 @@ export function SelectorEstrellas({
  * El promedio con sus estrellas, tal como se ve en todas partes.
  *
  * Existe para que el mismo dato se lea igual en el directorio, en el
- * micrositio, en el panel del negocio y en el pasaporte del cliente. Cuando
+ * micrositio, en el panel del negocio y en la cuenta del cliente. Cuando
  * cada pantalla lo armaba a mano, cada una lo redondeaba a su modo.
  */
 export function Promedio({

@@ -27,8 +27,8 @@ export default function Acerca() {
           talleres, que sigue viva fuera de la temporada de la feria.
         </li>
         <li>
-          <strong className="text-selva-2">Un pasaporte digital</strong>: junta
-          monedas de chocolate al visitar y sube de rango, de Curioso a Maestro
+          <strong className="text-selva-2">Una cuenta que junta cacao</strong>:
+          gana mazorcas al visitar y sube de rango, de Curioso a Maestro
           cacaotero.
         </li>
       </ul>
@@ -37,7 +37,7 @@ export default function Acerca() {
 
       <p className="mt-3 text-cacao">
         Cualquier negocio del cacao en Tabasco puede publicar su micrositio,
-        anunciar sus eventos y abonar monedas a quien lo visita.{" "}
+        anunciar sus eventos y abonar mazorcas a quien lo visita.{" "}
         <Link href="/registro/negocio" className="font-bold text-selva underline">
           Así se da de alta
         </Link>

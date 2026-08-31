@@ -39,12 +39,21 @@ export function TarjetaEvento({
   fechaTexto,
   foto,
   slug,
+  editable = true,
 }: {
   evento: PublicacionPropia;
   fechaTexto: string;
   foto: string | null;
   /** Para "ver publicado", si su sucursal está en el directorio. */
   slug: string | null;
+  /**
+   * Si el plan de la marca deja tocarlo.
+   *
+   * Sin plan la base rechaza cualquier cambio, así que los botones que
+   * llevarían a chocar contra ella no se pintan: ofrecer «Editar» para que
+   * al guardar salte un error es peor que no ofrecerlo.
+   */
+  editable?: boolean;
 }) {
   const estado = estadoDeEvento(evento);
   const cancelado = estado.clave === "cancelado";
@@ -116,11 +125,18 @@ export function TarjetaEvento({
       </div>
 
       <div className="mt-4 flex flex-wrap gap-3">
-        <Link href={`/negocio/panel/eventos/${evento.id}`} className={SECUNDARIO}>
-          Editar
-        </Link>
+        {editable && (
+          <Link href={`/eventos/${evento.id}/editar`} className={SECUNDARIO}>
+            Editar
+          </Link>
+        )}
 
-        {slug && !cancelado && (
+        {/*
+          "Ver publicado" también depende del plan: sin él la página del evento
+          solo la ve su dueño, así que el botón prometía enseñar algo que el
+          público no tiene delante.
+        */}
+        {editable && slug && !cancelado && (
           <Link href={`/eventos/${evento.id}`} className={SECUNDARIO}>
             Ver publicado
           </Link>
@@ -130,7 +146,7 @@ export function TarjetaEvento({
           Cancelar solo tiene sentido mientras el evento no haya pasado: cancelar
           algo que ya ocurrió no avisa a nadie de nada.
         */}
-        {!evento.paso && (
+        {editable && !evento.paso && (
           <form action={cambiarEstadoEvento}>
             <input type="hidden" name="evento_id" value={evento.id} />
             <input type="hidden" name="cancelar" value={cancelado ? "no" : "si"} />

@@ -25,7 +25,7 @@ export const NOMBRE_DEL_PASO: Record<PasoDelAlta, { titulo: string; detalle: str
   catalogo: {
     titulo: "Catálogo",
     detalle:
-      "Lo que vendes. Hace falta al menos un producto para poder publicar, y es lo que eligen tus clientes al pedir monedas.",
+      "Lo que vendes. Hace falta al menos un producto para poder publicar, y es lo que eligen tus clientes al pedir mazorcas.",
   },
 };
 

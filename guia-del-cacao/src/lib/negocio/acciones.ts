@@ -8,7 +8,7 @@ import { miSucursal, misSucursales } from "@/lib/datos/sucursales";
 import { generarSlug } from "@/lib/tipos";
 import { esPasoDelAlta } from "@/lib/negocio/pasos";
 import { revisarImagen } from "@/lib/imagenes";
-import { LIMITES, revisarLargo } from "@/lib/limites";
+import { LIMITES, revisarLargo, TOPE_FOTOS } from "@/lib/limites";
 
 export type EstadoAccion = { error?: string; ok?: string };
 
@@ -58,7 +58,8 @@ export async function crearSucursal(
 
   if (!marca) redirect("/negocio/completar-marca");
 
-  const base = generarSlug(`${marca.nombre_comercial} ${nombre}`) || "micrositio";
+  const base =
+    generarSlug(`${marca.nombre_comercial} ${nombre}`) || "micrositio";
   let creada: string | null = null;
 
   // El slug es único en toda la plataforma, pero RLS no deja ver los borradores
@@ -222,7 +223,10 @@ export async function publicarSucursal(
   const id = datos.get("sucursal_id")?.toString() ?? "";
   const sucursal = await exigirSucursalPropia(perfil.id, id);
 
-  if (sucursal.estado === "publicado" || sucursal.estado === "pendiente_aprobacion") {
+  if (
+    sucursal.estado === "publicado" ||
+    sucursal.estado === "pendiente_aprobacion"
+  ) {
     return { error: "Este micrositio ya esta publicado o en revision." };
   }
 
@@ -323,13 +327,18 @@ export async function agregarAGaleria(
 
   if (error) {
     await supabase.storage.from("micrositios").remove(subidas);
-    return { error: "Las fotos subieron pero no se pudieron agregar al carrusel." };
+    return {
+      error: "Las fotos subieron pero no se pudieron agregar al carrusel.",
+    };
   }
 
   revalidatePath(`/negocio/panel/sucursal/${id}`);
 
   return {
-    ok: subidas.length === 1 ? "Foto agregada." : `${subidas.length} fotos agregadas.`,
+    ok:
+      subidas.length === 1
+        ? "Foto agregada."
+        : `${subidas.length} fotos agregadas.`,
   };
 }
 
@@ -368,7 +377,9 @@ function validarPublicacion(datos: FormData) {
   if (!titulo) return { error: "Escribe un título." };
   if (!contenido) return { error: "Escribe el contenido." };
   if (contenido.length > TOPE_CONTENIDO) {
-    return { error: `El contenido no puede pasar de ${TOPE_CONTENIDO} caracteres.` };
+    return {
+      error: `El contenido no puede pasar de ${TOPE_CONTENIDO} caracteres.`,
+    };
   }
 
   return null;
@@ -398,20 +409,44 @@ async function subirPortada(
   archivo: FormDataEntryValue | null,
   clase: "evento" | "noticia",
 ): Promise<{ error: string } | { imagenes: string[] }> {
-  if (!(archivo instanceof File) || archivo.size === 0) return { imagenes: [] };
+  return subirPortadas(supabase, sucursalId, archivo ? [archivo] : [], clase);
+}
 
-  const problema = revisarImagen(archivo);
-  if (problema) return { error: problema };
+/**
+ * Varias, hasta el tope.
+ *
+ * `imagenes` ya era un arreglo aunque la pantalla pidiera una sola foto; esto es
+ * lo que faltaba para poder sumar y quitar en vez de reemplazar la portada.
+ */
+async function subirPortadas(
+  supabase: Awaited<ReturnType<typeof crearClienteServidor>>,
+  sucursalId: string,
+  archivos: FormDataEntryValue[],
+  clase: "evento" | "noticia",
+): Promise<{ error: string } | { imagenes: string[] }> {
+  const imagenes: string[] = [];
 
-  const extension = archivo.name.split(".").pop()?.toLowerCase() ?? "jpg";
-  // La política de storage exige que la primera carpeta sea una sucursal suya.
-  const ruta = `${sucursalId}/${clase}-${Date.now()}.${extension}`;
+  for (const archivo of archivos.slice(0, TOPE_FOTOS)) {
+    if (!(archivo instanceof File) || archivo.size === 0) continue;
 
-  const { error } = await supabase.storage.from("micrositios").upload(ruta, archivo);
+    const problema = revisarImagen(archivo);
+    if (problema) return { error: problema };
 
-  if (error) return { error: "No se pudo subir la foto. Inténtalo de nuevo." };
+    const extension = archivo.name.split(".").pop()?.toLowerCase() ?? "jpg";
+    // La política de storage exige que la primera carpeta sea una sucursal suya.
+    const ruta = `${sucursalId}/${clase}-${Date.now()}-${imagenes.length}.${extension}`;
 
-  return { imagenes: [ruta] };
+    const { error } = await supabase.storage
+      .from("micrositios")
+      .upload(ruta, archivo);
+
+    if (error)
+      return { error: "No se pudo subir la foto. Inténtalo de nuevo." };
+
+    imagenes.push(ruta);
+  }
+
+  return { imagenes };
 }
 
 export async function crearEvento(
@@ -432,7 +467,12 @@ export async function crearEvento(
 
   const supabase = await crearClienteServidor();
 
-  const portada = await subirPortada(supabase, id, datos.get("imagen"), "evento");
+  const portada = await subirPortada(
+    supabase,
+    id,
+    datos.get("imagen"),
+    "evento",
+  );
   if ("error" in portada) return portada;
 
   const { error } = await supabase.from("eventos").insert({
@@ -473,7 +513,12 @@ export async function crearNoticia(
 
   const supabase = await crearClienteServidor();
 
-  const portada = await subirPortada(supabase, id, datos.get("imagen"), "noticia");
+  const portada = await subirPortada(
+    supabase,
+    id,
+    datos.get("imagen"),
+    "noticia",
+  );
   if ("error" in portada) return portada;
 
   const { error } = await supabase.from("noticias").insert({
@@ -521,7 +566,11 @@ function claseDe(datos: FormData): Clase | null {
  * genérico y sin decir por qué. Además devuelve la sucursal, que hace falta
  * para armar la ruta de la foto.
  */
-async function exigirPublicacionPropia(perfilId: string, clase: Clase, id: string) {
+async function exigirPublicacionPropia(
+  perfilId: string,
+  clase: Clase,
+  id: string,
+) {
   const supabase = await crearClienteServidor();
 
   const { data } = await supabase
@@ -675,14 +724,19 @@ export async function eliminarSucursal(
   const sucursal = await exigirSucursalPropia(perfil.id, id);
 
   if (datos.get("entendido") !== "si") {
-    return { error: "Marca la casilla para confirmar que entiendes que esto no se deshace." };
+    return {
+      error:
+        "Marca la casilla para confirmar que entiendes que esto no se deshace.",
+    };
   }
 
   // Escribir el nombre es la última red: un botón rojo se aprieta sin querer,
   // el nombre de la sucursal no se teclea por accidente.
   const confirmacion = (datos.get("confirmacion")?.toString() ?? "").trim();
   if (confirmacion !== sucursal.nombre_sucursal) {
-    return { error: `Escribe «${sucursal.nombre_sucursal}» tal cual para confirmar.` };
+    return {
+      error: `Escribe «${sucursal.nombre_sucursal}» tal cual para confirmar.`,
+    };
   }
 
   const supabase = await crearClienteServidor();
@@ -696,7 +750,9 @@ export async function eliminarSucursal(
   // Las imágenes viven todas bajo `{sucursal_id}/`, que es lo que exige la
   // política de Storage. Si esto falla no se detiene el borrado: quedarse con
   // la ficha por no poder tirar unas fotos sería peor.
-  const { data: archivos } = await supabase.storage.from("micrositios").list(id);
+  const { data: archivos } = await supabase.storage
+    .from("micrositios")
+    .list(id);
 
   if (archivos?.length) {
     await supabase.storage
@@ -706,7 +762,8 @@ export async function eliminarSucursal(
 
   const { error } = await supabase.from("sucursales").delete().eq("id", id);
 
-  if (error) return { error: "No se pudo eliminar el micrositio. Inténtalo de nuevo." };
+  if (error)
+    return { error: "No se pudo eliminar el micrositio. Inténtalo de nuevo." };
 
   revalidatePath("/negocio/panel");
   redirect("/negocio/panel");
@@ -800,7 +857,7 @@ export async function mostrarSucursal(datos: FormData) {
 }
 
 /**
- * Deja constancia de que ya miró sus solicitudes de monedas.
+ * Deja constancia de que ya miró sus solicitudes de mazorcas.
  *
  * Apaga el destello de "nueva", no el icono: lo que sigue pendiente sigue
  * pendiente aunque se haya visto, y el icono es lo que recuerda que hay trabajo
@@ -835,7 +892,9 @@ async function miEvento(perfilId: string, eventoId: string) {
 
   const { data } = await supabase
     .from("eventos")
-    .select("id, sucursal_id, sucursales!inner(marca_id, marcas!inner(perfil_id))")
+    .select(
+      "id, sucursal_id, sucursales!inner(marca_id, marcas!inner(perfil_id))",
+    )
     .eq("id", eventoId)
     .eq("sucursales.marcas.perfil_id", perfilId)
     .maybeSingle();
@@ -861,13 +920,22 @@ export async function editarEvento(
 
   const supabase = await crearClienteServidor();
 
-  const portada = await subirPortada(
+  /*
+    Las fotos se recomponen igual que en la comunidad: las que se conservan más
+    las que se suben ahora. Antes solo se podía reemplazar la portada, y para
+    quitar una foto no había manera.
+  */
+  const conservar = datos.getAll("conservar").map(String).filter(Boolean);
+  const portada = await subirPortadas(
     supabase,
     evento.sucursal_id,
-    datos.get("imagen"),
+    datos.getAll("imagenes"),
     "evento",
   );
   if ("error" in portada) return portada;
+
+  const finales = [...conservar, ...portada.imagenes].slice(0, TOPE_FOTOS);
+  const tocaronFotos = datos.has("conservar") || portada.imagenes.length > 0;
 
   const { error } = await supabase
     .from("eventos")
@@ -876,9 +944,9 @@ export async function editarEvento(
       subtitulo: texto(datos, "subtitulo"),
       contenido: texto(datos, "contenido"),
       fecha_evento: new Date(fecha).toISOString(),
-      // Sin foto nueva se conserva la que había: cambiar la fecha y cambiar la
-      // portada son dos gestos distintos y no tienen por qué ir juntos.
-      ...(portada.imagenes.length > 0 ? { imagenes: portada.imagenes } : {}),
+      // Solo si tocaron las fotos: cambiar la fecha y cambiar la portada son
+      // dos gestos distintos y no tienen por qué ir juntos.
+      ...(tocaronFotos ? { imagenes: finales } : {}),
     })
     .eq("id", eventoId);
 

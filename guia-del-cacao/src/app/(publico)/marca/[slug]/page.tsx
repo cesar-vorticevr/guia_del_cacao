@@ -76,7 +76,7 @@ export default async function Micrositio({
   // para poder enseñar las estrellas al lado de cada reseña y filtrar por ellas.
   const estrellas = await estrellasPorUsuario(sucursal.id);
 
-  // Qué le toca ver a un cliente —reseñas y monedas— depende de cosas que solo
+  // Qué le toca ver a un cliente —reseñas y mazorcas— depende de cosas que solo
   // se pueden preguntar una vez que se sabe quién es.
   let misEstrellas: number | null = null;
   let resenaPropia: Awaited<ReturnType<typeof miResena>> = null;
@@ -103,7 +103,7 @@ export default async function Micrositio({
   // no las junta: enseñarles el botón sería mandarlos a una pantalla que solo
   // puede decirles que no. A quien no ha entrado sí se le enseña, porque para
   // esa persona el botón es la invitación a registrarse.
-  const daMonedas =
+  const daMazorcas =
     Boolean(tier?.puede_dar_puntos) && (!perfil || perfil.rol === "cliente");
 
   // Para decidir si se muestra el cuadro de respuesta hay que preguntar si la
@@ -183,12 +183,12 @@ export default async function Micrositio({
       </header>
 
       {/*
-        El botón de las monedas va aquí arriba, antes de acerca de y del
+        El botón de las mazorcas va aquí arriba, antes de acerca de y del
         catálogo: es lo que la persona viene a hacer cuando ya está parada en el
         mostrador, y buscarlo hasta el final del micrositio no tiene sentido.
         Va en mango sobre el fondo crema para que se despegue de todo lo demás.
       */}
-      {daMonedas && (
+      {daMazorcas && (
         <section className="px-4 pt-6">
           {tienePendiente ? (
             <p
@@ -196,12 +196,12 @@ export default async function Micrositio({
               className="rounded-3xl border-2 border-turquesa/40 bg-turquesa/15 p-5 text-cacao"
             >
               <strong className="block font-display text-lg text-selva-2">
-                Tus monedas están pendientes aquí
+                Tus mazorcas están pendientes aquí
               </strong>
               El negocio todavía no resuelve tu solicitud. En cuanto lo haga lo
               verás en{" "}
               <Link href="/cuenta" className="font-bold text-selva underline">
-                tu pasaporte
+                tu cuenta
               </Link>
               .
             </p>
@@ -212,7 +212,7 @@ export default async function Micrositio({
             >
               <span>
                 <span className="block font-display text-xl font-semibold text-ink">
-                  Pedir mis monedas de chocolate
+                  Pedir mis mazorcas de cacao
                 </span>
                 <span className="block text-sm text-cacao">
                   Dinos qué compraste y el negocio te las abona.

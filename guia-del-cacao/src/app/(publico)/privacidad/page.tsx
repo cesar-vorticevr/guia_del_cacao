@@ -49,18 +49,18 @@ export default function Privacidad() {
           naturaleza — se publican para que la gente pueda encontrarte.
         </li>
         <li>
-          <strong className="text-selva-2">De tu actividad:</strong> las monedas
+          <strong className="text-selva-2">De tu actividad:</strong> las mazorcas
           que juntas, tus reseñas y calificaciones, y lo que escribes en el foro.
         </li>
         <li>
           <strong className="text-selva-2">Comprobantes de compra:</strong> si
-          adjuntas la foto de un ticket al pedir monedas.
+          adjuntas la foto de un ticket al pedir mazorcas.
         </li>
       </ul>
 
       <h2 className="mt-8 font-display text-2xl">Para qué los usamos</h2>
       <p className="mt-3 text-cacao">
-        Para identificarte al entrar, llevar la cuenta de tus monedas y tu rango,
+        Para identificarte al entrar, llevar la cuenta de tus mazorcas y tu rango,
         mostrar tus reseñas en el micrositio del negocio y permitir que quien
         atiende confirme tu visita. No vendemos tus datos ni los usamos para
         publicidad de terceros.
@@ -75,7 +75,7 @@ export default function Privacidad() {
         <strong className="text-selva-2">Los comprobantes son privados.</strong>{" "}
         Un ticket puede traer tu nombre o los últimos dígitos de una tarjeta, así
         que se guardan aparte y solo los ve, por un momento, el negocio al que le
-        pediste las monedas. Nadie más tiene acceso.
+        pediste las mazorcas. Nadie más tiene acceso.
       </p>
 
       <h2 className="mt-8 font-display text-2xl">Tus derechos</h2>

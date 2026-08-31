@@ -73,6 +73,29 @@ export function urlImagen(
   return `${base}/storage/v1/object/public/${bucket}/${ruta}`;
 }
 
+/** El bucket donde viven las fotos de la comunidad. */
+export const BUCKET_COMUNIDAD = "comunidad";
+
+/**
+ * La URL de una foto de publicación.
+ *
+ * Hay fotos en dos buckets: las de las noticias que se migraron en la 000029
+ * siguen en `micrositios`, colgando de su sucursal, y las nuevas van a
+ * `comunidad`, colgando de su autor. No se distinguen por la forma de la ruta
+ * —las dos empiezan por un uuid—, así que las nuevas se guardan con el bucket
+ * escrito delante. Es feo de mirar en la base y es lo que evita tener que
+ * adivinar, o mover archivos de sitio solo para uniformarlo.
+ */
+export function urlDePublicacion(ruta: string | null | undefined) {
+  if (!ruta) return null;
+
+  const prefijo = `${BUCKET_COMUNIDAD}/`;
+
+  return ruta.startsWith(prefijo)
+    ? urlImagen(ruta.slice(prefijo.length), BUCKET_COMUNIDAD)
+    : urlImagen(ruta);
+}
+
 // ---------------------------------------------------------------------------
 // Video
 // ---------------------------------------------------------------------------

@@ -2,149 +2,188 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { rango } from "@/lib/vocabulario";
+import { PortadaPublicacion } from "@/components/publico/portada-publicacion";
 import { VerMas } from "@/components/publico/ver-mas";
-import type { Clase, Entrada } from "@/lib/datos/comunidad";
+import type { Entrada, Filtro } from "@/lib/datos/comunidad";
 
 /**
- * El muro de la comunidad: temas, eventos y noticias en una sola lista.
+ * El muro de la comunidad.
  *
- * El filtro va arriba y filtra en el momento, sin recargar: las tres clases ya
- * vienen cargadas y son pocas decenas. Cada chip trae su conteo, para que
- * elegir "Eventos" no sea saltar a ciegas a una lista vacía.
+ * Se filtraba por tipo —temas, eventos, noticias— porque había tres tablas
+ * detrás. Ahora todo es una publicación, así que los filtros son por lo que le
+ * toca a quien mira: todo, lo suyo, y lo que le respondieron sin que lo haya
+ * leído. Filtran en el momento, sin recargar: ya vienen cargadas.
  */
-
-const CLASES: { valor: Clase; texto: string; tono: string }[] = [
-  { valor: "tema", texto: "Temas", tono: "bg-turquesa text-ink" },
-  { valor: "evento", texto: "Eventos", tono: "bg-mango text-ink" },
-  { valor: "noticia", texto: "Noticias", tono: "bg-lima text-ink" },
+const FILTROS: { valor: Filtro; texto: string }[] = [
+  { valor: "todo", texto: "Todo" },
+  { valor: "mias", texto: "Mis publicaciones" },
+  { valor: "nuevos", texto: "Comentarios nuevos" },
 ];
 
-const ETIQUETA: Record<Clase, { texto: string; tono: string }> = {
-  tema: { texto: "Tema", tono: "bg-turquesa/25 text-selva-2" },
-  evento: { texto: "Evento", tono: "bg-mango/30 text-cacao" },
-  noticia: { texto: "Noticia", tono: "bg-lima/30 text-selva-2" },
-};
+function cuenta(entradas: Entrada[], filtro: Filtro) {
+  if (filtro === "mias") return entradas.filter((e) => e.mia).length;
+  if (filtro === "nuevos") return entradas.filter((e) => e.sinVer > 0).length;
+  return entradas.length;
+}
 
-export function MuroComunidad({ entradas }: { entradas: Entrada[] }) {
-  const [filtro, setFiltro] = useState<Clase | null>(null);
+export function MuroComunidad({
+  entradas,
+  /** Sin sesión no se pintan «mis publicaciones» ni «comentarios nuevos». */
+  haySesion,
+}: {
+  entradas: Entrada[];
+  haySesion: boolean;
+}) {
+  const [filtro, setFiltro] = useState<Filtro>("todo");
 
-  const cuantas = (clase: Clase) => entradas.filter((e) => e.clase === clase).length;
-  const visibles = filtro === null ? entradas : entradas.filter((e) => e.clase === filtro);
+  const visibles =
+    filtro === "mias"
+      ? entradas.filter((e) => e.mia)
+      : filtro === "nuevos"
+        ? entradas.filter((e) => e.sinVer > 0)
+        : entradas;
+
+  const opciones = haySesion ? FILTROS : FILTROS.slice(0, 1);
 
   return (
     <>
       <nav aria-label="Filtrar el muro" className="pt-5">
         <ul className="flex flex-wrap gap-2.5">
-          <li>
-            <button
-              type="button"
-              onClick={() => setFiltro(null)}
-              aria-pressed={filtro === null}
-              className={`min-h-11 rounded-full border-2 border-ink/10 px-4 text-sm font-bold shadow-dura-sm transition-transform active:translate-y-0.5 ${
-                filtro === null ? "bg-selva text-crema" : "bg-crema-2 text-selva-2"
-              }`}
-            >
-              Todo ({entradas.length})
-            </button>
-          </li>
+          {opciones.map((opcion) => {
+            const activa = filtro === opcion.valor;
+            const cuantas = cuenta(entradas, opcion.valor);
 
-          {CLASES.map((clase) => (
-            <li key={clase.valor}>
-              <button
-                type="button"
-                onClick={() => setFiltro(filtro === clase.valor ? null : clase.valor)}
-                aria-pressed={filtro === clase.valor}
-                className={`min-h-11 rounded-full border-2 border-ink/10 px-4 text-sm font-bold shadow-dura-sm transition-transform active:translate-y-0.5 ${
-                  filtro === clase.valor
-                    ? clase.tono
-                    : "bg-white text-selva-2"
-                }`}
-              >
-                {clase.texto} ({cuantas(clase.valor)})
-              </button>
-            </li>
-          ))}
+            return (
+              <li key={opcion.valor}>
+                <button
+                  type="button"
+                  onClick={() => setFiltro(opcion.valor)}
+                  aria-pressed={activa}
+                  className={`inline-flex min-h-11 items-center gap-2 rounded-full px-4 font-bold transition-colors ${
+                    activa
+                      ? "bg-selva text-crema"
+                      : "border-2 border-selva/25 bg-white text-selva-2 hover:border-selva"
+                  }`}
+                >
+                  {opcion.texto}
+
+                  {/*
+                    El conteo de «comentarios nuevos» va en guayaba y no en gris:
+                    es lo único de esta fila que reclama algo de quien mira, y en
+                    gris se leía como un número más.
+                  */}
+                  <span
+                    className={`rounded-full px-2 py-0.5 font-mono text-xs ${
+                      opcion.valor === "nuevos" && cuantas > 0
+                        ? "bg-guayaba font-bold text-ink"
+                        : activa
+                          ? "bg-crema/25"
+                          : "bg-ink/5 text-cacao/70"
+                    }`}
+                  >
+                    {cuantas}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       </nav>
 
       {visibles.length === 0 ? (
-        <p className="mt-6 rounded-3xl bg-crema-2 p-6 text-cacao">
-          Todavía no hay nada por aquí.
+        <p className="mt-5 rounded-3xl bg-crema-2 p-6 text-cacao">
+          {filtro === "mias"
+            ? "Todavía no has publicado nada."
+            : filtro === "nuevos"
+              ? "Nadie te ha respondido desde la última vez que miraste."
+              : "Todavía no hay nada publicado."}
         </p>
       ) : (
-        <div className="mt-6">
-          {/* La `key` reinicia el conteo al cambiar de filtro: sin ella, saltar
-              de pestaña dejaría la lista nueva ya destapada por la anterior. */}
-          <VerMas key={filtro ?? "todo"} className="grid gap-4" etiqueta="Ver más">
+        <VerMas
+          className="mt-5 grid gap-5 sm:grid-cols-2"
+          etiqueta="Ver más publicaciones"
+          paso={8}
+        >
           {visibles.map((entrada) => (
-            <li key={`${entrada.clase}-${entrada.id}`}>
+            <li key={entrada.id}>
+              {/*
+                La foto va arriba y del ancho de la tarjeta. Sin ella el muro
+                era una lista de párrafos donde ninguna publicación se
+                distinguía de la siguiente hasta leerla.
+              */}
               <Link
                 href={entrada.href}
-                className="flex h-full gap-4 rounded-3xl border-2 border-ink/10 bg-white p-5 shadow-dura transition-all hover:-translate-y-0.5 hover:shadow-dura-alta"
+                className="group grid h-full content-start overflow-hidden rounded-3xl bg-crema-2 transition-transform active:translate-y-0.5"
               >
-                <span className="min-w-0 flex-1">
-                  <span className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={`rounded-full px-2.5 py-0.5 font-mono text-xs font-bold ${
-                        ETIQUETA[entrada.clase].tono
-                      }`}
-                    >
-                      {ETIQUETA[entrada.clase].texto}
-                    </span>
-                    <span className="font-mono text-xs tracking-wide text-cacao/70 uppercase">
+                <PortadaPublicacion
+                  id={entrada.id}
+                  foto={entrada.imagen}
+                  titulo={entrada.titulo}
+                  className="h-44 w-full"
+                />
+
+                <div className="p-5">
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <p className="font-mono text-xs tracking-wide text-cacao/70 uppercase">
                       {entrada.fechaTexto}
-                    </span>
-                  </span>
+                    </p>
 
-                  <span className="mt-1.5 block font-display text-xl text-selva-2">
+                    {entrada.oculta && (
+                      <span className="rounded-full bg-ink/10 px-2 py-0.5 font-mono text-xs font-bold text-cacao">
+                        Oculta
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="mt-1 font-display text-xl font-semibold text-selva-2 underline-offset-4 group-hover:underline">
                     {entrada.titulo}
-                  </span>
+                  </p>
 
-                  <span className="mt-0.5 block font-bold text-selva">
+                  <p className="mt-1 text-cacao">
                     {entrada.autor}
                     {entrada.detalle && (
-                      <span className="font-normal text-cacao/70"> · {entrada.detalle}</span>
+                      <span className="text-cacao/70">
+                        {" "}
+                        · {entrada.detalle}
+                      </span>
                     )}
-                  </span>
+                  </p>
 
-                  <span className="mt-1.5 line-clamp-2 block text-cacao">
+                  <p className="mt-2 line-clamp-2 text-cacao">
                     {entrada.resumen}
-                  </span>
+                  </p>
 
-                  <span className="mt-3 flex flex-wrap gap-2">
-                    <span className="rounded-full bg-crema-2 px-3 py-1 font-mono text-xs font-bold text-cacao">
+                  <p className="mt-3 flex flex-wrap items-center gap-3 font-mono text-xs text-cacao/70">
+                    <span className="inline-flex items-center gap-1.5">
                       {entrada.comentarios}{" "}
                       {entrada.comentarios === 1 ? "comentario" : "comentarios"}
+                      {/*
+                      El punto solo aparece cuando hay respuestas que esa persona
+                      no ha visto. Si estuviera siempre que hay comentarios, dejaría
+                      de significar "hay algo nuevo" y sería parte del dibujo.
+                    */}
+                      {entrada.sinVer > 0 && (
+                        <span
+                          className="grid size-5 place-items-center rounded-full bg-guayaba font-bold text-ink"
+                          aria-label={`${entrada.sinVer} sin leer`}
+                        >
+                          {entrada.sinVer}
+                        </span>
+                      )}
                     </span>
 
-                    {entrada.apoyos !== null && (
-                      <span className="rounded-full bg-mango/25 px-3 py-1 font-mono text-xs font-bold text-cacao">
-                        {entrada.apoyos} {entrada.apoyos === 1 ? "apoyo" : "apoyos"}
+                    {entrada.apoyos > 0 && (
+                      <span>
+                        {entrada.apoyos}{" "}
+                        {entrada.apoyos === 1 ? "mazorca" : "mazorcas"}
                       </span>
                     )}
-
-                    {entrada.rangoExclusivo && (
-                      <span className="rounded-full bg-mango px-3 py-1 font-mono text-xs font-bold text-ink">
-                        Solo {rango(entrada.rangoExclusivo).plural}
-                      </span>
-                    )}
-                  </span>
-                </span>
-
-                {entrada.imagen && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={entrada.imagen}
-                    alt=""
-                    className="size-24 shrink-0 rounded-2xl border-2 border-selva/10 object-cover sm:size-28"
-                  />
-                )}
+                  </p>
+                </div>
               </Link>
             </li>
           ))}
-          </VerMas>
-        </div>
+        </VerMas>
       )}
     </>
   );

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { PedirMonedas } from "@/components/puntos/pedir";
+import { PedirMazorcas } from "@/components/puntos/pedir";
 import { calificacionDe, micrositioPorSlug } from "@/lib/datos/publico";
 import { productosDe } from "@/lib/datos/sucursales";
 import { tienePendienteEn } from "@/lib/datos/puntos";
@@ -11,12 +11,12 @@ import { crearClienteServidor } from "@/lib/supabase/server";
 import { urlImagen } from "@/lib/imagenes";
 import { Promedio } from "@/components/publico/estrellas";
 
-export const metadata: Metadata = { title: "Pedir monedas · Guía del Cacao" };
+export const metadata: Metadata = { title: "Pedir mazorcas · Guía del Cacao" };
 
 /**
  * Destino del QR fijo de cada micrositio (spec §5.4).
  *
- * Reemplaza el pasaporte físico sellado de la feria, con una diferencia que
+ * Reemplaza el cuadernillo de sellos de la feria, con una diferencia que
  * importa: funciona todo el año, no solo la semana de feria.
  */
 export default async function PedirPuntos({
@@ -52,7 +52,7 @@ export default async function PedirPuntos({
   const esCliente = perfil?.rol === "cliente";
 
   // Lo de la resena se pregunta aqui y no en el componente: si ya comento hoy,
-  // la moneda extra no esta en juego y hay que decirlo antes de que escriba.
+  // la mazorca extra no esta en juego y hay que decirlo antes de que escriba.
   const [pendiente, resenaPropia, misEstrellas] = esCliente
     ? await Promise.all([
         tienePendienteEn(perfil.id, sucursal.id),
@@ -97,7 +97,7 @@ export default async function PedirPuntos({
       <div className="mt-6">
         {!tier?.puede_dar_puntos ? (
           <p className="rounded-3xl bg-crema-2 p-6 text-cacao">
-            Este negocio todavía no participa en el pasaporte de monedas de
+            Este negocio todavía no reparte mazorcas de
             chocolate.{" "}
             <Link href={`/marca/${slug}`} className="font-bold text-selva underline">
               Ver su micrositio
@@ -106,7 +106,7 @@ export default async function PedirPuntos({
         ) : !perfil ? (
           <div className="rounded-3xl bg-crema-2 p-6">
             <p className="text-cacao">
-              Para juntar monedas de chocolate necesitas una cuenta de cliente.
+              Para juntar mazorcas de cacao necesitas una cuenta de cliente.
               Es rápido y sirve todo el año, no solo en la feria.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
@@ -126,7 +126,7 @@ export default async function PedirPuntos({
           </div>
         ) : perfil.rol !== "cliente" ? (
           <p className="rounded-3xl bg-crema-2 p-6 text-cacao">
-            Estás con una cuenta de {perfil.rol}. Las monedas de chocolate son
+            Estás con una cuenta de {perfil.rol}. Las mazorcas de cacao son
             para las cuentas de cliente.
           </p>
         ) : enviado === "1" ? (
@@ -138,14 +138,14 @@ export default async function PedirPuntos({
               Listo, ya quedó registrada
             </p>
             <p className="mt-2 text-cacao">
-              El negocio va a revisar qué compraste y decidir cuántas monedas
+              El negocio va a revisar qué compraste y decidir cuántas mazorcas
               darte. Lo verás en tu cuenta.
             </p>
             <Link
               href="/cuenta"
               className="mt-4 inline-block min-h-12 rounded-full bg-selva px-5 py-3 font-bold text-crema"
             >
-              Ver mi pasaporte
+              Ver mi cuenta
             </Link>
           </div>
         ) : pendiente ? (
@@ -159,7 +159,7 @@ export default async function PedirPuntos({
             registrar qué compraste. Pídeles que lo suban.
           </p>
         ) : (
-          <PedirMonedas
+          <PedirMazorcas
             sucursalId={sucursal.id}
             slug={slug}
             negocio={sucursal.marcas?.nombre_comercial ?? sucursal.nombre_sucursal}
@@ -174,7 +174,7 @@ export default async function PedirPuntos({
       </div>
 
       <p className="mt-6 text-sm text-cacao/70">
-        Una moneda por tu compra y otra si dejas reseña. El negocio puede
+        Una mazorca por tu compra y otra si dejas reseña. El negocio puede
         agregarte una tercera si quiere. Máximo 3 por día en el mismo negocio.
       </p>
     </div>
