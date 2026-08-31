@@ -2,7 +2,6 @@ import Link from "next/link";
 import { Logotipo } from "@/components/marca";
 import { BarraInferior } from "@/components/publico/barra-inferior";
 import { EncabezadoQueVuelve } from "@/components/publico/encabezado-que-vuelve";
-import { NavegacionLateral } from "@/components/publico/navegacion-lateral";
 import { PastillaPasaporte } from "@/components/publico/pastilla-pasaporte";
 import { PieDePagina } from "@/components/publico/pie-de-pagina";
 import { destinoSegunRol, perfilActual } from "@/lib/auth/sesion";
@@ -16,20 +15,12 @@ const SECCIONES = [
 ];
 
 /**
- * Armazón del sitio público, en dos columnas.
+ * Armazón del sitio público. Mobile-first: en celular la navegación vive en una
+ * barra fija abajo, al alcance del pulgar; en escritorio sube al encabezado.
  *
- * En escritorio la navegación es una columna a la izquierda que se queda quieta
- * mientras el contenido pasa, y el contenido va al centro. Antes vivía solo en
- * el encabezado: en una lista de varias pantallas —el directorio lo es— cambiar
- * de sección obligaba a subir hasta arriba.
- *
- * **En celular no cambia nada**: la navegación sigue siendo la barra de abajo,
- * al alcance del pulgar, y el contenido ocupa todo el ancho. Una columna lateral
- * ahí solo quitaría sitio a lo que se vino a leer.
- *
- * El pasaporte se ve en las dos: pastilla en el encabezado y contador en la
- * barra de abajo. Es a propósito — ver el número subir es lo que hace que la
- * persona quiera seguir explorando.
+ * El pasaporte se ve siempre, en las dos: pastilla en el encabezado y contador
+ * en la barra de abajo. Es a propósito — ver el número subir es lo que hace
+ * que la persona quiera seguir explorando.
  */
 export default async function LayoutPublico({
   children,
@@ -49,16 +40,10 @@ export default async function LayoutPublico({
     <>
       <EncabezadoQueVuelve>
       <header className="bg-selva py-3.5 text-crema">
-        <div className="mx-auto flex w-[94vw] max-w-[1400px] items-center justify-between gap-4">
+        <div className="mx-auto flex w-[92vw] max-w-[1180px] items-center justify-between gap-4">
           <Logotipo />
 
-          {/*
-            Las secciones ya no van aquí en escritorio: viven en la columna de la
-            izquierda. Se quedan en el encabezado solo en el tramo intermedio
-            —tabletas—, donde la columna todavía no cabe pero la barra de abajo
-            ya no se muestra.
-          */}
-          <nav className="hidden gap-1 sm:flex lg:hidden" aria-label="Secciones">
+          <nav className="hidden gap-1 sm:flex" aria-label="Secciones">
             {SECCIONES.map((seccion) => (
               <Link
                 key={seccion.href}
@@ -96,29 +81,18 @@ export default async function LayoutPublico({
       </header>
       </EncabezadoQueVuelve>
 
-      <div className="mx-auto flex w-[94vw] max-w-[1400px] gap-8">
-        {/*
-          La columna de navegación aparece a partir de `lg`. Por debajo no hay
-          ancho que darle sin comerse el contenido, y ahí ya está la barra de
-          abajo (o las secciones del encabezado, en tabletas).
-        */}
-        <aside className="hidden w-56 shrink-0 py-8 lg:block">
-          <NavegacionLateral />
-        </aside>
-
-        {/*
-          `relative z-10` se queda aunque el fondo de cacao ya no cuelgue de aquí:
-          sigue habiendo capas decorativas en z-0 dentro de las páginas, y sin un
-          contexto de apilamiento propio el contenido se pintaría por debajo.
-
-          `min-w-0` no es decorativo: sin él, una tabla o un texto largo estira
-          la columna y empuja la navegación fuera de la pantalla.
-
-          El respiro de abajo lo pone el pie, que es quien toca la barra fija del
-          pulgar.
-        */}
-        <main className="relative z-10 min-w-0 flex-1 pb-10">{children}</main>
-      </div>
+      {/*
+        `relative z-10` se queda aunque el fondo de cacao ya no cuelgue de aquí:
+        sigue habiendo capas decorativas en z-0 dentro de las páginas, y sin un
+        contexto de apilamiento propio el contenido se pintaría por debajo.
+      */}
+      {/*
+        El respiro de abajo lo pone ahora el pie, que es quien toca la barra fija
+        del pulgar. Aquí solo queda la separación normal del contenido.
+      */}
+      <main className="relative z-10 mx-auto w-[92vw] max-w-[1180px] pb-10">
+        {children}
+      </main>
 
       <PieDePagina />
 
