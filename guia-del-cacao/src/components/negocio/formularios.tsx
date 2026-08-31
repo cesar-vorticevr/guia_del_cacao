@@ -456,8 +456,17 @@ function BotonEnviarChico({ children }: { children: React.ReactNode }) {
  * El plan actual viene marcado y es el que abre. Quien entra a mirar no tiene
  * que buscar en cual esta.
  */
-function Planes({ tiers, actual }: { tiers: Tier[]; actual?: number }) {
-  const [elegido, setElegido] = useState(actual ?? tiers[0]?.id);
+function Planes({
+  tiers,
+  actual,
+  inicial,
+}: {
+  tiers: Tier[];
+  actual?: number;
+  /** Cuál viene abierto. Sin él, el que ya se tiene. */
+  inicial?: number;
+}) {
+  const [elegido, setElegido] = useState(inicial ?? actual ?? tiers[0]?.id);
   const tier = tiers.find((t) => t.id === elegido) ?? tiers[0];
 
   if (!tier) return null;
@@ -548,9 +557,16 @@ function Planes({ tiers, actual }: { tiers: Tier[]; actual?: number }) {
 export function FormularioCambiarPlan({
   tiers,
   tierActual,
+  preseleccion,
 }: {
   tiers: Tier[];
   tierActual?: number;
+  /**
+   * Con cuál abrir. Llegando desde "cámbiate a Premier" es Premier: quien tocó
+   * ese anuncio ya eligió, y hacerle elegir otra vez desde su plan actual es
+   * pedirle la misma decisión dos veces.
+   */
+  preseleccion?: number;
 }) {
   const [estado, accion] = useActionState(contratarPlan, INICIAL);
 
@@ -558,7 +574,7 @@ export function FormularioCambiarPlan({
     <form action={accion} className="grid gap-4">
       <Resultado estado={estado} />
 
-      <Planes tiers={tiers} actual={tierActual} />
+      <Planes tiers={tiers} actual={tierActual} inicial={preseleccion} />
 
       <BotonEnviar>Cambiar de plan</BotonEnviar>
     </form>
