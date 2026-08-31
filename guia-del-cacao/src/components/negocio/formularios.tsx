@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Area, Aviso, BotonEnviar, Campo, Selector } from "@/components/formulario";
 import {
@@ -445,80 +445,102 @@ function BotonEnviarChico({ children }: { children: React.ReactNode }) {
  * pinta un plan. Duplicarlo garantizaba que un día uno enseñara una ventaja que
  * el otro no.
  */
+/**
+ * Los planes, uno a la vez.
+ *
+ * Antes se pintaban los tres apilados con todas sus ventajas: media pantalla
+ * de lista para elegir entre tres cosas, y para comparar el primero con el
+ * ultimo habia que desplazarse. Ahora la fila de arriba es el menu —nombre y
+ * precio, que es con lo que se decide— y debajo se ve solo el elegido.
+ *
+ * El plan actual viene marcado y es el que abre. Quien entra a mirar no tiene
+ * que buscar en cual esta.
+ */
 function Planes({ tiers, actual }: { tiers: Tier[]; actual?: number }) {
+  const [elegido, setElegido] = useState(actual ?? tiers[0]?.id);
+  const tier = tiers.find((t) => t.id === elegido) ?? tiers[0];
+
+  if (!tier) return null;
+
+  const ventajas = [
+    {
+      hay: true,
+      texto:
+        tier.max_sucursales === 1
+          ? "Una sucursal"
+          : `Hasta ${tier.max_sucursales} sucursales`,
+    },
+    { hay: tier.puede_dar_puntos, texto: "Da monedas de chocolate a tus clientes" },
+    { hay: tier.puede_publicar_contenido, texto: "Publica eventos y noticias" },
+    { hay: tier.en_banner_principal, texto: "Aparece en el banner de la portada" },
+  ];
+
   return (
-    <fieldset className="grid gap-3">
+    <fieldset className="grid gap-4">
       <legend className="sr-only">Elige un plan</legend>
 
-      {tiers.map((tier, indice) => {
-        // Lo que se gana al subir se marca; el plan de abajo no se pinta como
-        // una pérdida. Un cuadro rojo diciendo "pierdes el banner" convierte
-        // elegir en arrepentirse, y aquí lo que interesa es que se vea el paso
-        // siguiente.
-        const mejora = actual !== undefined && tier.id > actual;
+      {/*
+        El radio va oculto pero sigue ahi: es lo que viaja en el formulario y lo
+        que hace que las flechas del teclado recorran los planes. La fila de
+        botones es su etiqueta, no un sustituto.
+      */}
+      <div className="flex flex-wrap gap-2">
+        {tiers.map((opcion) => (
+          <label
+            key={opcion.id}
+            className={`flex min-h-12 flex-1 cursor-pointer flex-col justify-center rounded-2xl border-2 px-4 py-2 text-center transition-colors ${
+              opcion.id === elegido
+                ? "border-selva bg-selva text-crema"
+                : "border-selva/20 bg-white text-selva-2 hover:border-selva/50"
+            }`}
+          >
+            <input
+              type="radio"
+              name="tier_id"
+              value={opcion.id}
+              checked={opcion.id === elegido}
+              onChange={() => setElegido(opcion.id)}
+              className="sr-only"
+            />
+            <span className="font-display font-semibold">{opcion.nombre}</span>
+            <span
+              className={`font-mono text-xs ${
+                opcion.id === elegido ? "text-crema/80" : "text-cacao/70"
+              }`}
+            >
+              {pesos(opcion.precio_mensual)}
+            </span>
+          </label>
+        ))}
+      </div>
 
-        return (
-        <label
-          key={tier.id}
-          className={`relative grid cursor-pointer gap-1 rounded-3xl border-2 bg-white p-5 has-[:checked]:bg-crema-2 ${
-            mejora
-              ? "border-mango has-[:checked]:border-selva"
-              : "border-selva/20 has-[:checked]:border-selva"
-          }`}
-        >
-          {mejora && (
-            <span className="absolute -top-3 right-5 rounded-full bg-mango px-3 py-0.5 font-mono text-xs font-bold text-ink">
-              Subir de plan
-            </span>
-          )}
-          <span className="flex items-baseline justify-between gap-3">
-            <span className="font-display text-xl font-semibold text-selva-2">
-              <input
-                type="radio"
-                name="tier_id"
-                value={tier.id}
-                defaultChecked={actual ? tier.id === actual : indice === 0}
-                className="mr-2 size-5 align-middle accent-selva"
-              />
-              {tier.nombre}
-              {tier.id === actual && (
-                <span className="ml-2 rounded-full bg-lima/40 px-2.5 py-0.5 align-middle font-mono text-xs font-bold text-selva-2">
-                  Tu plan
-                </span>
-              )}
-            </span>
-            <span className="font-mono text-lg font-bold text-selva">
-              {pesos(tier.precio_mensual)}
-              <span className="text-sm font-normal text-cacao/70">/mes</span>
-            </span>
-          </span>
+      <div className="rounded-3xl border-2 border-ink/10 bg-white p-5">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <p className="font-display text-xl font-semibold text-selva-2">
+            {tier.nombre}
+            {tier.id === actual && (
+              <span className="ml-2 rounded-full bg-lima/40 px-2.5 py-0.5 align-middle font-mono text-xs font-bold text-selva-2">
+                Tu plan
+              </span>
+            )}
+          </p>
+          <p className="font-mono text-lg font-bold text-selva">
+            {pesos(tier.precio_mensual)}
+            <span className="text-sm font-normal text-cacao/70">/mes</span>
+          </p>
+        </div>
 
-          <ul className="mt-1 ml-7 grid gap-0.5 text-cacao">
-            <li>
-              ✓{" "}
-              {tier.max_sucursales === 1
-                ? "Una sucursal"
-                : `Hasta ${tier.max_sucursales} sucursales`}
+        <ul className="mt-3 grid gap-1 text-cacao">
+          {ventajas.map((ventaja) => (
+            <li
+              key={ventaja.texto}
+              className={ventaja.hay ? "" : "text-cacao/50"}
+            >
+              {ventaja.hay ? "✓" : "—"} {ventaja.texto}
             </li>
-            <li>
-              {tier.puede_dar_puntos
-                ? "✓ Da monedas de chocolate a tus clientes"
-                : "— Sin monedas de chocolate"}
-            </li>
-            <li>
-              {tier.puede_publicar_contenido
-                ? "✓ Publica eventos y noticias"
-                : "— Sin eventos ni noticias"}
-            </li>
-            <li>
-              {tier.en_banner_principal
-                ? "✓ Aparece en el banner de la portada"
-                : "— Fuera del banner"}
-            </li>
-          </ul>
-        </label>
-        );
-      })}
+          ))}
+        </ul>
+      </div>
     </fieldset>
   );
 }

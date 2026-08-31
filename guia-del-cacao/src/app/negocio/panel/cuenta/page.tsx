@@ -7,6 +7,7 @@ import {
   FormularioCancelarSuscripcion,
 } from "@/components/negocio/formularios";
 import { FormularioDatosPersonales } from "@/components/negocio/cuenta";
+import { PlanesDesplegables } from "@/components/negocio/planes-desplegables";
 import { FormularioContrasenaNueva } from "@/components/formularios-auth";
 import { cerrarSesion } from "@/lib/auth/acciones";
 import { perfilActual } from "@/lib/auth/sesion";
@@ -113,95 +114,77 @@ export default async function CuentaNegocio() {
         </section>
 
         {/*
-          El anuncio de subir solo cuando hay a dónde subir. En el plan más alto
-          decía "tu plan puede crecer", que no era cierto; y enseñar siempre la
-          lista de precios completa invita a comparar lo que se paga con lo que
-          se podría pagar de menos — justo lo contrario de lo que se busca.
+          El anuncio solo cuando hay a donde subir. En el plan mas alto decia
+          "tu plan puede crecer", que no era cierto; y ensenar siempre la lista
+          de precios completa invita a comparar lo que se paga con lo que se
+          podria pagar de menos.
 
-          Por eso los planes van plegados: quien quiere cambiar los abre, y quien
-          entró a ver su cobro no se topa con una tabla de precios.
+          Anuncio y lista van en un componente porque comparten estado: tocar
+          el anuncio abre los planes y lleva hasta ellos.
         */}
-        {siguiente && (
-          <section className="rounded-[2rem] border-2 border-ink/10 bg-mango px-6 py-8 shadow-dura">
-            <p className="font-display text-2xl text-ink">
-              Cámbiate a {siguiente.nombre}
-            </p>
-            <p className="mt-2 max-w-prose text-cacao">
-              {siguiente.max_sucursales} sucursales
-              {siguiente.puede_dar_puntos && !plan?.puede_dar_puntos
-                ? ", monedas de chocolate para tus clientes"
-                : ""}
-              {siguiente.puede_publicar_contenido && !plan?.puede_publicar_contenido
-                ? ", eventos y noticias"
-                : ""}
-              {siguiente.en_banner_principal && !plan?.en_banner_principal
-                ? " y tu negocio en el banner de la portada"
-                : ""}
-              . Por {pesos(siguiente.precio_mensual)} al mes.
-            </p>
-          </section>
-        )}
+        <PlanesDesplegables
+          anuncio={
+            siguiente
+              ? {
+                  nombre: siguiente.nombre,
+                  ventajas: [
+                    `${siguiente.max_sucursales} sucursales`,
+                    siguiente.puede_dar_puntos && !plan?.puede_dar_puntos
+                      ? "monedas de chocolate para tus clientes"
+                      : null,
+                    siguiente.puede_publicar_contenido &&
+                    !plan?.puede_publicar_contenido
+                      ? "eventos y noticias"
+                      : null,
+                    siguiente.en_banner_principal && !plan?.en_banner_principal
+                      ? "tu negocio en el banner de la portada"
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(", ") + ".",
+                  precio: pesos(siguiente.precio_mensual),
+                }
+              : undefined
+          }
+        >
+          <FormularioCambiarPlan tiers={tiers} tierActual={suscripcion?.tier_id} />
 
-        <section className="grid gap-4">
-          <h2 className="font-display text-xl">
-            {suscripcion ? "Cambiar de plan" : "Elige tu plan"}
-          </h2>
-
-          {suscripcion ? (
+          {/*
+            Cancelar vive aqui dentro, en letra pequena: es una decision sobre
+            el plan, y su sitio es donde se deciden los planes.
+          */}
+          {suscripcion && (
             <details>
-              <summary className="cursor-pointer list-none">
-                <span className="inline-flex min-h-12 items-center rounded-full border-2 border-selva/25 bg-white px-6 font-bold text-selva-2">
-                  Ver los planes
-                </span>
+              <summary className="cursor-pointer list-none text-sm text-cacao/70 underline underline-offset-4 hover:text-cacao">
+                Cancelar mi plan
               </summary>
 
-              <div className="mt-4 grid gap-4">
-                <FormularioCambiarPlan
-                  tiers={tiers}
-                  tierActual={suscripcion.tier_id}
-                />
+              <div className="mt-3 grid gap-4 rounded-3xl bg-crema-2 p-5">
+                <p className="text-cacao">
+                  Dejas de pagar y{" "}
+                  {publicadas > 0 ? (
+                    <>
+                      tus{" "}
+                      <strong className="text-selva-2">
+                        {publicadas === 1
+                          ? "sucursal sale"
+                          : `${publicadas} sucursales salen`}
+                      </strong>{" "}
+                      del directorio
+                    </>
+                  ) : (
+                    "tus micrositios no vuelven al directorio"
+                  )}
+                  , pero <strong className="text-selva-2">no pierdes nada</strong>{" "}
+                  de lo que armaste: todo vuelve a borrador con sus fotos, sus
+                  datos y su catalogo.
+                </p>
 
-                {/*
-                  Cancelar vive aquí dentro, en letra pequeña: es una decisión
-                  sobre el plan, y su sitio es donde se deciden los planes — no
-                  suelta al final de la pantalla ni junto al anuncio de subir.
-                */}
-                <details>
-                  <summary className="cursor-pointer list-none text-sm text-cacao/70 underline underline-offset-4 hover:text-cacao">
-                    Cancelar mi plan
-                  </summary>
-
-                  <div className="mt-3 grid gap-4 rounded-3xl bg-crema-2 p-5">
-                    <p className="text-cacao">
-                      Dejas de pagar y{" "}
-                      {publicadas > 0 ? (
-                        <>
-                          tus{" "}
-                          <strong className="text-selva-2">
-                            {publicadas === 1
-                              ? "sucursal sale"
-                              : `${publicadas} sucursales salen`}
-                          </strong>{" "}
-                          del directorio
-                        </>
-                      ) : (
-                        "tus micrositios no vuelven al directorio"
-                      )}
-                      , pero{" "}
-                      <strong className="text-selva-2">no pierdes nada</strong> de
-                      lo que armaste: todo vuelve a borrador con sus fotos, sus
-                      datos y su catálogo.
-                    </p>
-
-                    <FormularioCancelarSuscripcion />
-                  </div>
-                </details>
+                <FormularioCancelarSuscripcion />
               </div>
             </details>
-          ) : (
-            <FormularioCambiarPlan tiers={tiers} />
           )}
-        </section>
+        </PlanesDesplegables>
 
         <section className="grid gap-4">
           <h2 className="font-display text-xl">Tus datos</h2>
