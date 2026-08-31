@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
+import { IconoOjo, IconoOjoTachado } from "@/components/iconos";
 
 type CampoProps = {
   nombre: string;
@@ -28,24 +29,70 @@ export function Campo({
   limite,
 }: CampoProps) {
   const [largo, setLargo] = useState((valor ?? "").length);
+  const [visible, setVisible] = useState(false);
+
+  /*
+    El ojo solo en las contraseñas, y solo cuando hay algo escrito: un botón para
+    revelar un campo vacío no revela nada y de paso deja un icono flotando en un
+    formulario que todavía no se ha tocado.
+
+    Vale para todos los campos de contraseña —registro, entrada y cambio—, no
+    solo donde se pidió: teclear a ciegas una contraseña larga se equivoca igual
+    en las tres pantallas.
+  */
+  const esClave = tipo === "password";
+  const conOjo = esClave && largo > 0;
 
   return (
     <label className="block">
       <span className="mb-1.5 block font-bold text-selva-2">{etiqueta}</span>
-      <input
-        id={nombre}
-        name={nombre}
-        type={tipo}
-        required={requerido}
-        autoComplete={autoComplete}
-        defaultValue={valor ?? undefined}
-        placeholder={marcador}
-        maxLength={limite}
-        onChange={limite ? (evento) => setLargo(evento.target.value.length) : undefined}
-        aria-describedby={ayuda ? `${nombre}-ayuda` : undefined}
-        /* min-h-14: objetivo táctil grande, que es como se va a usar en la feria. */
-        className="min-h-14 w-full rounded-2xl border-2 border-selva/20 bg-white px-4 text-base text-ink transition-colors placeholder:text-cacao/40 focus:border-selva"
-      />
+
+      <span className="relative block">
+        <input
+          id={nombre}
+          name={nombre}
+          type={esClave && visible ? "text" : tipo}
+          required={requerido}
+          autoComplete={autoComplete}
+          defaultValue={valor ?? undefined}
+          placeholder={marcador}
+          maxLength={limite}
+          /*
+            En las contraseñas el contador se lleva la cuenta igual, aunque no se
+            enseñe: es lo que sabe si el campo está vacío para decidir si el ojo
+            aparece.
+          */
+          onChange={
+            limite || esClave
+              ? (evento) => setLargo(evento.target.value.length)
+              : undefined
+          }
+          aria-describedby={ayuda ? `${nombre}-ayuda` : undefined}
+          /* min-h-14: objetivo táctil grande, que es como se va a usar en la feria. */
+          className={`min-h-14 w-full rounded-2xl border-2 border-selva/20 bg-white text-base text-ink transition-colors placeholder:text-cacao/40 focus:border-selva ${
+            conOjo ? "pr-14 pl-4" : "px-4"
+          }`}
+        />
+
+        {conOjo && (
+          <button
+            type="button"
+            onClick={() => setVisible((antes) => !antes)}
+            aria-pressed={visible}
+            aria-label={visible ? "Ocultar la contraseña" : "Mostrar la contraseña"}
+            /* `-translate-y-1/2` con `top-1/2` lo centra sin depender del alto,
+               que cambia si el navegador agranda la letra. */
+            className="absolute top-1/2 right-2 grid size-10 -translate-y-1/2 place-items-center rounded-full text-cacao/60 transition-colors hover:bg-crema-2 hover:text-selva-2"
+          >
+            {visible ? (
+              <IconoOjoTachado className="size-5" />
+            ) : (
+              <IconoOjo className="size-5" />
+            )}
+          </button>
+        )}
+      </span>
+
       {ayuda && (
         <span id={`${nombre}-ayuda`} className="mt-1.5 block text-sm text-cacao/70">
           {ayuda}
