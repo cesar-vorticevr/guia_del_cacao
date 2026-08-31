@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { Logotipo } from "@/components/marca";
 import { BarraInferior } from "@/components/publico/barra-inferior";
-import { FondoDeCacao } from "@/components/publico/fondo-cacao";
+import { EncabezadoQueVuelve } from "@/components/publico/encabezado-que-vuelve";
 import { PastillaPasaporte } from "@/components/publico/pastilla-pasaporte";
+import { PieDePagina } from "@/components/publico/pie-de-pagina";
 import { destinoSegunRol, perfilActual } from "@/lib/auth/sesion";
 import { pestanaDePerfil } from "@/lib/auth/navegacion";
 import { pasaporteDe } from "@/lib/datos/puntos";
@@ -37,9 +38,8 @@ export default async function LayoutPublico({
 
   return (
     <>
-      <FondoDeCacao />
-
-      <header className="sticky top-0 z-40 bg-selva py-3.5 text-crema">
+      <EncabezadoQueVuelve>
+      <header className="bg-selva py-3.5 text-crema">
         <div className="mx-auto flex w-[92vw] max-w-[1180px] items-center justify-between gap-4">
           <Logotipo />
 
@@ -79,15 +79,22 @@ export default async function LayoutPublico({
           )}
         </div>
       </header>
+      </EncabezadoQueVuelve>
 
       {/*
-        `relative z-10` no es decorativo: el fondo de cacao es una capa fija en
-        z-0, y sin esto el contenido —que no está posicionado— se pintaría por
-        debajo de las hojas.
+        `relative z-10` se queda aunque el fondo de cacao ya no cuelgue de aquí:
+        sigue habiendo capas decorativas en z-0 dentro de las páginas, y sin un
+        contexto de apilamiento propio el contenido se pintaría por debajo.
       */}
-      <main className="relative z-10 mx-auto w-[92vw] max-w-[1180px] pb-28 sm:pb-10">
+      {/*
+        El respiro de abajo lo pone ahora el pie, que es quien toca la barra fija
+        del pulgar. Aquí solo queda la separación normal del contenido.
+      */}
+      <main className="relative z-10 mx-auto w-[92vw] max-w-[1180px] pb-10">
         {children}
       </main>
+
+      <PieDePagina />
 
       <BarraInferior
         monedas={pasaporte?.puntos ?? null}

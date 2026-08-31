@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { TarjetaSucursal } from "@/components/publico/tarjeta-sucursal";
+import { VerMas } from "@/components/publico/ver-mas";
 import { parecido } from "@/lib/busqueda";
 import type { TarjetaDirectorio } from "@/lib/datos/publico";
 
@@ -25,14 +26,17 @@ export function BuscadorDirectorio({
   sucursales,
   /** Nombre de cada categoría, por id: también se puede buscar por ella. */
   categorias,
+  /** Lo que se escribió en la portada, que llega por `?q=`. */
+  consultaInicial = "",
   children,
 }: {
   sucursales: TarjetaDirectorio[];
   categorias: Record<number, string>;
+  consultaInicial?: string;
   /** Los filtros por categoría, que van entre la caja y los resultados. */
   children?: React.ReactNode;
 }) {
-  const [consulta, setConsulta] = useState("");
+  const [consulta, setConsulta] = useState(consultaInicial);
 
   const encontradas = useMemo(
     () =>
@@ -93,11 +97,23 @@ export function BuscadorDirectorio({
       )}
 
       {encontradas.length > 0 && (
-        <ul className="mt-6 grid gap-4 sm:grid-cols-2">
-          {encontradas.map((sucursal) => (
-            <TarjetaSucursal key={sucursal.id} sucursal={sucursal} />
-          ))}
-        </ul>
+        <div className="mt-6">
+          {/*
+            La `key` reinicia cuántas se ven cada vez que cambia la búsqueda: sin
+            ella, quien destapó treinta negocios y luego escribe algo se
+            encontraría con que los cinco resultados nuevos vienen ya "abiertos",
+            y al borrar la búsqueda seguiría treinta abajo sin saber por qué.
+          */}
+          <VerMas
+            key={consulta}
+            className="grid gap-4 sm:grid-cols-2"
+            etiqueta="Ver más negocios"
+          >
+            {encontradas.map((sucursal) => (
+              <TarjetaSucursal key={sucursal.id} sucursal={sucursal} />
+            ))}
+          </VerMas>
+        </div>
       )}
     </>
   );

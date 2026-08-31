@@ -155,7 +155,7 @@ Ambas se leen y moderan igual, y eso vive en `lib/datos/comentarios.ts` y
 ## El foro
 
 Abrir un tema **se gana**: un cliente con 50 monedas abre uno y con 100 hasta
-tres; un negocio lo desbloquea con el **Tier 3**, y tambien son tres. Quien
+tres; un negocio lo desbloquea con el plan **Barra**, y tambien son tres. Quien
 puede lo resuelve `public.temas_permitidos_de()`, que despacha por rol. Los
 cortes de la escalera no se escriben otra vez — `public.temas_permitidos` se
 apoya en `calcular_rango`, y `temasPermitidos()` en `RANGOS`. Si cambian,
@@ -189,6 +189,51 @@ veces. Toda consulta que traiga una sucursal para enseñarla debe pedir también
 noticias de los últimos `DIAS_DE_NOTICIA` días (hoy, 30). Lo que caduca
 desaparece **del micrositio**, no de la base: sigue en `/eventos`, `/noticias` y
 en su propia página `/eventos/[id]`. Nada se borra.
+
+## Los planes
+
+Se llaman **Mazorca**, **Grano** y **Barra** — la cadena del cacao, para que el
+orden se lea sin mirar los precios. Antes eran "Tier 1/2/3", que no es palabra de
+nadie y no dice que se gana al subir. No chocan con los rangos del pasaporte
+(Curioso, Catador, Conocedor, Maestro cacaotero): esos son de quien visita.
+
+El nombre vive en la tabla `tiers`, no en `vocabulario.ts`: es un dato de negocio
+con su precio al lado, y el codigo sigue hablando de `tier_id`.
+
+Cada plan trae su **tope de sucursales** (`tiers.max_sucursales`): 1, 3 y 20. El
+tope de una marca lo da su plan mas alto **pagado**, no la suma de sus planes —
+cada sucursal se cobra aparte, y sumar convertiria "tres sucursales" en "tres por
+cada una que ya tengas". Sin ninguna suscripcion activa el tope es 1: esa primera
+es la que se arma sin pagar, para que un negocio recien llegado tenga por donde
+empezar. Lo exige `exigir_tope_de_sucursales` al insertar, y la pantalla lo
+consulta con la misma funcion (`tope_de_sucursales`) en vez de contar por su
+cuenta.
+
+## El catálogo es de la marca
+
+Desde la migración **000022** los productos cuelgan de `marcas`, no de
+`sucursales`. Una chocolatería con tres locales cargaba la misma barra tres
+veces y al cambiar el precio tenía que acordarse de las tres.
+
+Qué maneja cada sucursal vive en la tabla puente **`productos_sucursal`**. No hay
+copias: hay una fila del producto y varias sucursales apuntando a ella, así que
+editar o borrar en el catálogo se ve en todas sin tocar nada más.
+
+- `catalogoDeMarca()` da el catálogo; `productosDeSucursal()` (y su alias
+  `productosDe()`) dan lo que una sucursal eligió.
+- **Sin catálogo no hay sucursal**: `exigir_catalogo` pide al menos un producto
+  de la marca antes del primer insert.
+- Publicar ya no exige "tener productos" sino **haber elegido** al menos uno para
+  esa sucursal — lo dice `que_le_falta_al_micrositio`.
+- `productos_servicios.sucursal_id` quedó **en desuso**: sigue ahí para poder
+  mirar atrás, pero nadie lo lee.
+- Las fotos del catálogo van a `catalogo/{marca_id}/…` y no bajo una sucursal:
+  borrar una sucursal no puede llevarse la foto de un producto que las demás
+  siguen usando.
+
+Los tres triggers del alta van numerados (`al_crear_sucursal_1_correo`,
+`_2_catalogo`, `_3_tope`) porque corren en orden alfabético: primero lo que se
+resuelve sin pagar y al final el tope del plan.
 
 ## Publicar lo autoriza el pago
 
@@ -296,11 +341,25 @@ real y la URL de retorno saldría mal.
 
 ## El fondo de cacao
 
-Ramas, hojas y mazorcas que se desplazan a distinta velocidad al hacer scroll,
-detrás del sitio público. Viven en `components/publico/fondo-cacao.tsx` (mira
-qué PNG existen en `public/parallax/`) y `fondo-cacao-capas.tsx` (el
-movimiento). El encargo de las ilustraciones está en la raíz del repo:
-`guia-de-estilo-ilustraciones.pdf` y `prompts-imagenes-parallax.md`.
+Ramas, hojas y mazorcas que se desplazan a distinta velocidad al hacer scroll.
+Viven en `components/publico/fondo-cacao.tsx` (mira qué PNG existen en
+`public/parallax/`) y `fondo-cacao-capas.tsx` (el movimiento). El encargo de las
+ilustraciones está en la raíz del repo: `guia-de-estilo-ilustraciones.pdf` y
+`prompts-imagenes-parallax.md`.
+
+**Ya no acompaña a todo el sitio.** Estuvo detrás de cada página pública y se
+quitó del layout: competía con lo que se venía a leer, y la portada se apoya en
+el aire. Hoy se pide donde hace falta, y eso es **una sola franja** — la sección
+"En el directorio" de la portada.
+
+De ahí la prop `variante`:
+
+- `pantalla` (por omisión) cuelga del viewport, como estaba.
+- `franja` lo encierra en la sección que lo contenga, que **tiene que ser
+  `relative` y recortar el desborde**. Sin el recorte las piezas se pasean por
+  el resto de la página. El recorrido se mide contra esa caja y no contra la
+  pantalla: con el alto del viewport dentro de una franja más baja, casi todas
+  las piezas caen fuera del recorte y no se ve nada.
 
 **Mientras un PNG no exista, su capa se pinta con un marcador de color.** Es
 para poder ajustar tamaños y velocidades sin tener el arte. Basta con dejar el
@@ -316,9 +375,10 @@ de la pantalla.
 
 Dos cosas que se rompen solas si alguien las toca sin saber:
 
-- **El `main` del layout público lleva `relative z-10`.** El fondo es una capa
-  fija en `z-0`; sin eso el contenido, que no está posicionado, se pinta por
-  debajo de las hojas.
+- **El `main` del layout público lleva `relative z-10`,** y lo que va encima de
+  una franja con fondo necesita su propio `relative z-10`. Las capas viven en
+  `z-0`; sin un contexto de apilamiento propio, el contenido —que no está
+  posicionado— se pinta por debajo de las hojas.
 - **La columna interior de `fondo-cacao-capas` repite el ancho del `main`**
   (`w-[92vw] max-w-[1180px]`). Las piezas se cuelgan de sus bordes hacia afuera,
   no de los de la pantalla, para que el margen que ocupan crezca con el monitor.

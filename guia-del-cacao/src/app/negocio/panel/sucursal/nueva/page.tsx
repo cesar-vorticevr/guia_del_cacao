@@ -13,6 +13,12 @@ export default async function NuevaSucursal() {
   if (!perfil) redirect("/login");
   if (perfil.rol !== "negocio") redirect("/cuenta");
 
+  // El trigger de la base rechaza el insert sin correo confirmado. Aquí se
+  // devuelve al panel, que es donde está el botón para pedir el correo: dejar
+  // entrar al formulario solo serviría para escribir un nombre y chocar al
+  // guardar.
+  if (perfil.correo_verificado_en === null) redirect("/negocio/panel");
+
   return (
     <>
       <BarraSesion nombre={perfil.nombre} />

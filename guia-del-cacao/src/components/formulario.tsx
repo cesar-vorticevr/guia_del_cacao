@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useFormStatus } from "react-dom";
 
 type CampoProps = {
@@ -11,6 +12,8 @@ type CampoProps = {
   autoComplete?: string;
   valor?: string | null;
   marcador?: string;
+  /** Tope de caracteres. Con él aparece el contador. */
+  limite?: number;
 };
 
 export function Campo({
@@ -22,7 +25,10 @@ export function Campo({
   autoComplete,
   valor,
   marcador,
+  limite,
 }: CampoProps) {
+  const [largo, setLargo] = useState((valor ?? "").length);
+
   return (
     <label className="block">
       <span className="mb-1.5 block font-bold text-selva-2">{etiqueta}</span>
@@ -34,6 +40,8 @@ export function Campo({
         autoComplete={autoComplete}
         defaultValue={valor ?? undefined}
         placeholder={marcador}
+        maxLength={limite}
+        onChange={limite ? (evento) => setLargo(evento.target.value.length) : undefined}
         aria-describedby={ayuda ? `${nombre}-ayuda` : undefined}
         /* min-h-14: objetivo táctil grande, que es como se va a usar en la feria. */
         className="min-h-14 w-full rounded-2xl border-2 border-selva/20 bg-white px-4 text-base text-ink transition-colors placeholder:text-cacao/40 focus:border-selva"
@@ -43,7 +51,31 @@ export function Campo({
           {ayuda}
         </span>
       )}
+      {limite && <Contador largo={largo} limite={limite} />}
     </label>
+  );
+}
+
+/**
+ * Cuánto llevas escrito, cuando el campo tiene tope.
+ *
+ * Se pone en rojo en el último 10%, no antes: un contador que alarma desde el
+ * principio se lee como una advertencia permanente y deja de mirarse. Y va con
+ * `aria-live="polite"` para que a quien usa lector de pantalla le avise al
+ * acercarse al límite, sin interrumpirle cada tecla.
+ */
+function Contador({ largo, limite }: { largo: number; limite: number }) {
+  const cerca = largo > limite * 0.9;
+
+  return (
+    <span
+      aria-live="polite"
+      className={`mt-1.5 block text-right font-mono text-sm ${
+        cerca ? "font-bold text-guayaba" : "text-cacao/70"
+      }`}
+    >
+      {largo} / {limite}
+    </span>
   );
 }
 
@@ -53,13 +85,18 @@ export function Area({
   ayuda,
   valor,
   filas = 4,
+  limite,
 }: {
   nombre: string;
   etiqueta: string;
   ayuda?: string;
   valor?: string | null;
   filas?: number;
+  /** Tope de caracteres. Con él aparece el contador. */
+  limite?: number;
 }) {
+  const [largo, setLargo] = useState((valor ?? "").length);
+
   return (
     <label className="block">
       <span className="mb-1.5 block font-bold text-selva-2">{etiqueta}</span>
@@ -68,9 +105,12 @@ export function Area({
         name={nombre}
         rows={filas}
         defaultValue={valor ?? ""}
+        maxLength={limite}
+        onChange={limite ? (evento) => setLargo(evento.target.value.length) : undefined}
         className="w-full rounded-2xl border-2 border-selva/20 bg-white px-4 py-3 text-base text-ink focus:border-selva"
       />
       {ayuda && <span className="mt-1.5 block text-sm text-cacao/70">{ayuda}</span>}
+      {limite && <Contador largo={largo} limite={limite} />}
     </label>
   );
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { anotarMonedasVistas } from "@/lib/datos/notificaciones";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import QRCode from "qrcode";
@@ -25,6 +26,10 @@ export default async function PanelPuntos() {
 
   if (!perfil) redirect("/login");
   if (perfil.rol !== "negocio") redirect("/cuenta");
+
+  // Entrar aquí es haber visto lo que llegó: apaga el destello de "nueva" en el
+  // panel. Lo que sigue sin resolver conserva su icono, porque sigue pendiente.
+  await anotarMonedasVistas(perfil.id);
 
   const sucursales = await misSucursales(perfil.id);
 
@@ -77,7 +82,7 @@ export default async function PanelPuntos() {
 
         {conPuntos.length === 0 ? (
           <p className="rounded-3xl bg-crema-2 p-6 text-cacao">
-            Dar monedas de chocolate viene con el plan <strong>Tier 2</strong> o
+            Dar monedas de chocolate viene con el plan <strong>Grano</strong> o
             superior, y el micrositio tiene que estar publicado. Ninguno de los
             tuyos cumple todavía.
           </p>

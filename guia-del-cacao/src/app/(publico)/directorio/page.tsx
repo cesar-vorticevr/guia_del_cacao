@@ -14,10 +14,11 @@ const PILDORA =
 export default async function Directorio({
   searchParams,
 }: {
-  searchParams: Promise<{ categoria?: string }>;
+  searchParams: Promise<{ categoria?: string; q?: string }>;
 }) {
-  const { categoria } = await searchParams;
+  const { categoria, q } = await searchParams;
   const categoriaId = categoria ? Number(categoria) : undefined;
+  const consulta = q?.trim() ?? "";
 
   const [sucursales, categorias] = await Promise.all([
     listarDirectorio(categoriaId),
@@ -39,9 +40,16 @@ export default async function Directorio({
           : "Todos los negocios del cacao publicados en la plataforma."}
       </p>
 
+      {/*
+        La `key` es lo que hace que una búsqueda nueva desde la portada reemplace
+        a la anterior. Sin ella, llegar a `?q=museo` teniendo abierto `?q=finca`
+        deja la caja con lo viejo: el estado sobrevive porque la ruta es la misma.
+      */}
       <BuscadorDirectorio
+        key={consulta}
         sucursales={sucursales}
         categorias={nombresDeCategoria}
+        consultaInicial={consulta}
       >
         {/*
         Las categorías se acomodan en varios renglones en vez de irse a un

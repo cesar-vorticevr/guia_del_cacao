@@ -13,11 +13,15 @@ export type Tier = {
   puede_dar_puntos: boolean;
   puede_publicar_contenido: boolean;
   en_banner_principal: boolean;
+  /** Cuántas sucursales caben en total con este plan. */
+  max_sucursales: number;
 };
 
 export type Producto = {
   id: string;
   nombre: string;
+  /** Clave interna del negocio, para cruzarlo con su inventario. */
+  sku: string | null;
   descripcion: string | null;
   precio: number | null;
   imagen: string | null;
@@ -42,6 +46,8 @@ export type Sucursal = {
   tier_id: number | null;
   estado: EstadoSucursal;
   motivo_rechazo: string | null;
+  /** Una pausa puesta por moderación solo la levanta quien la puso. */
+  pausado_por_admin: boolean;
   galeria: string[];
   fecha_publicacion: string | null;
 };
@@ -77,8 +83,10 @@ export const ESTADO: Record<
     tono: "bg-guayaba/20 text-cacao",
   },
   pausado: {
-    texto: "Pausado",
-    explicacion: "Fuera del directorio por ahora.",
+    // "Oculto" dice lo que pasa; "Pausado" no. El valor del enum sigue igual:
+    // renombrarlo obligaria a recrear el tipo por un cambio de etiqueta.
+    texto: "Oculto",
+    explicacion: "Fuera del directorio. Solo tu lo ves, y vuelve con un toque.",
     tono: "bg-crema-2 text-cacao",
   },
 };

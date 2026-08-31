@@ -21,7 +21,23 @@ export default async function Login({
         <Aviso>No se pudo entrar con Google. Intenta con tu correo.</Aviso>
       )}
 
+      {/* Los enlaces del correo caducan y son de un solo uso: quien llega con
+          uno vencido necesita saber que puede pedir otro, no un "algo salió
+          mal". */}
+      {error === "enlace" && (
+        <Aviso>
+          Ese enlace ya no sirve: caducó o ya se usó. Pide uno nuevo desde
+          «Olvidé mi contraseña».
+        </Aviso>
+      )}
+
       <FormularioLogin />
+
+      <p className="text-center">
+        <Link href="/recuperar" className="font-bold text-selva underline">
+          Olvidé mi contraseña
+        </Link>
+      </p>
 
       <div className="flex items-center gap-3 text-sm text-cacao/60">
         <span className="h-px flex-1 bg-selva/15" />o<span className="h-px flex-1 bg-selva/15" />

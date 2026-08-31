@@ -50,7 +50,7 @@ export default async function Comunidad() {
           // Decirle cuánto le falta es lo que convierte el "no" en una meta.
           esNegocio ? (
             <p className="rounded-3xl bg-crema-2 p-5 text-cacao">
-              Abrir temas viene con el plan <strong>Tier 3</strong>. Comentar sí
+              Abrir temas viene con el plan <strong>Barra</strong>. Comentar sí
               puedes desde cualquier plan.
             </p>
           ) : (
@@ -67,7 +67,7 @@ export default async function Comunidad() {
             Ya tienes {cupo.abiertos} de {cupo.permitidos}{" "}
             {cupo.permitidos === 1 ? "tema" : "temas"}.{" "}
             {esNegocio
-              ? "El Tier 3 permite hasta tres."
+              ? "El plan Barra permite hasta tres."
               : `Con 100 ${MONEDA.plural} puedes tener hasta tres.`}
           </p>
         )}

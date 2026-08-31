@@ -5,7 +5,6 @@ import { useFormStatus } from "react-dom";
 import { Area, Aviso, BotonEnviar, Campo, Selector } from "@/components/formulario";
 import {
   agregarAGaleria,
-  agregarProducto,
   cambiarFotoPublicacion,
   crearEvento,
   crearNoticia,
@@ -17,6 +16,8 @@ import {
   type EstadoAccion,
 } from "@/lib/negocio/acciones";
 import { pesos, type Sucursal, type Tier } from "@/lib/tipos";
+import { cancelarPlan, contratarPlan } from "@/lib/negocio/plan";
+import { LIMITES } from "@/lib/limites";
 import { ACEPTA, MEDIDAS, PESO } from "@/lib/imagenes";
 import { RANGOS } from "@/lib/vocabulario";
 
@@ -53,12 +54,23 @@ export function FormularioNuevaSucursal() {
   );
 }
 
-export function FormularioMicrositio({ sucursal }: { sucursal: Sucursal }) {
+export function FormularioMicrositio({
+  sucursal,
+  /**
+   * Paso al que saltar después de guardar, durante el alta guiada. Sin esto el
+   * botón solo guarda, que es lo que hace falta al editar una ficha ya hecha.
+   */
+  continuarA,
+}: {
+  sucursal: Sucursal;
+  continuarA?: string;
+}) {
   const [estado, accion] = useActionState(guardarMicrositio, INICIAL);
 
   return (
     <form action={accion} className="grid gap-4">
       <input type="hidden" name="sucursal_id" value={sucursal.id} />
+      {continuarA && <input type="hidden" name="continuar_a" value={continuarA} />}
       <Resultado estado={estado} />
 
       <Campo
@@ -72,6 +84,7 @@ export function FormularioMicrositio({ sucursal }: { sucursal: Sucursal }) {
         valor={sucursal.acerca_de}
         ayuda="Qué hacen, qué los distingue, desde cuándo."
         filas={5}
+        limite={LIMITES.acercaDe}
       />
       <Campo
         nombre="ubicacion_maps_url"
@@ -101,7 +114,9 @@ export function FormularioMicrositio({ sucursal }: { sucursal: Sucursal }) {
         <Campo nombre="tiktok" etiqueta="TikTok" requerido={false} valor={sucursal.tiktok} />
       </fieldset>
 
-      <BotonEnviar>Guardar cambios</BotonEnviar>
+      <BotonEnviar>
+        {continuarA ? "Guardar y continuar" : "Guardar cambios"}
+      </BotonEnviar>
     </form>
   );
 }
@@ -124,6 +139,9 @@ function CampoImagen({
   /** Para el carrusel: se eligen todas de un jalón, no una por una. */
   varias?: boolean;
 }) {
+  // Vive dentro del `<form>`, así que puede saber si el envío está en curso.
+  const { pending } = useFormStatus();
+
   return (
     <label className="block">
       <span className="mb-1.5 block font-bold text-selva-2">{etiqueta}</span>
@@ -132,10 +150,33 @@ function CampoImagen({
         name="archivo"
         accept={ACEPTA}
         multiple={varias}
+        /*
+          Elegir el archivo es la orden: se sube solo. El botón de "Subir" era un
+          segundo paso que nadie pedía y que se olvidaba a media captura — la foto
+          se veía elegida en el campo y en realidad no estaba guardada.
+
+          El input no se deshabilita mientras sube, aunque se vea la tentación:
+          un campo deshabilitado no se serializa, y hacerlo aquí correría el
+          riesgo de mandar el formulario sin el archivo.
+        */
+        onChange={(evento) => {
+          if (evento.currentTarget.files?.length) {
+            evento.currentTarget.form?.requestSubmit();
+          }
+        }}
         className="w-full rounded-2xl border-2 border-dashed border-selva/25 bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-selva file:px-4 file:py-2 file:font-bold file:text-crema"
       />
-      <span className="mt-1.5 block text-sm text-cacao/70">{medida}</span>
-      <span className="block text-sm text-cacao/70">{PESO}</span>
+
+      {pending ? (
+        <span role="status" className="mt-1.5 block text-sm font-bold text-selva">
+          Subiendo…
+        </span>
+      ) : (
+        <>
+          <span className="mt-1.5 block text-sm text-cacao/70">{medida}</span>
+          <span className="block text-sm text-cacao/70">{PESO}</span>
+        </>
+      )}
     </label>
   );
 }
@@ -161,56 +202,11 @@ export function FormularioImagen({
       <Resultado estado={estado} />
 
       <CampoImagen etiqueta={etiqueta} medida={`${uso} ${medida}`} />
-
-      <BotonEnviar variante="secundario">Subir</BotonEnviar>
     </form>
   );
 }
 
-export function FormularioProducto({ sucursalId }: { sucursalId: string }) {
-  const [estado, accion] = useActionState(agregarProducto, INICIAL);
-
-  return (
-    <form action={accion} className="grid gap-4">
-      <input type="hidden" name="sucursal_id" value={sucursalId} />
-      <Resultado estado={estado} />
-
-      <Campo nombre="nombre" etiqueta="Producto o servicio" />
-      <Campo nombre="descripcion" etiqueta="Descripción" requerido={false} />
-      <Campo
-        nombre="precio"
-        etiqueta="Precio"
-        requerido={false}
-        marcador="120"
-        ayuda="Opcional. Déjalo vacío si prefieres no publicarlo."
-      />
-
-      <label className="block">
-        <span className="mb-1.5 block font-bold text-selva-2">
-          Foto <span className="font-normal text-cacao/70">(opcional)</span>
-        </span>
-        <input
-          type="file"
-          name="imagen"
-          accept={ACEPTA}
-          className="w-full rounded-2xl border-2 border-dashed border-selva/25 bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-selva file:px-4 file:py-2 file:font-bold file:text-crema"
-        />
-        <span className="mt-1.5 block text-sm text-cacao/70">{MEDIDAS.producto}</span>
-        <span className="block text-sm text-cacao/70">{PESO}</span>
-      </label>
-
-      <BotonEnviar variante="secundario">Agregar al catálogo</BotonEnviar>
-    </form>
-  );
-}
-
-export function FormularioPublicar({
-  sucursalId,
-  tiers,
-}: {
-  sucursalId: string;
-  tiers: Tier[];
-}) {
+export function FormularioPublicar({ sucursalId }: { sucursalId: string }) {
   const [estado, accion] = useActionState(publicarSucursal, INICIAL);
 
   return (
@@ -218,51 +214,7 @@ export function FormularioPublicar({
       <input type="hidden" name="sucursal_id" value={sucursalId} />
       <Resultado estado={estado} />
 
-      <fieldset className="grid gap-3">
-        <legend className="sr-only">Elige un plan</legend>
-
-        {tiers.map((tier, indice) => (
-          <label
-            key={tier.id}
-            className="grid cursor-pointer gap-1 rounded-3xl border-2 border-selva/20 bg-white p-5 has-[:checked]:border-selva has-[:checked]:bg-crema-2"
-          >
-            <span className="flex items-baseline justify-between gap-3">
-              <span className="font-display text-xl font-semibold text-selva-2">
-                <input
-                  type="radio"
-                  name="tier_id"
-                  value={tier.id}
-                  defaultChecked={indice === 0}
-                  className="mr-2 size-5 align-middle accent-selva"
-                />
-                {tier.nombre}
-              </span>
-              <span className="font-mono text-lg font-bold text-selva">
-                {pesos(tier.precio_mensual)}
-                <span className="text-sm font-normal text-cacao/70">/mes</span>
-              </span>
-            </span>
-
-            <ul className="mt-1 ml-7 grid gap-0.5 text-cacao">
-              <li>{tier.puede_dar_puntos
-                  ? "✓ Da monedas de chocolate a tus clientes"
-                  : "— Sin monedas de chocolate"}</li>
-              <li>
-                {tier.puede_publicar_contenido
-                  ? "✓ Publica eventos y noticias"
-                  : "— Sin eventos ni noticias"}
-              </li>
-              <li>
-                {tier.en_banner_principal
-                  ? "✓ Aparece en el banner de la portada"
-                  : "— Fuera del banner"}
-              </li>
-            </ul>
-          </label>
-        ))}
-      </fieldset>
-
-      <BotonEnviar>Pagar y publicar</BotonEnviar>
+      <BotonEnviar>Publicar en el directorio</BotonEnviar>
     </form>
   );
 }
@@ -280,8 +232,6 @@ export function FormularioGaleria({ sucursalId }: { sucursalId: string }) {
         varias
         medida={`Puedes elegir varias de una vez. Hasta 8 en total, en el orden en que las subes. ${MEDIDAS.galeria}`}
       />
-
-      <BotonEnviar variante="secundario">Subir fotos</BotonEnviar>
     </form>
   );
 }
@@ -486,3 +436,142 @@ function BotonEnviarChico({ children }: { children: React.ReactNode }) {
     </button>
   );
 }
+
+/**
+ * Los planes, para elegir uno.
+ *
+ * Es el mismo listado que usa el alta y el cambio de plan: la diferencia entre
+ * las dos pantallas es a qué acción apunta y qué dice el botón, no cómo se
+ * pinta un plan. Duplicarlo garantizaba que un día uno enseñara una ventaja que
+ * el otro no.
+ */
+function Planes({ tiers, actual }: { tiers: Tier[]; actual?: number }) {
+  return (
+    <fieldset className="grid gap-3">
+      <legend className="sr-only">Elige un plan</legend>
+
+      {tiers.map((tier, indice) => {
+        // Lo que se gana al subir se marca; el plan de abajo no se pinta como
+        // una pérdida. Un cuadro rojo diciendo "pierdes el banner" convierte
+        // elegir en arrepentirse, y aquí lo que interesa es que se vea el paso
+        // siguiente.
+        const mejora = actual !== undefined && tier.id > actual;
+
+        return (
+        <label
+          key={tier.id}
+          className={`relative grid cursor-pointer gap-1 rounded-3xl border-2 bg-white p-5 has-[:checked]:bg-crema-2 ${
+            mejora
+              ? "border-mango has-[:checked]:border-selva"
+              : "border-selva/20 has-[:checked]:border-selva"
+          }`}
+        >
+          {mejora && (
+            <span className="absolute -top-3 right-5 rounded-full bg-mango px-3 py-0.5 font-mono text-xs font-bold text-ink">
+              Subir de plan
+            </span>
+          )}
+          <span className="flex items-baseline justify-between gap-3">
+            <span className="font-display text-xl font-semibold text-selva-2">
+              <input
+                type="radio"
+                name="tier_id"
+                value={tier.id}
+                defaultChecked={actual ? tier.id === actual : indice === 0}
+                className="mr-2 size-5 align-middle accent-selva"
+              />
+              {tier.nombre}
+              {tier.id === actual && (
+                <span className="ml-2 rounded-full bg-lima/40 px-2.5 py-0.5 align-middle font-mono text-xs font-bold text-selva-2">
+                  Tu plan
+                </span>
+              )}
+            </span>
+            <span className="font-mono text-lg font-bold text-selva">
+              {pesos(tier.precio_mensual)}
+              <span className="text-sm font-normal text-cacao/70">/mes</span>
+            </span>
+          </span>
+
+          <ul className="mt-1 ml-7 grid gap-0.5 text-cacao">
+            <li>
+              ✓{" "}
+              {tier.max_sucursales === 1
+                ? "Una sucursal"
+                : `Hasta ${tier.max_sucursales} sucursales`}
+            </li>
+            <li>
+              {tier.puede_dar_puntos
+                ? "✓ Da monedas de chocolate a tus clientes"
+                : "— Sin monedas de chocolate"}
+            </li>
+            <li>
+              {tier.puede_publicar_contenido
+                ? "✓ Publica eventos y noticias"
+                : "— Sin eventos ni noticias"}
+            </li>
+            <li>
+              {tier.en_banner_principal
+                ? "✓ Aparece en el banner de la portada"
+                : "— Fuera del banner"}
+            </li>
+          </ul>
+        </label>
+        );
+      })}
+    </fieldset>
+  );
+}
+
+export function FormularioCambiarPlan({
+  tiers,
+  tierActual,
+}: {
+  tiers: Tier[];
+  tierActual?: number;
+}) {
+  const [estado, accion] = useActionState(contratarPlan, INICIAL);
+
+  return (
+    <form action={accion} className="grid gap-4">
+      <Resultado estado={estado} />
+
+      <Planes tiers={tiers} actual={tierActual} />
+
+      <BotonEnviar>Cambiar de plan</BotonEnviar>
+    </form>
+  );
+}
+
+/**
+ * Baja de la suscripción.
+ *
+ * La casilla no es un trámite: es lo que obliga a leer qué pasa después. Sin
+ * ella el botón queda a un dedo de distancia de sacar el negocio del directorio
+ * sin que nadie se entere de que eso era lo que hacía.
+ */
+export function FormularioCancelarSuscripcion() {
+  const [estado, accion] = useActionState(cancelarPlan, INICIAL);
+
+  return (
+    <form action={accion} className="grid gap-4">
+      <Resultado estado={estado} />
+
+      <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-white p-4">
+        <input
+          type="checkbox"
+          name="entendido"
+          value="si"
+          className="mt-0.5 size-5 shrink-0 accent-selva"
+        />
+        <span className="text-cacao">
+          Entiendo que al cancelar <strong>dejo de aparecer en el directorio</strong>{" "}
+          y que no se me volverá a cobrar. Mi micrositio vuelve a borrador con
+          todo lo que armé, y puedo publicarlo otra vez cuando quiera.
+        </span>
+      </label>
+
+      <BotonEnviar variante="secundario">Cancelar mi suscripción</BotonEnviar>
+    </form>
+  );
+}

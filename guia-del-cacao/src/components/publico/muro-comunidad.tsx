@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { rango } from "@/lib/vocabulario";
+import { VerMas } from "@/components/publico/ver-mas";
 import type { Clase, Entrada } from "@/lib/datos/comunidad";
 
 /**
@@ -72,7 +73,10 @@ export function MuroComunidad({ entradas }: { entradas: Entrada[] }) {
           Todavía no hay nada por aquí.
         </p>
       ) : (
-        <ul className="mt-6 grid gap-4">
+        <div className="mt-6">
+          {/* La `key` reinicia el conteo al cambiar de filtro: sin ella, saltar
+              de pestaña dejaría la lista nueva ya destapada por la anterior. */}
+          <VerMas key={filtro ?? "todo"} className="grid gap-4" etiqueta="Ver más">
           {visibles.map((entrada) => (
             <li key={`${entrada.clase}-${entrada.id}`}>
               <Link
@@ -139,7 +143,8 @@ export function MuroComunidad({ entradas }: { entradas: Entrada[] }) {
               </Link>
             </li>
           ))}
-        </ul>
+          </VerMas>
+        </div>
       )}
     </>
   );

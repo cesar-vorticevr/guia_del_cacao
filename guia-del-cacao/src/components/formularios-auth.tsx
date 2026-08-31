@@ -2,16 +2,47 @@
 
 import { useActionState } from "react";
 import { Aviso, BotonEnviar, Campo, Selector } from "@/components/formulario";
+import { MINIMO_CONTRASENA } from "@/lib/limites";
 import {
+  cambiarContrasena,
   crearMarca,
   elegirRol,
   iniciarSesion,
+  pedirRestablecer,
   registrarCliente,
   registrarNegocio,
   type EstadoFormulario,
 } from "@/lib/auth/acciones";
 
 const INICIAL: EstadoFormulario = {};
+
+/**
+ * El par de contraseñas del alta y del restablecimiento.
+ *
+ * El segundo cuadro no es burocracia: una errata al teclear deja fuera de su
+ * propia cuenta a quien se acaba de registrar, y el error no se descubre hasta
+ * el siguiente intento de entrar, cuando ya nadie recuerda qué escribió.
+ */
+function ParDeContrasenas({ nueva = false }: { nueva?: boolean }) {
+  return (
+    <>
+      <Campo
+        nombre="contrasena"
+        etiqueta={nueva ? "Contraseña nueva" : "Contraseña"}
+        tipo="password"
+        autoComplete="new-password"
+        ayuda={`Mínimo ${MINIMO_CONTRASENA} caracteres.`}
+      />
+      <Campo
+        nombre="contrasena2"
+        etiqueta="Repite la contraseña"
+        tipo="password"
+        autoComplete="new-password"
+        ayuda="Para confirmar que quedó como querías."
+      />
+    </>
+  );
+}
 
 export type Categoria = { id: number; nombre: string };
 
@@ -48,13 +79,7 @@ export function FormularioCliente() {
       <Aviso>{estado.error}</Aviso>
       <Campo nombre="nombre" etiqueta="Tu nombre" autoComplete="name" />
       <Campo nombre="correo" etiqueta="Correo" tipo="email" autoComplete="email" />
-      <Campo
-        nombre="contrasena"
-        etiqueta="Contraseña"
-        tipo="password"
-        autoComplete="new-password"
-        ayuda="Mínimo 8 caracteres."
-      />
+      <ParDeContrasenas />
       <BotonEnviar>Crear mi cuenta</BotonEnviar>
     </form>
   );
@@ -68,13 +93,7 @@ export function FormularioNegocio({ categorias }: { categorias: Categoria[] }) {
       <Aviso>{estado.error}</Aviso>
       <Campo nombre="nombre" etiqueta="Tu nombre" autoComplete="name" />
       <Campo nombre="correo" etiqueta="Correo" tipo="email" autoComplete="email" />
-      <Campo
-        nombre="contrasena"
-        etiqueta="Contraseña"
-        tipo="password"
-        autoComplete="new-password"
-        ayuda="Mínimo 8 caracteres."
-      />
+      <ParDeContrasenas />
 
       <hr className="my-2 border-selva/15" />
 
@@ -149,5 +168,57 @@ export function FormularioElegirRol() {
         </form>
       ))}
     </div>
+  );
+}
+
+/**
+ * Pedir el correo para restablecer.
+ *
+ * El mensaje de éxito no dice si el correo existía. Es a propósito: si dijera
+ * "esa cuenta no existe", cualquiera podría averiguar quién está registrado
+ * probando direcciones.
+ */
+export function FormularioRecuperar() {
+  const [estado, accion] = useActionState(pedirRestablecer, INICIAL);
+
+  if (estado.enviado) {
+    return (
+      <p
+        role="status"
+        className="rounded-3xl border-2 border-lima/50 bg-lima/15 p-5 text-cacao"
+      >
+        <strong className="text-selva-2">Correo enviado.</strong> Si esa dirección
+        tiene una cuenta, en un momento te llega un enlace para poner una
+        contraseña nueva. Revisa también la carpeta de correo no deseado; el
+        enlace sirve una sola vez.
+      </p>
+    );
+  }
+
+  return (
+    <form action={accion} className="grid gap-4">
+      <Aviso>{estado.error}</Aviso>
+      <Campo
+        nombre="correo"
+        etiqueta="Tu correo"
+        tipo="email"
+        autoComplete="email"
+        ayuda="El mismo con el que te registraste."
+      />
+      <BotonEnviar>Enviarme el enlace</BotonEnviar>
+    </form>
+  );
+}
+
+/** La contraseña nueva, ya con la sesión que abrió el enlace del correo. */
+export function FormularioContrasenaNueva() {
+  const [estado, accion] = useActionState(cambiarContrasena, INICIAL);
+
+  return (
+    <form action={accion} className="grid gap-4">
+      <Aviso>{estado.error}</Aviso>
+      <ParDeContrasenas nueva />
+      <BotonEnviar>Guardar mi contraseña</BotonEnviar>
+    </form>
   );
 }

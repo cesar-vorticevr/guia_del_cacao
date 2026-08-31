@@ -4,10 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { perfilActual } from "@/lib/auth/sesion";
-import { miSucursal } from "@/lib/datos/sucursales";
+import { miSucursal, misSucursales } from "@/lib/datos/sucursales";
 import { generarSlug } from "@/lib/tipos";
-import { procesarPago, proximoCobro } from "@/lib/pagos";
+import { esPasoDelAlta } from "@/lib/negocio/pasos";
 import { revisarImagen } from "@/lib/imagenes";
+import { LIMITES, revisarLargo } from "@/lib/limites";
 
 export type EstadoAccion = { error?: string; ok?: string };
 
@@ -74,7 +75,18 @@ export async function crearSucursal(
 
     if (data) creada = data.id;
     else if (error?.code !== "23505") {
-      return { error: "No se pudo crear la sucursal. Inténtalo de nuevo." };
+      /*
+        Los triggers de la base —correo sin confirmar, tope del plan— rechazan
+        con `P0001` y un mensaje ya escrito para leerse. Traducirlo a "no se
+        pudo crear, inténtalo de nuevo" mandaba a reintentar algo que iba a
+        fallar igual las veces que hiciera falta.
+      */
+      return {
+        error:
+          error?.code === "P0001"
+            ? error.message
+            : "No se pudo crear la sucursal. Inténtalo de nuevo.",
+      };
     }
   }
 
@@ -101,13 +113,19 @@ export async function guardarMicrositio(
   const nombre = texto(datos, "nombre_sucursal");
   if (!nombre) return { error: "La sucursal necesita un nombre." };
 
+  // El `maxLength` del campo no basta: no detiene a quien manda la petición sin
+  // pasar por el navegador.
+  const acercaDe = texto(datos, "acerca_de");
+  const largo = revisarLargo(acercaDe, LIMITES.acercaDe, "El «acerca de»");
+  if (largo) return { error: largo };
+
   const supabase = await crearClienteServidor();
 
   const { error } = await supabase
     .from("sucursales")
     .update({
       nombre_sucursal: nombre,
-      acerca_de: texto(datos, "acerca_de"),
+      acerca_de: acercaDe,
       ubicacion_maps_url: texto(datos, "ubicacion_maps_url"),
       whatsapp: texto(datos, "whatsapp"),
       facebook: texto(datos, "facebook"),
@@ -122,6 +140,22 @@ export async function guardarMicrositio(
   if (error) return { error: "No se pudo guardar. Inténtalo de nuevo." };
 
   revalidatePath(`/negocio/panel/sucursal/${id}`);
+
+  /*
+    Durante el alta guiada, guardar y avanzar son el mismo gesto. Sin esto había
+    dos botones —"Guardar" y "Siguiente"— y quien apretaba el segundo sin el
+    primero perdía lo que acababa de escribir.
+
+    El destino no viaja en el formulario: llega el nombre del paso y la ruta se
+    arma aquí con el `id` que ya se comprobó que es suyo. Mandar la URL entera
+    desde un campo oculto sería confiar en el navegador para decidir a dónde
+    redirige el servidor.
+  */
+  const siguiente = datos.get("continuar_a")?.toString();
+  if (esPasoDelAlta(siguiente)) {
+    redirect(`/negocio/panel/sucursal/${id}?paso=${siguiente}`);
+  }
+
   return { ok: "Cambios guardados." };
 }
 
@@ -169,92 +203,17 @@ export async function subirImagen(
 }
 
 // ---------------------------------------------------------------------------
-// Catálogo
+// Publicar una sucursal
 // ---------------------------------------------------------------------------
 
-export async function agregarProducto(
-  _previo: EstadoAccion,
-  datos: FormData,
-): Promise<EstadoAccion> {
-  const perfil = await exigirNegocio();
-  const id = datos.get("sucursal_id")?.toString() ?? "";
-  await exigirSucursalPropia(perfil.id, id);
-
-  const nombre = texto(datos, "nombre");
-  if (!nombre) return { error: "El producto necesita un nombre." };
-
-  const precioTexto = texto(datos, "precio");
-  const precio = precioTexto ? Number(precioTexto) : null;
-
-  if (precio !== null && (Number.isNaN(precio) || precio < 0)) {
-    return { error: "El precio no es un número válido." };
-  }
-
-  const supabase = await crearClienteServidor();
-
-  // La foto es opcional: un campo de archivo vacío llega como un File de 0
-  // bytes, no como null, así que se mira el tamaño y no la existencia.
-  const archivo = datos.get("imagen");
-  let imagen: string | null = null;
-
-  if (archivo instanceof File && archivo.size > 0) {
-    const problema = revisarImagen(archivo);
-    if (problema) return { error: problema };
-
-    const extension = archivo.name.split(".").pop()?.toLowerCase() ?? "jpg";
-    const ruta = `${id}/producto-${Date.now()}.${extension}`;
-
-    const { error: errorSubida } = await supabase.storage
-      .from("micrositios")
-      .upload(ruta, archivo);
-
-    if (errorSubida) {
-      return { error: "No se pudo subir la foto del producto. Inténtalo de nuevo." };
-    }
-
-    imagen = ruta;
-  }
-
-  const { error } = await supabase.from("productos_servicios").insert({
-    sucursal_id: id,
-    nombre,
-    descripcion: texto(datos, "descripcion"),
-    precio,
-    imagen,
-  });
-
-  if (error) {
-    // Sin esto quedaría una foto huérfana en el bucket cada vez que falla.
-    if (imagen) await supabase.storage.from("micrositios").remove([imagen]);
-    return { error: "No se pudo agregar el producto." };
-  }
-
-  revalidatePath(`/negocio/panel/sucursal/${id}`);
-  return { ok: "Producto agregado." };
-}
-
-export async function eliminarProducto(datos: FormData) {
-  const perfil = await exigirNegocio();
-  const id = datos.get("sucursal_id")?.toString() ?? "";
-  const producto = datos.get("producto_id")?.toString() ?? "";
-
-  await exigirSucursalPropia(perfil.id, id);
-
-  const supabase = await crearClienteServidor();
-
-  await supabase
-    .from("productos_servicios")
-    .delete()
-    .eq("id", producto)
-    .eq("sucursal_id", id);
-
-  revalidatePath(`/negocio/panel/sucursal/${id}`);
-}
-
-// ---------------------------------------------------------------------------
-// Publicar: elegir plan, pagar y entrar a revisión
-// ---------------------------------------------------------------------------
-
+/**
+ * Saca la sucursal al directorio.
+ *
+ * Ya no cobra nada: el plan se contrata a nivel cuenta y cubre a todas las
+ * sucursales que quepan en su tope. Aqui solo se cambia el estado, y el trigger
+ * de la base vuelve a exigir que la marca tenga plan activo — asi que esto no es
+ * la unica barrera.
+ */
 export async function publicarSucursal(
   _previo: EstadoAccion,
   datos: FormData,
@@ -264,62 +223,25 @@ export async function publicarSucursal(
   const sucursal = await exigirSucursalPropia(perfil.id, id);
 
   if (sucursal.estado === "publicado" || sucursal.estado === "pendiente_aprobacion") {
-    return { error: "Este micrositio ya está publicado o en revisión." };
+    return { error: "Este micrositio ya esta publicado o en revision." };
   }
-
-  const tierId = Number(datos.get("tier_id")?.toString() ?? "");
-  if (!tierId) return { error: "Elige un plan." };
 
   const supabase = await crearClienteServidor();
 
-  const { data: tier } = await supabase
-    .from("tiers")
-    .select("id, precio_mensual")
-    .eq("id", tierId)
-    .maybeSingle();
-
-  if (!tier) return { error: "Ese plan no existe." };
-
-  // Queda en "falta el pago" antes de cobrar: si el cobro se cae a medias, el
-  // estado cuenta lo que de verdad pasó y no se pierde el intento.
-  await supabase
-    .from("sucursales")
-    .update({ estado: "pendiente_pago", tier_id: tier.id })
-    .eq("id", id);
-
-  const cobro = await procesarPago({
-    sucursalId: id,
-    tierId: tier.id,
-    montoMensual: tier.precio_mensual,
-  });
-
-  if (!cobro.ok) {
-    revalidatePath(`/negocio/panel/sucursal/${id}`);
-    return { error: `No se pudo completar el pago: ${cobro.motivo}` };
-  }
-
-  const { error: errorSuscripcion } = await supabase.from("suscripciones").insert({
-    sucursal_id: id,
-    tier_id: tier.id,
-    monto_mensual: tier.precio_mensual,
-    fecha_proximo_cobro: proximoCobro().toISOString(),
-    metodo_pago_stub: cobro.referencia,
-  });
-
-  if (errorSuscripcion) {
-    return { error: "El pago pasó pero no se registró la suscripción. Avísanos." };
-  }
-
-  // Con la suscripción activa el micrositio se publica solo: desde la
-  // migración 000012 la puerta del directorio la abre el pago y no una
-  // revisión. El trigger de la base vuelve a exigir esa suscripción, así que
-  // esto no es la única barrera.
   const { error } = await supabase
     .from("sucursales")
     .update({ estado: "publicado", motivo_rechazo: null })
     .eq("id", id);
 
-  if (error) return { error: "El pago pasó pero no se pudo publicar. Avísanos." };
+  if (error) {
+    // El trigger explica en su mensaje que falta —normalmente, plan activo.
+    return {
+      error:
+        error.code === "P0001"
+          ? error.message
+          : "No se pudo publicar. Intentalo de nuevo.",
+    };
+  }
 
   revalidatePath("/negocio/panel");
   redirect(`/negocio/panel/sucursal/${id}?publicado=1`);
@@ -532,7 +454,8 @@ export async function crearEvento(
     return { error: traducirErrorContenido(error.message) };
   }
 
-  revalidatePath("/negocio/panel/contenido");
+  revalidatePath("/negocio/panel/eventos");
+  revalidatePath("/negocio/panel/foro");
   revalidatePath("/eventos");
   return { ok: "Evento publicado." };
 }
@@ -568,7 +491,8 @@ export async function crearNoticia(
     return { error: traducirErrorContenido(error.message) };
   }
 
-  revalidatePath("/negocio/panel/contenido");
+  revalidatePath("/negocio/panel/eventos");
+  revalidatePath("/negocio/panel/foro");
   revalidatePath("/noticias");
   return { ok: "Noticia publicada." };
 }
@@ -606,7 +530,7 @@ async function exigirPublicacionPropia(perfilId: string, clase: Clase, id: strin
     .eq("id", id)
     .maybeSingle();
 
-  if (!data) redirect("/negocio/panel/contenido");
+  if (!data) redirect("/negocio/panel/eventos");
 
   await exigirSucursalPropia(perfilId, data.sucursal_id);
 
@@ -658,7 +582,8 @@ export async function cambiarFotoPublicacion(
     await supabase.storage.from("micrositios").remove(anteriores);
   }
 
-  revalidatePath("/negocio/panel/contenido");
+  revalidatePath("/negocio/panel/eventos");
+  revalidatePath("/negocio/panel/foro");
   revalidatePath(clase === "evento" ? "/eventos" : "/noticias");
   return { ok: "Foto actualizada." };
 }
@@ -667,7 +592,7 @@ export async function eliminarPublicacion(datos: FormData) {
   const perfil = await exigirNegocio();
 
   const clase = claseDe(datos);
-  if (!clase) redirect("/negocio/panel/contenido");
+  if (!clase) redirect("/negocio/panel/eventos");
 
   const id = datos.get("publicacion_id")?.toString() ?? "";
   const publicacion = await exigirPublicacionPropia(perfil.id, clase, id);
@@ -681,7 +606,8 @@ export async function eliminarPublicacion(datos: FormData) {
     await supabase.storage.from("micrositios").remove(publicacion.imagenes);
   }
 
-  revalidatePath("/negocio/panel/contenido");
+  revalidatePath("/negocio/panel/eventos");
+  revalidatePath("/negocio/panel/foro");
   revalidatePath(clase === "evento" ? "/eventos" : "/noticias");
 }
 
@@ -705,6 +631,190 @@ export async function marcarAvisosLeidos(datos: FormData) {
   const consulta = supabase.from("notificaciones").update({ leida: true });
 
   await (id ? consulta.eq("id", id) : consulta.eq("leida", false));
+
+  revalidatePath("/negocio/panel");
+
+  /*
+    Abrir la reseña y darla por leída son el mismo gesto: el botón "Verla" manda
+    aquí con el destino puesto y de paso apaga su aviso. Antes eran dos —ver y
+    marcar—, y el contador se quedaba en rojo después de haber atendido todo.
+
+    El destino se comprueba: llega en el formulario, así que solo se acepta una
+    ruta interna. Sin el filtro, un enlace preparado usaría nuestro dominio para
+    empujar a la gente afuera.
+  */
+  const destino = datos.get("ir_a")?.toString();
+
+  if (destino && destino.startsWith("/") && !destino.startsWith("//")) {
+    redirect(destino);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Borrar un micrositio
+// ---------------------------------------------------------------------------
+
+/**
+ * Borrar el micrositio entero.
+ *
+ * Cancela primero la suscripción y luego borra la sucursal. El orden importa:
+ * si el borrado fallara a medias, lo peor que queda es una ficha sin cobrar, y
+ * no un cobro andando sobre algo que ya no existe.
+ *
+ * Las filas que cuelgan —productos, eventos, noticias, reseñas, solicitudes, la
+ * suscripción— se van solas por `on delete cascade`. Los archivos de Storage no:
+ * hay que barrerlos a mano, porque nadie más va a hacerlo y esa carpeta se
+ * quedaría ocupando espacio para siempre.
+ */
+export async function eliminarSucursal(
+  _previo: EstadoAccion,
+  datos: FormData,
+): Promise<EstadoAccion> {
+  const perfil = await exigirNegocio();
+  const id = datos.get("sucursal_id")?.toString() ?? "";
+  const sucursal = await exigirSucursalPropia(perfil.id, id);
+
+  if (datos.get("entendido") !== "si") {
+    return { error: "Marca la casilla para confirmar que entiendes que esto no se deshace." };
+  }
+
+  // Escribir el nombre es la última red: un botón rojo se aprieta sin querer,
+  // el nombre de la sucursal no se teclea por accidente.
+  const confirmacion = (datos.get("confirmacion")?.toString() ?? "").trim();
+  if (confirmacion !== sucursal.nombre_sucursal) {
+    return { error: `Escribe «${sucursal.nombre_sucursal}» tal cual para confirmar.` };
+  }
+
+  const supabase = await crearClienteServidor();
+
+  await supabase
+    .from("suscripciones")
+    .update({ estado: "cancelado" })
+    .eq("sucursal_id", id)
+    .eq("estado", "activo");
+
+  // Las imágenes viven todas bajo `{sucursal_id}/`, que es lo que exige la
+  // política de Storage. Si esto falla no se detiene el borrado: quedarse con
+  // la ficha por no poder tirar unas fotos sería peor.
+  const { data: archivos } = await supabase.storage.from("micrositios").list(id);
+
+  if (archivos?.length) {
+    await supabase.storage
+      .from("micrositios")
+      .remove(archivos.map((archivo) => `${id}/${archivo.name}`));
+  }
+
+  const { error } = await supabase.from("sucursales").delete().eq("id", id);
+
+  if (error) return { error: "No se pudo eliminar el micrositio. Inténtalo de nuevo." };
+
+  revalidatePath("/negocio/panel");
+  redirect("/negocio/panel");
+}
+
+/**
+ * Abre las reseñas de una sucursal y apaga su campanita.
+ *
+ * Las dos cosas en el mismo gesto: si ver las reseñas no las diera por vistas,
+ * el punto rojo seguiría encendido después de haberlas leído y dejaría de
+ * significar algo.
+ *
+ * Los avisos se marcan por su `enlace`, que es lo que los ata a una sucursal.
+ * El slug llega del formulario, así que se comprueba contra las sucursales
+ * propias antes de usarlo: sin eso, cualquiera podría apagar avisos ajenos
+ * mandando otro slug.
+ */
+export async function abrirResenas(datos: FormData) {
+  const perfil = await exigirNegocio();
+  const slug = datos.get("slug")?.toString() ?? "";
+
+  const mias = await misSucursales(perfil.id);
+  if (!mias.some((sucursal) => sucursal.slug === slug)) {
+    redirect("/negocio/panel");
+  }
+
+  const supabase = await crearClienteServidor();
+
+  await supabase
+    .from("notificaciones")
+    .update({ leida: true })
+    .eq("enlace", `/marca/${slug}`)
+    .eq("leida", false);
+
+  revalidatePath("/negocio/panel");
+  redirect(`/marca/${slug}#resenas`);
+}
+
+// ---------------------------------------------------------------------------
+// Ocultar y volver a mostrar un micrositio
+// ---------------------------------------------------------------------------
+
+/**
+ * Saca la sucursal del directorio sin borrarla.
+ *
+ * Es la alternativa suave a eliminar: el local cierra por temporada, se muda o
+ * se está rehaciendo la ficha, y nada de eso justifica perder las fotos, el
+ * catálogo y las reseñas. Vuelve con un toque.
+ *
+ * Reutiliza el estado `pausado`, que ya existía para esto. Lo que cambió es el
+ * nombre en pantalla —"Oculto" dice lo que pasa, "Pausado" no— y que ahora el
+ * negocio puede ponerlo él.
+ */
+export async function ocultarSucursal(datos: FormData) {
+  const perfil = await exigirNegocio();
+  const id = datos.get("sucursal_id")?.toString() ?? "";
+  await exigirSucursalPropia(perfil.id, id);
+
+  const supabase = await crearClienteServidor();
+
+  await supabase
+    .from("sucursales")
+    .update({ estado: "pausado", pausado_por_admin: false })
+    .eq("id", id);
+
+  revalidatePath("/negocio/panel");
+  revalidatePath(`/negocio/panel/sucursal/${id}`);
+}
+
+/**
+ * La devuelve al directorio.
+ *
+ * El trigger de la base vuelve a exigir plan activo, y si la pausa la puso un
+ * administrador no la levanta nadie más: eso no se comprueba aquí porque no
+ * debe depender de que esta acción se acuerde.
+ */
+export async function mostrarSucursal(datos: FormData) {
+  const perfil = await exigirNegocio();
+  const id = datos.get("sucursal_id")?.toString() ?? "";
+  await exigirSucursalPropia(perfil.id, id);
+
+  const supabase = await crearClienteServidor();
+
+  await supabase
+    .from("sucursales")
+    .update({ estado: "publicado" })
+    .eq("id", id);
+
+  revalidatePath("/negocio/panel");
+  revalidatePath(`/negocio/panel/sucursal/${id}`);
+}
+
+/**
+ * Deja constancia de que ya miró sus solicitudes de monedas.
+ *
+ * Apaga el destello de "nueva", no el icono: lo que sigue pendiente sigue
+ * pendiente aunque se haya visto, y el icono es lo que recuerda que hay trabajo
+ * por hacer.
+ */
+export async function marcarMonedasVistas() {
+  const perfil = await exigirNegocio();
+
+  const supabase = await crearClienteServidor();
+
+  await supabase
+    .from("perfiles")
+    .update({ monedas_vistas_en: new Date().toISOString() })
+    .eq("id", perfil.id);
 
   revalidatePath("/negocio/panel");
 }

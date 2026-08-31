@@ -21,7 +21,19 @@ async function ilustracionesEnDisco(): Promise<string[]> {
   }
 }
 
-/** Decoración de fondo del sitio público. No lleva contenido ni enlaces. */
-export async function FondoDeCacao() {
-  return <CapasDeCacao disponibles={await ilustracionesEnDisco()} />;
+/**
+ * Decoración de fondo. No lleva contenido ni enlaces.
+ *
+ * Dejó de acompañar a todo el sitio: ahora se pide donde hace falta, y hoy eso
+ * es una sola franja de la portada. Detrás de cada página el movimiento competía
+ * con lo que se venía a leer, y la portada rediseñada se apoya en el aire, no en
+ * la textura. Quien lo use en `franja` debe ser `relative` y recortar el
+ * desborde; el fondo se mide contra esa caja.
+ */
+export async function FondoDeCacao({
+  variante = "pantalla",
+}: {
+  variante?: "pantalla" | "franja";
+}) {
+  return <CapasDeCacao disponibles={await ilustracionesEnDisco()} variante={variante} />;
 }

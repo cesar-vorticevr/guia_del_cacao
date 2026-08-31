@@ -1,3 +1,4 @@
+import { nombrarNegocio } from "@/lib/nombres";
 import { crearClienteServidor } from "@/lib/supabase/server";
 
 /**
@@ -52,24 +53,13 @@ export type Publicacion = {
   } | null;
 };
 
-/**
- * Cómo se nombra un negocio: primero la marca, luego la sucursal.
- *
- * La marca es lo que la gente reconoce —"Chocolates Grijalva"—; la sucursal es
- * la dirección. Enseñar solo "Matriz Villahermosa" no le dice nada a nadie.
- */
-export function nombrarNegocio(
-  sucursal: { nombre_sucursal: string; marcas: { nombre_comercial: string } | null } | null,
-) {
-  if (!sucursal) return { marca: null, sucursal: null };
-
-  return {
-    marca: sucursal.marcas?.nombre_comercial ?? sucursal.nombre_sucursal,
-    // Si no hay marca, el nombre de la sucursal ya se usó arriba y repetirlo
-    // debajo se vería como un error.
-    sucursal: sucursal.marcas ? sucursal.nombre_sucursal : null,
-  };
-}
+/*
+  `nombrarNegocio` se mudó a `lib/nombres.ts` y se reexporta aquí para no tocar
+  a quien ya la importaba de este módulo. Es presentación pura y no puede vivir
+  junto a las consultas: un componente de cliente que la importe de aquí se
+  trae también el cliente de Supabase de servidor, y eso no compila.
+*/
+export { nombrarNegocio };
 
 const CAMPOS_TARJETA =
   "id, slug, nombre_sucursal, logo, imagen_fondo, acerca_de, tier_id, marcas(nombre_comercial, categoria_id)";

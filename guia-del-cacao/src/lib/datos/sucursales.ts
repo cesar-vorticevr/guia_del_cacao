@@ -1,10 +1,11 @@
 import { crearClienteServidor } from "@/lib/supabase/server";
+import { productosDeSucursal } from "@/lib/datos/catalogo";
 import type { Producto, Sucursal, Tier } from "@/lib/tipos";
 
 const CAMPOS_SUCURSAL = `
   id, marca_id, nombre_sucursal, slug, logo, imagen_fondo, ubicacion_maps_url,
   acerca_de, whatsapp, facebook, instagram, youtube, tiktok, correo_contacto,
-  telefono, tier_id, estado, motivo_rechazo, fecha_publicacion, galeria
+  telefono, tier_id, estado, motivo_rechazo, pausado_por_admin, fecha_publicacion, galeria
 `;
 
 /**
@@ -40,16 +41,17 @@ export async function miSucursal(perfilId: string, sucursalId: string) {
   return todas.find((s) => s.id === sucursalId) ?? null;
 }
 
-export async function productosDe(sucursalId: string) {
-  const supabase = await crearClienteServidor();
-
-  const { data } = await supabase
-    .from("productos_servicios")
-    .select("id, nombre, descripcion, precio, imagen")
-    .eq("sucursal_id", sucursalId)
-    .order("fecha_creacion");
-
-  return (data ?? []) as Producto[];
+/**
+ * Los productos de una sucursal.
+ *
+ * Reenvía a `productosDeSucursal`, que va por la tabla puente: desde que el
+ * catálogo es de la marca, "los productos de esta sucursal" son los que eligió
+ * de ese catálogo, no unos suyos. Se conserva el nombre porque lo usan el
+ * micrositio público y la pantalla de pedir monedas, y ahí la pregunta sigue
+ * siendo la misma.
+ */
+export async function productosDe(sucursalId: string): Promise<Producto[]> {
+  return productosDeSucursal(sucursalId);
 }
 
 export async function listarTiers() {
@@ -57,7 +59,7 @@ export async function listarTiers() {
 
   const { data } = await supabase
     .from("tiers")
-    .select("id, nombre, precio_mensual, puede_dar_puntos, puede_publicar_contenido, en_banner_principal")
+    .select("id, nombre, precio_mensual, puede_dar_puntos, puede_publicar_contenido, en_banner_principal, max_sucursales")
     .order("id");
 
   return (data ?? []) as Tier[];
@@ -146,4 +148,55 @@ export async function queLeFalta(sucursalId: string): Promise<string | null> {
   });
 
   return (data as string | null) ?? null;
+}
+
+/**
+ * Lo mismo, pero en renglones sueltos para poder pintarlo como una lista de
+ * pendientes.
+ *
+ * Parte la respuesta de la base en vez de preguntar campo por campo desde
+ * aquí, y es a propósito: la regla de qué hace falta sigue viviendo en un solo
+ * lugar. `que_le_falta_al_micrositio` arma su texto con `string_agg(…, ', ')`,
+ * así que la coma es el separador que ella misma eligió.
+ */
+export async function queLeFaltaPorPartes(sucursalId: string): Promise<string[]> {
+  const falta = await queLeFalta(sucursalId);
+  return falta ? falta.split(", ") : [];
+}
+
+/**
+ * El plan vivo de una marca, o null si no tiene.
+ *
+ * El plan es de la cuenta desde la migración 000024: una marca con cuatro
+ * locales tenía cuatro cobros al mismo plan y cuatro sitios donde cancelarlo.
+ *
+ * Filtra por `estado = 'activo'` a propósito: cancelar no borra la fila, la
+ * marca. Quedarse con la más reciente daría por viva una que ya se dio de baja.
+ */
+export async function suscripcionDeMarca(marcaId: string) {
+  const supabase = await crearClienteServidor();
+
+  const { data } = await supabase
+    .from("suscripciones")
+    .select("id, tier_id, monto_mensual, fecha_proximo_cobro")
+    .eq("marca_id", marcaId)
+    .eq("estado", "activo")
+    .maybeSingle();
+
+  return data;
+}
+
+/**
+ * Cuántas sucursales caben con el plan que la marca tiene pagado.
+ *
+ * Lo contesta la base, con la misma función que usa el trigger al insertar: si
+ * la pantalla llevara su propia cuenta, un día diría que cabe una más y el
+ * insert la rechazaría.
+ */
+export async function topeDeSucursales(marcaId: string): Promise<number> {
+  const supabase = await crearClienteServidor();
+
+  const { data } = await supabase.rpc("tope_de_sucursales", { p_marca: marcaId });
+
+  return (data as number | null) ?? 1;
 }

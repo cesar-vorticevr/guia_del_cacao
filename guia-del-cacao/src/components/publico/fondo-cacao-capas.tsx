@@ -141,8 +141,20 @@ function anclaje(instancia: Instancia) {
   return instancia.lado === "izquierda" ? { left: afuera } : { right: afuera };
 }
 
-export function CapasDeCacao({ disponibles }: { disponibles: string[] }) {
+export function CapasDeCacao({
+  disponibles,
+  /**
+   * `pantalla` cuelga el fondo del viewport y acompaña a todo el sitio.
+   * `franja` lo encierra en la sección que lo contenga, que debe ser
+   * `relative` y recortar lo que se salga.
+   */
+  variante = "pantalla",
+}: {
+  disponibles: string[];
+  variante?: "pantalla" | "franja";
+}) {
   const nodos = useRef<(HTMLDivElement | null)[]>([]);
+  const caja = useRef<HTMLDivElement | null>(null);
   const yaEstan = new Set(disponibles);
 
   useEffect(() => {
@@ -154,7 +166,15 @@ export function CapasDeCacao({ disponibles }: { disponibles: string[] }) {
 
     const colocar = () => {
       pendiente = 0;
-      const alto = window.innerHeight;
+
+      // El recorrido se mide contra la caja donde vive el fondo. Colgado del
+      // viewport es la pantalla; dentro de una franja es la franja, y usar la
+      // pantalla ahí dejaría a casi todas las piezas fuera del recorte.
+      const alto =
+        variante === "franja"
+          ? (caja.current?.offsetHeight ?? window.innerHeight)
+          : window.innerHeight;
+
       const y = window.scrollY;
 
       INSTANCIAS.forEach((instancia, i) => {
@@ -189,12 +209,15 @@ export function CapasDeCacao({ disponibles }: { disponibles: string[] }) {
       window.removeEventListener("scroll", alMoverse);
       window.removeEventListener("resize", alMoverse);
     };
-  }, []);
+  }, [variante]);
 
   return (
     <div
+      ref={caja}
       aria-hidden
-      className="pointer-events-none fixed inset-0 z-0 overflow-hidden select-none motion-reduce:hidden"
+      className={`pointer-events-none inset-0 z-0 overflow-hidden select-none motion-reduce:hidden ${
+        variante === "franja" ? "absolute" : "fixed"
+      }`}
     >
       {/*
         Esta columna interior repite exactamente el ancho del `main` del layout

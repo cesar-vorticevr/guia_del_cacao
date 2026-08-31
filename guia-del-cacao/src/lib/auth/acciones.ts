@@ -3,8 +3,13 @@
 import { redirect } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { destinoSegunRol, origenDelSitio, perfilActual } from "@/lib/auth/sesion";
+import { MINIMO_CONTRASENA } from "@/lib/limites";
 
-export type EstadoFormulario = { error?: string };
+export type EstadoFormulario = {
+  error?: string;
+  /** Solo lo usa el restablecimiento: el correo salió y toca esperar. */
+  enviado?: boolean;
+};
 
 
 function texto(datos: FormData, campo: string) {
@@ -24,6 +29,12 @@ function traducirError(mensaje: string) {
   if (m.includes("email not confirmed")) {
     return "Falta confirmar tu correo. Revisa tu bandeja de entrada.";
   }
+  // Va antes del caso general: ese mensaje también trae la palabra "password"
+  // y caía en "no cumple los requisitos mínimos", que manda a cambiarla por una
+  // más larga cuando el problema era justo el contrario.
+  if (m.includes("should be different")) {
+    return "Esa es la contraseña que ya tenías. Escribe una distinta.";
+  }
   if (m.includes("password")) {
     return "La contraseña no cumple los requisitos mínimos.";
   }
@@ -31,11 +42,32 @@ function traducirError(mensaje: string) {
   return "No se pudo completar la operación. Inténtalo de nuevo.";
 }
 
-function validarBasicos(nombre: string, correo: string, contrasena: string) {
+/**
+ * Las dos contraseñas tienen que coincidir.
+ *
+ * Se comprueba en el servidor además de en el campo: el segundo cuadro es una
+ * red contra la errata de tecleo, y una red que solo existe en el navegador no
+ * sirve para lo único que importa —que quien se registra pueda volver a entrar.
+ */
+function validarContrasena(contrasena: string, repetida: string) {
+  if (contrasena.length < MINIMO_CONTRASENA) {
+    return `La contraseña debe tener al menos ${MINIMO_CONTRASENA} caracteres.`;
+  }
+  if (contrasena !== repetida) {
+    return "Las dos contraseñas no coinciden. Escríbelas de nuevo.";
+  }
+  return null;
+}
+
+function validarBasicos(
+  nombre: string,
+  correo: string,
+  contrasena: string,
+  repetida: string,
+) {
   if (!nombre) return "Escribe tu nombre.";
   if (!correo.includes("@")) return "Escribe un correo válido.";
-  if (contrasena.length < 8) return "La contraseña debe tener al menos 8 caracteres.";
-  return null;
+  return validarContrasena(contrasena, repetida);
 }
 
 /**
@@ -49,8 +81,9 @@ export async function registrarCliente(
   const nombre = texto(datos, "nombre");
   const correo = texto(datos, "correo");
   const contrasena = texto(datos, "contrasena");
+  const repetida = texto(datos, "contrasena2");
 
-  const problema = validarBasicos(nombre, correo, contrasena);
+  const problema = validarBasicos(nombre, correo, contrasena, repetida);
   if (problema) return { error: problema };
 
   const supabase = await crearClienteServidor();
@@ -84,10 +117,11 @@ export async function registrarNegocio(
   const nombre = texto(datos, "nombre");
   const correo = texto(datos, "correo");
   const contrasena = texto(datos, "contrasena");
+  const repetida = texto(datos, "contrasena2");
   const nombreComercial = texto(datos, "nombre_comercial");
   const categoria = Number(texto(datos, "categoria_id"));
 
-  const problema = validarBasicos(nombre, correo, contrasena);
+  const problema = validarBasicos(nombre, correo, contrasena, repetida);
   if (problema) return { error: problema };
   if (!nombreComercial) return { error: "Escribe el nombre comercial de tu negocio." };
   if (!categoria) return { error: "Elige la categoría de tu negocio." };
@@ -232,3 +266,112 @@ export async function cerrarSesion() {
   redirect("/");
 }
 
+
+// ---------------------------------------------------------------------------
+// Contraseña olvidada
+// ---------------------------------------------------------------------------
+
+/**
+ * Manda el correo con el enlace para poner una contraseña nueva.
+ *
+ * **Contesta lo mismo exista o no la cuenta.** Si dijera "ese correo no está
+ * registrado", cualquiera podría averiguar quién tiene cuenta aquí probando
+ * direcciones, y en un directorio de negocios eso es información de la que no
+ * somos dueños. Supabase se comporta igual por su lado; esta pantalla no
+ * deshace ese cuidado.
+ *
+ * El enlace vuelve por `/auth/callback`, que es el único sitio que cambia el
+ * código por una sesión, y de ahí sigue a la pantalla de la contraseña nueva.
+ */
+export async function pedirRestablecer(
+  _previo: EstadoFormulario,
+  datos: FormData,
+): Promise<EstadoFormulario> {
+  const correo = texto(datos, "correo");
+
+  if (!correo.includes("@")) return { error: "Escribe un correo válido." };
+
+  const supabase = await crearClienteServidor();
+  const origen = await origenDelSitio();
+
+  await supabase.auth.resetPasswordForEmail(correo, {
+    redirectTo: `${origen}/auth/callback?siguiente=/cambiar-contrasena`,
+  });
+
+  return { enviado: true };
+}
+
+/**
+ * Guarda la contraseña nueva.
+ *
+ * Exige sesión: se llega aquí con la que abrió el enlace del correo. Sin ese
+ * requisito, la acción dejaría cambiarle la contraseña a cualquiera que
+ * adivinara la ruta.
+ */
+export async function cambiarContrasena(
+  _previo: EstadoFormulario,
+  datos: FormData,
+): Promise<EstadoFormulario> {
+  const contrasena = texto(datos, "contrasena");
+  const repetida = texto(datos, "contrasena2");
+
+  const problema = validarContrasena(contrasena, repetida);
+  if (problema) return { error: problema };
+
+  const supabase = await crearClienteServidor();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      error:
+        "El enlace ya no es válido. Pide otro correo para restablecer tu contraseña.",
+    };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: contrasena });
+
+  if (error) return { error: traducirError(error.message) };
+
+  const perfil = await perfilActual();
+  redirect(perfil ? destinoSegunRol(perfil) : "/cuenta");
+}
+
+// ---------------------------------------------------------------------------
+// Confirmar el correo (negocios, antes de su primera sucursal)
+// ---------------------------------------------------------------------------
+
+/**
+ * Manda al correo del negocio el enlace que confirma que esa dirección es suya.
+ *
+ * Va por `signInWithOtp` con `shouldCreateUser: false`: no queremos dar de alta
+ * a nadie por esta vía, solo abrir una sesión que GoTrue marque como venida del
+ * correo. Esa marca (`amr`) es lo único que la base acepta como prueba —ver
+ * `marcar_correo_verificado`—, así que el enlace no es un trámite: es la
+ * credencial.
+ *
+ * Se manda a la dirección de la sesión, no a una escrita en un formulario. Si
+ * se pudiera elegir el destino, cualquiera confirmaría la cuenta con un correo
+ * suyo y la comprobación no valdría nada.
+ */
+export async function pedirVerificarCorreo(): Promise<EstadoFormulario> {
+  const perfil = await perfilActual();
+  if (!perfil) redirect("/login");
+
+  const supabase = await crearClienteServidor();
+  const origen = await origenDelSitio();
+
+  const { error } = await supabase.auth.signInWithOtp({
+    email: perfil.correo,
+    options: {
+      shouldCreateUser: false,
+      emailRedirectTo: `${origen}/auth/callback?siguiente=/negocio/verificar-correo`,
+    },
+  });
+
+  if (error) return { error: traducirError(error.message) };
+
+  return { enviado: true };
+}
