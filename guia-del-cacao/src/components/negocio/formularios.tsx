@@ -7,6 +7,7 @@ import {
   agregarAGaleria,
   cambiarFotoPublicacion,
   crearEvento,
+  editarEvento,
   crearNoticia,
   crearSucursal,
   eliminarPublicacion,
@@ -612,4 +613,76 @@ export function FormularioCancelarSuscripcion() {
       <BotonEnviar variante="secundario">Cancelar mi suscripción</BotonEnviar>
     </form>
   );
-}
+}
+/**
+ * Editar un evento ya publicado.
+ *
+ * No lleva la sucursal ni el rango exclusivo: mover un evento de local es
+ * crearlo en otro sitio, no editarlo, y el rango se decide al publicar. Lo que
+ * sí cambia con el tiempo es el nombre, lo que se cuenta, la fecha y la foto.
+ */
+export function FormularioEditarEvento({
+  evento,
+}: {
+  evento: {
+    id: string;
+    titulo: string;
+    subtitulo?: string | null;
+    contenido?: string;
+    fechaEvento?: string;
+  };
+}) {
+  const [estado, accion] = useActionState(editarEvento, INICIAL);
+
+  // El input de fecha y hora quiere `2026-09-07T18:00`, sin zona ni segundos.
+  const fecha = evento.fechaEvento
+    ? new Date(evento.fechaEvento).toISOString().slice(0, 16)
+    : "";
+
+  return (
+    <form action={accion} className="grid gap-4">
+      <input type="hidden" name="evento_id" value={evento.id} />
+      <Resultado estado={estado} />
+
+      <Campo nombre="titulo" etiqueta="Nombre del evento" valor={evento.titulo} />
+      <Campo
+        nombre="subtitulo"
+        etiqueta="Subtítulo"
+        requerido={false}
+        valor={evento.subtitulo}
+      />
+      <Area
+        nombre="contenido"
+        etiqueta="Descripción"
+        valor={evento.contenido}
+        ayuda="Hasta 1500 caracteres."
+        filas={5}
+      />
+      <Campo
+        nombre="fecha_evento"
+        etiqueta="Fecha del evento"
+        tipo="datetime-local"
+        valor={fecha}
+      />
+
+      <label className="block">
+        <span className="mb-1.5 block font-bold text-selva-2">
+          Cambiar la foto{" "}
+          <span className="font-normal text-cacao/70">(opcional)</span>
+        </span>
+        <input
+          type="file"
+          name="imagen"
+          accept={ACEPTA}
+          className="w-full rounded-2xl border-2 border-dashed border-selva/25 bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-selva file:px-4 file:py-2 file:font-bold file:text-crema"
+        />
+        <span className="mt-1.5 block text-sm text-cacao/70">
+          Si no eliges ninguna se conserva la que ya tiene. {MEDIDAS.publicacion}
+        </span>
+        <span className="block text-sm text-cacao/70">{PESO}</span>
+      </label>
+
+      <BotonEnviar>Guardar cambios</BotonEnviar>
+    </form>
+  );
+}

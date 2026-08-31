@@ -44,6 +44,8 @@ export type Publicacion = {
   contenido: string;
   imagenes: string[];
   fecha_evento?: string;
+  /** Solo en eventos: si se canceló, sigue a la vista pero tachado. */
+  cancelado_en?: string | null;
   fecha_publicacion: string;
   rango_exclusivo?: number | null;
   sucursales: {
@@ -160,7 +162,7 @@ export async function listarEventos() {
 
   const { data } = await supabase
     .from("eventos")
-    .select(`${CAMPOS_PUBLICACION}, fecha_evento, rango_exclusivo`)
+    .select(`${CAMPOS_PUBLICACION}, fecha_evento, cancelado_en, rango_exclusivo`)
     .order("fecha_evento", { ascending: false });
 
   const todos = (data ?? []) as unknown as Publicacion[];

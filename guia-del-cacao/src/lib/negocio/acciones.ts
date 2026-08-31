@@ -818,3 +818,105 @@ export async function marcarMonedasVistas() {
 
   revalidatePath("/negocio/panel");
 }
+
+// ---------------------------------------------------------------------------
+// Editar y cancelar un evento
+// ---------------------------------------------------------------------------
+
+/**
+ * La sucursal de un evento, comprobando que sea de quien lo pide.
+ *
+ * Se filtra por dueño a mano aunque RLS ya lo cubra: la política de lectura de
+ * eventos es tan ancha como el público de un micrositio publicado, así que sin
+ * esto se podría abrir el editor de un evento ajeno con solo saber su id.
+ */
+async function miEvento(perfilId: string, eventoId: string) {
+  const supabase = await crearClienteServidor();
+
+  const { data } = await supabase
+    .from("eventos")
+    .select("id, sucursal_id, sucursales!inner(marca_id, marcas!inner(perfil_id))")
+    .eq("id", eventoId)
+    .eq("sucursales.marcas.perfil_id", perfilId)
+    .maybeSingle();
+
+  if (!data) redirect("/negocio/panel/eventos");
+
+  return data as unknown as { id: string; sucursal_id: string };
+}
+
+export async function editarEvento(
+  _previo: EstadoAccion,
+  datos: FormData,
+): Promise<EstadoAccion> {
+  const perfil = await exigirNegocio();
+  const eventoId = datos.get("evento_id")?.toString() ?? "";
+  const evento = await miEvento(perfil.id, eventoId);
+
+  const problema = validarPublicacion(datos);
+  if (problema) return problema;
+
+  const fecha = texto(datos, "fecha_evento");
+  if (!fecha) return { error: "Elige la fecha del evento." };
+
+  const supabase = await crearClienteServidor();
+
+  const portada = await subirPortada(
+    supabase,
+    evento.sucursal_id,
+    datos.get("imagen"),
+    "evento",
+  );
+  if ("error" in portada) return portada;
+
+  const { error } = await supabase
+    .from("eventos")
+    .update({
+      titulo: texto(datos, "titulo"),
+      subtitulo: texto(datos, "subtitulo"),
+      contenido: texto(datos, "contenido"),
+      fecha_evento: new Date(fecha).toISOString(),
+      // Sin foto nueva se conserva la que había: cambiar la fecha y cambiar la
+      // portada son dos gestos distintos y no tienen por qué ir juntos.
+      ...(portada.imagenes.length > 0 ? { imagenes: portada.imagenes } : {}),
+    })
+    .eq("id", eventoId);
+
+  if (error) {
+    if (portada.imagenes.length > 0) {
+      await supabase.storage.from("micrositios").remove(portada.imagenes);
+    }
+    return { error: traducirErrorContenido(error.message) };
+  }
+
+  revalidatePath("/negocio/panel/eventos");
+  revalidatePath("/eventos");
+  return { ok: "Evento actualizado." };
+}
+
+/**
+ * Cancela un evento, o lo devuelve a la agenda.
+ *
+ * Cancelar no es borrar: el evento se queda a la vista, tachado y con su
+ * letrero. Quien ya apartó la fecha necesita enterarse de que se cayó — un
+ * evento borrado desaparece sin decir nada y deja gente presentándose en la
+ * puerta.
+ */
+export async function cambiarEstadoEvento(datos: FormData) {
+  const perfil = await exigirNegocio();
+  const eventoId = datos.get("evento_id")?.toString() ?? "";
+  await miEvento(perfil.id, eventoId);
+
+  const cancelar = datos.get("cancelar") === "si";
+
+  const supabase = await crearClienteServidor();
+
+  await supabase
+    .from("eventos")
+    .update({ cancelado_en: cancelar ? new Date().toISOString() : null })
+    .eq("id", eventoId);
+
+  revalidatePath("/negocio/panel/eventos");
+  revalidatePath(`/negocio/panel/eventos/${eventoId}`);
+  revalidatePath("/eventos");
+}

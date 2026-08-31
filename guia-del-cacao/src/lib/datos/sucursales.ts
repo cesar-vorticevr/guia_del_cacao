@@ -74,6 +74,18 @@ export type PublicacionPropia = {
   sucursal: string;
   /** Solo en eventos: si la fecha ya pasó, dejó de salir en el micrositio. */
   paso?: boolean;
+  /**
+   * Solo en eventos: cuándo se canceló, o null si sigue en pie.
+   *
+   * Es el único estado que se guarda. "Activo" y "ya pasó" se deducen de la
+   * fecha, y guardarlos sería tener dos versiones de la misma verdad: una que
+   * se actualiza sola y otra que habría que ir a corregir todas las noches.
+   */
+  canceladoEn?: string | null;
+  /** Lo que hace falta para poder editarlo sin otra consulta. */
+  subtitulo?: string | null;
+  contenido?: string;
+  fechaEvento?: string;
 };
 
 /**
@@ -93,7 +105,7 @@ export async function misPublicaciones(sucursalIds: string[]) {
   const [eventos, noticias] = await Promise.all([
     supabase
       .from("eventos")
-      .select("id, titulo, imagenes, fecha_evento, sucursales(nombre_sucursal)")
+      .select("id, titulo, subtitulo, contenido, imagenes, fecha_evento, cancelado_en, sucursales(nombre_sucursal)")
       .in("sucursal_id", sucursalIds)
       .order("fecha_evento", { ascending: false }),
     supabase
@@ -109,6 +121,9 @@ export async function misPublicaciones(sucursalIds: string[]) {
     imagenes: string[];
     fecha_evento?: string;
     fecha_publicacion?: string;
+    cancelado_en?: string | null;
+    subtitulo?: string | null;
+    contenido?: string;
     sucursales: { nombre_sucursal: string } | null;
   };
 
@@ -122,7 +137,15 @@ export async function misPublicaciones(sucursalIds: string[]) {
         imagenes: fila.imagenes ?? [],
         fecha,
         sucursal: fila.sucursales?.nombre_sucursal ?? "",
-        ...(esEvento ? { paso: new Date(fecha).getTime() < ahora } : {}),
+        ...(esEvento
+          ? {
+              paso: new Date(fecha).getTime() < ahora,
+              canceladoEn: fila.cancelado_en ?? null,
+              subtitulo: fila.subtitulo ?? null,
+              contenido: fila.contenido,
+              fechaEvento: fila.fecha_evento,
+            }
+          : {}),
       };
     });
 
@@ -199,4 +222,69 @@ export async function topeDeSucursales(marcaId: string): Promise<number> {
   const { data } = await supabase.rpc("tope_de_sucursales", { p_marca: marcaId });
 
   return (data as number | null) ?? 1;
+}
+
+export type EventoPropio = {
+  id: string;
+  titulo: string;
+  subtitulo: string | null;
+  contenido: string;
+  imagenes: string[];
+  fechaEvento: string;
+  sucursal: string;
+  /** Se dedujo de la fecha, no está guardado. */
+  paso: boolean;
+  cancelado: boolean;
+};
+
+/**
+ * Un evento del negocio, para editarlo.
+ *
+ * El "ya pasó" se calcula aquí y no en la pantalla: mirar el reloj durante el
+ * render hace que dos pintadas del mismo componente den resultados distintos, y
+ * React lo prohíbe con razón. La capa de datos sí puede.
+ *
+ * El acotado por dueño es explícito aunque RLS ya lo cubra: la política de
+ * lectura de eventos es tan ancha como el público de un micrositio publicado,
+ * así que sin este filtro se abriría el editor de un evento ajeno sabiendo su id.
+ */
+export async function miEvento(
+  perfilId: string,
+  eventoId: string,
+): Promise<EventoPropio | null> {
+  const supabase = await crearClienteServidor();
+
+  const { data } = await supabase
+    .from("eventos")
+    .select(
+      "id, titulo, subtitulo, contenido, imagenes, fecha_evento, cancelado_en, sucursales!inner(nombre_sucursal, marcas!inner(perfil_id))",
+    )
+    .eq("id", eventoId)
+    .eq("sucursales.marcas.perfil_id", perfilId)
+    .maybeSingle();
+
+  if (!data) return null;
+
+  const fila = data as unknown as {
+    id: string;
+    titulo: string;
+    subtitulo: string | null;
+    contenido: string;
+    imagenes: string[] | null;
+    fecha_evento: string;
+    cancelado_en: string | null;
+    sucursales: { nombre_sucursal: string };
+  };
+
+  return {
+    id: fila.id,
+    titulo: fila.titulo,
+    subtitulo: fila.subtitulo,
+    contenido: fila.contenido,
+    imagenes: fila.imagenes ?? [],
+    fechaEvento: fila.fecha_evento,
+    sucursal: fila.sucursales.nombre_sucursal,
+    paso: new Date(fila.fecha_evento).getTime() < Date.now(),
+    cancelado: fila.cancelado_en !== null,
+  };
 }

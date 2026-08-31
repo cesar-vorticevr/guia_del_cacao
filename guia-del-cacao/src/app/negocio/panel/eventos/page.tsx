@@ -2,23 +2,29 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { BarraSesion } from "@/components/barra-sesion";
-import {
-  FormularioEvento,
-  PublicacionPropia,
-} from "@/components/negocio/formularios";
+import { FormularioEvento } from "@/components/negocio/formularios";
+import { NuevoEvento, TarjetaEvento } from "@/components/negocio/eventos";
 import { perfilActual } from "@/lib/auth/sesion";
 import { misPublicaciones, misSucursales } from "@/lib/datos/sucursales";
 import { urlImagen } from "@/lib/imagenes";
 
 export const metadata: Metadata = { title: "Eventos · Guía del Cacao" };
 
+const CUANDO = new Intl.DateTimeFormat("es-MX", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
 /**
- * Los eventos del negocio, aparte de las noticias.
+ * Los eventos del negocio, con la misma forma que sus sucursales: una lista de
+ * tarjetas con estado y su fila de botones.
  *
- * Antes compartían pantalla y el formulario de noticia quedaba debajo de la
- * lista de eventos: para publicar una noticia había que pasar por todo lo demás.
- * Son dos cosas distintas —una tiene fecha y caduca, la otra no— y cada una
- * merece su sitio.
+ * El formulario de alta va plegado tras un botón. Antes vivía abierto al final:
+ * quien entraba a mirar se topaba con un formulario en blanco que no había
+ * pedido.
  *
  * Publicar es del plan **Premier** (spec §5.3). Sin él no se enseña el
  * formulario: sería ofrecer algo que la base va a rechazar.
@@ -35,51 +41,33 @@ export default async function EventosDelNegocio() {
   );
 
   // Lo ya publicado se busca sobre todas sus sucursales, no solo las Premier:
-  // si una bajó de plan, sus publicaciones viejas siguen existiendo y el
-  // negocio tiene que poder borrarlas.
+  // si una bajó de plan, sus eventos viejos siguen existiendo y el negocio
+  // tiene que poder cancelarlos o borrarlos.
   const publicadas = await misPublicaciones(sucursales.map((s) => s.id));
+
+  // Para el "ver publicado": solo tiene sentido si la sucursal está en el
+  // directorio, porque si no la página del evento no la ve nadie.
+  const publicadaPorNombre = new Map(
+    sucursales
+      .filter((s) => s.estado === "publicado")
+      .map((s) => [s.nombre_sucursal, s.slug]),
+  );
 
   return (
     <>
       <BarraSesion nombre={perfil.nombre} />
 
-      <main className="mx-auto grid w-[92vw] max-w-2xl gap-8 py-8">
+      <main className="mx-auto grid w-[92vw] max-w-2xl gap-6 py-8">
         <div>
           <Link href="/negocio/panel" className="font-bold text-selva underline">
             ← Panel
           </Link>
           <h1 className="mt-3 font-display text-3xl">Eventos</h1>
           <p className="mt-2 text-cacao">
-            Catas, talleres y ferias. Se muestran como próximos o pasados según
-            su fecha, sin que tengas que marcarlo.
+            Catas, talleres y ferias. El estado se pone solo según la fecha; lo
+            único que decides es si se cancela.
           </p>
         </div>
-
-        <section className="grid gap-4">
-          <h2 className="font-display text-2xl">
-            Tus eventos{" "}
-            <span className="font-mono text-sm font-normal text-cacao/70">
-              {publicadas.eventos.length}
-            </span>
-          </h2>
-
-          {publicadas.eventos.length === 0 ? (
-            <p className="rounded-3xl bg-crema-2 p-6 text-cacao">
-              Todavía no has publicado ninguno.
-            </p>
-          ) : (
-            <ul className="grid gap-3">
-              {publicadas.eventos.map((evento) => (
-                <PublicacionPropia
-                  key={evento.id}
-                  publicacion={evento}
-                  clase="evento"
-                  foto={urlImagen(evento.imagenes[0])}
-                />
-              ))}
-            </ul>
-          )}
-        </section>
 
         {conPremier.length === 0 ? (
           <div className="rounded-3xl bg-crema-2 p-6">
@@ -95,14 +83,37 @@ export default async function EventosDelNegocio() {
             </Link>
           </div>
         ) : (
-          <section className="grid gap-4 rounded-3xl bg-crema-2 p-6">
-            <div>
-              <h2 className="font-display text-2xl">Nuevo evento</h2>
-              <p className="mt-1 text-cacao">Máximo uno por semana.</p>
-            </div>
+          <NuevoEvento>
             <FormularioEvento sucursales={conPremier} />
-          </section>
+          </NuevoEvento>
         )}
+
+        <section className="grid gap-4">
+          <h2 className="font-display text-2xl">
+            Tus eventos{" "}
+            <span className="font-mono text-sm font-normal text-cacao/70">
+              {publicadas.eventos.length}
+            </span>
+          </h2>
+
+          {publicadas.eventos.length === 0 ? (
+            <p className="rounded-3xl bg-crema-2 p-6 text-cacao">
+              Todavía no has publicado ninguno.
+            </p>
+          ) : (
+            <ul className="grid gap-4">
+              {publicadas.eventos.map((evento) => (
+                <TarjetaEvento
+                  key={evento.id}
+                  evento={evento}
+                  fechaTexto={CUANDO.format(new Date(evento.fecha))}
+                  foto={urlImagen(evento.imagenes[0])}
+                  slug={publicadaPorNombre.get(evento.sucursal) ?? null}
+                />
+              ))}
+            </ul>
+          )}
+        </section>
       </main>
     </>
   );

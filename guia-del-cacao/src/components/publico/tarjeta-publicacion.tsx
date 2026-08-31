@@ -34,6 +34,7 @@ export function TarjetaPublicacion({
   const fecha =
     tipo === "evento" ? publicacion.fecha_evento! : publicacion.fecha_publicacion;
   const { marca, sucursal } = nombrarNegocio(publicacion.sucursales);
+  const cancelado = publicacion.cancelado_en != null;
 
   return (
     <li>
@@ -45,6 +46,17 @@ export function TarjetaPublicacion({
           <span className="block font-mono text-xs tracking-wide text-cacao/70 uppercase">
             {FECHA.format(new Date(fecha))}
           </span>
+
+          {/*
+            Un evento cancelado no se esconde: quien ya apartó la fecha tiene que
+            enterarse de que se cayó. Desaparecerlo lo dejaría presentándose en
+            la puerta.
+          */}
+          {cancelado && (
+            <span className="mt-1.5 inline-block rounded-full bg-guayaba px-3 py-1 font-mono text-xs font-bold text-ink">
+              Cancelado
+            </span>
+          )}
 
           <span className="mt-1.5 block font-display text-xl text-selva-2">
             {publicacion.titulo}
@@ -75,12 +87,30 @@ export function TarjetaPublicacion({
         </span>
 
         {portada && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={portada}
-            alt=""
-            className="size-24 shrink-0 rounded-2xl border-2 border-selva/10 object-cover sm:size-28"
-          />
+          <span className="relative block size-24 shrink-0 overflow-hidden rounded-2xl border-2 border-selva/10 sm:size-28">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={portada}
+              alt=""
+              className={`size-full object-cover ${cancelado ? "grayscale" : ""}`}
+            />
+
+            {/*
+              La raya va en un SVG de esquina a esquina y no con un `rotate` de
+              CSS: girado, un div se sale de la caja o queda corto según la
+              proporción, y la marca tiene que cruzar la foto entera siempre.
+            */}
+            {cancelado && (
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                className="absolute inset-0 size-full"
+              >
+                <line x1="0" y1="100" x2="100" y2="0" stroke="#ff5d73" strokeWidth="6" />
+              </svg>
+            )}
+          </span>
         )}
       </Link>
     </li>
