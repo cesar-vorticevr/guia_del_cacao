@@ -26,7 +26,7 @@ export const MEDIDAS = {
   fondo: "Horizontal. Lo ideal: 1600 × 600 px (proporción 8:3).",
   galeria: "Horizontal se ve mejor. Lo ideal: 1200 × 800 px.",
   producto: "Cuadrada. Lo ideal: 800 × 800 px.",
-  cupon: "Cuadrada. Lo ideal: 800 × 800 px. Es lo que se ve en el mercado.",
+  cupon: "Cuadrada. Lo ideal: 800 × 800 px. Es la que se ve en la lista.",
   resena: "La que tengas. Se muestra recortada a lo ancho.",
   publicacion:
     "En la lista se recorta en cuadrado; completa se ve al abrir la publicación.",

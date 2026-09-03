@@ -65,7 +65,7 @@ export async function crearCupon(
 
   const supabase = await crearClienteServidor();
 
-  // La foto es lo que se ve en el mercado: sin ella el cupón es un renglón de
+  // La foto es lo que se ve en la lista: sin ella el cupón es un renglón de
   // texto entre otros nueve.
   const archivo = datos.get("imagen");
   const problema = revisarImagen(archivo);
@@ -105,7 +105,7 @@ export async function crearCupon(
     };
   }
 
-  revalidatePath("/negocio/panel/mercado");
+  revalidatePath("/negocio/panel/cupones");
   return { ok: "Cupón publicado." };
 }
 
@@ -140,5 +140,5 @@ export async function borrarCupon(datos: FormData) {
     await supabase.storage.from("micrositios").remove([cupon.imagen]);
   }
 
-  revalidatePath("/negocio/panel/mercado");
+  revalidatePath("/negocio/panel/cupones");
 }

@@ -12,6 +12,7 @@ const SECCIONES = [
   { href: "/directorio", texto: "Explorar" },
   { href: "/eventos", texto: "Eventos" },
   { href: "/comunidad", texto: "Comunidad" },
+  { href: "/cupones", texto: "Cupones" },
 ];
 
 /**

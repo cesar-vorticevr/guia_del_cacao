@@ -242,10 +242,35 @@ empezar. Lo exige `exigir_tope_de_sucursales` al insertar, y la pantalla lo
 consulta con la misma funcion (`tope_de_sucursales`) en vez de contar por su
 cuenta.
 
-## El mercado: cupones que no se editan
+## Canjear un cupón, y los tres avisos
+
+El canje (migración **000033**) cierra el circulo de las mazorcas: visito,
+junto, canjeo, vuelvo. El cliente lo canjea en /cupones y lo presenta en la
+sucursal; el negocio lo ve en su panel y marca «ya se lo di».
+
+Tres decisiones que no son de adorno:
+
+- **El precio lo pone el cupón, no el formulario.** El trigger `cobrar_canje`
+  sobrescribe `costo_mazorcas` con el de la tabla: mandarlo desde fuera dejaría
+  elegir cuánto pagar. El cobro y el aviso van en la misma transacción que el
+  canje — si el cobro fallara después, habría un cupón regalado.
+- **`on delete restrict` en el cupón.** Si alguien lo canjeó, el negocio ya no
+  puede borrarlo y dejar a esa persona con un vale que no apunta a nada.
+- **No hay DELETE en `canjes`**: un canje es un recibo. Borrarlo dejaría a
+  alguien sin lo que pagó y sin rastro de haberlo pagado. Y quien marca el vale
+  como usado es el negocio, no quien lo canjeó: es el que lo tiene delante.
+
+`notificaciones` acepta ahora tres tipos: **resena**, **solicitud** y **canje**.
+El de solicitudes llevaba declarado en la restricción desde el principio sin que
+nadie lo escribiera —el negocio se enteraba de una petición nueva solo si entraba
+a mirar—; ahora le llega como le llega una reseña. Los tres los escriben
+triggers: en `notificaciones` **sigue sin haber política de INSERT**, y eso no
+cambia.
+
+## Cupones: se crean y se borran, no se editan
 
 Un negocio ofrece hasta **10 cupones vigentes** a cambio de mazorcas, desde la
-pestaña Mercado de su panel (migración **000032**). Es lo que le da a las
+pestaña Cupones de su panel (migración **000032**). Es lo que le da a las
 mazorcas un sitio donde gastarse: hasta ahora solo se juntaban visitando y se
 regalaban en la comunidad.
 

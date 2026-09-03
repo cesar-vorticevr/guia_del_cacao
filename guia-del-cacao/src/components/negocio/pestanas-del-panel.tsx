@@ -26,7 +26,7 @@ export function PestanasDelPanel({
 }: {
   sucursales: number;
   catalogo: number;
-  /** Cuántos cupones vigentes tiene en el mercado. */
+  /** Cuántos cupones vigentes tiene publicados. */
   cupones: number;
   monedasPendientes: number;
   monedasNuevas: boolean;
@@ -64,8 +64,8 @@ export function PestanasDelPanel({
   */
   const actual = ruta.startsWith("/negocio/panel/monedas")
     ? "mazorcas"
-    : ruta.startsWith("/negocio/panel/mercado")
-      ? "mercado"
+    : ruta.startsWith("/negocio/panel/cupones")
+      ? "cupones"
       : ruta.startsWith("/negocio/panel/catalogo")
         ? "catalogo"
         : // El resto —editar sucursal, publicar— cae en sucursales, que es de
@@ -90,9 +90,9 @@ export function PestanasDelPanel({
           cuenta: catalogo,
         },
         {
-          clave: "mercado",
-          texto: "Mercado",
-          href: "/negocio/panel/mercado",
+          clave: "cupones",
+          texto: "Cupones",
+          href: "/negocio/panel/cupones",
           cuenta: cupones,
         },
         {
