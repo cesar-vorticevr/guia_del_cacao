@@ -242,6 +242,18 @@ empezar. Lo exige `exigir_tope_de_sucursales` al insertar, y la pantalla lo
 consulta con la misma funcion (`tope_de_sucursales`) en vez de contar por su
 cuenta.
 
+## En el directorio se ve quién da mazorcas
+
+Cada tarjeta del directorio lleva la mazorca ilustrada cuando su plan las
+incluye. Al explorar, lo primero que se busca es dónde vale la pena entrar con
+el pasaporte a medias, y sin la marca había que abrir los negocios uno por uno
+para averiguarlo.
+
+Sale de `tiers.puede_dar_puntos`, **no de comparar `tier_id >= 2`**: cuál es el
+primer plan que las incluye es un dato de la tabla, y escribir el número en la
+tarjeta obligaría a acordarse de ese sitio el día que cambien los planes.
+
+
 ## Canjear un cupón, y los tres avisos
 
 El canje (migración **000033**) cierra el circulo de las mazorcas: visito,

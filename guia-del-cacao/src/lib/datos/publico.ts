@@ -20,6 +20,14 @@ export type TarjetaDirectorio = {
   imagen_fondo: string | null;
   acerca_de: string | null;
   tier_id: number | null;
+  /**
+   * Si su plan incluye dar mazorcas.
+   *
+   * Sale del plan y no de comparar `tier_id >= 2` a mano: cuál es el primer plan
+   * que las incluye es un dato de la tabla `tiers`, y escribir el número aquí
+   * obligaría a acordarse de este sitio el día que cambien los planes.
+   */
+  tiers: { puede_dar_puntos: boolean } | null;
   marcas: { nombre_comercial: string; categoria_id: number } | null;
 };
 
@@ -64,7 +72,7 @@ export type Publicacion = {
 export { nombrarNegocio };
 
 const CAMPOS_TARJETA =
-  "id, slug, nombre_sucursal, logo, imagen_fondo, acerca_de, tier_id, marcas(nombre_comercial, categoria_id)";
+  "id, slug, nombre_sucursal, logo, imagen_fondo, acerca_de, tier_id, tiers(puede_dar_puntos), marcas(nombre_comercial, categoria_id)";
 
 /**
  * Directorio.
