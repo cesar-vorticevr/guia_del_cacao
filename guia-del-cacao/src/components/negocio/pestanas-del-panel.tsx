@@ -19,12 +19,15 @@ import { Pestanas } from "@/components/negocio/pestanas";
 export function PestanasDelPanel({
   sucursales,
   catalogo,
+  cupones,
   monedasPendientes,
   monedasNuevas,
   empezando,
 }: {
   sucursales: number;
   catalogo: number;
+  /** Cuántos cupones vigentes tiene en el mercado. */
+  cupones: number;
   monedasPendientes: number;
   monedasNuevas: boolean;
   /** Todavía no hay ninguna sucursal: el panel es el recorrido de alta. */
@@ -61,11 +64,13 @@ export function PestanasDelPanel({
   */
   const actual = ruta.startsWith("/negocio/panel/monedas")
     ? "mazorcas"
-    : ruta.startsWith("/negocio/panel/catalogo")
-      ? "catalogo"
-      : // El resto —editar sucursal, publicar— cae en sucursales, que es de
-        // donde se llega a todas ellas.
-        "sucursales";
+    : ruta.startsWith("/negocio/panel/mercado")
+      ? "mercado"
+      : ruta.startsWith("/negocio/panel/catalogo")
+        ? "catalogo"
+        : // El resto —editar sucursal, publicar— cae en sucursales, que es de
+          // donde se llega a todas ellas.
+          "sucursales";
 
   return (
     <Pestanas
@@ -83,6 +88,12 @@ export function PestanasDelPanel({
           texto: "Catálogo",
           href: "/negocio/panel/catalogo",
           cuenta: catalogo,
+        },
+        {
+          clave: "mercado",
+          texto: "Mercado",
+          href: "/negocio/panel/mercado",
+          cuenta: cupones,
         },
         {
           clave: "mazorcas",

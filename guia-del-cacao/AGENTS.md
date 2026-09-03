@@ -242,6 +242,34 @@ empezar. Lo exige `exigir_tope_de_sucursales` al insertar, y la pantalla lo
 consulta con la misma funcion (`tope_de_sucursales`) en vez de contar por su
 cuenta.
 
+## El mercado: cupones que no se editan
+
+Un negocio ofrece hasta **10 cupones vigentes** a cambio de mazorcas, desde la
+pestaña Mercado de su panel (migración **000032**). Es lo que le da a las
+mazorcas un sitio donde gastarse: hasta ahora solo se juntaban visitando y se
+regalaban en la comunidad.
+
+**Un cupón no se edita, y eso es una regla, no un olvido.** No hay política de
+UPDATE en la tabla — igual que en `calificaciones`, la ausencia *es* la regla, y
+quien agregue una la rompe sin darse cuenta. El motivo: alguien pudo canjearlo
+ya pagando sus mazorcas, y cambiarle después el precio, la letra chica o la
+fecha sería cambiarle el trato a quien pagó. Se borra y se hace otro; el
+formulario lo avisa **antes** de publicar, no cuando ya es tarde.
+
+Dos cosas se derivan y no se guardan:
+
+- **Caducado** se compara con la fecha de hoy en Tabasco. Una columna habría que
+  apagarla cada noche, y el día que fallara el proceso el cupón seguiría vivo
+  sin serlo.
+- **El tope cuenta solo los vigentes**, y es de la marca, no de la sucursal: son
+  diez ofertas del negocio, no diez por local. Si contara los caducados, un
+  negocio con dos años de historia no podría publicar nunca más sin ponerse a
+  borrar lo viejo, que es justo lo que no queremos — el historial sirve para
+  saber qué se ofreció y para repetir lo que funcionó.
+
+Los cupones cuelgan de una **sucursal publicada**: en borrador no la ve nadie,
+así que ofrecer desde ahí sería publicar a un escaparate cerrado.
+
 ## Las fotos se editan, no se reemplazan
 
 Editar dejaba **cambiar la portada** y nada más: mandar una foto nueva borraba

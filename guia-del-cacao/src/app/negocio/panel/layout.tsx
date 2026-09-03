@@ -3,6 +3,7 @@ import { BarraSesion } from "@/components/barra-sesion";
 import { PestanasDelPanel } from "@/components/negocio/pestanas-del-panel";
 import { solicitudesPorSucursal } from "@/lib/datos/notificaciones";
 import { catalogoDeMarca } from "@/lib/datos/catalogo";
+import { cuposLibres, misCupones, TOPE_CUPONES } from "@/lib/datos/cupones";
 import { misSucursales } from "@/lib/datos/sucursales";
 import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
@@ -47,6 +48,11 @@ export default async function LayoutDelPanel({
     solicitudesPorSucursal(),
   ]);
 
+  // En la pestaña se cuentan los vigentes, no todos: los caducados no ocupan
+  // lugar y ponerlos ahí haría creer que el cupo está lleno.
+  const cupones = await misCupones(sucursales.map((s) => s.id));
+  const vigentes = TOPE_CUPONES - cuposLibres(cupones);
+
   const monedasPendientes = [...solicitudes.values()].reduce(
     (total, s) => total + s.pendientes,
     0,
@@ -82,6 +88,7 @@ export default async function LayoutDelPanel({
           <PestanasDelPanel
             sucursales={sucursales.length}
             catalogo={catalogo.length}
+            cupones={vigentes}
             monedasPendientes={monedasPendientes}
             monedasNuevas={monedasNuevas}
             empezando={empezando}
