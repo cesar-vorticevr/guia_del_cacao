@@ -2,7 +2,11 @@
 
 import { redirect } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
-import { destinoSegunRol, origenDelSitio, perfilActual } from "@/lib/auth/sesion";
+import {
+  destinoSegunRol,
+  origenDelSitio,
+  perfilActual,
+} from "@/lib/auth/sesion";
 import { MINIMO_CONTRASENA } from "@/lib/limites";
 
 export type EstadoFormulario = {
@@ -10,7 +14,6 @@ export type EstadoFormulario = {
   /** Solo lo usa el restablecimiento: el correo salió y toca esperar. */
   enviado?: boolean;
 };
-
 
 function texto(datos: FormData, campo: string) {
   return (datos.get(campo)?.toString() ?? "").trim();
@@ -23,7 +26,10 @@ function traducirError(mensaje: string) {
   if (m.includes("invalid login credentials")) {
     return "Correo o contraseña incorrectos.";
   }
-  if (m.includes("already registered") || m.includes("already been registered")) {
+  if (
+    m.includes("already registered") ||
+    m.includes("already been registered")
+  ) {
     return "Ese correo ya tiene una cuenta. Inicia sesión.";
   }
   if (m.includes("email not confirmed")) {
@@ -123,7 +129,8 @@ export async function registrarNegocio(
 
   const problema = validarBasicos(nombre, correo, contrasena, repetida);
   if (problema) return { error: problema };
-  if (!nombreComercial) return { error: "Escribe el nombre comercial de tu negocio." };
+  if (!nombreComercial)
+    return { error: "Escribe el nombre comercial de tu negocio." };
   if (!categoria) return { error: "Elige la categoría de tu negocio." };
 
   const supabase = await crearClienteServidor();
@@ -157,7 +164,8 @@ export async function crearMarca(
   const nombreComercial = texto(datos, "nombre_comercial");
   const categoria = Number(texto(datos, "categoria_id"));
 
-  if (!nombreComercial) return { error: "Escribe el nombre comercial de tu negocio." };
+  if (!nombreComercial)
+    return { error: "Escribe el nombre comercial de tu negocio." };
   if (!categoria) return { error: "Elige la categoría de tu negocio." };
 
   const supabase = await crearClienteServidor();
@@ -174,7 +182,8 @@ export async function crearMarca(
     categoria_id: categoria,
   });
 
-  if (error) return { error: "No se pudo dar de alta la marca. Inténtalo de nuevo." };
+  if (error)
+    return { error: "No se pudo dar de alta la marca. Inténtalo de nuevo." };
 
   redirect("/negocio/panel");
 }
@@ -186,7 +195,8 @@ export async function iniciarSesion(
   const correo = texto(datos, "correo");
   const contrasena = texto(datos, "contrasena");
 
-  if (!correo || !contrasena) return { error: "Escribe tu correo y tu contraseña." };
+  if (!correo || !contrasena)
+    return { error: "Escribe tu correo y tu contraseña." };
 
   const supabase = await crearClienteServidor();
 
@@ -211,14 +221,34 @@ export async function iniciarSesion(
  * No se manda el rol: Google resuelve identidad, no rol (spec §3.1). Si la
  * cuenta es nueva, el perfil nace sin confirmar y la pantalla /elegir-rol
  * pregunta si es cliente o negocio.
+ *
+ * Si venía de una pantalla que pedía sesión —`/login?volver=/cupones`— se le
+ * devuelve ahí al terminar. Sin esto, quien tocaba «entrar con Google» desde
+ * un cupón acababa en su panel y tenía que buscar otra vez lo que iba a hacer.
  */
-export async function entrarConGoogle() {
+export async function entrarConGoogle(datos?: FormData) {
   const supabase = await crearClienteServidor();
   const origen = await origenDelSitio();
 
+  /*
+    El destino viene de la URL, así que puede venir de cualquiera: se exige
+    que sea una ruta de este sitio. Sin el filtro, un enlace con
+    `?volver=https://otro-sitio` usaría nuestro dominio para mandar a la gente
+    afuera justo después de identificarse. El callback lo vuelve a comprobar;
+    aquí se filtra antes para no pedirle a Google que devuelva a ningún lado
+    raro.
+  */
+  const pedido = datos?.get("volver")?.toString() ?? "";
+  const volver =
+    pedido.startsWith("/") && !pedido.startsWith("//") ? pedido : null;
+
+  const destino = volver
+    ? `${origen}/auth/callback?siguiente=${encodeURIComponent(volver)}`
+    : `${origen}/auth/callback`;
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo: `${origen}/auth/callback` },
+    options: { redirectTo: destino },
   });
 
   if (error || !data.url) {
@@ -236,7 +266,9 @@ export async function elegirRol(
   const rol = texto(datos, "rol");
 
   if (rol !== "cliente" && rol !== "negocio") {
-    return { error: "Elige si vas a usar la plataforma como cliente o como negocio." };
+    return {
+      error: "Elige si vas a usar la plataforma como cliente o como negocio.",
+    };
   }
 
   const supabase = await crearClienteServidor();
@@ -254,7 +286,9 @@ export async function elegirRol(
     .eq("id", user.id);
 
   if (error) {
-    return { error: "Tu rol ya quedó definido y no se puede cambiar desde aquí." };
+    return {
+      error: "Tu rol ya quedó definido y no se puede cambiar desde aquí.",
+    };
   }
 
   redirect(rol === "negocio" ? "/negocio/completar-marca" : "/cuenta");
@@ -265,7 +299,6 @@ export async function cerrarSesion() {
   await supabase.auth.signOut();
   redirect("/");
 }
-
 
 // ---------------------------------------------------------------------------
 // Contraseña olvidada

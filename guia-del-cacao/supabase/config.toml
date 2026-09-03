@@ -425,12 +425,19 @@ enabled = true
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
 
-# Google (spec §3.1). Queda apagado hasta que haya credenciales reales: el
-# codigo del sitio ya esta listo, solo falta encenderlo aqui.
+# Google (spec §3.1). Esto es solo para el Supabase LOCAL: en produccion las
+# credenciales viven en el dashboard, y ahi ya esta encendido.
 #
-# Para probarlo en local, crea credenciales OAuth en Google Cloud con
-# http://127.0.0.1:54421/auth/v1/callback como URI de redireccion autorizada,
-# exporta las dos variables y pon enabled = true.
+# **Queda apagado hasta que .env.local traiga las dos credenciales.** Con
+# enabled = true y valores vacios, GoTrue no arranca: se queda sin contenedor y
+# el login local entero deja de responder (comprobado). Asi que el orden es:
+#
+#   1. Crea el cliente OAuth en Google Cloud y autoriza los dos retornos:
+#        http://127.0.0.1:54421/auth/v1/callback          (local)
+#        https://xhavrblxdjvwffsmblmg.supabase.co/auth/v1/callback  (produccion)
+#   2. Pega SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID y ..._SECRET en .env.local
+#   3. Pon enabled = true aqui
+#   4. npx supabase stop && npx supabase start   (el config se lee al arrancar)
 [auth.external.google]
 enabled = false
 client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"

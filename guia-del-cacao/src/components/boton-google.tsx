@@ -29,9 +29,18 @@ function IconoGoogle() {
  * mismo en /login y en /registro: si la cuenta es nueva, después se pregunta si
  * es cliente o negocio.
  */
-export function BotonGoogle({ texto = "Continuar con Google" }: { texto?: string }) {
+export function BotonGoogle({
+  texto = "Continuar con Google",
+  volver,
+}: {
+  texto?: string;
+  /** A dónde devolver al terminar, si venía de una pantalla con sesión. */
+  volver?: string | null;
+}) {
   return (
     <form action={entrarConGoogle}>
+      {volver && <input type="hidden" name="volver" value={volver} />}
+
       <BotonEnviar variante="secundario">
         <span className="flex items-center justify-center gap-2.5">
           <IconoGoogle />

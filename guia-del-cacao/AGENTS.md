@@ -625,11 +625,32 @@ saltándose las políticas sin comprobar nada.
 
 ## Google OAuth
 
-El código ya está completo; falta encenderlo. En `supabase/config.toml`,
-`[auth.external.google]` está en `enabled = false` hasta que existan
-credenciales de Google Cloud. En producción hay que fijar además
-`NEXT_PUBLIC_SITE_URL`: detrás de un proxy la cabecera host no es el dominio
-real y la URL de retorno saldría mal.
+El código está completo: botón, `entrarConGoogle`, el callback y `/elegir-rol`
+—Google resuelve identidad, no rol, así que una cuenta nueva nace sin confirmar
+y elige después. `manejar_nuevo_usuario` ya contempla ese caso y toma de Google
+el `full_name` y el `avatar_url`.
+
+**En producción ya está encendido** con sus credenciales en el dashboard. Lo que
+hay que tener puesto ahí:
+
+- `site_url` = el dominio real. Ojo, viene en `http://localhost:3000` por
+  defecto, y con eso Supabase arma los enlaces apuntando a la máquina de quien
+  lo configuró: rompe el retorno de Google **y** los correos de confirmación y de
+  recuperar contraseña.
+- `uri_allow_list` con `<dominio>/**`. Con la ruta exacta (`/auth/callback`) sin
+  comodín, un retorno que lleve query —`?siguiente=/cupones`— puede rechazarse.
+- `NEXT_PUBLIC_SITE_URL` en Vercel: detrás de un proxy la cabecera host no es el
+  dominio real y la URL de retorno saldría mal.
+
+**En local queda apagado** (`enabled = false`) hasta que `.env.local` traiga
+`SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` y `..._SECRET`. Encenderlo con los
+valores vacíos **no arranca GoTrue**: se queda sin contenedor y el login local
+entero deja de responder. El orden está escrito en el propio `config.toml`.
+
+El botón lleva a dónde ibas: `/login?volver=/cupones` viaja como
+`?siguiente=` en el callback, validado en los dos lados —se exige una ruta que
+empiece por `/` y no por `//`— para que un enlace preparado no use nuestro
+dominio para mandar a alguien afuera justo después de identificarse.
 
 ## El fondo de cacao
 
