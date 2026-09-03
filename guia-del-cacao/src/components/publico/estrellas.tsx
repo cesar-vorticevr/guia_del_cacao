@@ -70,10 +70,18 @@ export function Estrellas({
 export function SelectorEstrellas({
   name = "estrellas",
   inicial = 0,
+  alCambiar,
 }: {
   name?: string;
   /** Lo que ya había votado, para poder corregirlo sin empezar de cero. */
   inicial?: number;
+  /**
+   * Avisa de la nota elegida.
+   *
+   * Lo usa el formulario del QR para advertir, mientras se escribe, que una
+   * reseña sin estrellas no se va a poder guardar.
+   */
+  alCambiar?: (valor: number) => void;
 }) {
   const [valor, setValor] = useState(inicial);
 
@@ -89,7 +97,10 @@ export function SelectorEstrellas({
               name={name}
               value={n}
               checked={valor === n}
-              onChange={() => setValor(n)}
+              onChange={() => {
+                setValor(n);
+                alCambiar?.(n);
+              }}
               className="peer sr-only"
             />
             <span className="block rounded-lg peer-focus-visible:outline peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-selva">
@@ -141,5 +152,7 @@ export function Promedio({
 
 /** Para donde todavía no hay votos: el hueco se explica, no se deja en blanco. */
 export function SinCalificar() {
-  return <span className="text-xs text-cacao/50">Sin calificaciones todavía</span>;
+  return (
+    <span className="text-xs text-cacao/50">Sin calificaciones todavía</span>
+  );
 }

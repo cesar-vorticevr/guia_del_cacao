@@ -16,7 +16,10 @@ export type EstadoPuntos = { error?: string; ok?: string };
  * Vale la pena hacerlo con cuidado: estos mensajes los va a leer alguien de pie
  * en un stand de la feria, con el celular en una mano y una bolsa en la otra.
  */
-function traducir(mensaje: string, quienLee: "cliente" | "negocio" = "cliente") {
+function traducir(
+  mensaje: string,
+  quienLee: "cliente" | "negocio" = "cliente",
+) {
   if (mensaje.includes("solicitud_pendiente_unica")) {
     return "Ya tienes una solicitud pendiente en este negocio. Espera a que la resuelvan.";
   }
@@ -69,9 +72,10 @@ export async function pedirPuntos(
   // El comprobante llega por uno de dos campos: el que abre la cámara y el que
   // elige un archivo. Es el mismo dato con dos maneras de darlo, y es opcional:
   // ayuda a que le crean, no es requisito para pedir.
-  const archivo = [datos.get("comprobante"), datos.get("comprobante_archivo")].find(
-    (valor): valor is File => valor instanceof File && valor.size > 0,
-  );
+  const archivo = [
+    datos.get("comprobante"),
+    datos.get("comprobante_archivo"),
+  ].find((valor): valor is File => valor instanceof File && valor.size > 0);
 
   let comprobante: string | null = null;
 
@@ -84,7 +88,9 @@ export async function pedirPuntos(
     // sube y a quién se lo manda: una por cada lado del mostrador.
     const ruta = `${perfil.id}/${sucursalId}/${Date.now()}.${extension}`;
 
-    const { error } = await supabase.storage.from("comprobantes").upload(ruta, archivo);
+    const { error } = await supabase.storage
+      .from("comprobantes")
+      .upload(ruta, archivo);
 
     if (error) return { error: "No se pudo subir el comprobante." };
 
@@ -102,7 +108,28 @@ export async function pedirPuntos(
   const estrellas = Number(datos.get("estrellas"));
   let resenaId: string | null = null;
 
-  if (Number.isInteger(estrellas) && estrellas >= 1 && estrellas <= 5) {
+  const notaValida =
+    Number.isInteger(estrellas) && estrellas >= 1 && estrellas <= 5;
+
+  /*
+    Sin estrellas no hay reseña. El texto y la nota iban por su cuenta, cada uno
+    con su `if`, así que quien escribía el comentario sin tocar las estrellas
+    dejaba una reseña huérfana: salía sin nota al lado y el promedio la
+    ignoraba. La base lo rechaza desde la 000031; esto lo dice antes y con
+    palabras, en vez de dejar que el trigger tire toda la solicitud.
+  */
+  if (textoResena.length >= 10 && !notaValida) {
+    const nota = await miCalificacion(perfil.id, sucursalId);
+
+    if (nota === null) {
+      return {
+        error:
+          "Ponle estrellas al negocio para que tu reseña cuente. Sin nota no se puede publicar.",
+      };
+    }
+  }
+
+  if (notaValida) {
     const nota = await miCalificacion(perfil.id, sucursalId);
 
     if (nota === null) {
@@ -124,7 +151,11 @@ export async function pedirPuntos(
     if (!yaTengo) {
       const { data: resena } = await supabase
         .from("resenas")
-        .insert({ usuario_id: perfil.id, sucursal_id: sucursalId, texto: textoResena })
+        .insert({
+          usuario_id: perfil.id,
+          sucursal_id: sucursalId,
+          texto: textoResena,
+        })
         .select("id")
         .maybeSingle();
 
@@ -154,7 +185,8 @@ export async function pedirPuntos(
     .maybeSingle();
 
   if (error || !solicitud) {
-    if (comprobante) await supabase.storage.from("comprobantes").remove([comprobante]);
+    if (comprobante)
+      await supabase.storage.from("comprobantes").remove([comprobante]);
     return { error: traducir(error?.message ?? "") };
   }
 
@@ -163,7 +195,9 @@ export async function pedirPuntos(
   // una pieza que reventar la solicitud entera después de la compra.
   const lineas = productos.map((producto_id) => {
     const cruda = Number(datos.get(`cantidad-${producto_id}`));
-    const cantidad = Number.isFinite(cruda) ? Math.min(99, Math.max(1, Math.trunc(cruda))) : 1;
+    const cantidad = Number.isFinite(cruda)
+      ? Math.min(99, Math.max(1, Math.trunc(cruda)))
+      : 1;
 
     return { solicitud_id: solicitud.id, producto_id, cantidad };
   });
@@ -176,8 +210,11 @@ export async function pedirPuntos(
     // La solicitud ya existe y sin productos no le sirve a la marca para
     // decidir, así que se deshace en vez de dejarla coja.
     await supabase.from("solicitudes_puntos").delete().eq("id", solicitud.id);
-    if (comprobante) await supabase.storage.from("comprobantes").remove([comprobante]);
-    return { error: "No se pudo registrar lo que compraste. Inténtalo de nuevo." };
+    if (comprobante)
+      await supabase.storage.from("comprobantes").remove([comprobante]);
+    return {
+      error: "No se pudo registrar lo que compraste. Inténtalo de nuevo.",
+    };
   }
 
   revalidatePath(`/monedas/${slug}`);
@@ -221,7 +258,10 @@ export async function resolverSolicitud(
   if (decision === "rechazar") {
     const { error } = await supabase
       .from("solicitudes_puntos")
-      .update({ estado: "rechazada", fecha_resolucion: new Date().toISOString() })
+      .update({
+        estado: "rechazada",
+        fecha_resolucion: new Date().toISOString(),
+      })
       .eq("id", solicitudId)
       .eq("sucursal_id", sucursalId);
 
@@ -249,5 +289,7 @@ export async function resolverSolicitud(
   if (error) return { error: traducir(error.message, "negocio") };
 
   revalidatePath("/negocio/panel/monedas");
-  return { ok: `Listo: ${puntos} ${puntos === 1 ? "mazorca otorgada" : "mazorcas otorgadas"}.` };
+  return {
+    ok: `Listo: ${puntos} ${puntos === 1 ? "mazorca otorgada" : "mazorcas otorgadas"}.`,
+  };
 }

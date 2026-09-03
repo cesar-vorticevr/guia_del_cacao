@@ -140,6 +140,20 @@ siempre y no había política de UPDATE. Ahora sí la hay, a propósito.
 Estrellas y texto se piden **juntos**, en el mismo formulario, tanto en el
 micrositio como en el paso 3 de pedir monedas.
 
+Y desde la migración **000031** no es solo una costumbre del formulario: **no hay
+reseña sin estrellas**. Lo impone `exigir_calificacion`, un trigger de insert en
+`resenas`.
+
+Hacía falta porque el paso 3 del QR guardaba el texto y la nota por separado,
+cada uno con su `if`: quien escribía el comentario sin tocar las estrellas dejaba
+una reseña huérfana, que salía sin nota en el micrositio mientras el promedio la
+ignoraba. Nueve acabaron así antes de cerrarlo.
+
+El trigger **es solo de insert**, a propósito: las reseñas viejas sin nota se
+escribieron cuando esto se permitía, y bloquear su edición dejaría a su autor sin
+poder corregir ni una falta por algo que no hizo mal. La reseña **sigue siendo
+opcional** —lo que no cabe es dejarla suelta, sin nota que sume al promedio.
+
 ## Foto o video
 
 Las reseñas y los comprobantes aceptan las dos cosas: 20 MB, y

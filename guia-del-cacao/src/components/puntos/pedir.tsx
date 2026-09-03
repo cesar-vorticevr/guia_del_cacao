@@ -47,6 +47,7 @@ export function PedirMazorcas({
   const [elegidos, setElegidos] = useState<Record<string, number>>({});
   const [conFoto, setConFoto] = useState(false);
   const [resena, setResena] = useState("");
+  const [estrellas, setEstrellas] = useState(misEstrellas ?? 0);
 
   const cuantos = Object.keys(elegidos).length;
   const monedas = 1 + (puedeResenar && resena.trim().length >= 10 ? 1 : 0);
@@ -60,7 +61,10 @@ export function PedirMazorcas({
     });
 
   const cambiarCantidad = (id: string, cantidad: number) =>
-    setElegidos((previo) => ({ ...previo, [id]: Math.min(99, Math.max(1, cantidad)) }));
+    setElegidos((previo) => ({
+      ...previo,
+      [id]: Math.min(99, Math.max(1, cantidad)),
+    }));
 
   return (
     <form action={accion} className="grid gap-5">
@@ -115,7 +119,9 @@ export function PedirMazorcas({
                 name="comprobante"
                 accept={ACEPTA_MEDIO}
                 capture="environment"
-                onChange={(evento) => setConFoto(evento.target.files!.length > 0)}
+                onChange={(evento) =>
+                  setConFoto(evento.target.files!.length > 0)
+                }
                 className="sr-only"
               />
             </label>
@@ -126,7 +132,9 @@ export function PedirMazorcas({
                 type="file"
                 name="comprobante_archivo"
                 accept={ACEPTA_MEDIO}
-                onChange={(evento) => setConFoto(evento.target.files!.length > 0)}
+                onChange={(evento) =>
+                  setConFoto(evento.target.files!.length > 0)
+                }
                 className="sr-only"
               />
             </label>
@@ -152,7 +160,9 @@ export function PedirMazorcas({
       {/* ---------------------------------------------------------------- 2 */}
       <div hidden={paso !== 1} className="grid gap-4">
         <fieldset className="grid gap-3">
-          <legend className="mb-1 font-bold text-selva-2">¿Qué compraste?</legend>
+          <legend className="mb-1 font-bold text-selva-2">
+            ¿Qué compraste?
+          </legend>
 
           <ul className="grid gap-3">
             {productos.map((producto) => {
@@ -171,7 +181,9 @@ export function PedirMazorcas({
                       name="producto"
                       value={producto.id}
                       checked={marcado}
-                      onChange={(evento) => marcar(producto.id, evento.target.checked)}
+                      onChange={(evento) =>
+                        marcar(producto.id, evento.target.checked)
+                      }
                       className="size-6 shrink-0 accent-selva"
                     />
 
@@ -185,7 +197,9 @@ export function PedirMazorcas({
                     )}
 
                     <span className="min-w-0 flex-1">
-                      <span className="block font-bold text-selva-2">{producto.nombre}</span>
+                      <span className="block font-bold text-selva-2">
+                        {producto.nombre}
+                      </span>
                       {producto.descripcion && (
                         <span className="block text-sm text-cacao">
                           {producto.descripcion}
@@ -207,7 +221,12 @@ export function PedirMazorcas({
                       <div className="flex items-center gap-3">
                         <button
                           type="button"
-                          onClick={() => cambiarCantidad(producto.id, elegidos[producto.id] - 1)}
+                          onClick={() =>
+                            cambiarCantidad(
+                              producto.id,
+                              elegidos[producto.id] - 1,
+                            )
+                          }
                           aria-label={`Quitar uno de ${producto.nombre}`}
                           className="grid size-12 place-items-center rounded-full border-2 border-selva/25 bg-white text-2xl font-bold text-selva-2"
                         >
@@ -221,7 +240,10 @@ export function PedirMazorcas({
                           min={1}
                           max={99}
                           onChange={(evento) =>
-                            cambiarCantidad(producto.id, Number(evento.target.value) || 1)
+                            cambiarCantidad(
+                              producto.id,
+                              Number(evento.target.value) || 1,
+                            )
                           }
                           aria-label={`Cuántos ${producto.nombre}`}
                           className="min-h-12 w-16 rounded-2xl border-2 border-selva/20 bg-white text-center font-mono text-lg font-bold text-ink"
@@ -229,7 +251,12 @@ export function PedirMazorcas({
 
                         <button
                           type="button"
-                          onClick={() => cambiarCantidad(producto.id, elegidos[producto.id] + 1)}
+                          onClick={() =>
+                            cambiarCantidad(
+                              producto.id,
+                              elegidos[producto.id] + 1,
+                            )
+                          }
                           aria-label={`Agregar uno de ${producto.nombre}`}
                           className="grid size-12 place-items-center rounded-full border-2 border-selva/25 bg-white text-2xl font-bold text-selva-2"
                         >
@@ -279,14 +306,19 @@ export function PedirMazorcas({
             </div>
 
             <div>
-              <SelectorEstrellas inicial={misEstrellas ?? 0} />
+              <SelectorEstrellas
+                inicial={misEstrellas ?? 0}
+                alCambiar={setEstrellas}
+              />
               <p className="mt-1.5 text-sm text-cacao/70">
                 Tu nota arma el promedio del negocio. Puedes cambiarla después.
               </p>
             </div>
 
             <label className="block">
-              <span className="mb-1.5 block font-bold text-selva-2">Tu reseña</span>
+              <span className="mb-1.5 block font-bold text-selva-2">
+                Tu reseña
+              </span>
               <textarea
                 name="resena"
                 rows={4}
@@ -295,6 +327,21 @@ export function PedirMazorcas({
                 placeholder="¿Qué probaste? ¿Cómo te atendieron?"
                 className="w-full rounded-2xl border-2 border-selva/20 bg-white px-4 py-3 text-base text-ink placeholder:text-cacao/40 focus:border-selva"
               />
+
+              {/*
+                Sin estrellas no hay reseña: lo rechaza la base, y decirlo aquí
+                evita que quien escribió un párrafo se entere al enviarlo. La
+                reseña sigue siendo opcional; lo que no cabe es dejarla suelta,
+                sin nota, porque entonces no suma al promedio de nadie.
+              */}
+              {resena.trim().length >= 10 && estrellas === 0 && (
+                <span
+                  role="status"
+                  className="mt-2 block rounded-2xl border-2 border-mango/50 bg-mango/15 px-4 py-2.5 text-cacao"
+                >
+                  Ponle estrellas aquí arriba para que tu reseña cuente.
+                </span>
+              )}
             </label>
           </>
         ) : (
