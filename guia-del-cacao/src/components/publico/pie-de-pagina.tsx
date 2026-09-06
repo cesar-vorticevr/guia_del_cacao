@@ -18,7 +18,11 @@ export const CORREO_DE_CONTACTO = "vorticevr@gmail.com";
  * pinta solo lo que tenga `url`; con el arreglo vacío, la fila entera
  * desaparece sola. Para encenderlas basta poner aquí la dirección.
  */
-const REDES: { nombre: string; url: string | null; Icono: (p: { className?: string }) => React.ReactElement }[] = [
+const REDES: {
+  nombre: string;
+  url: string | null;
+  Icono: (p: { className?: string }) => React.ReactElement;
+}[] = [
   { nombre: "Facebook", url: null, Icono: IconoFacebook },
   { nombre: "Instagram", url: null, Icono: IconoInstagram },
   { nombre: "TikTok", url: null, Icono: IconoTikTok },
@@ -31,8 +35,8 @@ const ENLACES = [
   // Pasa por el aviso: a un cliente le explica que su negocio va en otra cuenta,
   // y a quien no ha entrado lo manda derecho al alta sin estorbarle.
   { href: "/soy-negocio", texto: "Agregar mi negocio" },
-  { href: "/terminos", texto: "Términos de Uso" },
-  { href: "/privacidad", texto: "Privacidad y Cookies" },
+  { href: "/terminos", texto: "Condiciones del Servicio" },
+  { href: "/privacidad", texto: "Política de Privacidad" },
 ];
 
 /**
@@ -62,8 +66,16 @@ export async function PieDePagina() {
         texto:
           "Si produces, transformas o cuentas el cacao de Tabasco, este es tu lugar. Y si solo vienes a visitar, tu cuenta junta mazorcas todo el año.",
         botones: [
-          { href: "/registro/negocio", texto: "Agregar mi negocio", principal: true },
-          { href: "/registro/cliente", texto: "Crear mi cuenta", principal: false },
+          {
+            href: "/registro/negocio",
+            texto: "Agregar mi negocio",
+            principal: true,
+          },
+          {
+            href: "/registro/cliente",
+            texto: "Crear mi cuenta",
+            principal: false,
+          },
         ],
       }
     : perfil.rol === "cliente"
@@ -72,7 +84,11 @@ export async function PieDePagina() {
           texto:
             "Publica tu micrositio y aparece donde la gente ya está buscando. Se da de alta aparte de tu cuenta de visitante.",
           botones: [
-            { href: "/soy-negocio", texto: "Agregar mi negocio", principal: true },
+            {
+              href: "/soy-negocio",
+              texto: "Agregar mi negocio",
+              principal: true,
+            },
           ],
         }
       : null;
@@ -117,7 +133,9 @@ export async function PieDePagina() {
         El respiro de abajo en celular esquiva la barra fija del pulgar, que si
         no tapa la última línea.
       */}
-      <div className={`bg-selva-2 py-10 text-crema ${invitacion ? "mt-12" : ""}`}>
+      <div
+        className={`bg-selva-2 py-10 text-crema ${invitacion ? "mt-12" : ""}`}
+      >
         <div className="mx-auto w-[92vw] max-w-[1180px] pb-24 sm:pb-0">
           <nav aria-label="Información del sitio">
             <ul className="flex flex-wrap justify-center gap-x-7 gap-y-3 text-center font-bold">
