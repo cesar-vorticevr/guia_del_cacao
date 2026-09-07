@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { FUNCIONES } from "@/lib/funciones";
 import type { Metadata } from "next";
 import { PedirMazorcas } from "@/components/puntos/pedir";
 import { calificacionDe, micrositioPorSlug } from "@/lib/datos/publico";
@@ -27,6 +28,12 @@ export default async function PedirPuntos({
   searchParams: Promise<{ enviado?: string }>;
 }) {
   const { slug } = await params;
+
+  // El QR del mostrador está apagado para el lanzamiento (lib/funciones.ts).
+  // Los carteles impresos siguen colgados en algún mostrador, así que en vez de
+  // un 404 se lleva a quien lo escanee al micrositio del negocio.
+  if (!FUNCIONES.mazorcas) redirect(`/marca/${slug}`);
+
   const { enviado } = await searchParams;
   const sucursal = await micrositioPorSlug(slug);
 

@@ -31,7 +31,7 @@ export default function Terminos() {
 
       <h2 className="mt-8 font-display text-2xl">Qué es esta plataforma</h2>
       <p className="mt-3 text-cacao">
-        La Guía del Cacao es un directorio de negocios del cacao en Tabasco.
+        La Guía del Cacao es un directorio de negocios del cacao en México.
         Cada negocio es responsable de la información de su micrositio: sus
         datos, sus precios, sus horarios y sus publicaciones. La guía no vende
         los productos que aparecen ni interviene en la relación entre un negocio

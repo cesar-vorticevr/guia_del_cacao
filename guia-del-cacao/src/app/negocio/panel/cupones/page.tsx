@@ -10,6 +10,7 @@ import {
 } from "@/lib/datos/cupones";
 import { marcarCanjeUsado } from "@/lib/publico/canjes";
 import { misSucursales } from "@/lib/datos/sucursales";
+import { FUNCIONES } from "@/lib/funciones";
 import { MONEDA } from "@/lib/vocabulario";
 
 export const metadata: Metadata = { title: "Cupones · Guía del Cacao" };
@@ -22,6 +23,10 @@ export const metadata: Metadata = { title: "Cupones · Guía del Cacao" };
  * real, que es lo que cierra el círculo: visito, junto, canjeo, vuelvo.
  */
 export default async function Cupones() {
+  // Apagados para el lanzamiento (lib/funciones.ts): sin mazorcas no hay
+  // con que pagarlos.
+  if (!FUNCIONES.cupones) redirect("/negocio/panel");
+
   const perfil = await perfilActual();
 
   if (!perfil) redirect("/login");

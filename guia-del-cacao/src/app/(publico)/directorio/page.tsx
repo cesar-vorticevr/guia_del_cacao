@@ -1,8 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { BuscadorDirectorio } from "@/components/publico/buscador-directorio";
-import { listarDirectorio } from "@/lib/datos/publico";
+import { entidadesConNegocios, listarDirectorio } from "@/lib/datos/publico";
 import { listarCategorias } from "@/lib/datos/categorias";
+import { esEntidad } from "@/lib/entidades";
 import { tonoDeCategoria } from "@/lib/paleta";
 
 export const metadata: Metadata = { title: "Directorio · Guía del Cacao" };
@@ -14,18 +15,34 @@ const PILDORA =
 export default async function Directorio({
   searchParams,
 }: {
-  searchParams: Promise<{ categoria?: string; q?: string }>;
+  searchParams: Promise<{ categoria?: string; estado?: string; q?: string }>;
 }) {
-  const { categoria, q } = await searchParams;
+  const { categoria, estado, q } = await searchParams;
   const categoriaId = categoria ? Number(categoria) : undefined;
   const consulta = q?.trim() ?? "";
 
-  const [sucursales, categorias] = await Promise.all([
-    listarDirectorio(categoriaId),
+  // Se valida contra la lista: `?estado=cualquier-cosa` no debe devolver el
+  // directorio entero como si no se hubiera filtrado nada.
+  const entidad = esEntidad(estado) ? estado : undefined;
+
+  const [sucursales, categorias, entidades] = await Promise.all([
+    listarDirectorio(categoriaId, entidad),
     listarCategorias(),
+    entidadesConNegocios(),
   ]);
 
   const activa = categorias.find((c) => c.id === categoriaId);
+
+  /** Conserva los demás filtros al cambiar uno: son dos ejes, no dos botones. */
+  const conFiltros = (cambio: { categoria?: number; estado?: string }) => {
+    const busca = new URLSearchParams();
+    const cat = "categoria" in cambio ? cambio.categoria : categoriaId;
+    const ent = "estado" in cambio ? cambio.estado : entidad;
+    if (cat) busca.set("categoria", String(cat));
+    if (ent) busca.set("estado", ent);
+    const cola = busca.toString();
+    return cola ? `/directorio?${cola}` : "/directorio";
+  };
 
   const nombresDeCategoria = Object.fromEntries(
     categorias.map((c) => [c.id, c.nombre]),
@@ -35,9 +52,11 @@ export default async function Directorio({
     <>
       <h1 className="pt-8 font-display text-3xl">Explorar</h1>
       <p className="mt-2 text-cacao">
-        {activa
-          ? `Negocios en la categoría ${activa.nombre}.`
-          : "Todos los negocios del cacao publicados en la plataforma."}
+        {[
+          activa ? `Negocios en la categoría ${activa.nombre}` : "Negocios del cacao",
+          entidad ? `en ${entidad}` : "en todo México",
+        ].join(" ")}
+        .
       </p>
 
       {/*
@@ -59,13 +78,57 @@ export default async function Directorio({
         Cada una trae su color puesto, no solo la activa: así la fila se lee
         como una fila de colores y se reconoce de reojo cuál es cuál.
       */}
+        {/*
+          El estado va antes que la categoría porque es la primera pregunta de
+          quien busca: nadie en Chiapas quiere ver una chocolatería de
+          Comalcalco por muy bien clasificada que esté.
+
+          Solo aparece cuando hay negocios en más de una entidad. Mientras todo
+          esté en Tabasco, un filtro con una sola opción es ruido.
+        */}
+        {entidades.length > 1 && (
+          <nav aria-label="Filtrar por estado" className="pt-5">
+            <p className="mb-2 font-bold text-selva-2">Por estado</p>
+
+            <ul className="flex flex-wrap gap-2.5">
+              <li>
+                <Link
+                  href={conFiltros({ estado: undefined })}
+                  aria-current={!entidad}
+                  className={`${PILDORA} ${
+                    !entidad ? "bg-selva text-crema" : "bg-crema-2 text-selva-2"
+                  }`}
+                >
+                  Todo México
+                </Link>
+              </li>
+
+              {entidades.map((nombre) => (
+                <li key={nombre}>
+                  <Link
+                    href={conFiltros({ estado: nombre })}
+                    aria-current={entidad === nombre}
+                    className={`${PILDORA} ${
+                      entidad === nombre
+                        ? "bg-selva text-crema"
+                        : "bg-crema-2 text-selva-2"
+                    }`}
+                  >
+                    {nombre}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
+
         <nav aria-label="Filtrar por categoría" className="pt-5">
           <p className="mb-2 font-bold text-selva-2">Por tipo de negocio</p>
 
           <ul className="flex flex-wrap gap-2.5">
             <li>
               <Link
-                href="/directorio"
+                href={conFiltros({ categoria: undefined })}
                 aria-current={!categoriaId}
                 className={`${PILDORA} ${
                   !categoriaId
@@ -83,7 +146,7 @@ export default async function Directorio({
               return (
                 <li key={c.id}>
                   <Link
-                    href={`/directorio?categoria=${c.id}`}
+                    href={conFiltros({ categoria: c.id })}
                     aria-current={categoriaId === c.id}
                     className={`${PILDORA} ${categoriaId === c.id ? tono.solido : tono.suave}`}
                   >
@@ -98,9 +161,13 @@ export default async function Directorio({
 
       {sucursales.length === 0 && (
         <p className="mt-6 rounded-3xl bg-crema-2 p-6 text-cacao">
-          {activa
-            ? "Todavía no hay negocios publicados en esta categoría."
-            : "Todavía no hay micrositios publicados."}
+          {entidad
+            ? `Todavía no hay negocios publicados en ${entidad}${
+                activa ? ` dentro de ${activa.nombre}` : ""
+              }.`
+            : activa
+              ? "Todavía no hay negocios publicados en esta categoría."
+              : "Todavía no hay micrositios publicados."}
         </p>
       )}
     </>

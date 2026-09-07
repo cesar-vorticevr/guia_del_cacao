@@ -7,12 +7,13 @@ import { PieDePagina } from "@/components/publico/pie-de-pagina";
 import { destinoSegunRol, perfilActual } from "@/lib/auth/sesion";
 import { pestanaDePerfil } from "@/lib/auth/navegacion";
 import { pasaporteDe } from "@/lib/datos/puntos";
+import { FUNCIONES, HAY_ECONOMIA_DE_MAZORCAS } from "@/lib/funciones";
 
 const SECCIONES = [
   { href: "/directorio", texto: "Explorar" },
   { href: "/eventos", texto: "Eventos" },
-  { href: "/comunidad", texto: "Comunidad" },
-  { href: "/cupones", texto: "Cupones" },
+  ...(FUNCIONES.comunidad ? [{ href: "/comunidad", texto: "Comunidad" }] : []),
+  ...(FUNCIONES.cupones ? [{ href: "/cupones", texto: "Cupones" }] : []),
 ];
 
 /**
@@ -33,7 +34,8 @@ export default async function LayoutPublico({
   // Solo los clientes juntan mazorcas; un negocio o un administrador no tienen
   // cuenta que enseñar.
   const esCliente = perfil?.rol === "cliente" && perfil.rol_confirmado;
-  const pasaporte = esCliente ? await pasaporteDe(perfil.id) : null;
+  const pasaporte =
+    esCliente && HAY_ECONOMIA_DE_MAZORCAS ? await pasaporteDe(perfil.id) : null;
 
   const pestana = pestanaDePerfil(perfil);
 

@@ -14,6 +14,7 @@ import { Promedio } from "@/components/publico/estrellas";
 import { Estrellas } from "@/components/publico/estrellas";
 import { Medio } from "@/components/publico/medio";
 import { BUCKET_RESENAS, urlImagen } from "@/lib/imagenes";
+import { FUNCIONES } from "@/lib/funciones";
 import { MONEDA, monedas, rango as nombreRango, siguienteRango } from "@/lib/vocabulario";
 
 export const metadata: Metadata = { title: "Mi cuenta · Guía del Cacao" };
@@ -38,9 +39,13 @@ export default async function Cuenta() {
 
   const anio = new Date().getFullYear();
 
+  // Con las mazorcas apagadas, el marcador y las solicitudes no se pintan: no
+  // tiene sentido ir a buscarlos a la base para tirarlos después.
   const [pasaporte, solicitudes, resenas] = await Promise.all([
-    pasaporteDe(perfil.id, anio),
-    misSolicitudes(perfil.id),
+    FUNCIONES.mazorcas
+      ? pasaporteDe(perfil.id, anio)
+      : Promise.resolve({ puntos: 0, nivel: 1 }),
+    FUNCIONES.mazorcas ? misSolicitudes(perfil.id) : Promise.resolve([]),
     misResenas(perfil.id),
   ]);
 
@@ -70,6 +75,7 @@ export default async function Cuenta() {
     <div className="mx-auto grid max-w-2xl gap-8 py-8">
         <h1 className="font-display text-3xl">Hola, {perfil.nombre}</h1>
 
+        {FUNCIONES.mazorcas && (
         <section className="rounded-3xl bg-crema-2 p-6">
           <p className="font-bold text-selva-2">Tu cuenta {anio}</p>
 
@@ -104,11 +110,12 @@ export default async function Cuenta() {
             {MONEDA.variasCortas} se reinician el 1 de enero.
           </p>
         </section>
+        )}
 
         {/* Las pendientes van arriba y aparte: son mazorcas que ya pediste y
             todavía no cuentan en el marcador, y no saberlo se siente como que
             se perdieron. */}
-        {pendientes > 0 && (
+        {FUNCIONES.mazorcas && pendientes > 0 && (
           <p
             role="status"
             className="rounded-3xl border-2 border-turquesa/40 bg-turquesa/15 p-5 text-cacao"
@@ -123,6 +130,7 @@ export default async function Cuenta() {
           </p>
         )}
 
+        {FUNCIONES.mazorcas && (
         <section className="grid gap-4">
           <h2 className="font-display text-2xl">Tus solicitudes</h2>
 
@@ -187,10 +195,27 @@ export default async function Cuenta() {
             </ul>
           )}
         </section>
+        )}
 
-        {resenas.length > 0 && (
-          <section className="grid gap-4">
-            <h2 className="font-display text-2xl">Tus reseñas</h2>
+        {/*
+          Las reseñas se enseñan siempre, incluso vacías: sin las mazorcas son
+          lo que la cuenta hace, y una pantalla que solo saluda por el nombre no
+          explica para qué sirve haberse registrado.
+        */}
+        <section className="grid gap-4">
+          <h2 className="font-display text-2xl">Tus reseñas</h2>
+
+          {resenas.length === 0 && (
+            <p className="rounded-3xl bg-crema-2 p-6 text-cacao">
+              Todavía no has reseñado nada. Cuando visites un negocio del{" "}
+              <Link href="/directorio" className="font-bold text-selva underline">
+                directorio
+              </Link>
+              , cuéntale a los demás cómo te fue.
+            </p>
+          )}
+
+          {resenas.length > 0 && (
             <ul className="grid gap-3">
               {resenas.map((resena) => (
                 <li key={resena.id} className="rounded-2xl bg-white p-4 shadow-dura">
@@ -240,8 +265,9 @@ export default async function Cuenta() {
                 </li>
               ))}
             </ul>
-          </section>
-        )}
+          )}
+        </section>
+
       {/*
         Salir vive aquí, al final de la cuenta, y ya no en una barra propia:
         esta pantalla ahora usa el mismo armazón que el resto del sitio, con su

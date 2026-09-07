@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { FUNCIONES } from "@/lib/funciones";
 
 /**
  * Las noticias dejaron de ser una cosa aparte.
@@ -8,5 +9,5 @@ import { redirect } from "next/navigation";
  * los enlaces guardados.
  */
 export default function Noticias() {
-  redirect("/comunidad");
+  redirect(FUNCIONES.comunidad ? "/comunidad" : "/directorio");
 }

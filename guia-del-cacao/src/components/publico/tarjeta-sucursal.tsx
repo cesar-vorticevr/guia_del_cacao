@@ -3,6 +3,7 @@ import { urlImagen } from "@/lib/imagenes";
 import { Promedio } from "@/components/publico/estrellas";
 import { tonoDeCategoria } from "@/lib/paleta";
 import type { TarjetaDirectorio } from "@/lib/datos/publico";
+import { FUNCIONES } from "@/lib/funciones";
 
 /**
  * Tarjeta del directorio. El Tier 3 se distingue, porque parte de lo que paga
@@ -18,7 +19,8 @@ import type { TarjetaDirectorio } from "@/lib/datos/publico";
 export function TarjetaSucursal({ sucursal }: { sucursal: TarjetaDirectorio }) {
   const logo = urlImagen(sucursal.logo);
   const destacada = sucursal.tier_id === 3;
-  const daMazorcas = sucursal.tiers?.puede_dar_puntos ?? false;
+  const daMazorcas =
+    FUNCIONES.mazorcas && (sucursal.tiers?.puede_dar_puntos ?? false);
   const tono = tonoDeCategoria(sucursal.marcas?.categoria_id);
 
   return (
@@ -77,6 +79,17 @@ export function TarjetaSucursal({ sucursal }: { sucursal: TarjetaDirectorio }) {
               className={`size-2 shrink-0 rounded-full ${tono.punto}`}
             />
             {sucursal.nombre_sucursal}
+          </span>
+
+          {/*
+            Dónde está, debajo del nombre. En una guía de un solo estado era
+            obvio y sobraba; en una nacional es la primera pregunta de quien
+            mira la lista, y sin ella cada tarjeta obliga a entrar para saber
+            si queda cerca.
+          */}
+          <span className="block text-sm text-cacao/70">
+            {sucursal.ciudad ? `${sucursal.ciudad}, ` : ""}
+            {sucursal.entidad}
           </span>
 
           {sucursal.calificacion && (

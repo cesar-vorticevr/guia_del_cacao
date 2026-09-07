@@ -64,7 +64,7 @@ export async function PieDePagina() {
     ? {
         titulo: "Únete a la Guía del Cacao",
         texto:
-          "Si produces, transformas o cuentas el cacao de Tabasco, este es tu lugar. Y si solo vienes a visitar, tu cuenta junta mazorcas todo el año.",
+          "Si produces, transformas o cuentas el cacao de México, este es tu lugar. Y si solo vienes a visitar, aquí encuentras a quién ir a ver.",
         botones: [
           {
             href: "/registro/negocio",
@@ -171,7 +171,7 @@ export async function PieDePagina() {
           )}
 
           <p className="mt-8 text-center text-sm text-crema/70">
-            Guía del Cacao · El cacao de Tabasco, en un solo lugar
+            Guía del Cacao · El cacao de México, en un solo lugar
           </p>
         </div>
       </div>

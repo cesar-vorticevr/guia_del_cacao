@@ -10,6 +10,7 @@ import {
   IconoPersonas,
   IconoPersona,
 } from "@/components/iconos";
+import { FUNCIONES, HAY_ECONOMIA_DE_MAZORCAS } from "@/lib/funciones";
 import { MONEDA } from "@/lib/vocabulario";
 
 /**
@@ -37,16 +38,18 @@ const IZQUIERDA: Pestana[] = [
   { href: "/eventos", texto: "Eventos", Icono: IconoCalendario },
 ];
 
-const DERECHA: Pestana[] = [
-  // Comunidad se quedo con el lugar que tenia Noticias, y con las noticias
-  // dentro: eran tres pestanias que casi nadie abria por separado.
-  {
-    href: "/comunidad",
-    texto: "Comunidad",
-    Icono: IconoPersonas,
-    tambien: ["/noticias"],
-  },
-];
+const DERECHA: Pestana[] = FUNCIONES.comunidad
+  ? [
+      // Comunidad se quedo con el lugar que tenia Noticias, y con las noticias
+      // dentro: eran tres pestanias que casi nadie abria por separado.
+      {
+        href: "/comunidad",
+        texto: "Comunidad",
+        Icono: IconoPersonas,
+        tambien: ["/noticias"],
+      },
+    ]
+  : [];
 
 const EXPLORAR: Pestana = {
   href: "/directorio",
@@ -55,6 +58,17 @@ const EXPLORAR: Pestana = {
   // El micrositio se llega desde el directorio, así que sigue siendo explorar.
   tambien: ["/marca"],
 };
+
+/**
+ * Las columnas se cuentan, no se escriben a mano: al apagar una función la
+ * barra se queda con un hueco si el número no la sigue. Van como literales
+ * porque Tailwind lee las clases del código, no las arma en tiempo de
+ * ejecución.
+ */
+const COLUMNAS =
+  { 4: "grid-cols-4", 5: "grid-cols-5", 6: "grid-cols-6" }[
+    IZQUIERDA.length + DERECHA.length + 2
+  ] ?? "grid-cols-5";
 
 function estaEn(ruta: string, pestana: Pestana) {
   if (pestana.href === "/") return ruta === "/";
@@ -81,6 +95,10 @@ export function BarraInferior({
 }) {
   const ruta = usePathname();
 
+  // Sin nada que se pague con mazorcas, el marcador no marca nada: la pestaña
+  // vuelve a ser un icono.
+  const marcador = HAY_ECONOMIA_DE_MAZORCAS ? monedas : null;
+
   const pestana = (item: Pestana) => {
     const activa = estaEn(ruta, item);
 
@@ -106,7 +124,7 @@ export function BarraInferior({
       aria-label="Navegación principal"
       className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-selva/10 bg-crema/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden"
     >
-      <div className="mx-auto grid max-w-md grid-cols-5 items-end">
+      <div className={`mx-auto grid max-w-md ${COLUMNAS} items-end`}>
         {IZQUIERDA.map(pestana)}
 
         <Link
@@ -133,7 +151,7 @@ export function BarraInferior({
             enPerfil ? "text-selva-2" : "text-cacao/55"
           }`}
         >
-          {monedas === null ? (
+          {marcador === null ? (
             iconoPerfil === "persona" ? (
               <IconoPersona className="size-6" />
             ) : (
@@ -142,9 +160,9 @@ export function BarraInferior({
           ) : (
             <span
               className="grid size-6 place-items-center rounded-full bg-mango font-mono text-[0.7rem] font-bold text-ink"
-              aria-label={`${monedas} ${MONEDA.variasCortas}`}
+              aria-label={`${marcador} ${MONEDA.variasCortas}`}
             >
-              {monedas > 99 ? "99+" : monedas}
+              {marcador > 99 ? "99+" : marcador}
             </span>
           )}
           {etiquetaPerfil}

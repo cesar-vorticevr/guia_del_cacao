@@ -5,7 +5,8 @@ import type { Producto, Sucursal, Tier } from "@/lib/tipos";
 const CAMPOS_SUCURSAL = `
   id, marca_id, nombre_sucursal, slug, logo, imagen_fondo, ubicacion_maps_url,
   acerca_de, whatsapp, facebook, instagram, youtube, tiktok, correo_contacto,
-  telefono, tier_id, estado, motivo_rechazo, pausado_por_admin, fecha_publicacion, galeria
+  telefono, tier_id, estado, motivo_rechazo, pausado_por_admin, fecha_publicacion, galeria,
+  entidad, ciudad, tiers(puede_publicar_contenido)
 `;
 
 /**

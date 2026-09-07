@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Pestanas } from "@/components/negocio/pestanas";
+import { FUNCIONES } from "@/lib/funciones";
 
 /**
  * Las pestañas del panel, marcando sola la sección donde estás.
@@ -89,19 +90,27 @@ export function PestanasDelPanel({
           href: "/negocio/panel/catalogo",
           cuenta: catalogo,
         },
-        {
-          clave: "cupones",
-          texto: "Cupones",
-          href: "/negocio/panel/cupones",
-          cuenta: cupones,
-        },
-        {
-          clave: "mazorcas",
-          texto: "Mazorcas",
-          href: "/negocio/panel/monedas",
-          cuenta: monedasPendientes || undefined,
-          destella: monedasNuevas,
-        },
+        ...(FUNCIONES.cupones
+          ? [
+              {
+                clave: "cupones",
+                texto: "Cupones",
+                href: "/negocio/panel/cupones",
+                cuenta: cupones,
+              },
+            ]
+          : []),
+        ...(FUNCIONES.mazorcas
+          ? [
+              {
+                clave: "mazorcas",
+                texto: "Mazorcas",
+                href: "/negocio/panel/monedas",
+                cuenta: monedasPendientes || undefined,
+                destella: monedasNuevas,
+              },
+            ]
+          : []),
       ]}
     />
   );
