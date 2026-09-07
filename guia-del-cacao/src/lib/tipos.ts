@@ -34,6 +34,10 @@ export type Sucursal = {
   slug: string;
   logo: string | null;
   imagen_fondo: string | null;
+  /** Entidad federativa; obligatoria desde el alcance nacional. */
+  entidad: string;
+  /** Ciudad o municipio; opcional, las anteriores al alcance nacional no la tienen. */
+  ciudad: string | null;
   ubicacion_maps_url: string | null;
   acerca_de: string | null;
   whatsapp: string | null;
@@ -44,6 +48,12 @@ export type Sucursal = {
   correo_contacto: string | null;
   telefono: string | null;
   tier_id: number | null;
+  /**
+   * Las banderas de su plan. Vienen del join y no se deducen de `tier_id`:
+   * qué incluye cada plan es un dato de la tabla `tiers`, y escribir el número
+   * a mano obliga a acordarse de cada sitio el día que los planes cambien.
+   */
+  tiers: { puede_publicar_contenido: boolean } | null;
   estado: EstadoSucursal;
   motivo_rechazo: string | null;
   /** Una pausa puesta por moderación solo la levanta quien la puso. */

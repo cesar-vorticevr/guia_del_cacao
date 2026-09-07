@@ -25,6 +25,8 @@ import {
 } from "@/lib/negocio/acciones";
 import { pesos, type Sucursal, type Tier } from "@/lib/tipos";
 import { cancelarPlan, contratarPlan } from "@/lib/negocio/plan";
+import { ENTIDADES } from "@/lib/entidades";
+import { FUNCIONES } from "@/lib/funciones";
 import { LIMITES } from "@/lib/limites";
 import { ACEPTA, MEDIDAS, PESO } from "@/lib/imagenes";
 import { RANGOS } from "@/lib/vocabulario";
@@ -96,6 +98,27 @@ export function FormularioMicrositio({
         filas={5}
         limite={LIMITES.acercaDe}
       />
+      {/*
+        Dónde está. Desde que la guía es nacional esto no es un dato de
+        contacto más: es por lo que filtra quien busca, y sin ello la ficha no
+        aparece cuando alguien elige su estado.
+      */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Selector
+          nombre="entidad"
+          etiqueta="Estado"
+          valor={sucursal.entidad}
+          opciones={ENTIDADES.map((nombre) => ({ valor: nombre, texto: nombre }))}
+        />
+        <Campo
+          nombre="ciudad"
+          etiqueta="Ciudad o municipio"
+          requerido={false}
+          valor={sucursal.ciudad}
+          marcador="Comalcalco"
+        />
+      </div>
+
       <Campo
         nombre="ubicacion_maps_url"
         etiqueta="Ubicación"
@@ -555,11 +578,20 @@ function Planes({
           ? "Una sucursal"
           : `Hasta ${tier.max_sucursales} sucursales`,
     },
+    // Las mazorcas están apagadas: anunciarlas como ventaja de un plan sería
+    // cobrar por algo que nadie puede usar todavía.
+    ...(FUNCIONES.mazorcas
+      ? [
+          {
+            hay: tier.puede_dar_puntos,
+            texto: "Da mazorcas de cacao a tus clientes",
+          },
+        ]
+      : []),
     {
-      hay: tier.puede_dar_puntos,
-      texto: "Da mazorcas de cacao a tus clientes",
+      hay: tier.puede_publicar_contenido,
+      texto: "Anuncia tus catas, talleres y ferias en la agenda",
     },
-    { hay: tier.puede_publicar_contenido, texto: "Publica eventos y noticias" },
     {
       hay: tier.en_banner_principal,
       texto: "Aparece en el banner de la portada",

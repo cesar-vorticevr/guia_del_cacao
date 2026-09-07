@@ -1,25 +1,29 @@
 import type { Metadata } from "next";
 import { CORREO_DE_CONTACTO } from "@/components/publico/pie-de-pagina";
 
-export const metadata: Metadata = { title: "Privacidad y Cookies · Guía del Cacao" };
+export const metadata: Metadata = {
+  title: "Política de Privacidad · Guía del Cacao",
+};
 
 /**
- * Borrador del aviso de privacidad, en el molde de la LFPDPPP: qué se recoge,
- * para qué, con quién se comparte y cómo se ejercen los derechos ARCO.
+ * Borrador del aviso de privacidad.
  *
- * Solo enumera datos que la plataforma pide de verdad hoy. **Falta revisión
- * legal y falta el domicilio del responsable**, que no está en el repositorio y
- * nadie debería inventar; el hueco se señala en la página, no se rellena.
+ * Enumera los datos que la plataforma trata **hoy**, no los que se imaginó
+ * tratar: cada punto corresponde a una tabla o a un bucket que existe. Si se
+ * agrega uno nuevo que guarde algo de una persona, se agrega aquí.
+ *
+ * **Falta revisión legal y el domicilio del responsable** antes de salir a
+ * producción; el aviso se lee en la propia página.
  */
 export default function Privacidad() {
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="pt-8 font-display text-3xl">Privacidad y Cookies</h1>
+      <h1 className="pt-8 font-display text-3xl">Política de Privacidad</h1>
 
       <p className="mt-4 rounded-3xl border-2 border-mango bg-crema-2 p-5 text-cacao">
         <strong className="text-selva-2">Documento en preparación.</strong> Este
-        aviso todavía no ha pasado por revisión legal y le falta el domicilio del
-        responsable. Describe los datos que la plataforma trata hoy.
+        aviso todavía no ha pasado por revisión legal y le falta el domicilio
+        del responsable. Describe los datos que la plataforma trata hoy.
       </p>
 
       <h2 className="mt-8 font-display text-2xl">Quién trata tus datos</h2>
@@ -39,9 +43,9 @@ export default function Privacidad() {
       <h2 className="mt-8 font-display text-2xl">Qué datos recabamos</h2>
       <ul className="mt-3 grid gap-2 text-cacao">
         <li>
-          <strong className="text-selva-2">De cualquier cuenta:</strong> nombre y
-          correo electrónico. Si entras con Google, lo que esa cuenta nos comparte
-          al identificarte.
+          <strong className="text-selva-2">De cualquier cuenta:</strong> nombre
+          y correo electrónico. Si entras con Google, lo que esa cuenta nos
+          comparte al identificarte: tu nombre, tu correo y tu foto de perfil.
         </li>
         <li>
           <strong className="text-selva-2">De un negocio:</strong> los datos de
@@ -49,8 +53,19 @@ export default function Privacidad() {
           naturaleza — se publican para que la gente pueda encontrarte.
         </li>
         <li>
-          <strong className="text-selva-2">De tu actividad:</strong> las mazorcas
-          que juntas, tus reseñas y calificaciones, y lo que escribes en el foro.
+          <strong className="text-selva-2">De tu actividad:</strong> las
+          mazorcas que juntas y tu rango, tus reseñas y calificaciones, lo que
+          publicas y comentas en la comunidad, y las mazorcas que regalas o
+          recibes.
+        </li>
+        <li>
+          <strong className="text-selva-2">Fotos que subes:</strong> las de tus
+          publicaciones en la comunidad y, si eres negocio, las de tu
+          micrositio, tu catálogo, tus eventos y tus cupones.
+        </li>
+        <li>
+          <strong className="text-selva-2">Cupones que canjeas:</strong> cuál,
+          cuándo y cuántas mazorcas costó.
         </li>
         <li>
           <strong className="text-selva-2">Comprobantes de compra:</strong> si
@@ -60,22 +75,39 @@ export default function Privacidad() {
 
       <h2 className="mt-8 font-display text-2xl">Para qué los usamos</h2>
       <p className="mt-3 text-cacao">
-        Para identificarte al entrar, llevar la cuenta de tus mazorcas y tu rango,
-        mostrar tus reseñas en el micrositio del negocio y permitir que quien
-        atiende confirme tu visita. No vendemos tus datos ni los usamos para
-        publicidad de terceros.
+        Para identificarte al entrar, llevar la cuenta de tus mazorcas y tu
+        rango, mostrar tus reseñas y publicaciones donde corresponde, permitir
+        que quien atiende confirme tu visita y que el negocio te entregue el
+        cupón que canjeaste. No vendemos tus datos ni los usamos para publicidad
+        de terceros.
       </p>
 
       <h2 className="mt-8 font-display text-2xl">Qué se hace público</h2>
       <p className="mt-3 text-cacao">
-        Tu nombre y tu rango aparecen junto a las reseñas y los temas que
-        publicas. Tu correo no se muestra nunca.
+        Tu nombre y tu rango aparecen junto a las reseñas, las publicaciones y
+        los comentarios que escribes. Tu correo no se muestra nunca.
+      </p>
+      <p className="mt-3 text-cacao">
+        <strong className="text-selva-2">Al canjear un cupón</strong>, el
+        negocio que lo ofrece ve tu nombre y qué canjeaste: lo necesita para
+        entregártelo en el mostrador. No ve tu correo ni el resto de tu
+        actividad.
       </p>
       <p className="mt-3 text-cacao">
         <strong className="text-selva-2">Los comprobantes son privados.</strong>{" "}
-        Un ticket puede traer tu nombre o los últimos dígitos de una tarjeta, así
-        que se guardan aparte y solo los ve, por un momento, el negocio al que le
-        pediste las mazorcas. Nadie más tiene acceso.
+        Un ticket puede traer tu nombre o los últimos dígitos de una tarjeta,
+        así que se guardan aparte y solo los ve, por un momento, el negocio al
+        que le pediste las mazorcas. Nadie más tiene acceso.
+      </p>
+
+      <h2 className="mt-8 font-display text-2xl">
+        Cuánto tiempo los guardamos
+      </h2>
+      <p className="mt-3 text-cacao">
+        Mientras tu cuenta siga activa. Si la cierras, se borra lo que te
+        identifica; lo que ya se entregó —un cupón canjeado, las mazorcas que un
+        negocio abonó— queda como registro de que ocurrió, porque es la
+        constancia de un intercambio entre dos partes.
       </p>
 
       <h2 className="mt-8 font-display text-2xl">Tus derechos</h2>
@@ -88,10 +120,10 @@ export default function Privacidad() {
 
       <h2 className="mt-8 font-display text-2xl">Cookies</h2>
       <p className="mt-3 text-cacao">
-        Usamos las cookies necesarias para mantener tu sesión iniciada. Sin ellas
-        el sitio no puede recordar quién eres entre una página y otra. No usamos
-        cookies de publicidad ni de seguimiento entre sitios. Puedes borrarlas
-        desde tu navegador; si lo haces, tendrás que volver a entrar.
+        Usamos las cookies necesarias para mantener tu sesión iniciada. Sin
+        ellas el sitio no puede recordar quién eres entre una página y otra. No
+        usamos cookies de publicidad ni de seguimiento entre sitios. Puedes
+        borrarlas desde tu navegador; si lo haces, tendrás que volver a entrar.
       </p>
 
       <h2 className="mt-8 font-display text-2xl">Cambios</h2>

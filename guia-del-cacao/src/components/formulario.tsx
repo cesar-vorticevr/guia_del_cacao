@@ -166,11 +166,16 @@ export function Selector({
   nombre,
   etiqueta,
   opciones,
+  valor,
+  ayuda,
   requerido = true,
 }: {
   nombre: string;
   etiqueta: string;
   opciones: { valor: string; texto: string }[];
+  /** Lo que ya estaba guardado, para que editar no empiece en la primera opción. */
+  valor?: string | null;
+  ayuda?: string;
   /**
    * Ojo al ponerlo en true si alguna opción tiene valor vacío: el navegador
    * la considera "sin elegir" y aborta el envío sin decir nada.
@@ -184,6 +189,7 @@ export function Selector({
         id={nombre}
         name={nombre}
         required={requerido}
+        defaultValue={valor ?? undefined}
         className="min-h-14 w-full rounded-2xl border-2 border-selva/20 bg-white px-4 text-base text-ink focus:border-selva"
       >
         {opciones.map((o) => (
@@ -192,6 +198,7 @@ export function Selector({
           </option>
         ))}
       </select>
+      {ayuda && <span className="mt-1.5 block text-sm text-cacao/80">{ayuda}</span>}
     </label>
   );
 }

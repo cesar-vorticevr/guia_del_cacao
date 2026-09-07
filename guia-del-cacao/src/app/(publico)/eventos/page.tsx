@@ -1,9 +1,9 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { FormularioEvento } from "@/components/negocio/formularios";
 import { NuevoEvento } from "@/components/negocio/eventos";
 import { AgendaBuscable } from "@/components/publico/agenda-buscable";
 import { MisEventos } from "@/components/publico/mis-eventos";
-import { SubeAPremier } from "@/components/publico/sube-a-premier";
 import { perfilActual } from "@/lib/auth/sesion";
 import { listarEventos } from "@/lib/datos/publico";
 import { misPublicaciones, misSucursales } from "@/lib/datos/sucursales";
@@ -36,11 +36,16 @@ export default async function Eventos() {
   const esNegocio = perfil?.rol === "negocio";
   const sucursales = esNegocio ? await misSucursales(perfil.id) : [];
 
-  // Publicar es del plan Premier y la sucursal tiene que estar en el directorio;
-  // lo mismo que exige la base al insertar, para no ofrecer un formulario que
-  // va a ser rechazado al guardar.
-  const conPremier = sucursales.filter(
-    (s) => s.tier_id === 3 && s.estado === "publicado",
+  /*
+    Quien puede anunciar un evento lo dice la bandera de su plan, no su número:
+    desde la migración 000035 la tienen los tres, y dejar el 3 escrito a mano
+    aquí haría que la pantalla escondiera un formulario que la base sí acepta.
+
+    La sucursal tiene que estar publicada, que es lo mismo que exige el trigger
+    al insertar: así no se ofrece un formulario destinado a ser rechazado.
+  */
+  const puedenPublicar = sucursales.filter(
+    (s) => s.tiers?.puede_publicar_contenido && s.estado === "publicado",
   );
 
   // Los ya publicados se buscan sobre todas sus sucursales, no solo las Premier:
@@ -73,7 +78,7 @@ export default async function Eventos() {
     RLS —es suyo—, pero verlo entre los de los demás se lee como publicado, que
     es justo lo contrario. Arriba, en «Tus eventos», sí sale y con su aviso.
   */
-  const ocultos = new Set(conPremier.length === 0 ? mios.map((e) => e.id) : []);
+  const ocultos = new Set(puedenPublicar.length === 0 ? mios.map((e) => e.id) : []);
   const enAgenda = (lista: typeof proximos) =>
     lista.filter((evento) => !ocultos.has(evento.id));
 
@@ -81,17 +86,42 @@ export default async function Eventos() {
     <>
       <h1 className="pt-8 font-display text-3xl">Eventos</h1>
       <p className="mt-2 max-w-prose text-cacao">
-        Catas, ferias y talleres de los negocios del cacao en Tabasco.
+        Catas, ferias y talleres de los negocios del cacao en México.
       </p>
 
       {esNegocio && (
         <>
           <div className="pt-5">
-            {conPremier.length === 0 ? (
-              <SubeAPremier que="eventos" />
+            {/*
+              Anunciar un evento ya no depende del plan: lo tienen los tres.
+              Lo único que falta cuando no se puede es tener el micrositio en el
+              directorio, y eso es lo que hay que decir — mandar aquí a comprar
+              un plan más caro sería cobrar por algo que ya está incluido.
+            */}
+            {puedenPublicar.length === 0 ? (
+              <div className="max-w-2xl rounded-3xl border-2 border-mango/50 bg-mango/15 p-6">
+                <p className="font-display text-xl font-semibold text-selva-2">
+                  Llena tu cata sin pagar publicidad
+                </p>
+                <p className="mt-2 text-cacao">
+                  Tus catas, talleres y ferias salen en esta agenda, delante de
+                  gente que ya anda buscando qué hacer con el cacao este fin de
+                  semana. Va incluido en tu plan.
+                </p>
+                <p className="mt-2 text-cacao">
+                  Para anunciar el primero, publica tu micrositio en el
+                  directorio.
+                </p>
+                <Link
+                  href="/negocio/panel"
+                  className="mt-4 inline-block min-h-12 rounded-full bg-mango px-6 py-3 font-bold text-ink shadow-dura-sm transition-transform active:translate-y-0.5"
+                >
+                  Ir a mis sucursales
+                </Link>
+              </div>
             ) : (
               <NuevoEvento>
-                <FormularioEvento sucursales={conPremier} />
+                <FormularioEvento sucursales={puedenPublicar} />
               </NuevoEvento>
             )}
           </div>
@@ -101,7 +131,7 @@ export default async function Eventos() {
             slugs={slugs}
             fechas={fechas}
             fotos={fotos}
-            puedePublicar={conPremier.length > 0}
+            puedePublicar={puedenPublicar.length > 0}
           />
 
           <hr className="mt-8 border-t-2 border-ink/10" />

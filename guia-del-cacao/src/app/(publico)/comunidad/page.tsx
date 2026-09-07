@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { FormularioTema } from "@/components/publico/foro";
@@ -8,6 +9,7 @@ import { SubeAPremier } from "@/components/publico/sube-a-premier";
 import { perfilActual } from "@/lib/auth/sesion";
 import { muroDeComunidad } from "@/lib/datos/comunidad";
 import { misSucursales } from "@/lib/datos/sucursales";
+import { FUNCIONES } from "@/lib/funciones";
 import { MONEDA } from "@/lib/vocabulario";
 
 export const metadata: Metadata = { title: "Comunidad · Guía del Cacao" };
@@ -24,6 +26,10 @@ export const metadata: Metadata = { title: "Comunidad · Guía del Cacao" };
  * le respondieron; debajo, todo lo demás.
  */
 export default async function Comunidad() {
+  // Apagada para el lanzamiento (ver lib/funciones.ts). La página se queda
+  // entera: el día que se encienda no hay que volver a escribirla.
+  if (!FUNCIONES.comunidad) redirect("/directorio");
+
   const perfil = await perfilActual();
   const entradas = await muroDeComunidad(perfil?.id);
 

@@ -14,6 +14,7 @@ import { perfilActual, origenDelSitio } from "@/lib/auth/sesion";
 import { misSucursales } from "@/lib/datos/sucursales";
 import { dadasHoyPorPersona, solicitudesPorResolver } from "@/lib/datos/puntos";
 import { crearClienteServidor } from "@/lib/supabase/server";
+import { FUNCIONES } from "@/lib/funciones";
 import { urlImagen } from "@/lib/imagenes";
 
 export const metadata: Metadata = {
@@ -25,6 +26,9 @@ export default async function PanelPuntos({
 }: {
   searchParams: Promise<{ sucursal?: string; pagina?: string }>;
 }) {
+  // Apagadas para el lanzamiento (lib/funciones.ts).
+  if (!FUNCIONES.mazorcas) redirect("/negocio/panel");
+
   const { sucursal: filtro, pagina: paginaPedida } = await searchParams;
   const perfil = await perfilActual();
 

@@ -39,6 +39,43 @@ La especificación funcional está en la raíz del repo:
   marcas de los demás. Ya pasó una vez.
 - El dominio se nombra **en español**, igual que el spec.
 
+## Cuatro funciones están apagadas
+
+`src/lib/funciones.ts` decide qué está encendido. Hoy están en `false` las
+**mazorcas**, los **cupones**, la **comunidad** y los **rangos** del cliente.
+
+Buena parte de este documento describe cómo funcionan esas cuatro cosas, y
+sigue siendo cierto: el código, las tablas, los triggers y las políticas están
+completos y probados. Lo que no está es encendido. Antes de tocar algo de
+mazorcas, cupones o comunidad conviene saber que hoy no se ve en pantalla.
+
+**El porqué**, para que nadie lo revierta por parecerle una poda arbitraria: en
+el sondeo a chocolateras de septiembre de 2026, de cinco negocios ninguno tenía
+problema de clientes que no vuelven —tres dijeron tener clientela fija— y dos
+señalaron las mazorcas como la parte que no entendían. Cuatro de cinco
+eligieron visibilidad (directorio, micrositio, agenda) cuando se les pidió
+quedarse con una sola función. Se apagó lo que nadie pidió para lanzar con lo
+que sí.
+
+Apagar una función toca tres sitios: la navegación del cliente
+(`barra-inferior`), las pestañas del panel (`pestanas-del-panel`) y la página
+de la función, que redirige cuando su bandera está en `false`.
+
+## La guía es de México, no de Tabasco
+
+`sucursales.entidad` es obligatoria y sale de las 32 del INEGI, con el mismo
+listado en el check de la base (migración 000035) y en `lib/entidades.ts`: si se
+toca una lista hay que tocar la otra. `ciudad` es opcional, porque las
+sucursales anteriores al alcance nacional no la tenían.
+
+**La columna no se puede llamar `estado`**: ese nombre lo ocupa el enum de
+publicación (`borrador` / `publicado` / `pausado`) desde la migración 000001. En
+la URL del directorio sí se llama `?estado=`, que es la palabra que usa quien
+busca.
+
+El filtro por entidad solo aparece cuando hay negocios publicados en más de una:
+una lista donde 31 opciones llevan a "no hay nada aquí" no es un filtro.
+
 ## Puertos locales
 
 Este proyecto convive con otro Supabase local en la misma máquina, así que usa
@@ -233,6 +270,17 @@ nadie y no dice que se gana al subir. No chocan con los rangos del pasaporte
 El nombre vive en la tabla `tiers`, no en `vocabulario.ts`: es un dato de negocio
 con su precio al lado, y el codigo sigue hablando de `tier_id`.
 
+**Publicar eventos lo tienen los tres planes** desde la migración 000035.
+`puede_publicar_contenido` gobernaba dos cosas con una bandera —publicar en la
+comunidad y anunciar eventos— y al apagarse la comunidad solo le quedó la
+segunda; dejarla en Premier era cobrar $399 por publicar una cata. En el sondeo,
+el único negocio que eligió "anunciar mis catas y talleres" como su única
+función dijo que pagaría entre $150 y $300.
+
+Quien puede publicar se pregunta por la bandera del plan, **nunca por
+`tier_id === 3`**. Ese número escrito a mano ya hizo que la agenda escondiera un
+formulario que la base sí aceptaba.
+
 Cada plan trae su **tope de sucursales** (`tiers.max_sucursales`): 1, 3 y 20. El
 tope de una marca lo da su plan mas alto **pagado**, no la suma de sus planes —
 cada sucursal se cobra aparte, y sumar convertiria "tres sucursales" en "tres por
@@ -242,7 +290,11 @@ empezar. Lo exige `exigir_tope_de_sucursales` al insertar, y la pantalla lo
 consulta con la misma funcion (`tope_de_sucursales`) en vez de contar por su
 cuenta.
 
-## En el directorio se ve quién da mazorcas
+## En el directorio se ve quién da mazorcas (apagado)
+
+Con `FUNCIONES.mazorcas` en `false` la mazorca de la tarjeta no se pinta. Lo que
+sí lleva cada tarjeta es **dónde está** —ciudad y entidad, debajo del nombre—,
+que en una guía nacional es la primera pregunta de quien mira la lista.
 
 Cada tarjeta del directorio lleva la mazorca ilustrada cuando su plan las
 incluye. Al explorar, lo primero que se busca es dónde vale la pena entrar con

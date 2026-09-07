@@ -28,6 +28,10 @@ export type TarjetaDirectorio = {
    * obligaría a acordarse de este sitio el día que cambien los planes.
    */
   tiers: { puede_dar_puntos: boolean } | null;
+  /** Entidad federativa. Es el filtro principal desde que la guía es nacional. */
+  entidad: string;
+  /** Ciudad o municipio; las sucursales anteriores al alcance nacional no la tienen. */
+  ciudad: string | null;
   marcas: { nombre_comercial: string; categoria_id: number } | null;
 };
 
@@ -72,7 +76,7 @@ export type Publicacion = {
 export { nombrarNegocio };
 
 const CAMPOS_TARJETA =
-  "id, slug, nombre_sucursal, logo, imagen_fondo, acerca_de, tier_id, tiers(puede_dar_puntos), marcas(nombre_comercial, categoria_id)";
+  "id, slug, nombre_sucursal, logo, imagen_fondo, acerca_de, tier_id, entidad, ciudad, tiers(puede_dar_puntos), marcas(nombre_comercial, categoria_id)";
 
 /**
  * Directorio.
@@ -80,13 +84,26 @@ const CAMPOS_TARJETA =
  * El Tier 3 va primero: no es un adorno, es parte de lo que se paga
  * ("primeros lugares en el directorio", estructura §3).
  */
-export async function listarDirectorio(categoriaId?: number) {
+export async function listarDirectorio(
+  categoriaId?: number,
+  /** Entidad federativa, para el directorio nacional. */
+  entidad?: string,
+) {
   const supabase = await crearClienteServidor();
 
-  const { data } = await supabase
+  // La entidad se filtra en la base y la categoría en memoria porque la
+  // categoría cuelga de la marca —una tabla relacionada, que PostgREST no deja
+  // filtrar sin traerse la lista entera igual— y la entidad es una columna de
+  // la propia sucursal. Filtrar donde se puede evita traer el país completo
+  // para enseñar Chiapas.
+  let consulta = supabase
     .from("sucursales")
     .select(CAMPOS_TARJETA)
-    .eq("estado", "publicado")
+    .eq("estado", "publicado");
+
+  if (entidad) consulta = consulta.eq("entidad", entidad);
+
+  const { data } = await consulta
     .order("tier_id", { ascending: false })
     .order("fecha_publicacion", { ascending: false });
 
@@ -97,6 +114,25 @@ export async function listarDirectorio(categoriaId?: number) {
     : todas;
 
   return conCalificaciones(visibles);
+}
+
+/**
+ * Las entidades que de verdad tienen algo publicado.
+ *
+ * El filtro ofrece solo estas y no las 32: una lista donde 29 opciones llevan a
+ * "no hay nada aquí" no es un filtro, es una trampa.
+ */
+export async function entidadesConNegocios(): Promise<string[]> {
+  const supabase = await crearClienteServidor();
+
+  const { data } = await supabase
+    .from("sucursales")
+    .select("entidad")
+    .eq("estado", "publicado");
+
+  return [...new Set((data ?? []).map((fila) => fila.entidad as string))].sort(
+    (a, b) => a.localeCompare(b, "es"),
+  );
 }
 
 export async function micrositioPorSlug(slug: string) {

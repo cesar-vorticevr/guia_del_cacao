@@ -7,6 +7,7 @@ import { perfilActual } from "@/lib/auth/sesion";
 import { miSucursal, misSucursales } from "@/lib/datos/sucursales";
 import { generarSlug } from "@/lib/tipos";
 import { esPasoDelAlta } from "@/lib/negocio/pasos";
+import { esEntidad } from "@/lib/entidades";
 import { revisarImagen } from "@/lib/imagenes";
 import { LIMITES, revisarLargo, TOPE_FOTOS } from "@/lib/limites";
 
@@ -120,6 +121,14 @@ export async function guardarMicrositio(
   const largo = revisarLargo(acercaDe, LIMITES.acercaDe, "El «acerca de»");
   if (largo) return { error: largo };
 
+  // La lista del formulario y el check de la base dicen lo mismo; si llega
+  // algo fuera de ella se rechaza aqui, con un motivo, en vez de dejar que la
+  // base conteste con una violacion de restriccion.
+  const entidad = texto(datos, "entidad");
+  if (!esEntidad(entidad)) {
+    return { error: "Elige el estado donde está la sucursal." };
+  }
+
   const supabase = await crearClienteServidor();
 
   const { error } = await supabase
@@ -127,6 +136,8 @@ export async function guardarMicrositio(
     .update({
       nombre_sucursal: nombre,
       acerca_de: acercaDe,
+      entidad,
+      ciudad: texto(datos, "ciudad"),
       ubicacion_maps_url: texto(datos, "ubicacion_maps_url"),
       whatsapp: texto(datos, "whatsapp"),
       facebook: texto(datos, "facebook"),

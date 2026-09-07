@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { AvisosDeMonedas } from "@/components/negocio/avisos-de-monedas";
@@ -5,6 +6,7 @@ import { CuponDisponible } from "@/components/publico/cupones-cliente";
 import { perfilActual } from "@/lib/auth/sesion";
 import { cuponesDelMercado, misCanjes } from "@/lib/datos/cupones";
 import { pasaporteDe } from "@/lib/datos/puntos";
+import { FUNCIONES } from "@/lib/funciones";
 import { MONEDA } from "@/lib/vocabulario";
 
 export const metadata: Metadata = { title: "Cupones · Guía del Cacao" };
@@ -18,6 +20,10 @@ export const metadata: Metadata = { title: "Cupones · Guía del Cacao" };
  * llegar al mostrador— y debajo lo que se puede canjear hoy.
  */
 export default async function Cupones() {
+  // Apagados para el lanzamiento (ver lib/funciones.ts): sin mazorcas no hay
+  // con qué pagarlos.
+  if (!FUNCIONES.cupones) redirect("/directorio");
+
   const perfil = await perfilActual();
   const esCliente = perfil?.rol === "cliente";
 

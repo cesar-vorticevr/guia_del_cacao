@@ -49,12 +49,12 @@ export default async function Home() {
       */}
       <section className="px-2 pb-4 pt-12 text-center sm:pt-20">
         <h1 className="mx-auto max-w-3xl text-balance font-display text-4xl leading-tight text-selva-2 sm:text-6xl">
-          El cacao de Tabasco, en un solo lugar
+          El cacao de México, en un solo lugar
         </h1>
 
         <p className="mx-auto mt-4 max-w-2xl text-pretty text-lg text-cacao">
-          Productoras, chocolaterías y museos; eventos de la feria y mazorcas
-          de cacao que juntas todo el año.
+          Productoras, chocolaterías, museos y talleres. Encuentra a quién
+          visitar y qué está pasando cerca de ti.
         </p>
 
         {/*
