@@ -11,16 +11,27 @@ import {
   listarEventos,
 } from "@/lib/datos/publico";
 import { listarCategorias } from "@/lib/datos/categorias";
+import { misFavoritosEntre } from "@/lib/datos/favoritos";
+import { perfilActual } from "@/lib/auth/sesion";
 import { tonoDeCategoria } from "@/lib/paleta";
 import { urlImagen } from "@/lib/imagenes";
 
 export default async function Home() {
-  const [banners, sucursales, categorias, eventos] = await Promise.all([
+  const [banners, sucursales, categorias, eventos, perfil] = await Promise.all([
     bannersDePortada(),
     listarDirectorio(),
     listarCategorias(),
     listarEventos(),
+    perfilActual(),
   ]);
+
+  // Solo un cliente guarda favoritos. A un negocio o a un administrador el
+  // corazón les prometería algo que su cuenta no hace.
+  const esCliente = perfil?.rol === "cliente" && perfil.rol_confirmado;
+  const favoritos = await misFavoritosEntre(
+    esCliente ? perfil.id : undefined,
+    sucursales.map((s) => s.id),
+  );
 
   // Los promedios de todo el banner en una sola consulta, no una por foto.
   const promedios = await calificacionesDe(banners.map((b) => b.id));
@@ -145,7 +156,13 @@ export default async function Home() {
             <>
               <ul className="mt-4 grid gap-4 sm:grid-cols-2">
                 {sucursales.slice(0, 6).map((sucursal) => (
-                  <TarjetaSucursal key={sucursal.id} sucursal={sucursal} />
+                  <TarjetaSucursal
+                    key={sucursal.id}
+                    sucursal={sucursal}
+                    favorito={favoritos.has(sucursal.id)}
+                    puedeGuardar={esCliente}
+                    haySesion={Boolean(perfil)}
+                  />
                 ))}
               </ul>
 

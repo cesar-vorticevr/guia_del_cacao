@@ -15,6 +15,8 @@ import {
   resenasDe,
 } from "@/lib/datos/publico";
 import { TarjetaPublicacion } from "@/components/publico/tarjeta-publicacion";
+import { BotonFavorito } from "@/components/publico/boton-favorito";
+import { esFavorito } from "@/lib/datos/favoritos";
 import { productosDe } from "@/lib/datos/sucursales";
 import { tienePendienteEn } from "@/lib/datos/puntos";
 import { perfilActual } from "@/lib/auth/sesion";
@@ -85,12 +87,14 @@ export default async function Micrositio({
   let misEstrellas: number | null = null;
   let resenaPropia: Awaited<ReturnType<typeof miResena>> = null;
   let tienePendiente = false;
+  let guardado = false;
 
   if (perfil?.rol === "cliente" && perfil.rol_confirmado) {
-    [misEstrellas, resenaPropia, tienePendiente] = await Promise.all([
+    [misEstrellas, resenaPropia, tienePendiente, guardado] = await Promise.all([
       miCalificacion(perfil.id, sucursal.id),
       miResena(perfil.id, sucursal.id),
       tienePendienteEn(perfil.id, sucursal.id),
+      esFavorito(perfil.id, sucursal.id),
     ]);
   }
 
@@ -166,10 +170,27 @@ export default async function Micrositio({
         </div>
 
         <div className="px-4 pt-3">
-          <h1 className="font-display text-3xl">
-            {sucursal.marcas?.nombre_comercial}
-          </h1>
-          <p className="mt-1 text-cacao">{sucursal.nombre_sucursal}</p>
+          {/*
+            El corazón va junto al nombre y no flotando sobre la portada: aquí
+            ya se entró al negocio, así que guardarlo es una decisión, no un
+            gesto de paso, y merece estar donde se lee quién es.
+          */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="font-display text-3xl">
+                {sucursal.marcas?.nombre_comercial}
+              </h1>
+              <p className="mt-1 text-cacao">{sucursal.nombre_sucursal}</p>
+            </div>
+
+            <BotonFavorito
+              sucursalId={sucursal.id}
+              nombre={sucursal.marcas?.nombre_comercial ?? sucursal.nombre_sucursal}
+              inicial={guardado}
+              puedeGuardar={perfil?.rol === "cliente" && perfil.rol_confirmado}
+              haySesion={Boolean(perfil)}
+            />
+          </div>
 
           {/* Las estrellas son decorativas; lo que lee un lector de pantalla
               es el número que va al lado, que dice lo mismo con palabras. */}

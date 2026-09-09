@@ -4,6 +4,8 @@ import { BuscadorDirectorio } from "@/components/publico/buscador-directorio";
 import { entidadesConNegocios, listarDirectorio } from "@/lib/datos/publico";
 import { listarCategorias } from "@/lib/datos/categorias";
 import { esEntidad } from "@/lib/entidades";
+import { misFavoritosEntre } from "@/lib/datos/favoritos";
+import { perfilActual } from "@/lib/auth/sesion";
 import { tonoDeCategoria } from "@/lib/paleta";
 
 export const metadata: Metadata = { title: "Directorio · Guía del Cacao" };
@@ -25,11 +27,20 @@ export default async function Directorio({
   // directorio entero como si no se hubiera filtrado nada.
   const entidad = esEntidad(estado) ? estado : undefined;
 
-  const [sucursales, categorias, entidades] = await Promise.all([
+  const [sucursales, categorias, entidades, perfil] = await Promise.all([
     listarDirectorio(categoriaId, entidad),
     listarCategorias(),
     entidadesConNegocios(),
+    perfilActual(),
   ]);
+
+  // Solo un cliente guarda favoritos: a un negocio o a un administrador el
+  // corazón les prometería algo que su cuenta no hace.
+  const esCliente = perfil?.rol === "cliente" && perfil.rol_confirmado;
+  const favoritos = await misFavoritosEntre(
+    esCliente ? perfil.id : undefined,
+    sucursales.map((s) => s.id),
+  );
 
   const activa = categorias.find((c) => c.id === categoriaId);
 
@@ -67,6 +78,9 @@ export default async function Directorio({
       <BuscadorDirectorio
         key={consulta}
         sucursales={sucursales}
+        favoritos={[...favoritos]}
+        puedeGuardar={esCliente}
+        haySesion={Boolean(perfil)}
         categorias={nombresDeCategoria}
         consultaInicial={consulta}
       >

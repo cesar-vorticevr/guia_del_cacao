@@ -3,6 +3,7 @@ import { urlImagen } from "@/lib/imagenes";
 import { Promedio } from "@/components/publico/estrellas";
 import { tonoDeCategoria } from "@/lib/paleta";
 import type { TarjetaDirectorio } from "@/lib/datos/publico";
+import { BotonFavorito } from "@/components/publico/boton-favorito";
 import { FUNCIONES } from "@/lib/funciones";
 
 /**
@@ -16,7 +17,23 @@ import { FUNCIONES } from "@/lib/funciones";
  * La sombra dura y el salto al pasar el dedo son a propósito: la tarjeta tiene
  * que sentirse un objeto que se puede empujar, no un rectángulo pintado.
  */
-export function TarjetaSucursal({ sucursal }: { sucursal: TarjetaDirectorio }) {
+export function TarjetaSucursal({
+  sucursal,
+  /** Si quien mira ya lo tiene guardado. Sin sesión de cliente, siempre false. */
+  favorito = false,
+  /** Si esta cuenta puede guardar: hay sesión y es de visitante. */
+  puedeGuardar = false,
+  /** Para distinguir "entra a tu cuenta" de "tu cuenta no guarda favoritos". */
+  haySesion = false,
+  /** El corazón sobra donde toda la lista ya son favoritos. */
+  conCorazon = true,
+}: {
+  sucursal: TarjetaDirectorio;
+  favorito?: boolean;
+  puedeGuardar?: boolean;
+  haySesion?: boolean;
+  conCorazon?: boolean;
+}) {
   const logo = urlImagen(sucursal.logo);
   const destacada = sucursal.tier_id === 3;
   const daMazorcas =
@@ -24,10 +41,33 @@ export function TarjetaSucursal({ sucursal }: { sucursal: TarjetaDirectorio }) {
   const tono = tonoDeCategoria(sucursal.marcas?.categoria_id);
 
   return (
-    <li>
+    /*
+      `relative` porque el corazón flota sobre la esquina de la tarjeta. Va
+      fuera del `Link` —hermano, no hijo— porque un botón dentro de un enlace
+      es HTML inválido y los lectores de pantalla lo anuncian mal.
+    */
+    <li className="relative">
+      {conCorazon && (
+        <BotonFavorito
+          sucursalId={sucursal.id}
+          nombre={sucursal.marcas?.nombre_comercial ?? sucursal.nombre_sucursal}
+          inicial={favorito}
+          puedeGuardar={puedeGuardar}
+          haySesion={haySesion}
+          flotante
+        />
+      )}
+
       <Link
         href={`/marca/${sucursal.slug}`}
+        /*
+          `pr-14` cuando hay corazón: flota sobre la esquina, y sin ese hueco
+          el nombre del negocio se le mete debajo. Se le quita el padding
+          derecho normal para no sumar los dos.
+        */
         className={`flex h-full gap-4 rounded-3xl border-2 bg-white p-5 shadow-dura transition-all hover:-translate-y-0.5 hover:shadow-dura-alta ${
+          conCorazon ? "pr-14" : ""
+        } ${
           destacada ? "border-mango" : "border-ink/10"
         }`}
       >

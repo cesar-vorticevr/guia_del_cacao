@@ -24,6 +24,12 @@ import type { TarjetaDirectorio } from "@/lib/datos/publico";
  */
 export function BuscadorDirectorio({
   sucursales,
+  /** Ids que quien mira ya tiene guardados, para pintar su corazón lleno. */
+  favoritos,
+  /** Si esta cuenta puede guardar: hay sesión y es de visitante. */
+  puedeGuardar,
+  /** Para distinguir "entra a tu cuenta" de "tu cuenta no guarda favoritos". */
+  haySesion,
   /** Nombre de cada categoría, por id: también se puede buscar por ella. */
   categorias,
   /** Lo que se escribió en la portada, que llega por `?q=`. */
@@ -31,12 +37,19 @@ export function BuscadorDirectorio({
   children,
 }: {
   sucursales: TarjetaDirectorio[];
+  favoritos: string[];
+  puedeGuardar: boolean;
+  haySesion: boolean;
   categorias: Record<number, string>;
   consultaInicial?: string;
   /** Los filtros por categoría, que van entre la caja y los resultados. */
   children?: React.ReactNode;
 }) {
   const [consulta, setConsulta] = useState(consultaInicial);
+
+  // Se pasa como array porque cruza la frontera servidor-cliente, y aquí se
+  // vuelve conjunto: la lista se recorre una vez por tecla.
+  const guardados = useMemo(() => new Set(favoritos), [favoritos]);
 
   const encontradas = useMemo(
     () =>
@@ -110,7 +123,13 @@ export function BuscadorDirectorio({
             etiqueta="Ver más negocios"
           >
             {encontradas.map((sucursal) => (
-              <TarjetaSucursal key={sucursal.id} sucursal={sucursal} />
+              <TarjetaSucursal
+                key={sucursal.id}
+                sucursal={sucursal}
+                favorito={guardados.has(sucursal.id)}
+                puedeGuardar={puedeGuardar}
+                haySesion={haySesion}
+              />
             ))}
           </VerMas>
         </div>
