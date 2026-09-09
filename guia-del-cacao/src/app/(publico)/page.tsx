@@ -47,48 +47,73 @@ export default async function Home() {
         el sitio se lee más limpio. El color de la marca no se pierde: lo ponen
         las píldoras de categoría, que además son navegación y no adorno.
       */}
-      <section className="px-2 pb-4 pt-12 text-center sm:pt-20">
-        <h1 className="mx-auto max-w-3xl text-balance font-display text-4xl leading-tight text-selva-2 sm:text-6xl">
-          El cacao de México, en un solo lugar
-        </h1>
-
-        <p className="mx-auto mt-4 max-w-2xl text-pretty text-lg text-cacao">
-          Productoras, chocolaterías, museos y talleres. Encuentra a quién
-          visitar y qué está pasando cerca de ti.
-        </p>
-
+      <section className="relative px-2 pb-4 pt-8 text-center sm:pt-14">
         {/*
+          Las ilustraciones de cacao vivían solo en la franja del directorio, al
+          final de la página. Arriba —lo único que ve quien llega— no había ni
+          una mazorca: en un directorio de chocolate, la primera pantalla era
+          texto sobre crema. Aquí no hacen falta archivos nuevos, son las
+          mismas ocho de `public/parallax`.
+
+          La sección lleva `relative` pero **no** `overflow-hidden`: la capa se
+          recorta sola, y recortar aquí se comería el desplegable de
+          sugerencias del buscador, que cuelga por debajo de su caja.
+        */}
+        <FondoDeCacao variante="franja" soloOrillas />
+
+        <div className="relative z-10">
+          <h1 className="mx-auto max-w-3xl text-balance font-display text-4xl leading-tight text-selva-2 sm:text-6xl">
+            El cacao de México, en un solo lugar
+          </h1>
+
+          <p className="mx-auto mt-4 max-w-2xl text-pretty text-lg text-cacao">
+            Productoras, chocolaterías, museos y talleres. Encuentra a quién
+            visitar y qué está pasando cerca de ti.
+          </p>
+
+          {/*
           El buscador sugiere sobre este mismo directorio, el que ya se trajo
           para las tarjetas de abajo. Por eso las sugerencias no cuestan una
           consulta por letra: los datos ya estaban en la página.
         */}
-        <BuscadorPortada sucursales={sucursales} categorias={nombresDeCategoria} />
+          <BuscadorPortada
+            sucursales={sucursales}
+            categorias={nombresDeCategoria}
+          />
 
-        {/*
+          {/*
           Las categorías van pegadas al buscador, como el "Try asking" de las
           guías de viaje: son el atajo de quien todavía no sabe qué escribir.
           Envuelven en varios renglones en vez de irse a un carril horizontal —
           en celular lo que no se ve, no existe.
         */}
-        <nav aria-label="Categorías" className="mt-6">
-          <ul className="flex flex-wrap justify-center gap-2.5">
-            {categorias.map((categoria) => (
-              <li key={categoria.id}>
-                <Link
-                  href={`/directorio?categoria=${categoria.id}`}
-                  className={`block rounded-full border-2 border-ink/10 px-4 py-2 text-sm font-bold shadow-dura-sm transition-transform active:translate-y-0.5 ${
-                    tonoDeCategoria(categoria.id).solido
-                  }`}
-                >
-                  {categoria.nombre}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+          <nav aria-label="Categorías" className="mt-6">
+            <ul className="flex flex-wrap justify-center gap-2.5">
+              {categorias.map((categoria) => (
+                <li key={categoria.id}>
+                  <Link
+                    href={`/directorio?categoria=${categoria.id}`}
+                    className={`block rounded-full border-2 border-ink/10 px-4 py-2 text-sm font-bold shadow-dura-sm transition-transform active:translate-y-0.5 ${
+                      tonoDeCategoria(categoria.id).solido
+                    }`}
+                  >
+                    {categoria.nombre}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
       </section>
 
-      <section className="pt-12">
+      {/*
+        Antes esto empezaba a los 713 px con la pantalla en 698: el primer
+        negocio caía justo por debajo del pliegue, así que la primera pantalla
+        entera era encabezado y filtros, sin un solo negocio a la vista. Con el
+        aire de arriba recortado, asoma el borde de la primera tarjeta, que es
+        lo que le dice a alguien que hay algo más abajo.
+      */}
+      <section className="pt-8">
         <h2 className="mb-4 font-display text-2xl">Destacados</h2>
         <BannerRotativo diapositivas={diapositivas} />
       </section>
@@ -106,8 +131,12 @@ export default async function Home() {
 
           {sucursales.length === 0 ? (
             <p className="mt-4 rounded-3xl bg-crema p-6 text-cacao">
-              Todavía no hay micrositios publicados. Si tienes un negocio de cacao,{" "}
-              <Link href="/registro/negocio" className="font-bold text-selva underline">
+              Todavía no hay micrositios publicados. Si tienes un negocio de
+              cacao,{" "}
+              <Link
+                href="/registro/negocio"
+                className="font-bold text-selva underline"
+              >
                 este es buen momento para ser el primero
               </Link>
               .
@@ -156,7 +185,11 @@ export default async function Home() {
           <>
             <ul className="mt-4 grid gap-5 sm:grid-cols-2">
               {eventos.proximos.slice(0, 4).map((evento) => (
-                <TarjetaPublicacion key={evento.id} publicacion={evento} tipo="evento" />
+                <TarjetaPublicacion
+                  key={evento.id}
+                  publicacion={evento}
+                  tipo="evento"
+                />
               ))}
             </ul>
 

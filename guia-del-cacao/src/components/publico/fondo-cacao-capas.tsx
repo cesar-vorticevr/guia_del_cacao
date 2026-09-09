@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 /**
  * Las capas decorativas del fondo: ramas, hojas y mazorcas que se desplazan a
@@ -149,13 +149,32 @@ export function CapasDeCacao({
    * `relative` y recortar lo que se salga.
    */
   variante = "pantalla",
+  /**
+   * Deja fuera la pieza centrada, que es la única que pasa por detrás del
+   * texto en vez de asomarse por la orilla.
+   *
+   * Existe porque el fondo se quitó una vez de detrás del contenido: competía
+   * con lo que se venía a leer. En el encabezado de la portada hace falta que
+   * se vea cacao, pero no a costa de leer el titular sobre una rama.
+   */
+  soloOrillas = false,
 }: {
   disponibles: string[];
   variante?: "pantalla" | "franja";
+  soloOrillas?: boolean;
 }) {
   const nodos = useRef<(HTMLDivElement | null)[]>([]);
   const caja = useRef<HTMLDivElement | null>(null);
   const yaEstan = new Set(disponibles);
+
+  // Se filtra una vez y se usa la misma lista en el efecto y al pintar: si las
+  // dos recorrieran listas distintas, los índices de `nodos` dejarían de
+  // corresponder y cada pieza se movería con la velocidad de otra.
+  const piezas = useMemo(
+    () =>
+      soloOrillas ? INSTANCIAS.filter((i) => i.lado !== "centrada") : INSTANCIAS,
+    [soloOrillas],
+  );
 
   useEffect(() => {
     // El contenedor ya se oculta solo con `motion-reduce:hidden`; esto es para
@@ -177,7 +196,7 @@ export function CapasDeCacao({
 
       const y = window.scrollY;
 
-      INSTANCIAS.forEach((instancia, i) => {
+      piezas.forEach((instancia, i) => {
         const nodo = nodos.current[i];
         if (!nodo) return;
 
@@ -209,7 +228,7 @@ export function CapasDeCacao({
       window.removeEventListener("scroll", alMoverse);
       window.removeEventListener("resize", alMoverse);
     };
-  }, [variante]);
+  }, [variante, piezas]);
 
   return (
     <div
@@ -226,7 +245,7 @@ export function CapasDeCacao({
         Si el ancho del `main` cambia, este tiene que cambiar con él.
       */}
       <div className="relative mx-auto h-full w-[92vw] max-w-[1180px]">
-        {INSTANCIAS.map((instancia, i) => {
+        {piezas.map((instancia, i) => {
           const pieza = PIEZAS[instancia.pieza];
           const existe = yaEstan.has(pieza.archivo);
 
