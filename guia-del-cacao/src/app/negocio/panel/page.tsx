@@ -14,7 +14,6 @@ import { crearClienteServidor } from "@/lib/supabase/server";
 import {
   misSucursales,
   queLeFaltaPorPartes,
-  topeDeSucursales,
 } from "@/lib/datos/sucursales";
 import { PrimerosPasos } from "@/components/negocio/primeros-pasos";
 import { ConfirmarCorreo } from "@/components/negocio/confirmar-correo";
@@ -72,15 +71,12 @@ export default async function PanelNegocio({
   const marca = marcas[0];
   const verificado = perfil.correo_verificado_en !== null;
 
-  const [sucursales, tope, catalogo, sinLeer, solicitudes] = await Promise.all([
+  const [sucursales, catalogo, sinLeer, solicitudes] = await Promise.all([
     misSucursales(perfil.id),
-    topeDeSucursales(marca.id),
     catalogoDeMarca(marca.id),
     sinLeerPorSucursal(),
     solicitudesPorSucursal(),
   ]);
-
-  const lleno = sucursales.length >= tope;
   const promedios = await calificacionesDe(sucursales.map((s) => s.id));
 
   // Qué le falta a cada micrositio, preguntado a la misma función que usa el
@@ -179,39 +175,29 @@ export default async function PanelNegocio({
           <h1 className="font-display text-3xl">Sucursales</h1>
 
           <section className="grid gap-4">
+            {/*
+              Ya no hay cupo que gastar. Desde la spec v2 el cobro es por
+              sucursal: se pueden abrir las que se quieran, y cada una paga su
+              plan al publicarse. El aviso de "llegaste al tope" y el botón que
+              desaparecía con el cupo lleno se fueron con la idea del tope.
+            */}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-cacao">
-                {sucursales.length} de {tope} que permite tu plan.
+                {sucursales.length}{" "}
+                {sucursales.length === 1 ? "sucursal" : "sucursales"}. Cada una
+                elige su plan al publicarse.
               </p>
 
               <div className="flex flex-wrap gap-3">
-                {/* Con el cupo lleno el botón desaparece en vez de llevar a
-                      un formulario que la base va a rechazar al guardar. */}
-                {!lleno && (
-                  <Link
-                    href="/negocio/panel/sucursal/nueva"
-                    className="min-h-11 rounded-full bg-selva px-5 py-2.5 text-sm font-bold text-crema"
-                  >
-                    Nueva sucursal
-                  </Link>
-                )}
+                <Link
+                  href="/negocio/panel/sucursal/nueva"
+                  className="min-h-11 rounded-full bg-selva px-5 py-2.5 text-sm font-bold text-crema"
+                >
+                  Nueva sucursal
+                </Link>
               </div>
             </div>
 
-            {lleno && (
-              <p className="rounded-2xl border-2 border-mango/50 bg-mango/10 px-4 py-3 text-cacao">
-                Llegaste al tope de tu plan
-                {tope === 1 ? " (una sucursal)" : ` (${tope} sucursales)`}. Para
-                abrir otra,{" "}
-                <Link
-                  href="/negocio/panel/cuenta"
-                  className="font-bold text-selva underline"
-                >
-                  sube de plan
-                </Link>
-                .
-              </p>
-            )}
 
             <ul className="grid gap-4">
               {sucursales.map((sucursal) => {

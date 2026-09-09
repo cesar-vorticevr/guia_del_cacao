@@ -26,6 +26,16 @@ const CUANDO = new Intl.DateTimeFormat("es-MX", {
 });
 
 /**
+ * Días que le quedan a una prueba, redondeando hacia arriba: mientras quede una
+ * hora, queda un día. Decir "0 días" a quien todavía puede usarlo hasta la
+ * noche sería adelantarle el corte.
+ */
+function diasDePrueba(fin: string) {
+  const faltan = new Date(fin).getTime() - Date.now();
+  return Math.max(0, Math.ceil(faltan / 86_400_000));
+}
+
+/**
  * La cuenta del negocio, en tres secciones que se cambian con una fila de
  * pestañas: **Tu plan**, **Tus datos** y **Sesión**.
  *
@@ -33,7 +43,8 @@ const CUANDO = new Intl.DateTimeFormat("es-MX", {
  * por la tabla de precios y por dos formularios. Son cosas que no se hacen
  * juntas: se entra a mirar el cobro, o a corregir un dato, o a salir.
  *
- * El plan vive aquí y no en cada sucursal porque se paga una vez por cuenta.
+ * El plan se elige al publicar cada micrositio, porque desde la spec v2 el
+ * cobro es por sucursal. Aquí se ve el resumen y se cambia para todas a la vez.
  */
 export default async function CuentaNegocio({
   searchParams,
@@ -118,22 +129,45 @@ export default async function CuentaNegocio({
                 </p>
               </div>
 
-              {/*
-                El próximo cobro va en letra chica: es un dato de consulta, no
-                una advertencia. En el mismo cuerpo que el plan competía con él
-                y hacía leer la caja como si algo estuviera por vencer.
-              */}
               <p className="mt-1 text-sm text-cacao/70">
-                Hasta {plan?.max_sucursales}{" "}
-                {plan?.max_sucursales === 1 ? "sucursal" : "sucursales"} ·
-                Próximo cobro el{" "}
-                {CUANDO.format(new Date(suscripcion.fecha_proximo_cobro))}
+                {suscripcion.cuantas === 1
+                  ? "Un micrositio en este plan"
+                  : `${suscripcion.cuantas} micrositios en este plan`}
+                {" · se cobra por micrositio"}
               </p>
+
+              {/*
+                Durante la prueba la fecha deja de ser un dato de consulta y
+                pasa a ser lo que importa, así que sube de la letra chica a su
+                propia línea. Y dice qué pasa el día 15, que es justo lo que
+                nadie quiere averiguar por sorpresa.
+              */}
+              {suscripcion.enPrueba && suscripcion.finDePrueba ? (
+                <p className="mt-3 rounded-2xl border-2 border-mango/50 bg-mango/15 px-4 py-3 text-cacao">
+                  <strong className="block text-selva-2">
+                    {diasDePrueba(suscripcion.finDePrueba) <= 0
+                      ? "Tu prueba termina hoy"
+                      : diasDePrueba(suscripcion.finDePrueba) === 1
+                        ? "Te queda 1 día de prueba"
+                        : `Te quedan ${diasDePrueba(suscripcion.finDePrueba)} días de prueba`}
+                  </strong>
+                  Termina el {CUANDO.format(new Date(suscripcion.finDePrueba))}.
+                  Si para entonces no has agregado una forma de pago, tu
+                  micrositio sale del directorio — pero no se borra nada y vuelve
+                  en cuanto la agregues.
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-cacao/70">
+                  Próximo cobro el{" "}
+                  {CUANDO.format(new Date(suscripcion.fecha_proximo_cobro))}
+                </p>
+              )}
             </div>
           ) : (
             <p className="rounded-3xl bg-crema-2 p-6 text-cacao">
-              No tienes un plan activo, así que tus micrositios no están en el
-              directorio. Elige uno aquí abajo.
+              Todavía no tienes ningún micrositio publicado. El plan se elige al
+              publicar cada uno, desde su ficha, y arranca con quince días de
+              prueba sin dejar tarjeta.
             </p>
           )}
 
@@ -147,9 +181,8 @@ export default async function CuentaNegocio({
                     nombre: siguiente.nombre,
                     ventajas:
                       [
-                        `${siguiente.max_sucursales} sucursales`,
-                        siguiente.puede_dar_puntos && !plan?.puede_dar_puntos
-                          ? "mazorcas de cacao para tus clientes"
+                        siguiente.permite_resenas && !plan?.permite_resenas
+                          ? "reseñas de tus clientes en tu micrositio"
                           : null,
                         siguiente.puede_publicar_contenido &&
                         !plan?.puede_publicar_contenido

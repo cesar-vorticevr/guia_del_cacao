@@ -8,6 +8,7 @@ import { miSucursal, misSucursales } from "@/lib/datos/sucursales";
 import { generarSlug } from "@/lib/tipos";
 import { esPasoDelAlta } from "@/lib/negocio/pasos";
 import { esEntidad } from "@/lib/entidades";
+import { proximoCobro } from "@/lib/pagos";
 import { revisarImagen } from "@/lib/imagenes";
 import { LIMITES, revisarLargo, TOPE_FOTOS } from "@/lib/limites";
 
@@ -241,20 +242,65 @@ export async function publicarSucursal(
     return { error: "Este micrositio ya esta publicado o en revision." };
   }
 
+  const tierId = Number(datos.get("tier_id")?.toString() ?? "");
+  if (!tierId) return { error: "Elige un plan para esta sucursal." };
+
   const supabase = await crearClienteServidor();
 
+  const { data: tier } = await supabase
+    .from("tiers")
+    .select("id, nombre, precio_mensual")
+    .eq("id", tierId)
+    .maybeSingle();
+
+  if (!tier) return { error: "Ese plan no existe." };
+
+  /*
+    No se pide tarjeta: se abre la prueba y ya. Es el paso 3 de la spec v2 §3.3,
+    y es deliberado — en la encuesta, 37% de los negocios dijo que solo usaria
+    la plataforma si es gratis. Pedirles una tarjeta antes de que vean nada es
+    perder a ese tercio en la primera pantalla.
+
+    La suscripcion nace **sin** `fecha_fin_trial`. El reloj lo arranca el
+    trigger cuando el administrador aprueba, para que la espera de la revision
+    no se le coma dias a nadie.
+  */
+  const { error: errorPrueba } = await supabase.from("suscripciones").insert({
+    sucursal_id: id,
+    tier_id: tier.id,
+    monto_mensual: tier.precio_mensual,
+    estado: "trial",
+    fecha_proximo_cobro: proximoCobro().toISOString(),
+  });
+
+  if (errorPrueba) {
+    return {
+      error:
+        errorPrueba.code === "23505"
+          ? "Esta sucursal ya tiene un plan abierto."
+          : "No se pudo abrir la prueba. Intentalo de nuevo.",
+    };
+  }
+
+  /*
+    Pasa a revision, no al directorio. Lo aprueba un administrador (spec v2
+    §3.3, pasos 4 y 5), y hasta entonces no se ve.
+  */
   const { error } = await supabase
     .from("sucursales")
-    .update({ estado: "publicado", motivo_rechazo: null })
+    .update({
+      estado: "pendiente_aprobacion",
+      tier_id: tier.id,
+      motivo_rechazo: null,
+    })
     .eq("id", id);
 
   if (error) {
-    // El trigger explica en su mensaje que falta —normalmente, plan activo.
     return {
       error:
         error.code === "P0001"
           ? error.message
-          : "No se pudo publicar. Intentalo de nuevo.",
+          : "No se pudo enviar a revision. Intentalo de nuevo.",
     };
   }
 

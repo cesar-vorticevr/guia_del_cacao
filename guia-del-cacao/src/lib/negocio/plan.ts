@@ -9,12 +9,16 @@ import { procesarPago, proximoCobro } from "@/lib/pagos";
 export type EstadoPlan = { error?: string; ok?: string };
 
 /**
- * El plan es de la cuenta, no de cada sucursal.
+ * El plan es de cada sucursal.
  *
- * Antes cada micrositio llevaba su propia suscripción: una marca con cuatro
- * locales tenía cuatro cobros al mismo plan, cuatro sitios donde cancelarlo y
- * cuatro fechas distintas. Ahora hay uno por marca, y lo que cambia con él es
- * cuántas sucursales caben y qué puede hacer cada una.
+ * Desde la spec v2 el cobro es por sucursal: una marca con tres micrositios
+ * paga tres suscripciones, y cada una puede estar en un plan distinto y en su
+ * propia prueba. La suscripción nace al publicar —ahí se elige el plan— y esta
+ * pantalla sirve para lo que viene después: cambiarlo o darlo de baja.
+ *
+ * Desde aquí el cambio se aplica **a todas** las sucursales de la marca, que es
+ * lo que se entiende al cambiar de plan desde la cuenta. Cambiarle el plan a una
+ * sola se hace en su propia ficha.
  */
 async function miMarca() {
   const perfil = await perfilActual();
@@ -36,17 +40,25 @@ async function miMarca() {
   return data as { id: string; nombre_comercial: string };
 }
 
-async function suscripcionActiva(marcaId: string) {
+/** Las suscripciones abiertas de una marca, por sucursal. */
+async function suscripcionesAbiertas(marcaId: string) {
   const supabase = await crearClienteServidor();
+
+  const { data: sucursales } = await supabase
+    .from("sucursales")
+    .select("id")
+    .eq("marca_id", marcaId);
+
+  const ids = (sucursales ?? []).map((s) => s.id as string);
+  if (ids.length === 0) return [];
 
   const { data } = await supabase
     .from("suscripciones")
-    .select("id, tier_id, monto_mensual, fecha_proximo_cobro")
-    .eq("marca_id", marcaId)
-    .eq("estado", "activo")
-    .maybeSingle();
+    .select("id, sucursal_id, tier_id, monto_mensual, estado, fecha_fin_trial")
+    .in("sucursal_id", ids)
+    .in("estado", ["trial", "activo", "pausado_por_pago"]);
 
-  return data;
+  return data ?? [];
 }
 
 /**
@@ -70,65 +82,103 @@ export async function contratarPlan(
 
   const { data: tier } = await supabase
     .from("tiers")
-    .select("id, nombre, precio_mensual, max_sucursales")
+    .select("id, nombre, precio_mensual")
     .eq("id", tierId)
     .maybeSingle();
 
   if (!tier) return { error: "Ese plan no existe." };
 
-  const vigente = await suscripcionActiva(marca.id);
-  if (vigente?.tier_id === tier.id) return { error: "Ya estás en ese plan." };
+  const abiertas = await suscripcionesAbiertas(marca.id);
 
-  /*
-    Bajar de plan no puede dejar sucursales publicadas por encima del tope: si
-    alguien con seis locales pasa a un plan de tres, hay que decirle cuáles
-    quitar antes, no elegirlas por él.
-  */
-  const { count } = await supabase
-    .from("sucursales")
-    .select("id", { count: "exact", head: true })
-    .eq("marca_id", marca.id);
-
-  if ((count ?? 0) > tier.max_sucursales) {
+  if (abiertas.length === 0) {
     return {
-      error: `Tienes ${count} sucursales y el plan ${tier.nombre} permite ${tier.max_sucursales}. Elimina las que ya no uses y vuelve a intentarlo.`,
+      error:
+        "Todavía no tienes ninguna sucursal publicada. El plan se elige al publicar el micrositio.",
     };
   }
 
-  const cobro = await procesarPago({
-    sucursalId: marca.id,
-    tierId: tier.id,
-    montoMensual: tier.precio_mensual,
-  });
+  if (abiertas.every((s) => s.tier_id === tier.id)) {
+    return { error: "Ya estás en ese plan." };
+  }
 
-  if (!cobro.ok) return { error: `No se pudo completar el pago: ${cobro.motivo}` };
+  /*
+    Durante la prueba el cambio es gratis y no se cobra nada: "el negocio puede
+    cambiar de tier libremente sin costo" (spec v2 §3.3, paso 7). Solo se cobra
+    por las que ya estaban pagando.
+  */
+  const enPrueba = abiertas.filter((s) => s.estado === "trial");
+  const pagando = abiertas.filter((s) => s.estado !== "trial");
 
-  if (vigente) {
+  /*
+    Ya no se comprueba ningún tope de sucursales. Desde la spec v2 el cobro es
+    por sucursal, así que no hay un número que el plan permita: cada micrositio
+    paga el suyo. Antes esto impedía bajar de plan con más locales de los que
+    cabían, y esa idea desapareció con el tope.
+  */
+
+  let referencia: string | undefined;
+
+  if (pagando.length > 0) {
+    const cobro = await procesarPago({
+      sucursalId: marca.id,
+      tierId: tier.id,
+      montoMensual: tier.precio_mensual * pagando.length,
+    });
+
+    if (!cobro.ok) {
+      return { error: `No se pudo completar el pago: ${cobro.motivo}` };
+    }
+
+    referencia = cobro.referencia;
+  }
+
+  /*
+    Se cierra la suscripción vieja y se abre otra en vez de editarle el
+    `tier_id`, para que el historial guarde qué se pagó y hasta cuándo. Las que
+    estaban en prueba siguen en prueba, con la misma fecha de fin: cambiar de
+    plan no regala días nuevos.
+  */
+  for (const abierta of abiertas) {
+    if (abierta.tier_id === tier.id) continue;
+
     await supabase
       .from("suscripciones")
       .update({ estado: "cancelado" })
-      .eq("id", vigente.id);
+      .eq("id", abierta.id);
+
+    const { error } = await supabase.from("suscripciones").insert({
+      sucursal_id: abierta.sucursal_id,
+      tier_id: tier.id,
+      monto_mensual: tier.precio_mensual,
+      estado: abierta.estado,
+      fecha_fin_trial: abierta.fecha_fin_trial,
+      fecha_proximo_cobro: proximoCobro().toISOString(),
+      metodo_pago_stub: referencia,
+    });
+
+    if (error) {
+      return { error: "El cobro pasó pero no se registró el plan. Avísanos." };
+    }
   }
 
-  const { error } = await supabase.from("suscripciones").insert({
-    marca_id: marca.id,
-    tier_id: tier.id,
-    monto_mensual: tier.precio_mensual,
-    fecha_proximo_cobro: proximoCobro().toISOString(),
-    metodo_pago_stub: cobro.referencia,
-  });
-
-  if (error) return { error: "El cobro pasó pero no se registró el plan. Avísanos." };
-
-  // El `tier_id` de cada sucursal es el reflejo del plan de su marca: de ahí
-  // leen el micrositio y el panel si reparte mazorcas o sale en el banner.
-  await supabase
-    .from("sucursales")
-    .update({ tier_id: tier.id })
-    .eq("marca_id", marca.id);
+  // El `tier_id` de la sucursal es el reflejo de su suscripción: de ahí leen el
+  // micrositio y el directorio si acepta reseñas o sale en el banner.
+  for (const abierta of abiertas) {
+    await supabase
+      .from("sucursales")
+      .update({ tier_id: tier.id })
+      .eq("id", abierta.sucursal_id);
+  }
 
   revalidatePath("/negocio/panel");
-  return { ok: `Listo, tu cuenta está en el plan ${tier.nombre}.` };
+  revalidatePath("/negocio/panel/cuenta");
+
+  return {
+    ok:
+      enPrueba.length > 0 && pagando.length === 0
+        ? `Listo, tu prueba sigue en el plan ${tier.nombre}. No se te cobró nada.`
+        : `Listo, tus micrositios están en el plan ${tier.nombre}.`,
+  };
 }
 
 /**
@@ -150,11 +200,12 @@ export async function cancelarPlan(
 
   const supabase = await crearClienteServidor();
 
+  const abiertas = await suscripcionesAbiertas(marca.id);
+
   const { error } = await supabase
     .from("suscripciones")
     .update({ estado: "cancelado" })
-    .eq("marca_id", marca.id)
-    .eq("estado", "activo");
+    .in("id", abiertas.map((s) => s.id));
 
   if (error) return { error: "No se pudo cancelar. Inténtalo de nuevo." };
 

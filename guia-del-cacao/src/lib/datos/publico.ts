@@ -27,7 +27,7 @@ export type TarjetaDirectorio = {
    * que las incluye es un dato de la tabla `tiers`, y escribir el número aquí
    * obligaría a acordarse de este sitio el día que cambien los planes.
    */
-  tiers: { puede_dar_puntos: boolean } | null;
+  tiers: { puede_dar_puntos: boolean; permite_resenas: boolean } | null;
   /** Entidad federativa. Es el filtro principal desde que la guía es nacional. */
   entidad: string;
   /** Ciudad o municipio; las sucursales anteriores al alcance nacional no la tienen. */
@@ -76,7 +76,7 @@ export type Publicacion = {
 export { nombrarNegocio };
 
 const CAMPOS_TARJETA =
-  "id, slug, nombre_sucursal, logo, imagen_fondo, acerca_de, tier_id, entidad, ciudad, tiers(puede_dar_puntos), marcas(nombre_comercial, categoria_id)";
+  "id, slug, nombre_sucursal, logo, imagen_fondo, acerca_de, tier_id, entidad, ciudad, tiers(puede_dar_puntos, permite_resenas), marcas(nombre_comercial, categoria_id)";
 
 /**
  * Directorio.

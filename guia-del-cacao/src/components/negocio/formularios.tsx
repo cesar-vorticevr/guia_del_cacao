@@ -274,7 +274,22 @@ export function FormularioImagen({
   );
 }
 
-export function FormularioPublicar({ sucursalId }: { sucursalId: string }) {
+/**
+ * Elegir plan y mandar la sucursal a revisión.
+ *
+ * El plan se elige aquí y no en la cuenta porque desde la spec v2 el cobro es
+ * por sucursal: dos locales de la misma marca pueden estar en planes distintos,
+ * así que la pregunta solo tiene respuesta parada frente a una de ellas.
+ *
+ * No se pide tarjeta. Se abren quince días de prueba y ya.
+ */
+export function FormularioPublicar({
+  sucursalId,
+  tiers,
+}: {
+  sucursalId: string;
+  tiers: Tier[];
+}) {
   const [estado, accion] = useActionState(publicarSucursal, INICIAL);
 
   return (
@@ -282,7 +297,15 @@ export function FormularioPublicar({ sucursalId }: { sucursalId: string }) {
       <input type="hidden" name="sucursal_id" value={sucursalId} />
       <Resultado estado={estado} />
 
-      <BotonEnviar>Publicar en el directorio</BotonEnviar>
+      {/* `Planes` ya trae dentro el radio `tier_id`, que es lo que viaja. */}
+      <Planes tiers={tiers} />
+
+      <p className="rounded-2xl bg-crema-2 px-4 py-3 text-sm text-cacao">
+        Pruebas quince días sin pagar y sin dejar tarjeta. Los días empiezan a
+        contar cuando aprobemos tu micrositio, no ahora.
+      </p>
+
+      <BotonEnviar>Empezar mi prueba de 15 días</BotonEnviar>
     </form>
   );
 }
@@ -570,13 +593,19 @@ function Planes({
 
   if (!tier) return null;
 
+  /*
+    Ya no se anuncia un tope de sucursales: desde la spec v2 el cobro es por
+    sucursal y no hay tope. "Hasta 20 sucursales" en un plan que se paga por
+    cada una prometía un permiso que no es del plan.
+  */
   const ventajas = [
     {
       hay: true,
-      texto:
-        tier.max_sucursales === 1
-          ? "Una sucursal"
-          : `Hasta ${tier.max_sucursales} sucursales`,
+      texto: "Tu micrositio en el directorio, con catálogo y contacto",
+    },
+    {
+      hay: tier.permite_resenas,
+      texto: "Recibe reseñas de tus clientes y respóndeles",
     },
     // Las mazorcas están apagadas: anunciarlas como ventaja de un plan sería
     // cobrar por algo que nadie puede usar todavía.

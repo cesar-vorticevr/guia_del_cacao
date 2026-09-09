@@ -3,11 +3,7 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { FormularioPublicar } from "@/components/negocio/formularios";
 import { perfilActual } from "@/lib/auth/sesion";
-import {
-  miSucursal,
-  queLeFalta,
-  suscripcionDeMarca,
-} from "@/lib/datos/sucursales";
+import { listarTiers, miSucursal, queLeFalta } from "@/lib/datos/sucursales";
 
 export const metadata: Metadata = {
   title: "Publicar micrositio · Guía del Cacao",
@@ -16,9 +12,12 @@ export const metadata: Metadata = {
 /**
  * Sacar una sucursal al directorio.
  *
- * Ya no se elige plan aquí: el plan es de la cuenta y se contrata una sola vez.
- * Esta pantalla solo comprueba las dos cosas que impiden publicar —que el
- * micrositio esté completo y que haya plan activo— y hace el cambio.
+ * Aquí se elige el plan. Desde la spec v2 el cobro es por sucursal, así que la
+ * pregunta pertenece a esta pantalla y no a la cuenta: dos locales de la misma
+ * marca pueden estar en planes distintos.
+ *
+ * Lo único que impide llegar al plan es que el micrositio esté incompleto, y
+ * eso lo dice la base con la misma función que usa el trigger.
  */
 export default async function Publicar({
   params,
@@ -44,9 +43,9 @@ export default async function Publicar({
   // Lo que falta lo dice la base, no esta pantalla: la misma función que usa el
   // trigger al publicar. Así no puede pasar que aquí se vea listo y allá se
   // rechace.
-  const [falta, suscripcion] = await Promise.all([
+  const [falta, tiers] = await Promise.all([
     queLeFalta(sucursal.id),
-    suscripcionDeMarca(sucursal.marca_id),
+    listarTiers(),
   ]);
 
   return (
@@ -80,31 +79,15 @@ export default async function Publicar({
             Volver a completarlo
           </Link>
         </div>
-      ) : !suscripcion ? (
-        <div className="rounded-3xl border-2 border-mango/50 bg-mango/15 p-6">
-          <p className="font-display text-xl font-semibold text-selva-2">
-            Tu cuenta necesita un plan
-          </p>
-          <p className="mt-2 text-cacao">
-            El plan se contrata una vez y cubre a todas tus sucursales. En
-            cuanto lo tengas, publicar es un toque.
-          </p>
-          <Link
-            href="/negocio/panel/cuenta"
-            className="mt-4 inline-block min-h-11 rounded-full bg-selva px-5 py-2.5 font-bold text-crema"
-          >
-            Elegir mi plan
-          </Link>
-        </div>
       ) : (
         <>
           <p className="text-cacao">
-            Tu micrositio está completo y tu cuenta tiene plan activo. Al
-            publicarlo entra al directorio de inmediato, sin esperar a que nadie
-            lo apruebe, y puedes seguir editándolo después.
+            Tu micrositio está completo. Elige con qué plan quieres que salga:
+            lo pruebas quince días sin pagar y sin dejar tarjeta, y puedes
+            cambiarlo cuantas veces quieras durante la prueba.
           </p>
 
-          <FormularioPublicar sucursalId={sucursal.id} />
+          <FormularioPublicar sucursalId={sucursal.id} tiers={tiers} />
         </>
       )}
     </div>
