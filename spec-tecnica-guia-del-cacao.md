@@ -1,5 +1,7 @@
 # Guía del Cacao — Especificación técnica para desarrollo
 
+> **Obsoleta.** La sustituye [`spec-tecnica-guia-del-cacao-v2.md`](spec-tecnica-guia-del-cacao-v2.md), escrita tras la encuesta a 19 negocios de septiembre de 2026. Se conserva como historia; no se desarrolla contra ella.
+
 Este documento está pensado para entregarse a Claude Code (o a un equipo de desarrollo) como punto de partida para construir la plataforma real, con base de datos, autenticación y lógica de servidor. Consolida todas las decisiones tomadas hasta ahora.
 
 ---
