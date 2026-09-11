@@ -12,6 +12,11 @@ import { crearClienteServidor } from "@/lib/supabase/server";
 
 export type TarjetaDirectorio = {
   id: string;
+  /**
+   * La marca a la que pertenece. Hace falta en la tarjeta porque el catálogo
+   * cuelga de la marca (migración 000022) y el buscador busca por producto.
+   */
+  marca_id: string;
   /** Promedio de estrellas, o null si nadie la ha calificado. */
   calificacion?: Calificacion | null;
   slug: string;
@@ -36,7 +41,6 @@ export type TarjetaDirectorio = {
 };
 
 export type MicrositioPublico = TarjetaDirectorio & {
-  marca_id: string;
   ubicacion_maps_url: string | null;
   whatsapp: string | null;
   facebook: string | null;
@@ -76,7 +80,7 @@ export type Publicacion = {
 export { nombrarNegocio };
 
 const CAMPOS_TARJETA =
-  "id, slug, nombre_sucursal, logo, imagen_fondo, acerca_de, tier_id, entidad, ciudad, tiers(puede_dar_puntos, permite_resenas), marcas(nombre_comercial, categoria_id)";
+  "id, marca_id, slug, nombre_sucursal, logo, imagen_fondo, acerca_de, tier_id, entidad, ciudad, tiers(puede_dar_puntos, permite_resenas), marcas(nombre_comercial, categoria_id)";
 
 /**
  * Directorio.
@@ -141,7 +145,7 @@ export async function micrositioPorSlug(slug: string) {
   const { data } = await supabase
     .from("sucursales")
     .select(
-      `${CAMPOS_TARJETA}, marca_id, ubicacion_maps_url, whatsapp, facebook,
+      `${CAMPOS_TARJETA}, ubicacion_maps_url, whatsapp, facebook,
        instagram, youtube, tiktok, correo_contacto, telefono, galeria`,
     )
     .eq("slug", slug)

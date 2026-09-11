@@ -5,6 +5,10 @@ import { entidadesConNegocios, listarDirectorio } from "@/lib/datos/publico";
 import { listarCategorias } from "@/lib/datos/categorias";
 import { esEntidad } from "@/lib/entidades";
 import { misFavoritosEntre } from "@/lib/datos/favoritos";
+import {
+  catalogoPorMarca,
+  productosEnVariosNegocios,
+} from "@/lib/datos/busqueda-de-productos";
 import { perfilActual } from "@/lib/auth/sesion";
 import { tonoDeCategoria } from "@/lib/paleta";
 
@@ -27,12 +31,17 @@ export default async function Directorio({
   // directorio entero como si no se hubiera filtrado nada.
   const entidad = esEntidad(estado) ? estado : undefined;
 
-  const [sucursales, categorias, entidades, perfil] = await Promise.all([
+  const [sucursales, categorias, entidades, perfil, atajos] = await Promise.all([
     listarDirectorio(categoriaId, entidad),
     listarCategorias(),
     entidadesConNegocios(),
     perfilActual(),
+    productosEnVariosNegocios(),
   ]);
+
+  // El catálogo de estas marcas viaja a la página para que el buscador encuentre
+  // por producto sin pedirle nada al servidor por cada letra.
+  const catalogo = await catalogoPorMarca(sucursales.map((s) => s.marca_id));
 
   // Solo un cliente guarda favoritos: a un negocio o a un administrador el
   // corazón les prometería algo que su cuenta no hace.
@@ -82,6 +91,7 @@ export default async function Directorio({
         puedeGuardar={esCliente}
         haySesion={Boolean(perfil)}
         categorias={nombresDeCategoria}
+        catalogo={catalogo}
         consultaInicial={consulta}
       >
         {/*
@@ -127,6 +137,35 @@ export default async function Directorio({
                         ? "bg-selva text-crema"
                         : "bg-crema-2 text-selva-2"
                     }`}
+                  >
+                    {nombre}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
+
+        {/*
+          Los atajos por producto, para quien no sabe ningún nombre de negocio
+          —que es casi todo el mundo que llega aquí—. No son una taxonomía
+          escrita a mano: salen del catálogo real, y solo aparecen los productos
+          que están en dos o más negocios. Si tres cargan "tablilla de
+          chocolate", "tablilla" aparece sola.
+
+          Llevan a la misma búsqueda con `?q=`, así que reusan el buscador en
+          vez de abrir un camino nuevo que haya que mantener aparte.
+        */}
+        {atajos.length > 0 && (
+          <nav aria-label="Buscar por producto" className="pt-5">
+            <p className="mb-2 font-bold text-selva-2">¿Qué andas buscando?</p>
+
+            <ul className="flex flex-wrap gap-2.5">
+              {atajos.map((nombre) => (
+                <li key={nombre}>
+                  <Link
+                    href={`/directorio?q=${encodeURIComponent(nombre)}`}
+                    className={`${PILDORA} bg-white text-cacao`}
                   >
                     {nombre}
                   </Link>

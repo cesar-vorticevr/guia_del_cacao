@@ -5,6 +5,13 @@ import { TarjetaSucursal } from "@/components/publico/tarjeta-sucursal";
 import { VerMas } from "@/components/publico/ver-mas";
 import { parecido } from "@/lib/busqueda";
 import type { TarjetaDirectorio } from "@/lib/datos/publico";
+import type { ProductoBuscable } from "@/lib/datos/busqueda-de-productos";
+
+/** Un negocio encontrado, y el producto que lo trajo si fue un producto. */
+type Resultado = {
+  sucursal: TarjetaDirectorio;
+  producto: ProductoBuscable | null;
+};
 
 /**
  * El buscador del directorio.
@@ -32,6 +39,8 @@ export function BuscadorDirectorio({
   haySesion,
   /** Nombre de cada categoría, por id: también se puede buscar por ella. */
   categorias,
+  /** El catálogo de cada marca, para encontrar por producto. */
+  catalogo,
   /** Lo que se escribió en la portada, que llega por `?q=`. */
   consultaInicial = "",
   children,
@@ -41,6 +50,7 @@ export function BuscadorDirectorio({
   puedeGuardar: boolean;
   haySesion: boolean;
   categorias: Record<number, string>;
+  catalogo: Record<string, ProductoBuscable[]>;
   consultaInicial?: string;
   /** Los filtros por categoría, que van entre la caja y los resultados. */
   children?: React.ReactNode;
@@ -51,18 +61,39 @@ export function BuscadorDirectorio({
   // vuelve conjunto: la lista se recorre una vez por tecla.
   const guardados = useMemo(() => new Set(favoritos), [favoritos]);
 
-  const encontradas = useMemo(
-    () =>
-      sucursales.filter((sucursal) =>
-        parecido(consulta, [
+  /*
+    Cada resultado viene con el producto que lo trajo, si fue un producto el que
+    lo trajo. Buscar "molinillo" y recibir una lista de negocios sin decir cuál
+    de ellos lo tiene obliga a entrar en todos para averiguarlo.
+
+    El producto se busca uno por uno en vez de meter todos los nombres en la
+    misma bolsa: la bolsa diría que hay coincidencia, pero no cuál.
+  */
+  const encontradas = useMemo(() => {
+    return sucursales
+      .map((sucursal) => {
+        const productos = catalogo[sucursal.marca_id] ?? [];
+
+        const porElNegocio = parecido(consulta, [
           sucursal.marcas?.nombre_comercial,
           sucursal.nombre_sucursal,
           sucursal.acerca_de,
           categorias[sucursal.marcas?.categoria_id ?? 0],
-        ]),
-      ),
-    [consulta, sucursales, categorias],
-  );
+        ]);
+
+        const producto = productos.find((p) => parecido(consulta, [p.nombre]));
+
+        if (!porElNegocio && !producto) return null;
+
+        // Si el negocio ya respondía por su nombre, no hace falta explicar qué
+        // producto coincidió: la coincidencia ya se ve.
+        return {
+          sucursal,
+          producto: porElNegocio ? null : (producto ?? null),
+        };
+      })
+      .filter((r): r is Resultado => r !== null);
+  }, [consulta, sucursales, categorias, catalogo]);
 
   const buscando = consulta.trim().length > 0;
 
@@ -78,12 +109,12 @@ export function BuscadorDirectorio({
         className="mt-5 flex gap-2"
       >
         <label className="min-w-0 flex-1">
-          <span className="sr-only">Buscar un negocio</span>
+          <span className="sr-only">Buscar un negocio o un producto</span>
           <input
             type="search"
             value={consulta}
             onChange={(evento) => setConsulta(evento.target.value)}
-            placeholder="Busca un negocio, una finca, un museo…"
+            placeholder="Un negocio, un museo, un molinillo…"
             autoComplete="off"
             className="min-h-14 w-full rounded-full border-2 border-selva/20 bg-white px-5 text-base text-ink placeholder:text-cacao/40 focus:border-selva"
           />
@@ -122,10 +153,11 @@ export function BuscadorDirectorio({
             className="grid gap-4 sm:grid-cols-2"
             etiqueta="Ver más negocios"
           >
-            {encontradas.map((sucursal) => (
+            {encontradas.map(({ sucursal, producto }) => (
               <TarjetaSucursal
                 key={sucursal.id}
                 sucursal={sucursal}
+                producto={producto}
                 favorito={guardados.has(sucursal.id)}
                 puedeGuardar={puedeGuardar}
                 haySesion={haySesion}

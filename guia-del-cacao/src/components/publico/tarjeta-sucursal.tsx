@@ -3,6 +3,7 @@ import { urlImagen } from "@/lib/imagenes";
 import { Promedio } from "@/components/publico/estrellas";
 import { tonoDeCategoria } from "@/lib/paleta";
 import type { TarjetaDirectorio } from "@/lib/datos/publico";
+import type { ProductoBuscable } from "@/lib/datos/busqueda-de-productos";
 import { BotonFavorito } from "@/components/publico/boton-favorito";
 import { FUNCIONES } from "@/lib/funciones";
 
@@ -19,6 +20,12 @@ import { FUNCIONES } from "@/lib/funciones";
  */
 export function TarjetaSucursal({
   sucursal,
+  /**
+   * El producto por el que salió en una búsqueda, si fue un producto lo que la
+   * trajo. Buscar "molinillo" y recibir seis negocios sin decir cuál lo tiene
+   * obliga a entrar en los seis para averiguarlo.
+   */
+  producto = null,
   /** Si quien mira ya lo tiene guardado. Sin sesión de cliente, siempre false. */
   favorito = false,
   /** Si esta cuenta puede guardar: hay sesión y es de visitante. */
@@ -29,6 +36,7 @@ export function TarjetaSucursal({
   conCorazon = true,
 }: {
   sucursal: TarjetaDirectorio;
+  producto?: ProductoBuscable | null;
   favorito?: boolean;
   puedeGuardar?: boolean;
   haySesion?: boolean;
@@ -141,10 +149,29 @@ export function TarjetaSucursal({
             </span>
           )}
 
-          {sucursal.acerca_de && (
-            <span className="mt-1.5 line-clamp-2 block text-cacao">
-              {sucursal.acerca_de}
+          {/*
+            El producto encontrado sustituye al "acerca de", no se suma: quien
+            buscó "molinillo" quiere saber que aquí lo hay, no leer la historia
+            de la finca.
+
+            **Sin precio, a propósito.** Cinco negocios venden el mismo
+            molinillo, y con el precio al lado la lista se convierte en un
+            comparador donde gana el más barato — que es justo el dolor que dos
+            de cada cinco encuestados pusieron entre sus dos mayores
+            dificultades. El precio está a un toque, en el micrositio, donde va
+            acompañado de la foto, la descripción y quién lo hizo.
+          */}
+          {producto ? (
+            <span className="mt-1.5 block text-cacao">
+              Tiene{" "}
+              <span className="font-bold text-selva-2">{producto.nombre}</span>
             </span>
+          ) : (
+            sucursal.acerca_de && (
+              <span className="mt-1.5 line-clamp-2 block text-cacao">
+                {sucursal.acerca_de}
+              </span>
+            )
           )}
 
           {destacada && (

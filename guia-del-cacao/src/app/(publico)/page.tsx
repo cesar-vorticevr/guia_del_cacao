@@ -12,6 +12,7 @@ import {
 } from "@/lib/datos/publico";
 import { listarCategorias } from "@/lib/datos/categorias";
 import { misFavoritosEntre } from "@/lib/datos/favoritos";
+import { catalogoPorMarca } from "@/lib/datos/busqueda-de-productos";
 import { perfilActual } from "@/lib/auth/sesion";
 import { tonoDeCategoria } from "@/lib/paleta";
 import { urlImagen } from "@/lib/imagenes";
@@ -28,10 +29,12 @@ export default async function Home() {
   // Solo un cliente guarda favoritos. A un negocio o a un administrador el
   // corazón les prometería algo que su cuenta no hace.
   const esCliente = perfil?.rol === "cliente" && perfil.rol_confirmado;
-  const favoritos = await misFavoritosEntre(
-    esCliente ? perfil.id : undefined,
-    sucursales.map((s) => s.id),
-  );
+  const [favoritos, catalogo] = await Promise.all([
+    misFavoritosEntre(esCliente ? perfil.id : undefined, sucursales.map((s) => s.id)),
+    // El catálogo viaja a la página para que el buscador sugiera por producto
+    // sin ir al servidor por cada letra.
+    catalogoPorMarca(sucursales.map((s) => s.marca_id)),
+  ]);
 
   // Los promedios de todo el banner en una sola consulta, no una por foto.
   const promedios = await calificacionesDe(banners.map((b) => b.id));
@@ -90,6 +93,7 @@ export default async function Home() {
           <BuscadorPortada
             sucursales={sucursales}
             categorias={nombresDeCategoria}
+            catalogo={catalogo}
           />
 
           {/*

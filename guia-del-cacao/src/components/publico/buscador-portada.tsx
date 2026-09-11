@@ -8,6 +8,13 @@ import { parecido } from "@/lib/busqueda";
 import { nombrarNegocio } from "@/lib/nombres";
 import { urlImagen } from "@/lib/imagenes";
 import type { TarjetaDirectorio } from "@/lib/datos/publico";
+import type { ProductoBuscable } from "@/lib/datos/busqueda-de-productos";
+
+/** Un negocio sugerido, y el producto que lo trajo si fue un producto. */
+type Sugerencia = {
+  sucursal: TarjetaDirectorio;
+  producto: ProductoBuscable | null;
+};
 
 /** Cuántas sugerencias se enseñan. Más que esto y la lista tapa la portada. */
 const MAXIMO = 5;
@@ -31,9 +38,12 @@ export function BuscadorPortada({
   sucursales,
   /** Nombre de cada categoría, por id: también se puede buscar por ella. */
   categorias,
+  /** El catálogo de cada marca, para sugerir también por producto. */
+  catalogo,
 }: {
   sucursales: TarjetaDirectorio[];
   categorias: Record<number, string>;
+  catalogo: Record<string, ProductoBuscable[]>;
 }) {
   const router = useRouter();
   const [consulta, setConsulta] = useState("");
@@ -50,16 +60,27 @@ export function BuscadorPortada({
     if (!texto) return [];
 
     return sucursales
-      .filter((sucursal) =>
-        parecido(texto, [
+      .map((sucursal) => {
+        const porElNegocio = parecido(texto, [
           sucursal.marcas?.nombre_comercial,
           sucursal.nombre_sucursal,
           sucursal.acerca_de,
           categorias[sucursal.marcas?.categoria_id ?? 0],
-        ]),
-      )
+        ]);
+
+        // El producto se prueba uno por uno para poder decir cuál coincidió, no
+        // solo que alguno lo hizo.
+        const producto = (catalogo[sucursal.marca_id] ?? []).find((p) =>
+          parecido(texto, [p.nombre]),
+        );
+
+        if (!porElNegocio && !producto) return null;
+
+        return { sucursal, producto: porElNegocio ? null : (producto ?? null) };
+      })
+      .filter((s): s is Sugerencia => s !== null)
       .slice(0, MAXIMO);
-  }, [texto, sucursales, categorias]);
+  }, [texto, sucursales, categorias, catalogo]);
 
   const desplegado = abierto && texto.length > 0;
 
@@ -105,7 +126,7 @@ export function BuscadorPortada({
         <IconoLupa className="ml-2 size-5 shrink-0 text-cacao/50 sm:ml-3 sm:size-6" />
 
         <label className="min-w-0 flex-1">
-          <span className="sr-only">Buscar en la guía</span>
+          <span className="sr-only">Buscar un negocio o un producto</span>
           <input
             ref={entrada}
             type="search"
@@ -122,7 +143,7 @@ export function BuscadorPortada({
                 enfocar(0);
               }
             }}
-            placeholder="Una chocolatería, una finca, un museo…"
+            placeholder="Una chocolatería, una finca, un molinillo…"
             autoComplete="off"
             role="combobox"
             aria-expanded={desplegado}
@@ -150,7 +171,7 @@ export function BuscadorPortada({
             </p>
           ) : (
             <ul>
-              {sugerencias.map((sucursal, i) => {
+              {sugerencias.map(({ sucursal, producto }, i) => {
                 const nombres = nombrarNegocio(sucursal);
                 const logo = urlImagen(sucursal.logo);
 
@@ -193,10 +214,25 @@ export function BuscadorPortada({
                         <span className="block truncate font-bold text-selva-2">
                           {nombres.marca}
                         </span>
-                        {nombres.sucursal && (
+                        {/*
+                          Cuando lo que coincidió fue un producto, el renglón
+                          dice cuál: si no, buscar "molinillo" devuelve seis
+                          nombres de negocio y ninguna pista de por qué.
+
+                          Sin precio, por lo mismo que en la tarjeta del
+                          directorio: media docena de precios en fila hace de
+                          esto un comparador.
+                        */}
+                        {producto ? (
                           <span className="block truncate text-sm text-cacao/70">
-                            {nombres.sucursal}
+                            Tiene {producto.nombre}
                           </span>
+                        ) : (
+                          nombres.sucursal && (
+                            <span className="block truncate text-sm text-cacao/70">
+                              {nombres.sucursal}
+                            </span>
+                          )
                         )}
                       </span>
                     </Link>
