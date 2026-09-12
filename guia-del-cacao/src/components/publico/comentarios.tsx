@@ -2,7 +2,6 @@
 
 import { useActionState, useState } from "react";
 import { Aviso, BotonEnviar } from "@/components/formulario";
-import { RegalarMazorca } from "@/components/publico/regalar-mazorca";
 import {
   borrarComentario,
   comentar,
@@ -23,12 +22,10 @@ export type ComentarioVista = {
   editado: boolean;
   oculto: boolean;
   esMio: boolean;
-  /** De quién es: hace falta para poder regalarle una mazorca. */
+  /** De quién es. */
   autorId?: string;
   /** A cuál contesta, si contesta a alguno. */
   respondeA?: string | null;
-  /** Si quien mira ya le dio su mazorca de hoy a esta persona. */
-  yaLeDi?: boolean;
 };
 
 function Confirmacion({ estado }: { estado: EstadoComentario }) {
@@ -63,19 +60,11 @@ export function Comentarios({
   puedeComentar,
   motivo,
   puedeOcultar,
-  bolsa = 0,
-  haySesion = false,
-  yoSoy = null,
 }: {
   contexto: Contexto;
   referenciaId: string;
   comentarios: ComentarioVista[];
   puedeComentar: boolean;
-  /** Cuántas mazorcas le quedan hoy a quien mira por repartir. */
-  bolsa?: number;
-  haySesion?: boolean;
-  /** Quién mira, para no ofrecerle regalarse a sí mismo. */
-  yoSoy?: string | null;
   /**
    * Por qué no puede comentar, cuando no puede. Es un nodo y no un texto
    * porque a veces lleva dentro el enlace para iniciar sesión.
@@ -128,9 +117,6 @@ export function Comentarios({
                   contexto={contexto}
                   referenciaId={referenciaId}
                   puedeOcultar={puedeOcultar}
-                  bolsa={bolsa}
-                  haySesion={haySesion}
-                  yoSoy={yoSoy}
                   puedeResponder={puedeComentar}
                   alResponder={() => setRespondiendo(comentario)}
                 />
@@ -151,9 +137,6 @@ export function Comentarios({
                         contexto={contexto}
                         referenciaId={referenciaId}
                         puedeOcultar={puedeOcultar}
-                        bolsa={bolsa}
-                        haySesion={haySesion}
-                        yoSoy={yoSoy}
                         puedeResponder={puedeComentar}
                         alResponder={() => setRespondiendo(comentario)}
                         esRespuesta
@@ -227,9 +210,6 @@ function Uno({
   contexto,
   referenciaId,
   puedeOcultar,
-  bolsa = 0,
-  haySesion = false,
-  yoSoy = null,
   puedeResponder = false,
   alResponder,
   esRespuesta = false,
@@ -238,9 +218,6 @@ function Uno({
   contexto: Contexto;
   referenciaId: string;
   puedeOcultar: boolean;
-  bolsa?: number;
-  haySesion?: boolean;
-  yoSoy?: string | null;
   puedeResponder?: boolean;
   alResponder?: () => void;
   /** Las respuestas van más discretas: el hilo ya dice de quién cuelgan. */
@@ -340,21 +317,10 @@ function Uno({
           )}
 
           {/*
-            Regalar va en cada comentario y no solo en la publicación: quien
-            contesta algo útil también merece su mazorca, y era lo que faltaba
-            para que comentar valiera la pena.
+            Aquí iba un botón para regalarle una mazorca a quien comentaba, de
+            las cinco que la plataforma repartía al día. Se fue con las
+            mazorcas: no hay moneda que dar.
           */}
-          {comentario.autorId && (
-            <RegalarMazorca
-              aPerfil={comentario.autorId}
-              aNombre={comentario.autor}
-              comentarioId={comentario.id}
-              yaLeDi={Boolean(comentario.yaLeDi)}
-              quedan={bolsa}
-              esMia={comentario.autorId === yoSoy}
-              haySesion={haySesion}
-            />
-          )}
 
           {puedeResponder && !esRespuesta && alResponder && (
             <button

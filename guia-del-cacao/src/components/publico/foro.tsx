@@ -3,13 +3,11 @@
 import { useActionState, useState } from "react";
 import { Aviso, BotonEnviar } from "@/components/formulario";
 import {
-  apoyarTema,
   borrarTema,
   crearTema,
   type EstadoForo,
 } from "@/lib/foro/acciones";
 import { ElegirFotos } from "@/components/publico/elegir-fotos";
-import { MONEDA } from "@/lib/vocabulario";
 
 const INICIAL: EstadoForo = {};
 
@@ -121,75 +119,6 @@ export function FormularioTema({
       >
         Cancelar
       </button>
-    </form>
-  );
-}
-
-/**
- * El botón de apoyo.
- *
- * Dice claramente que la mazorca sale de las tuyas: es una transferencia, no un
- * "me gusta". Quien apoya se queda con una menos y el autor con una más.
- */
-export function BotonApoyar({
-  temaId,
-  yaApoyaste,
-  esMio,
-  monedas,
-  apoyos,
-}: {
-  temaId: string;
-  yaApoyaste: boolean;
-  esMio: boolean;
-  monedas: number;
-  apoyos: number;
-}) {
-  const [estado, accion] = useActionState(apoyarTema, INICIAL);
-
-  const cuenta = (
-    <p className="text-cacao">
-      {apoyos === 0
-        ? "Todavía nadie lo apoya."
-        : `${apoyos} ${apoyos === 1 ? "persona lo apoya" : "personas lo apoyan"}.`}
-    </p>
-  );
-
-  if (esMio) {
-    return (
-      <div className="grid gap-2 rounded-3xl bg-crema-2 p-5">
-        {cuenta}
-        <p className="text-sm text-cacao/70">
-          Cada quien puede regalarte una {MONEDA.singular} para apoyar tu
-          publicación. Es la que te costó publicarla.
-        </p>
-      </div>
-    );
-  }
-
-  if (yaApoyaste) {
-    return (
-      <div className="grid gap-2 rounded-3xl border-2 border-lima/50 bg-lima/15 p-5">
-        {cuenta}
-        <p className="font-bold text-selva-2">
-          Ya le diste tu {MONEDA.singular}.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <form action={accion} className="grid gap-3 rounded-3xl bg-crema-2 p-5">
-      <Resultado estado={estado} />
-      {cuenta}
-      <input type="hidden" name="publicacion_id" value={temaId} />
-
-      <BotonEnviar variante={monedas > 0 ? "principal" : "secundario"}>
-        Regalar una {MONEDA.unaCorta}
-      </BotonEnviar>
-
-      <p className="text-sm text-cacao/70">
-        Sale de las tuyas: te quedarían {Math.max(0, monedas - 1)}.
-      </p>
     </form>
   );
 }

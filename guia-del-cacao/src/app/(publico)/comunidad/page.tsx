@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { FormularioTema } from "@/components/publico/foro";
-import { AvisosDeMonedas } from "@/components/negocio/avisos-de-monedas";
 import { MuroComunidad } from "@/components/publico/muro-comunidad";
 import { MiPublicacion } from "@/components/publico/mi-publicacion";
 import { perfilActual } from "@/lib/auth/sesion";
@@ -65,7 +64,7 @@ export default async function Comunidad() {
 
   return (
     <>
-      <AvisosDeMonedas />
+
 
       <h1 className="pt-8 font-display text-3xl">Comunidad</h1>
       <p className="mt-2 max-w-prose text-cacao">

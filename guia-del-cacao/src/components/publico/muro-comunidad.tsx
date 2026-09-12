@@ -10,10 +10,11 @@ import type { Entrada, Filtro } from "@/lib/datos/comunidad";
 /**
  * El muro de la comunidad, agrupado por día y con scroll infinito.
  *
- * Se lee como un muro y no como un directorio: se entra a ver qué pasó, no a
- * buscar algo concreto. Por eso va en una columna, en orden y con la fecha
- * separando los días — "Hoy", "Ayer" y luego el día con su nombre. Así bajar
- * tiene sentido: se sabe en qué día se está.
+ * Las publicaciones van en la misma retícula que el directorio y el catálogo
+ * —foto arriba, quién escribe y de qué trata debajo— y los días las agrupan:
+ * "Hoy", "Ayer" y luego el día con su nombre. La fecha de cada día se queda
+ * pegada arriba al bajar, así que el orden se sigue leyendo con cuatro por
+ * fila: dentro de un día, de izquierda a derecha.
  *
  * **Los tramos los trae el servidor**, de diez en diez y con cursor. No se
  * cargan todas de golpe para luego irlas destapando: un muro crece sin techo, y
@@ -193,12 +194,7 @@ export function MuroComunidad({
               : "Todavía no hay nada publicado."}
         </p>
       ) : (
-        /*
-          Una sola columna, y estrecha. Un muro se lee de arriba abajo: en dos
-          columnas el orden se rompe —¿la de la derecha va antes o después?— y
-          las fechas de los días dejarían de partir nada.
-        */
-        <div className="mx-auto mt-5 grid max-w-2xl gap-8">
+        <div className="mt-5 grid gap-8">
           {dias.map((dia) => (
             <section key={dia.clave} aria-label={nombreDelDia(dia.clave)}>
               {/*
@@ -209,54 +205,56 @@ export function MuroComunidad({
                 {nombreDelDia(dia.clave)}
               </h3>
 
-              <ul className="grid gap-5">
+              <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {dia.entradas.map((entrada) => (
                   <li
                     key={entrada.id}
-                    className="group grid content-start overflow-hidden rounded-3xl bg-crema-2"
+                    className="group flex h-full flex-col overflow-hidden rounded-3xl border-2 border-ink/10 bg-white shadow-dura transition-all hover:-translate-y-0.5 hover:shadow-dura-alta"
                   >
-                    <Link
-                      href={entrada.href}
-                      className="grid content-start transition-transform active:translate-y-0.5"
-                    >
+                    <Link href={entrada.href} className="flex flex-1 flex-col">
                       {/*
-                        La foto va arriba y del ancho de la tarjeta. Sin ella el
-                        muro era una lista de párrafos donde ninguna
-                        publicación se distinguía de la siguiente hasta leerla.
+                        La foto en 4:3 y fuera del flujo, como en el directorio
+                        y el catálogo: con `h-full` en el flujo, una foto alta
+                        estira su caja y las tarjetas de la fila dejan de
+                        alinearse.
                       */}
-                      <PortadaPublicacion
-                        id={entrada.id}
-                        foto={entrada.imagen}
-                        titulo={entrada.titulo}
-                        className="h-56 w-full"
-                      />
+                      <span className="relative block aspect-[4/3] w-full shrink-0 overflow-hidden bg-crema-2">
+                        <PortadaPublicacion
+                          id={entrada.id}
+                          foto={entrada.imagen}
+                          titulo={entrada.titulo}
+                          className="absolute inset-0 size-full"
+                        />
+                      </span>
 
-                      <div className="p-5">
-                        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                          <p className="text-cacao">
-                            <span className="font-bold text-selva-2">
-                              {entrada.autor}
+                      <div className="flex flex-1 flex-col gap-1 p-4">
+                        {/*
+                          Quién escribe va primero: en una retícula de cuatro, lo
+                          que hace abrir una publicación es de quién es y de qué
+                          trata, en ese orden.
+                        */}
+                        <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
+                          <span className="font-bold text-selva-2">
+                            {entrada.autor}
+                          </span>
+                          {entrada.detalle && (
+                            <span className="text-cacao/70">
+                              {entrada.detalle}
                             </span>
-                            {entrada.detalle && (
-                              <span className="text-cacao/70">
-                                {" "}
-                                · {entrada.detalle}
-                              </span>
-                            )}
-                          </p>
+                          )}
 
                           {entrada.oculta && (
-                            <span className="rounded-full bg-ink/10 px-2 py-0.5 font-mono text-xs font-bold text-cacao">
+                            <span className="rounded-full bg-ink/10 px-2 py-0.5 font-mono text-[0.7rem] font-bold text-cacao">
                               Oculta
                             </span>
                           )}
-                        </div>
+                        </p>
 
-                        <p className="mt-1 font-display text-xl font-semibold text-selva-2 underline-offset-4 group-hover:underline">
+                        <p className="font-display text-base leading-tight font-semibold text-selva-2 underline-offset-4 group-hover:underline">
                           {entrada.titulo}
                         </p>
 
-                        <p className="mt-2 line-clamp-3 text-cacao">
+                        <p className="mt-auto line-clamp-3 pt-1 text-sm text-cacao">
                           {entrada.resumen}
                         </p>
 
@@ -268,7 +266,7 @@ export function MuroComunidad({
                       `a` es HTML inválido— pero dentro de la misma caja, en su
                       franja al pie.
                     */}
-                    <div className="flex flex-wrap items-center gap-3 border-t-2 border-ink/5 px-5 py-3">
+                    <div className="flex flex-wrap items-center gap-3 border-t-2 border-ink/5 px-4 py-2.5">
                       <MeGusta
                         clase="publicacion"
                         id={entrada.id}

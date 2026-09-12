@@ -306,33 +306,3 @@ export async function anotarVisita(perfilId: string, publicacionId: string) {
     { onConflict: "perfil_id,publicacion_id" },
   );
 }
-
-/**
- * Lo que hace falta para pintar los botones de regalar en una pantalla.
- *
- * Se pregunta de una vez y no botón por botón: en una publicación con quince
- * comentarios serían quince consultas para saber quince veces lo mismo.
- */
-export async function bolsaDeRegalos(perfilId: string | undefined) {
-  if (!perfilId) return { quedan: 0, yaLesDi: new Set<string>() };
-
-  const supabase = await crearClienteServidor();
-
-  const hoy = new Date().toLocaleDateString("en-CA", {
-    timeZone: "America/Mexico_City",
-  });
-
-  const [{ data: quedan }, { data: dados }] = await Promise.all([
-    supabase.rpc("regalos_que_me_quedan", { p_perfil: perfilId }),
-    supabase
-      .from("regalos_mazorca")
-      .select("a_perfil")
-      .eq("de_perfil", perfilId)
-      .eq("dia", hoy),
-  ]);
-
-  return {
-    quedan: Number(quedan ?? 0),
-    yaLesDi: new Set((dados ?? []).map((fila) => fila.a_perfil as string)),
-  };
-}
