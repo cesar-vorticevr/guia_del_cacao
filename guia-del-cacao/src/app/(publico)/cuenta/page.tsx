@@ -5,23 +5,22 @@ import { perfilActual } from "@/lib/auth/sesion";
 import { cerrarSesion } from "@/lib/auth/acciones";
 import { FormularioContrasenaNueva } from "@/components/formularios-auth";
 import { Pestanas } from "@/components/negocio/pestanas";
-import { TarjetaSucursal } from "@/components/publico/tarjeta-sucursal";
-import { misFavoritos } from "@/lib/datos/favoritos";
-import { calificacionesDe } from "@/lib/datos/publico";
+import { cuantosFavoritos } from "@/lib/datos/favoritos";
 
 export const metadata: Metadata = { title: "Mi cuenta · Guía del Cacao" };
 
 /**
- * La cuenta del visitante, en tres secciones que se cambian con una fila de
- * pestañas: **Favoritos**, **Tus datos** y **Sesión**.
+ * La cuenta del visitante: **Tus datos** y **Sesión**, con la misma fila de
+ * pestañas que usa el panel del negocio.
  *
  * Antes iba todo en una columna —marcador, solicitudes, reseñas, salir— y
  * llegar a cerrar sesión era bajar tres pantallas. Son cosas que no se hacen
- * juntas: se entra a ver a quién guardaste, o a cambiar la contraseña, o a
- * salir. Las mismas pestañas que usa el panel del negocio, por lo mismo.
+ * juntas: se entra a corregir un dato, o a salir.
  *
- * Los favoritos abren porque son la razón de tener cuenta desde que no hay
- * mazorcas: una lista corta de a quién quieres volver.
+ * **Los favoritos no viven aquí**, sino como filtro del explorador. Son una
+ * herramienta para elegir a dónde ir, y elegir se hace mirando el directorio,
+ * no dentro de la pantalla de la cuenta. Lo único que queda de ellos aquí es
+ * el atajo de abajo, para quien los busque donde estaban.
  */
 export default async function Cuenta({
   searchParams,
@@ -40,18 +39,10 @@ export default async function Cuenta({
   if (perfil.rol === "negocio") redirect("/negocio/panel/cuenta");
   if (perfil.rol === "admin") redirect("/admin");
 
-  const seccion = ver === "datos" ? "datos" : ver === "sesion" ? "sesion" : "favoritos";
+  const seccion = ver === "sesion" ? "sesion" : "datos";
 
-  const favoritos = await misFavoritos(perfil.id);
-
-  // Los promedios en una sola consulta, como en el directorio: la tarjeta es la
-  // misma y tiene que enseñar lo mismo.
-  const promedios = await calificacionesDe(favoritos.map((s) => s.id));
-
-  const conNota = favoritos.map((sucursal) => ({
-    ...sucursal,
-    calificacion: promedios.get(sucursal.id) ?? null,
-  }));
+  // Solo el número, para el atajo al explorador. La lista se ve allá.
+  const favoritos = await cuantosFavoritos(perfil.id);
 
   return (
     <div className="mx-auto grid max-w-3xl gap-6 py-8">
@@ -61,45 +52,32 @@ export default async function Cuenta({
         base="/cuenta"
         actual={seccion}
         pestanas={[
-          { clave: "favoritos", texto: "Favoritos", cuenta: favoritos.length },
           { clave: "datos", texto: "Tus datos" },
           { clave: "sesion", texto: "Sesión" },
         ]}
       />
 
-      {seccion === "favoritos" && (
-        <section className="grid gap-4">
-          <div>
-            <h2 className="font-display text-2xl">Negocios favoritos</h2>
-            <p className="mt-1 text-cacao">
-              Los que guardaste con el corazón. Toca el corazón otra vez para
-              quitar uno.
-            </p>
-          </div>
-
-          {conNota.length === 0 ? (
-            <p className="rounded-3xl bg-crema-2 p-6 text-cacao">
-              Todavía no has guardado ninguno. Cuando encuentres una
-              chocolatería que te guste en el{" "}
-              <Link href="/directorio" className="font-bold text-selva underline">
-                directorio
-              </Link>
-              , toca su corazón y aparecerá aquí.
-            </p>
-          ) : (
-            <ul className="grid gap-4 sm:grid-cols-2">
-              {conNota.map((sucursal) => (
-                <TarjetaSucursal
-                  key={sucursal.id}
-                  sucursal={sucursal}
-                  favorito
-                  puedeGuardar
-                  haySesion
-                />
-              ))}
-            </ul>
-          )}
-        </section>
+      {/*
+        El atajo a donde se fueron. Quien guardó un negocio con el corazón lo
+        va a buscar aquí la primera vez, y una cuenta que no menciona sus
+        favoritos se lee como si se hubieran perdido.
+      */}
+      {favoritos > 0 && (
+        <Link
+          href="/directorio?favoritos=1"
+          className="flex items-center justify-between gap-3 rounded-3xl border-2 border-guayaba/40 bg-guayaba/10 px-5 py-4 text-cacao transition-colors hover:border-guayaba"
+        >
+          <span>
+            <strong className="block font-display text-lg text-selva-2">
+              Tienes {favoritos}{" "}
+              {favoritos === 1 ? "negocio guardado" : "negocios guardados"}
+            </strong>
+            Se ven en el explorador, con el filtro de favoritos puesto.
+          </span>
+          <span aria-hidden="true" className="shrink-0 font-bold text-selva">
+            →
+          </span>
+        </Link>
       )}
 
       {seccion === "datos" && (

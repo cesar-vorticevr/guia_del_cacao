@@ -1,5 +1,4 @@
 import { crearClienteServidor } from "@/lib/supabase/server";
-import type { TarjetaDirectorio } from "@/lib/datos/publico";
 
 /**
  * Qué sucursales de esta lista tiene guardadas quien está mirando.
@@ -38,38 +37,19 @@ export async function esFavorito(
 }
 
 /**
- * Los favoritos de alguien, listos para pintar como tarjetas del directorio.
+ * Cuántos negocios tiene guardados, sin traérselos.
  *
- * Trae los mismos campos que el directorio para poder reusar `TarjetaSucursal`:
- * una lista de favoritos que se viera distinta al directorio obligaría a
- * reconocer dos veces el mismo negocio.
+ * La cuenta solo necesita el número para ofrecer el atajo al explorador, que es
+ * donde viven los favoritos. Pedir las fichas completas para contar sería
+ * traerse el directorio entero y tirarlo.
  */
-export async function misFavoritos(
-  usuarioId: string,
-): Promise<TarjetaDirectorio[]> {
+export async function cuantosFavoritos(usuarioId: string): Promise<number> {
   const supabase = await crearClienteServidor();
 
-  const { data } = await supabase
+  const { count } = await supabase
     .from("favoritos")
-    .select(
-      `fecha,
-       sucursales!inner (
-         id, slug, nombre_sucursal, logo, imagen_fondo, acerca_de, tier_id,
-         entidad, ciudad, estado,
-         tiers (puede_dar_puntos, permite_resenas),
-         marcas (nombre_comercial, categoria_id)
-       )`,
-    )
-    .eq("usuario_id", usuarioId)
-    .order("fecha", { ascending: false });
+    .select("sucursal_id", { count: "exact", head: true })
+    .eq("usuario_id", usuarioId);
 
-  /*
-    Un favorito puede apuntar a un micrositio que ya no está en el directorio
-    —el negocio lo pausó o bajó de plan—. No se borra el favorito por eso, pero
-    tampoco se enseña como si se pudiera visitar: la ficha ya no existe para el
-    público y el enlace daría un 404.
-  */
-  return (data ?? [])
-    .map((fila) => fila.sucursales as unknown as TarjetaDirectorio & { estado: string })
-    .filter((sucursal) => sucursal?.estado === "publicado");
+  return count ?? 0;
 }

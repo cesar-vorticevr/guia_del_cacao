@@ -61,8 +61,13 @@ export async function marcarFavorito(
     }
   }
 
-  // La lista de la cuenta cambia; el directorio no, porque el corazón lleva su
-  // propio estado en el cliente y no se repinta desde el servidor.
+  /*
+    El explorador es el que enseña la lista, así que es el que hay que
+    invalidar: quien quita un favorito con el filtro puesto tiene que ver que
+    se fue. El corazón en sí lleva su propio estado en el cliente y no espera a
+    esto. La cuenta también, por el contador de su atajo.
+  */
+  revalidatePath("/directorio");
   revalidatePath("/cuenta");
 
   return { guardado: guardar };
