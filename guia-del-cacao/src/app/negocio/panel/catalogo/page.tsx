@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import {
   BotonEliminarProducto,
   FormularioNuevoProducto,
+  NuevoProducto,
 } from "@/components/negocio/catalogo";
 import { catalogoDeMarca, usoEnSucursales } from "@/lib/datos/catalogo";
 import { perfilActual } from "@/lib/auth/sesion";
@@ -66,6 +67,15 @@ export default async function Catalogo({
         </p>
       )}
 
+      {/*
+        Agregar va arriba, antes de la lista: es la acción de esta pantalla, y
+        al final quedaba detrás de toda la retícula. Se despliega al pulsarlo
+        para no recibir a nadie con un formulario en blanco que no pidió.
+      */}
+      <NuevoProducto deEntrada={productos.length === 0}>
+        <FormularioNuevoProducto />
+      </NuevoProducto>
+
       <section className="grid gap-4">
         <h2 className="font-display text-xl">
           Tus productos{" "}
@@ -76,8 +86,8 @@ export default async function Catalogo({
 
         {productos.length === 0 ? (
           <p className="rounded-3xl bg-crema-2 p-6 text-cacao">
-            Todavía no tienes productos. Agrega el primero aquí abajo: hace
-            falta al menos uno para poder crear una sucursal.
+            Todavía no tienes productos. Agrega el primero con el formulario
+            de arriba: hace falta al menos uno para poder crear una sucursal.
           </p>
         ) : (
           /*
@@ -196,10 +206,6 @@ export default async function Catalogo({
         )}
       </section>
 
-      <section className="grid max-w-2xl gap-4 rounded-3xl bg-crema-2 p-6">
-        <h2 className="font-display text-xl">Agregar un producto</h2>
-        <FormularioNuevoProducto />
-      </section>
     </div>
   );
 }

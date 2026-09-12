@@ -507,6 +507,16 @@ que ese producto no lo ve nadie.
 En «Tus eventos» los que ya ocurrieron bajan solos a **«Ya pasaron»**, atenuados,
 y sin el botón de cancelar: cancelar algo que ya pasó no le avisa a nadie.
 
+Y **la acción va arriba, plegada**: «Agregar un producto» y «Nuevo evento» son
+un botón antes de la lista, no un formulario al final. Con quince productos, el
+formulario del catálogo quedaba a tres pantallas de retícula: agregar algo
+obligaba a recorrer todo lo ya hecho para llegar a donde se hace lo nuevo.
+Plegado y no abierto porque quien entra a mirar su catálogo no pidió un
+formulario en blanco — en celular ocupaba más pantalla que los productos.
+
+La excepción es el catálogo vacío: ahí arranca **abierto y sin «Cerrar»**, porque
+no hay nada que mirar y el único paso posible es el que el formulario hace.
+
 ## Lo que se publica se maneja donde se lee
 
 Eventos y Foro **dejaron de ser pestañas del panel**. Editar en un cuarto aparte
