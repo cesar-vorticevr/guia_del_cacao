@@ -158,7 +158,7 @@ export default async function Home() {
             </p>
           ) : (
             <>
-              <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+              <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {sucursales.slice(0, 6).map((sucursal) => (
                   <TarjetaSucursal
                     key={sucursal.id}

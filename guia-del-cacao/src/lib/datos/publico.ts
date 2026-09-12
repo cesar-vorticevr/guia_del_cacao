@@ -37,7 +37,13 @@ export type TarjetaDirectorio = {
   entidad: string;
   /** Ciudad o municipio; las sucursales anteriores al alcance nacional no la tienen. */
   ciudad: string | null;
-  marcas: { nombre_comercial: string; categoria_id: number } | null;
+  marcas: {
+    nombre_comercial: string;
+    /** La principal: da el color de la tarjeta y el orden. */
+    categoria_id: number;
+    /** Todas, incluida la principal. Un negocio puede ser finca, museo y taller. */
+    categorias?: { id: number; nombre: string }[];
+  } | null;
 };
 
 export type MicrositioPublico = TarjetaDirectorio & {
@@ -50,7 +56,6 @@ export type MicrositioPublico = TarjetaDirectorio & {
   correo_contacto: string | null;
   telefono: string | null;
   galeria: string[];
-  marcas: { nombre_comercial: string; categoria_id: number } | null;
 };
 
 export type Publicacion = {
@@ -80,7 +85,9 @@ export type Publicacion = {
 export { nombrarNegocio };
 
 const CAMPOS_TARJETA =
-  "id, marca_id, slug, nombre_sucursal, logo, imagen_fondo, acerca_de, tier_id, entidad, ciudad, tiers(puede_dar_puntos, permite_resenas), marcas(nombre_comercial, categoria_id)";
+  `id, marca_id, slug, nombre_sucursal, logo, imagen_fondo, acerca_de, tier_id,
+   entidad, ciudad, tiers(puede_dar_puntos, permite_resenas),
+   marcas(nombre_comercial, categoria_id, marcas_categorias(categorias(id, nombre)))`;
 
 /**
  * Directorio.
@@ -111,10 +118,17 @@ export async function listarDirectorio(
     .order("tier_id", { ascending: false })
     .order("fecha_publicacion", { ascending: false });
 
-  const todas = (data ?? []) as unknown as TarjetaDirectorio[];
+  // Se aplanan antes de filtrar: el filtro mira **todas** las categorías de la
+  // marca y no solo la principal, que es lo que hace que un negocio que es
+  // finca y museo salga en los dos filtros.
+  const todas = (data ?? []).map((fila) =>
+    aplanarCategorias(fila as unknown as TarjetaDirectorio),
+  );
 
   const visibles = categoriaId
-    ? todas.filter((s) => s.marcas?.categoria_id === categoriaId)
+    ? todas.filter((s) =>
+        (s.marcas?.categorias ?? []).some((c) => c.id === categoriaId),
+      )
     : todas;
 
   return conCalificaciones(visibles);
@@ -152,7 +166,13 @@ export async function micrositioPorSlug(slug: string) {
     .eq("estado", "publicado")
     .maybeSingle();
 
-  return (data as unknown as MicrositioPublico) ?? null;
+  if (!data) return null;
+
+  // Mismo aplanado que en el directorio: el micrositio también enseña a qué se
+  // dedica, y con la forma cruda de PostgREST no podría.
+  return aplanarCategorias(
+    data as unknown as TarjetaDirectorio,
+  ) as MicrositioPublico;
 }
 
 /**
@@ -375,6 +395,50 @@ export async function calificacionesDe(
   );
 }
 
+/**
+ * Aplana las categorías que llegan por la tabla intermedia.
+ *
+ * PostGREST devuelve `marcas_categorias: [{ categorias: {...} }]` —un envoltorio
+ * por cada fila del cruce— y la tarjeta solo quiere la lista. La principal se
+ * pone primera porque es la que da el color; el resto va por nombre para que el
+ * orden no dependa de en qué orden se guardaron.
+ */
+export function aplanarCategorias(tarjeta: TarjetaDirectorio): TarjetaDirectorio {
+  const marcas = tarjeta.marcas as
+    | (NonNullable<TarjetaDirectorio["marcas"]> & {
+        marcas_categorias?: { categorias: { id: number; nombre: string } | null }[];
+      })
+    | null;
+
+  if (!marcas) return tarjeta;
+
+  /*
+    Idempotente a propósito: la llaman el directorio y también
+    `conCalificaciones`, y sin esta salida la segunda pasada dejaba la lista
+    vacía —ya no queda `marcas_categorias` que aplanar, porque la primera lo
+    reemplazó por el resultado— y las pastillas desaparecían de la tarjeta.
+  */
+  if (marcas.categorias) return tarjeta;
+
+  const todas = (marcas.marcas_categorias ?? [])
+    .map((fila) => fila.categorias)
+    .filter((c): c is { id: number; nombre: string } => Boolean(c));
+
+  const principal = todas.find((c) => c.id === marcas.categoria_id);
+  const demas = todas
+    .filter((c) => c.id !== marcas.categoria_id)
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+
+  return {
+    ...tarjeta,
+    marcas: {
+      nombre_comercial: marcas.nombre_comercial,
+      categoria_id: marcas.categoria_id,
+      categorias: principal ? [principal, ...demas] : demas,
+    },
+  };
+}
+
 async function conCalificaciones(
   tarjetas: TarjetaDirectorio[],
 ): Promise<TarjetaDirectorio[]> {
@@ -383,7 +447,7 @@ async function conCalificaciones(
   const porSucursal = await calificacionesDe(tarjetas.map((t) => t.id));
 
   return tarjetas.map((tarjeta) => ({
-    ...tarjeta,
+    ...aplanarCategorias(tarjeta),
     calificacion: porSucursal.get(tarjeta.id) ?? null,
   }));
 }
