@@ -52,13 +52,15 @@ export async function PieDePagina() {
   const perfil = await perfilActual();
 
   /*
-    La invitación es para quien todavía no está dentro. A quien ya tiene cuenta
-    se le ofrecía "crear mi cuenta" teniéndola ya, que es ruido y hace dudar
-    de si se registró bien.
+    La invitación es **solo** para quien todavía no está dentro. Ofrecerle
+    "crear mi cuenta" a quien ya la tiene es ruido, y hace dudar de si se
+    registró bien.
 
-    Al cliente sí se le sigue ofreciendo dar de alta un negocio —mucha gente
-    entra primero como visitante y luego pone su chocolatería—, pero llevándolo
-    antes por una advertencia: eso pide una cuenta aparte.
+    Al cliente se le ofrecía aquí dar de alta un negocio —mucha gente entra
+    primero como visitante y luego pone su chocolatería—, en una caja igual y en
+    el mismo sitio. Se quita: desde dentro de la sesión ese cartel se lee como
+    el anuncio de registro que ya no le toca. La puerta no se pierde, sigue en
+    los enlaces del pie, que es donde se busca lo que no es urgente.
   */
   const invitacion = !perfil
     ? {
@@ -78,20 +80,7 @@ export async function PieDePagina() {
           },
         ],
       }
-    : perfil.rol === "cliente"
-      ? {
-          titulo: "¿Tienes un negocio de cacao?",
-          texto:
-            "Publica tu micrositio y aparece donde la gente ya está buscando. Se da de alta aparte de tu cuenta de visitante.",
-          botones: [
-            {
-              href: "/soy-negocio",
-              texto: "Agregar mi negocio",
-              principal: true,
-            },
-          ],
-        }
-      : null;
+    : null;
 
   return (
     <footer className="relative z-10 mt-16">
