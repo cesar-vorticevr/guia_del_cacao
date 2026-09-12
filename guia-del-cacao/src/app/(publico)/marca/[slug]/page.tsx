@@ -15,6 +15,8 @@ import {
   resenasDe,
 } from "@/lib/datos/publico";
 import { TarjetaPublicacion } from "@/components/publico/tarjeta-publicacion";
+import { PortadaAmpliable } from "@/components/publico/portada-ampliable";
+import { CatalogoPublico } from "@/components/publico/catalogo-publico";
 import { BotonFavorito } from "@/components/publico/boton-favorito";
 import { esFavorito } from "@/lib/datos/favoritos";
 import { productosDe } from "@/lib/datos/sucursales";
@@ -22,7 +24,6 @@ import { tienePendienteEn } from "@/lib/datos/puntos";
 import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { BUCKET_RESENAS, urlImagen } from "@/lib/imagenes";
-import { pesos } from "@/lib/tipos";
 
 export async function generateMetadata({
   params,
@@ -145,11 +146,19 @@ export default async function Micrositio({
   return (
     <>
       <header className="pt-4">
-        <div
-          className="h-40 rounded-3xl bg-cacao bg-cover bg-center sm:h-56"
-          style={fondo ? { backgroundImage: `url(${fondo})` } : undefined}
-          role="presentation"
-        />
+        {/*
+          La portada se abre al tocarla. Recortada a la altura de la cabecera
+          se ve una franja de la finca o del mostrador, y esa foto es justo lo
+          que alguien mira antes de decidir si va hasta allá.
+        */}
+        {fondo ? (
+          <PortadaAmpliable
+            foto={fondo}
+            negocio={sucursal.marcas?.nombre_comercial ?? sucursal.nombre_sucursal}
+          />
+        ) : (
+          <div className="h-40 rounded-3xl bg-cacao sm:h-56" role="presentation" />
+        )}
 
         <div className="-mt-10 flex items-end gap-4 px-4">
           {logo ? (
@@ -277,40 +286,21 @@ export default async function Micrositio({
       {productos.length > 0 && (
         <section className="px-4 pt-6">
           <h2 className="font-display text-xl">Catálogo</h2>
-          <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-            {productos.map((producto) => (
-              <li
-                key={producto.id}
-                className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-dura"
-              >
-                {producto.imagen && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={urlImagen(producto.imagen) ?? ""}
-                    alt={producto.nombre}
-                    className="size-16 shrink-0 rounded-2xl border-2 border-selva/10 object-cover"
-                  />
-                )}
 
-                <span className="min-w-0 flex-1">
-                  <span className="block font-bold text-selva-2">
-                    {producto.nombre}
-                  </span>
-                  {producto.descripcion && (
-                    <span className="block text-cacao">
-                      {producto.descripcion}
-                    </span>
-                  )}
-                </span>
-
-                {producto.precio !== null && (
-                  <span className="shrink-0 font-mono font-bold text-selva">
-                    {pesos(producto.precio)}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
+          {/*
+            Las URLs se arman aquí, en el servidor: el catálogo es de cliente
+            —abre el visor— y un componente de cliente que importara
+            `urlImagen` se traería con él el cliente de Supabase de servidor.
+          */}
+          <CatalogoPublico
+            productos={productos.map((producto) => ({
+              id: producto.id,
+              nombre: producto.nombre,
+              descripcion: producto.descripcion,
+              precio: producto.precio,
+              foto: urlImagen(producto.imagen) ?? null,
+            }))}
+          />
         </section>
       )}
 
