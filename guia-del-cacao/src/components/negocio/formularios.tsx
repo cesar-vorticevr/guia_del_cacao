@@ -28,6 +28,7 @@ import { cancelarPlan, contratarPlan } from "@/lib/negocio/plan";
 import { ENTIDADES } from "@/lib/entidades";
 import { FUNCIONES } from "@/lib/funciones";
 import { LIMITES } from "@/lib/limites";
+import { REDES } from "@/lib/redes";
 import { ACEPTA, MEDIDAS, PESO } from "@/lib/imagenes";
 
 const INICIAL: EstadoAccion = {};
@@ -131,6 +132,13 @@ export function FormularioMicrositio({
         <legend className="px-2 font-display text-lg font-semibold text-selva-2">
           Contacto y redes
         </legend>
+
+        <p className="text-sm text-cacao">
+          Lo que pongas aquí sale como botón en tu micrositio. En las redes basta
+          tu usuario —<span className="font-mono">@lamazorca</span>—; si prefieres,
+          pega el enlace completo de tu página.
+        </p>
+
         <Campo
           nombre="telefono"
           etiqueta="Teléfono"
@@ -139,43 +147,35 @@ export function FormularioMicrositio({
           valor={sucursal.telefono}
         />
         <Campo
-          nombre="whatsapp"
-          etiqueta="WhatsApp"
-          tipo="tel"
-          requerido={false}
-          valor={sucursal.whatsapp}
-        />
-        <Campo
           nombre="correo_contacto"
           etiqueta="Correo de contacto"
           tipo="email"
           requerido={false}
           valor={sucursal.correo_contacto}
         />
-        <Campo
-          nombre="facebook"
-          etiqueta="Facebook"
-          requerido={false}
-          valor={sucursal.facebook}
-        />
-        <Campo
-          nombre="instagram"
-          etiqueta="Instagram"
-          requerido={false}
-          valor={sucursal.instagram}
-        />
-        <Campo
-          nombre="youtube"
-          etiqueta="YouTube"
-          requerido={false}
-          valor={sucursal.youtube}
-        />
-        <Campo
-          nombre="tiktok"
-          etiqueta="TikTok"
-          requerido={false}
-          valor={sucursal.tiktok}
-        />
+
+        {/*
+          Las redes salen de `REDES`, la misma lista con la que el micrositio
+          arma los enlaces: si algún día se agrega una, se agrega en un sitio.
+
+          Y cada una lleva su marcador, que es lo que faltaba. Eran cinco campos
+          vacíos titulados "Instagram", y cada negocio adivinaba: unos ponían la
+          dirección completa, otros el usuario y otros el nombre de su página
+          con espacios. Ahora se ve qué se espera, y `enlaceDeRed` aguanta las
+          otras formas de escribirlo.
+        */}
+        {REDES.map(({ campo, texto, marcador, ayuda }) => (
+          <Campo
+            key={campo}
+            nombre={campo}
+            etiqueta={texto}
+            tipo={campo === "whatsapp" ? "tel" : "text"}
+            requerido={false}
+            valor={sucursal[campo]}
+            marcador={marcador}
+            ayuda={ayuda}
+          />
+        ))}
       </fieldset>
 
       <BotonEnviar>

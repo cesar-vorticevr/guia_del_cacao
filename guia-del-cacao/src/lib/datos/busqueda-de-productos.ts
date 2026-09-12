@@ -47,22 +47,52 @@ export async function catalogoPorMarca(
   return porMarca;
 }
 
+/*
+  Palabras que no dicen de qué es un producto: unen o miden. No entran en los
+  atajos ni solas ni al final de una frase — "barra de" no es nada, "barra" sí.
+*/
+const VACIAS = new Set([
+  "de", "del", "con", "en", "y", "o", "la", "el", "los", "las", "un", "una",
+  "para", "por", "al", "sin", "a",
+]);
+
+/** Medidas y cantidades: "250", "g", "70%", "ml". Tampoco dicen qué es. */
+const UNIDADES = ["g", "gr", "kg", "ml", "l", "pz", "pza"];
+
+function esMedida(palabra: string) {
+  return /^[\d.,%]+$/.test(palabra) || UNIDADES.includes(palabra);
+}
+
 /**
- * Los productos que varios negocios tienen, para ofrecerlos como atajo.
+ * Las palabras con las que la gente busca, sacadas del catálogo real.
  *
- * Es el «qué buscas» de quien no sabe ni un nombre. Sale del catálogo real y no
- * de una lista de categorías escrita a mano: una taxonomía de productos de
- * cacao habría que mantenerla, y el día que alguien cargue «tablilla de
- * chocolate» se quedaría fuera de su cajón sin que nadie se enterara. Aquí, si
- * tres negocios cargan tablillas, «tablilla» aparece sola.
+ * No son los nombres completos de los productos —"Cacao en polvo 500 g",
+ * "Barra 70% cacao"— sino el trozo que se repite entre negocios: "cacao en
+ * polvo", "barra". Nadie escribe los gramos al buscar.
  *
- * Solo entran los que están en **dos o más** negocios publicados. Un atajo que
+ * Cómo se saca: cada nombre se parte en tramos por sus medidas, y de cada tramo
+ * salen las palabras solas y las frases que **acaban donde acaba el tramo**.
+ *
+ * Las dos reglas son por lo mismo. La medida **corta** en vez de caerse, porque
+ * si solo se quitara, "barra 70% cacao" dejaría pegadas dos palabras que nunca
+ * estuvieron juntas y saldría el atajo "barra cacao", que nadie dice. Y solo
+ * valen los finales porque en español el sustantivo va primero y lo que lo
+ * matiza va detrás: de "barra con chile amashito", lo que se busca es "barra" o
+ * "chile amashito", nunca "barra con chile", que se queda a medias.
+ *
+ * Cada frase se apunta con **en cuántos negocios** aparece, no cuántas veces: un
+ * negocio con ocho barras no debe pesar más que ocho negocios con una.
+ *
+ * Después se queda la más larga de las que valen lo mismo. Si "cacao en polvo"
+ * y "polvo" aparecen en los mismos cinco negocios, "polvo" sobra: la frase
+ * larga dice lo mismo y se entiende sola. Pero si "barra" está en ocho y
+ * "cacao en polvo" en seis, se quedan las dos: son búsquedas distintas.
+ *
+ * Solo entran las que están en **dos o más** negocios publicados. Un atajo que
  * lleva a un solo resultado no es un atajo: es un enlace a ese negocio, y para
  * eso ya está el directorio.
  */
-export async function productosEnVariosNegocios(
-  limite = 8,
-): Promise<string[]> {
+export async function palabrasQueSeRepiten(limite = 8): Promise<string[]> {
   const supabase = await crearClienteServidor();
 
   /*
@@ -75,20 +105,69 @@ export async function productosEnVariosNegocios(
     .select("nombre, marca_id, marcas!inner(sucursales!inner(estado))")
     .eq("marcas.sucursales.estado", "publicado");
 
-  const marcasPorProducto = new Map<string, Set<string>>();
+  const marcasPorFrase = new Map<string, Set<string>>();
 
   for (const fila of data ?? []) {
-    const nombre = (fila.nombre as string).trim();
-    if (!nombre) continue;
+    const marca = fila.marca_id as string;
 
-    const yaEstan = marcasPorProducto.get(nombre) ?? new Set<string>();
-    yaEstan.add(fila.marca_id as string);
-    marcasPorProducto.set(nombre, yaEstan);
+    const palabras = (fila.nombre as string)
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .toLowerCase()
+      .split(/[^a-z0-9%.,]+/)
+      .filter(Boolean);
+
+    // Los tramos: lo que hay entre medida y medida. "cacao en polvo 500 g" da
+    // uno solo, ["cacao", "en", "polvo"]; "barra 70% cacao" da dos.
+    const tramos: string[][] = [[]];
+    for (const palabra of palabras) {
+      if (esMedida(palabra)) tramos.push([]);
+      else tramos[tramos.length - 1].push(palabra);
+    }
+
+    const apuntar = (trozo: string[]) => {
+      // Una frase no empieza ni acaba en palabra vacía: "de cacao" y
+      // "cacao en" no son cosas que alguien escriba en un buscador.
+      if (VACIAS.has(trozo[0]) || VACIAS.has(trozo[trozo.length - 1])) return;
+
+      const frase = trozo.join(" ");
+      const yaEstan = marcasPorFrase.get(frase) ?? new Set<string>();
+      yaEstan.add(marca);
+      marcasPorFrase.set(frase, yaEstan);
+    };
+
+    for (const tramo of tramos) {
+      for (const palabra of tramo) apuntar([palabra]);
+
+      for (let n = 2; n <= 3 && n <= tramo.length; n++) {
+        apuntar(tramo.slice(tramo.length - n));
+      }
+    }
   }
 
-  return [...marcasPorProducto.entries()]
+  const candidatas = [...marcasPorFrase.entries()]
     .filter(([, marcas]) => marcas.size >= 2)
-    .sort((a, b) => b[1].size - a[1].size || a[0].localeCompare(b[0], "es"))
+    .map(([frase, marcas]) => ({ frase, cuantas: marcas.size }));
+
+  // Fuera las que una frase más larga ya cubre con el mismo peso.
+  const sobrevive = candidatas.filter(
+    (corta) =>
+      !candidatas.some(
+        (larga) =>
+          larga.frase !== corta.frase &&
+          larga.cuantas === corta.cuantas &&
+          larga.frase.split(" ").length > corta.frase.split(" ").length &&
+          ` ${larga.frase} `.includes(` ${corta.frase} `),
+      ),
+  );
+
+  return sobrevive
+    .sort(
+      (a, b) =>
+        b.cuantas - a.cuantas ||
+        b.frase.split(" ").length - a.frase.split(" ").length ||
+        a.frase.localeCompare(b.frase, "es"),
+    )
     .slice(0, limite)
-    .map(([nombre]) => nombre);
+    .map(({ frase }) => frase);
 }

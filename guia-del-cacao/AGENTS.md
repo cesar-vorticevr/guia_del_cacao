@@ -290,6 +290,29 @@ empezar. Lo exige `exigir_tope_de_sucursales` al insertar, y la pantalla lo
 consulta con la misma funcion (`tope_de_sucursales`) en vez de contar por su
 cuenta.
 
+## «¿Qué andas buscando?»: las palabras salen del catálogo
+
+Los atajos del directorio no son una lista escrita a mano ni los nombres de los
+productos: son el **trozo que se repite** entre negocios, y los saca
+`palabrasQueSeRepiten()` en `lib/datos/busqueda-de-productos.ts`.
+
+Fueron los nombres completos y salía «Cacao en polvo 500 g» — el texto de una
+etiqueta, que nadie escribe al buscar. Hoy sale «cacao en polvo», y de «Barra
+70% cacao» sale «barra».
+
+Dos reglas de esa extracción no son de adorno:
+
+- **La medida corta el nombre en tramos, no se cae.** Si solo se quitara, «barra
+  70% cacao» dejaría pegadas dos palabras que nunca estuvieron juntas y el atajo
+  sería «barra cacao».
+- **De cada tramo valen las palabras solas y las frases que acaban donde acaba
+  el tramo.** En español el sustantivo va delante y lo que lo matiza detrás: de
+  «barra con chile amashito» se busca «barra» o «chile amashito», nunca «barra
+  con chile».
+
+Y solo entran las que están en **dos o más** negocios publicados: un atajo a un
+solo resultado es un enlace a ese negocio, y para eso ya está el directorio.
+
 ## En el directorio se ve quién da mazorcas (apagado)
 
 Con `FUNCIONES.mazorcas` en `false` la mazorca de la tarjeta no se pinta. Lo que
@@ -552,6 +575,46 @@ Las cuatro pantallas de pestaña arrancan **pegadas al borde izquierdo**, sin
 `mx-auto`: centradas en una columna estrecha quedaban descolgadas de las
 pestañas, y cambiar de pestaña movía el título de sitio. Lo que se acota es la
 línea de texto (`max-w-prose`) y los formularios, no la pantalla.
+
+## Un negocio, varias categorías — y el embed que se rompió
+
+Desde la migración **000042** una marca puede ser chocolatería *y* museo: las
+demás cuelgan de la tabla puente **`marcas_categorias`**, y `marcas.categoria_id`
+se queda como la **principal**, la que encabeza el panel y la tarjeta.
+
+Eso creó **dos caminos de `marcas` a `categorias`**, y con dos caminos PostgREST
+ya no elige: `categorias(nombre)` responde `PGRST201`. El error llega como `data`
+en **null**, que es exactamente lo que se lee como "este negocio no tiene
+marca" — así que el panel entero rebotaba a `/negocio/completar-marca` con la
+marca ahí, intacta. Se encontró intentando abrir el editor de un micrositio,
+no leyendo el código.
+
+Toda consulta que baje de `marcas` a `categorias` tiene que decir por dónde:
+
+- `categorias!marcas_categoria_id_fkey(nombre)` para la principal.
+- `marcas_categorias(categorias(id, nombre))` para todas, que es lo que pide el
+  directorio y lo que aplana `aplanarCategorias`.
+
+Es el mismo tropiezo que ya estaba documentado con `perfiles_publicos` desde
+`temas_foro`. Cada vez que una migración agregue un segundo camino entre dos
+tablas, hay que repasar los embeds de las dos.
+
+## Las redes se piden como usuario, no como dirección
+
+`lib/redes.ts` tiene la lista de redes (`REDES`) y `enlaceDeRed()`, que convierte
+lo que el negocio escribió en un enlace. El formulario del micrositio pinta los
+campos desde esa lista y el micrositio arma los botones con esa función: si se
+agrega una red, se agrega en un sitio.
+
+El campo acepta `@lamazorca`, `lamazorca`, `instagram.com/lamazorca` y la
+dirección completa, porque las cuatro llegan. Antes el valor se usaba **tal cual
+como `href`**, así que quien ponía su usuario se quedaba con un enlace relativo
+dentro de su propio micrositio — una página que no existe. Y `wa.me` exige el
+número internacional: diez dígitos se toman como mexicanos y se les pone el 52
+delante, que es lo que hacía falta para que el botón de WhatsApp abriera algo.
+
+De paso, de ahí solo salen enlaces `https:`. Un `href` copiado del formulario sin
+mirar acepta `javascript:`.
 
 ## El catálogo es de la marca
 

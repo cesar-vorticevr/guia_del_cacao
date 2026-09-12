@@ -24,6 +24,7 @@ import { tienePendienteEn } from "@/lib/datos/puntos";
 import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { BUCKET_RESENAS, urlImagen } from "@/lib/imagenes";
+import { REDES, enlaceDeRed } from "@/lib/redes";
 
 export async function generateMetadata({
   params,
@@ -46,14 +47,6 @@ const CUANDO = new Intl.DateTimeFormat("es-MX", {
   month: "long",
   year: "numeric",
 });
-
-const REDES = [
-  { campo: "whatsapp", texto: "WhatsApp" },
-  { campo: "facebook", texto: "Facebook" },
-  { campo: "instagram", texto: "Instagram" },
-  { campo: "youtube", texto: "YouTube" },
-  { campo: "tiktok", texto: "TikTok" },
-] as const;
 
 export default async function Micrositio({
   params,
@@ -140,7 +133,9 @@ export default async function Micrositio({
     sucursal.ubicacion_maps_url ||
     sucursal.telefono ||
     sucursal.correo_contacto ||
-    REDES.some(({ campo }) => sucursal[campo]),
+    // Se pregunta por el enlace y no por el campo: un campo con "@" a secas no
+    // da ningún botón, y la sección saldría con el título sobre el vacío.
+    REDES.some(({ campo }) => enlaceDeRed(campo, sucursal[campo])),
   );
 
   return (
@@ -369,14 +364,14 @@ export default async function Micrositio({
               </li>
             )}
 
+            {/*
+              El enlace lo arma `enlaceDeRed` y no se toma del campo: el negocio
+              escribe su usuario (`@lamazorca`) y eso como `href` era un enlace
+              roto dentro de su propio micrositio.
+            */}
             {REDES.map(({ campo, texto }) => {
-              const valor = sucursal[campo];
-              if (!valor) return null;
-
-              const href =
-                campo === "whatsapp"
-                  ? `https://wa.me/${valor.replace(/\D/g, "")}`
-                  : valor;
+              const href = enlaceDeRed(campo, sucursal[campo]);
+              if (!href) return null;
 
               return (
                 <li key={campo}>

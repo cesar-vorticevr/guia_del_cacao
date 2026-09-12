@@ -7,7 +7,7 @@ import { esEntidad } from "@/lib/entidades";
 import { misFavoritosEntre } from "@/lib/datos/favoritos";
 import {
   catalogoPorMarca,
-  productosEnVariosNegocios,
+  palabrasQueSeRepiten,
 } from "@/lib/datos/busqueda-de-productos";
 import { perfilActual } from "@/lib/auth/sesion";
 import { tonoDeCategoria } from "@/lib/paleta";
@@ -41,7 +41,7 @@ export default async function Directorio({
     listarCategorias(),
     entidadesConNegocios(),
     perfilActual(),
-    productosEnVariosNegocios(),
+    palabrasQueSeRepiten(),
   ]);
 
   // El catálogo de estas marcas viaja a la página para que el buscador encuentre
@@ -212,9 +212,13 @@ export default async function Directorio({
         {/*
           Los atajos por producto, para quien no sabe ningún nombre de negocio
           —que es casi todo el mundo que llega aquí—. No son una taxonomía
-          escrita a mano: salen del catálogo real, y solo aparecen los productos
-          que están en dos o más negocios. Si tres cargan "tablilla de
-          chocolate", "tablilla" aparece sola.
+          escrita a mano: salen del catálogo real.
+
+          Y no son nombres de producto completos. Lo eran, y salían cosas como
+          "Cacao en polvo 500 g": el nombre exacto de una etiqueta, que nadie
+          escribe al buscar y que además solo encontraba a quien lo hubiera
+          escrito igual. Ahora es el trozo que se repite entre negocios —"cacao
+          en polvo", "barra"—, que es como se pide en un mostrador.
 
           Llevan a la misma búsqueda con `?q=`, así que reusan el buscador en
           vez de abrir un camino nuevo que haya que mantener aparte.
@@ -228,7 +232,7 @@ export default async function Directorio({
                 <li key={nombre}>
                   <Link
                     href={`/directorio?q=${encodeURIComponent(nombre)}`}
-                    className={`${PILDORA} bg-white text-cacao`}
+                    className={`${PILDORA} bg-white text-cacao first-letter:uppercase`}
                   >
                     {nombre}
                   </Link>
