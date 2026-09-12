@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PortadaPublicacion } from "@/components/publico/portada-publicacion";
 import { masDelMuro } from "@/lib/publico/muro";
-import { FUNCIONES } from "@/lib/funciones";
+import { MeGusta } from "@/components/publico/me-gusta";
 import type { Entrada, Filtro } from "@/lib/datos/comunidad";
 
 /**
@@ -211,10 +211,13 @@ export function MuroComunidad({
 
               <ul className="grid gap-5">
                 {dia.entradas.map((entrada) => (
-                  <li key={entrada.id}>
+                  <li
+                    key={entrada.id}
+                    className="group grid content-start overflow-hidden rounded-3xl bg-crema-2"
+                  >
                     <Link
                       href={entrada.href}
-                      className="group grid h-full content-start overflow-hidden rounded-3xl bg-crema-2 transition-transform active:translate-y-0.5"
+                      className="grid content-start transition-transform active:translate-y-0.5"
                     >
                       {/*
                         La foto va arriba y del ancho de la tarjeta. Sin ella el
@@ -257,42 +260,39 @@ export function MuroComunidad({
                           {entrada.resumen}
                         </p>
 
-                        <p className="mt-3 flex flex-wrap items-center gap-3 font-mono text-xs text-cacao/70">
-                          <span className="inline-flex items-center gap-1.5">
-                            {entrada.comentarios}{" "}
-                            {entrada.comentarios === 1
-                              ? "comentario"
-                              : "comentarios"}
-                            {/*
-                              El punto solo aparece cuando hay respuestas que
-                              esa persona no ha visto. Si estuviera siempre que
-                              hay comentarios, dejaría de significar "hay algo
-                              nuevo" y sería parte del dibujo.
-                            */}
-                            {entrada.sinVer > 0 && (
-                              <span
-                                className="grid size-5 place-items-center rounded-full bg-guayaba font-bold text-ink"
-                                aria-label={`${entrada.sinVer} sin leer`}
-                              >
-                                {entrada.sinVer}
-                              </span>
-                            )}
-                          </span>
-
-                          {/*
-                            Los apoyos se contaban en mazorcas. Con las mazorcas
-                            apagadas, el número sigue en la base pero no se
-                            nombra con una moneda que ya no existe.
-                          */}
-                          {FUNCIONES.mazorcas && entrada.apoyos > 0 && (
-                            <span>
-                              {entrada.apoyos}{" "}
-                              {entrada.apoyos === 1 ? "mazorca" : "mazorcas"}
-                            </span>
-                          )}
-                        </p>
                       </div>
                     </Link>
+
+                    {/*
+                      El corazón va fuera del enlace —un `button` dentro de un
+                      `a` es HTML inválido— pero dentro de la misma caja, en su
+                      franja al pie.
+                    */}
+                    <div className="flex flex-wrap items-center gap-3 border-t-2 border-ink/5 px-5 py-3">
+                      <MeGusta
+                        clase="publicacion"
+                        id={entrada.id}
+                        inicial={entrada.miApoyo}
+                        cuantos={entrada.apoyos}
+                        comentarios={entrada.comentarios}
+                        haySesion={haySesion}
+                      />
+
+                      {/*
+                        El punto solo aparece cuando hay respuestas que esa
+                        persona no ha visto. Si estuviera siempre que hay
+                        comentarios, dejaría de significar "hay algo nuevo" y
+                        sería parte del dibujo.
+                      */}
+                      {entrada.sinVer > 0 && (
+                        <span
+                          className="grid size-5 place-items-center rounded-full bg-guayaba font-mono text-xs font-bold text-ink"
+                          aria-label={`${entrada.sinVer} sin leer`}
+                        >
+                          {entrada.sinVer}
+                        </span>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>

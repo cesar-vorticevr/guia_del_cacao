@@ -36,20 +36,3 @@ export async function esFavorito(
   return guardados.has(sucursalId);
 }
 
-/**
- * Cuántos negocios tiene guardados, sin traérselos.
- *
- * La cuenta solo necesita el número para ofrecer el atajo al explorador, que es
- * donde viven los favoritos. Pedir las fichas completas para contar sería
- * traerse el directorio entero y tirarlo.
- */
-export async function cuantosFavoritos(usuarioId: string): Promise<number> {
-  const supabase = await crearClienteServidor();
-
-  const { count } = await supabase
-    .from("favoritos")
-    .select("sucursal_id", { count: "exact", head: true })
-    .eq("usuario_id", usuarioId);
-
-  return count ?? 0;
-}

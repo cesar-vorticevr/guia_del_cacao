@@ -34,6 +34,8 @@ export type Entrada = {
   urlDeFoto: Record<string, string>;
   comentarios: number;
   apoyos: number;
+  /** Si quien mira ya le dio corazón, para pintarlo lleno sin preguntar otra vez. */
+  miApoyo: boolean;
   /** Cuántos comentarios no ha visto quien mira. Cero si no hay sesión. */
   sinVer: number;
   /** Si la escribió quien mira. */
@@ -133,7 +135,10 @@ export async function muroDeComunidad(
       .from("comentarios")
       .select("publicacion_id, fecha, oculto")
       .in("publicacion_id", ids),
-    supabase.from("apoyos").select("publicacion_id").in("publicacion_id", ids),
+    supabase
+      .from("apoyos")
+      .select("publicacion_id, usuario_id")
+      .in("publicacion_id", ids),
     perfilId
       ? supabase
           .from("vistas_publicacion")
@@ -144,11 +149,20 @@ export async function muroDeComunidad(
   ]);
 
   const cuantosApoyos = new Map<string, number>();
-  for (const fila of apoyos.data ?? []) {
+  const mios = new Set<string>();
+
+  for (const fila of (apoyos.data ?? []) as {
+    publicacion_id: string;
+    usuario_id: string;
+  }[]) {
     cuantosApoyos.set(
       fila.publicacion_id,
       (cuantosApoyos.get(fila.publicacion_id) ?? 0) + 1,
     );
+
+    // Se saca del mismo lote: preguntar aparte "cuáles son míos" sería una
+    // segunda consulta por la mitad de los datos que ya están aquí.
+    if (fila.usuario_id === perfilId) mios.add(fila.publicacion_id);
   }
 
   const visto = new Map<string, number>();
@@ -215,6 +229,7 @@ export async function muroDeComunidad(
       ),
       comentarios: cuantosComentarios.get(fila.id) ?? 0,
       apoyos: cuantosApoyos.get(fila.id) ?? 0,
+      miApoyo: mios.has(fila.id),
       sinVer: cuantosSinVer.get(fila.id) ?? 0,
       mia: fila.autor_id === perfilId,
       oculta: fila.oculta_en !== null,

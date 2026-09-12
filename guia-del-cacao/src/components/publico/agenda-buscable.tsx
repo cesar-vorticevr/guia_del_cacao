@@ -17,9 +17,12 @@ import type { Publicacion } from "@/lib/datos/publico";
 export function AgendaBuscable({
   proximos,
   pasados,
+  /** Para el corazón de cada evento: sin sesión lleva a registrarse. */
+  haySesion = false,
 }: {
   proximos: Publicacion[];
   pasados: Publicacion[];
+  haySesion?: boolean;
 }) {
   const [consulta, setConsulta] = useState("");
 
@@ -92,6 +95,7 @@ export function AgendaBuscable({
                 key={evento.id}
                 publicacion={evento}
                 tipo="evento"
+                haySesion={haySesion}
               />
             ))}
           </ul>
@@ -107,6 +111,7 @@ export function AgendaBuscable({
                 key={evento.id}
                 publicacion={evento}
                 tipo="evento"
+                haySesion={haySesion}
               />
             ))}
           </ul>

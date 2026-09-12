@@ -1,11 +1,9 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { perfilActual } from "@/lib/auth/sesion";
 import { cerrarSesion } from "@/lib/auth/acciones";
 import { FormularioContrasenaNueva } from "@/components/formularios-auth";
 import { Pestanas } from "@/components/negocio/pestanas";
-import { cuantosFavoritos } from "@/lib/datos/favoritos";
 
 export const metadata: Metadata = { title: "Mi cuenta · Guía del Cacao" };
 
@@ -17,10 +15,10 @@ export const metadata: Metadata = { title: "Mi cuenta · Guía del Cacao" };
  * llegar a cerrar sesión era bajar tres pantallas. Son cosas que no se hacen
  * juntas: se entra a corregir un dato, o a salir.
  *
- * **Los favoritos no viven aquí**, sino como filtro del explorador. Son una
- * herramienta para elegir a dónde ir, y elegir se hace mirando el directorio,
- * no dentro de la pantalla de la cuenta. Lo único que queda de ellos aquí es
- * el atajo de abajo, para quien los busque donde estaban.
+ * **Los favoritos no se nombran aquí.** Viven como filtro del explorador, que
+ * es donde se usan: son una herramienta para elegir a dónde ir, y elegir se
+ * hace mirando el directorio. Hubo un atajo con su contador y también se fue —
+ * la cuenta es para los datos de la cuenta, no un tablero de todo.
  */
 export default async function Cuenta({
   searchParams,
@@ -41,9 +39,6 @@ export default async function Cuenta({
 
   const seccion = ver === "sesion" ? "sesion" : "datos";
 
-  // Solo el número, para el atajo al explorador. La lista se ve allá.
-  const favoritos = await cuantosFavoritos(perfil.id);
-
   return (
     <div className="mx-auto grid max-w-3xl gap-6 py-8">
       <h1 className="font-display text-3xl">Hola, {perfil.nombre}</h1>
@@ -56,29 +51,6 @@ export default async function Cuenta({
           { clave: "sesion", texto: "Sesión" },
         ]}
       />
-
-      {/*
-        El atajo a donde se fueron. Quien guardó un negocio con el corazón lo
-        va a buscar aquí la primera vez, y una cuenta que no menciona sus
-        favoritos se lee como si se hubieran perdido.
-      */}
-      {favoritos > 0 && (
-        <Link
-          href="/directorio?favoritos=1"
-          className="flex items-center justify-between gap-3 rounded-3xl border-2 border-guayaba/40 bg-guayaba/10 px-5 py-4 text-cacao transition-colors hover:border-guayaba"
-        >
-          <span>
-            <strong className="block font-display text-lg text-selva-2">
-              Tienes {favoritos}{" "}
-              {favoritos === 1 ? "negocio guardado" : "negocios guardados"}
-            </strong>
-            Se ven en el explorador, con el filtro de favoritos puesto.
-          </span>
-          <span aria-hidden="true" className="shrink-0 font-bold text-selva">
-            →
-          </span>
-        </Link>
-      )}
 
       {seccion === "datos" && (
         <section className="grid gap-6">

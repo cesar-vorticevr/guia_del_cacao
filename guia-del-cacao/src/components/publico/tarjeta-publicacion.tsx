@@ -2,6 +2,7 @@ import Link from "next/link";
 import { urlImagen } from "@/lib/imagenes";
 import { nombrarNegocio } from "@/lib/nombres";
 import type { Publicacion } from "@/lib/datos/publico";
+import { MeGusta } from "@/components/publico/me-gusta";
 
 const FECHA = new Intl.DateTimeFormat("es-MX", {
   day: "numeric",
@@ -29,9 +30,12 @@ const FECHA = new Intl.DateTimeFormat("es-MX", {
 export function TarjetaPublicacion({
   publicacion,
   tipo,
+  /** Para el corazón: sin sesión lleva a registrarse en vez de guardar. */
+  haySesion = false,
 }: {
   publicacion: Publicacion;
   tipo: "evento" | "noticia";
+  haySesion?: boolean;
 }) {
   const portada = urlImagen(publicacion.imagenes?.[0]);
   const fecha =
@@ -40,10 +44,17 @@ export function TarjetaPublicacion({
   const cancelado = publicacion.cancelado_en != null;
 
   return (
-    <li>
+    /*
+      La caja es el `li` y no el enlace, porque el corazón va dentro de la
+      tarjeta pero **fuera** del enlace: un `button` dentro de un `a` es HTML
+      inválido y los lectores de pantalla lo anuncian mal. Así el enlace cubre
+      la foto y el texto, y la barra de abajo queda aparte sin salirse del
+      marco.
+    */
+    <li className="group flex h-full flex-col overflow-hidden rounded-3xl border-2 border-ink/10 bg-white shadow-dura transition-all hover:-translate-y-0.5 hover:shadow-dura-alta">
       <Link
         href={`/${tipo === "evento" ? "eventos" : "noticias"}/${publicacion.id}`}
-        className="flex h-full flex-col overflow-hidden rounded-3xl border-2 border-ink/10 bg-white shadow-dura transition-all hover:-translate-y-0.5 hover:shadow-dura-alta"
+        className="flex flex-1 flex-col"
       >
         {/*
           La foto va absoluta dentro de la caja, no en el flujo: con `h-full` en
@@ -145,8 +156,26 @@ export function TarjetaPublicacion({
           <span className="mt-auto line-clamp-2 block pt-1.5 text-sm text-cacao">
             {publicacion.contenido}
           </span>
+
         </span>
       </Link>
+
+      {/*
+        El corazón y los comentarios, en su franja al pie. Solo en eventos: una
+        noticia no tiene dónde comentarse desde que la comunidad es el muro.
+      */}
+      {tipo === "evento" && (
+        <div className="border-t-2 border-ink/5 px-4 py-2.5">
+          <MeGusta
+            clase="evento"
+            id={publicacion.id}
+            inicial={publicacion.miApoyo ?? false}
+            cuantos={publicacion.apoyos ?? 0}
+            comentarios={publicacion.comentarios ?? 0}
+            haySesion={haySesion}
+          />
+        </div>
+      )}
     </li>
   );
 }

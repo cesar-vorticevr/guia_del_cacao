@@ -28,10 +28,10 @@ const CUANDO = new Intl.DateTimeFormat("es-MX", {
  * debajo.
  */
 export default async function Eventos() {
-  const [{ proximos, pasados }, perfil] = await Promise.all([
-    listarEventos(),
-    perfilActual(),
-  ]);
+  // El perfil va primero porque los eventos lo necesitan: hace falta saber
+  // quién mira para pintar su corazón lleno en los que ya apoyó.
+  const perfil = await perfilActual();
+  const { proximos, pasados } = await listarEventos(perfil?.id);
 
   const esNegocio = perfil?.rol === "negocio";
   const sucursales = esNegocio ? await misSucursales(perfil.id) : [];
@@ -139,6 +139,7 @@ export default async function Eventos() {
       )}
 
       <AgendaBuscable
+        haySesion={Boolean(perfil)}
         proximos={enAgenda(proximos)}
         pasados={enAgenda(pasados)}
       />

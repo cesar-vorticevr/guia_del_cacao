@@ -19,12 +19,15 @@ import { tonoDeCategoria } from "@/lib/paleta";
 import { urlImagen } from "@/lib/imagenes";
 
 export default async function Home() {
-  const [banners, sucursales, categorias, eventos, perfil] = await Promise.all([
+  // El perfil va primero porque lo necesitan los eventos —para saber a cuáles
+  // ya les dio corazón quien mira— y los favoritos del directorio.
+  const perfil = await perfilActual();
+
+  const [banners, sucursales, categorias, eventos] = await Promise.all([
     bannersDePortada(),
     listarDirectorio(),
     listarCategorias(),
-    listarEventos(),
-    perfilActual(),
+    listarEventos(perfil?.id),
   ]);
 
   // Solo un cliente guarda favoritos. A un negocio o a un administrador el
@@ -217,6 +220,7 @@ export default async function Home() {
                 <TarjetaPublicacion
                   key={evento.id}
                   publicacion={evento}
+                  haySesion={Boolean(perfil)}
                   tipo="evento"
                 />
               ))}

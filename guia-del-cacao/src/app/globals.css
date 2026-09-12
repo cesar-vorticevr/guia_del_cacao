@@ -139,6 +139,17 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+
+    /*
+      El fondo de cacao se sale de la columna de contenido para llegar a las
+      orillas de la pantalla, y sin esto esos pixeles de mas abrirían una barra
+      de scroll horizontal.
+
+      `clip` y no `hidden`: `hidden` convierte el elemento en un contexto de
+      scroll, y con eso `position: sticky` deja de pegarse — que es justo lo que
+      hace la fecha de cada día en el muro de la comunidad.
+    */
+    overflow-x: clip;
   }
 
   body {

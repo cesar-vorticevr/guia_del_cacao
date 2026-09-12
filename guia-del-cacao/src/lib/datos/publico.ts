@@ -68,6 +68,12 @@ export type Publicacion = {
   /** Solo en eventos: si se canceló, sigue a la vista pero tachado. */
   cancelado_en?: string | null;
   fecha_publicacion: string;
+  /** Cuántos corazones tiene. Solo en eventos, por ahora. */
+  apoyos?: number;
+  /** Si quien mira ya le dio el suyo. */
+  miApoyo?: boolean;
+  /** Cuántos comentarios visibles tiene. */
+  comentarios?: number;
   sucursales: {
     slug: string;
     nombre_sucursal: string;
@@ -224,7 +230,7 @@ export async function bannersDePortada() {
 const CAMPOS_PUBLICACION =
   "id, titulo, subtitulo, contenido, imagenes, fecha_publicacion, sucursales(slug, nombre_sucursal, marcas(nombre_comercial))";
 
-export async function listarEventos() {
+export async function listarEventos(perfilId?: string) {
   const supabase = await crearClienteServidor();
 
   const { data } = await supabase
@@ -232,7 +238,8 @@ export async function listarEventos() {
     .select(`${CAMPOS_PUBLICACION}, fecha_evento, cancelado_en`)
     .order("fecha_evento", { ascending: false });
 
-  const todos = (data ?? []) as unknown as Publicacion[];
+  const crudos = (data ?? []) as unknown as Publicacion[];
+  const todos = await conCorazonesYComentarios(crudos, perfilId);
   const ahora = Date.now();
 
   // "Próximo" o "pasado" se decide por la fecha, sin que nadie lo marque a
@@ -246,6 +253,64 @@ export async function listarEventos() {
       ),
     pasados: todos.filter((e) => new Date(e.fecha_evento!).getTime() < ahora),
   };
+}
+
+/**
+ * Los corazones y los comentarios de un lote de eventos.
+ *
+ * Se cuentan de un jalón y no evento por evento: PostgREST no agrupa, así que
+ * se traen los renglones del lote y se cuentan aquí. Son dos consultas para
+ * toda la agenda en vez de dos por evento.
+ */
+async function conCorazonesYComentarios(
+  eventos: Publicacion[],
+  perfilId?: string,
+): Promise<Publicacion[]> {
+  if (eventos.length === 0) return eventos;
+
+  const supabase = await crearClienteServidor();
+  const ids = eventos.map((e) => e.id);
+
+  const [apoyos, comentarios] = await Promise.all([
+    supabase
+      .from("apoyos_evento")
+      .select("evento_id, usuario_id")
+      .in("evento_id", ids),
+    supabase
+      .from("comentarios_publicacion")
+      .select("evento_id, oculto")
+      .in("evento_id", ids),
+  ]);
+
+  const cuantos = new Map<string, number>();
+  const mios = new Set<string>();
+
+  for (const fila of (apoyos.data ?? []) as {
+    evento_id: string;
+    usuario_id: string;
+  }[]) {
+    cuantos.set(fila.evento_id, (cuantos.get(fila.evento_id) ?? 0) + 1);
+    if (fila.usuario_id === perfilId) mios.add(fila.evento_id);
+  }
+
+  const charla = new Map<string, number>();
+
+  for (const fila of (comentarios.data ?? []) as {
+    evento_id: string;
+    oculto: boolean;
+  }[]) {
+    // Un comentario oculto por moderación no cuenta: el número tiene que
+    // cuadrar con los que se pueden leer al abrir el evento.
+    if (fila.oculto) continue;
+    charla.set(fila.evento_id, (charla.get(fila.evento_id) ?? 0) + 1);
+  }
+
+  return eventos.map((evento) => ({
+    ...evento,
+    apoyos: cuantos.get(evento.id) ?? 0,
+    miApoyo: mios.has(evento.id),
+    comentarios: charla.get(evento.id) ?? 0,
+  }));
 }
 
 export async function listarNoticias() {
