@@ -314,7 +314,7 @@ export default async function Micrositio({
       {agenda.eventos.length > 0 && (
         <section className="px-4 pt-6">
           <h2 className="font-display text-xl">Próximos eventos</h2>
-          <ul className="mt-3 grid gap-4">
+          <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {agenda.eventos.map((evento) => (
               <TarjetaPublicacion
                 key={evento.id}
@@ -329,7 +329,7 @@ export default async function Micrositio({
       {agenda.noticias.length > 0 && (
         <section className="px-4 pt-6">
           <h2 className="font-display text-xl">Noticias recientes</h2>
-          <ul className="mt-3 grid gap-4">
+          <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {agenda.noticias.map((noticia) => (
               <TarjetaPublicacion
                 key={noticia.id}

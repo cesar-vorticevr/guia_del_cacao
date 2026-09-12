@@ -86,7 +86,7 @@ export function AgendaBuscable({
               : "No hay eventos programados por ahora."}
           </p>
         ) : (
-          <ul className="mt-4 grid gap-5 sm:grid-cols-2">
+          <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {proximosVisibles.map((evento) => (
               <TarjetaPublicacion
                 key={evento.id}
@@ -101,7 +101,7 @@ export function AgendaBuscable({
       {pasadosVisibles.length > 0 && (
         <section className="pt-8">
           <h2 className="font-display text-2xl">Pasados</h2>
-          <ul className="mt-4 grid gap-5 opacity-75 sm:grid-cols-2">
+          <ul className="mt-4 grid gap-4 opacity-75 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {pasadosVisibles.map((evento) => (
               <TarjetaPublicacion
                 key={evento.id}

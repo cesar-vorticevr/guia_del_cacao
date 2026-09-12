@@ -212,7 +212,7 @@ export default async function Home() {
           </p>
         ) : (
           <>
-            <ul className="mt-4 grid gap-5 sm:grid-cols-2">
+            <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {eventos.proximos.slice(0, 4).map((evento) => (
                 <TarjetaPublicacion
                   key={evento.id}
