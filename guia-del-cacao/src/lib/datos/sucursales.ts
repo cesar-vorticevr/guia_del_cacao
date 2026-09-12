@@ -60,7 +60,7 @@ export async function listarTiers() {
 
   const { data } = await supabase
     .from("tiers")
-    .select("id, nombre, precio_mensual, puede_dar_puntos, puede_publicar_contenido, en_banner_principal, max_sucursales")
+    .select("id, nombre, precio_mensual, puede_dar_puntos, permite_resenas, puede_publicar_contenido, en_banner_principal, max_sucursales")
     .order("id");
 
   return (data ?? []) as Tier[];
@@ -197,17 +197,53 @@ export async function queLeFaltaPorPartes(sucursalId: string): Promise<string[]>
  * Filtra por `estado = 'activo'` a propósito: cancelar no borra la fila, la
  * marca. Quedarse con la más reciente daría por viva una que ya se dio de baja.
  */
+/**
+ * La suscripción que representa a la marca en la pantalla de cuenta.
+ *
+ * Desde la spec v2 el cobro es por sucursal, así que "el plan de la marca" ya
+ * no existe como dato: lo que hay son varias suscripciones, una por micrositio
+ * publicado. Esta función devuelve la primera abierta —con cuántas comparten su
+ * mismo plan— porque la pantalla de cuenta enseña un resumen, no la lista.
+ *
+ * `trial` cuenta como abierta: durante la prueba el micrositio está en el
+ * directorio con todo lo de su plan encendido, y decirle a alguien que no tiene
+ * plan mientras lo está probando sería mentirle.
+ */
 export async function suscripcionDeMarca(marcaId: string) {
   const supabase = await crearClienteServidor();
 
+  const { data: sucursales } = await supabase
+    .from("sucursales")
+    .select("id")
+    .eq("marca_id", marcaId);
+
+  const ids = (sucursales ?? []).map((s) => s.id as string);
+  if (ids.length === 0) return null;
+
   const { data } = await supabase
     .from("suscripciones")
-    .select("id, tier_id, monto_mensual, fecha_proximo_cobro")
-    .eq("marca_id", marcaId)
-    .eq("estado", "activo")
-    .maybeSingle();
+    .select("id, sucursal_id, tier_id, monto_mensual, estado, fecha_fin_trial, fecha_proximo_cobro")
+    .in("sucursal_id", ids)
+    .in("estado", ["trial", "activo", "pausado_por_pago"])
+    .order("fecha_inicio");
 
-  return data;
+  const abiertas = data ?? [];
+  const primera = abiertas[0];
+  if (!primera) return null;
+
+  return {
+    ...primera,
+    /** Cuántos micrositios están en este mismo plan. */
+    cuantas: abiertas.filter((s) => s.tier_id === primera.tier_id).length,
+    /** Si alguno sigue en periodo de prueba. */
+    enPrueba: abiertas.some((s) => s.estado === "trial"),
+    /** Cuándo termina la prueba más próxima, si hay alguna corriendo. */
+    finDePrueba:
+      abiertas
+        .map((s) => s.fecha_fin_trial as string | null)
+        .filter((f): f is string => Boolean(f))
+        .sort()[0] ?? null,
+  };
 }
 
 /**

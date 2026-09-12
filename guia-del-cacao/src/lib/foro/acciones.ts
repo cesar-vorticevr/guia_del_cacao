@@ -271,38 +271,3 @@ export async function borrarTema(datos: FormData) {
   redirect("/comunidad");
 }
 
-/**
- * Regalarle una mazorca a quien publicó.
- *
- * Es una transferencia de verdad: quien apoya se queda con una menos. Si el
- * sistema regalara mazorcas nuevas, una publicación con cien apoyos crearía
- * cien de la nada y el rango dejaría de significar cuánto visitaste. Es también
- * la que devuelve lo que costó publicar. El movimiento y el recálculo de los dos
- * rangos los hace el trigger `mover_moneda_de_apoyo`, en una sola transacción.
- */
-export async function apoyarTema(
-  _previo: EstadoForo,
-  datos: FormData,
-): Promise<EstadoForo> {
-  const perfil = await perfilActual();
-  const id = datos.get("publicacion_id")?.toString() ?? "";
-
-  if (!perfil) redirect("/login");
-  if (perfil.rol !== "cliente") {
-    return { error: "Solo las cuentas de cliente pueden apoyar." };
-  }
-
-  const supabase = await crearClienteServidor();
-
-  const { error } = await supabase
-    .from("apoyos")
-    .insert({ publicacion_id: id, usuario_id: perfil.id });
-
-  if (error) return { error: traducir(error.message) };
-
-  revalidatePath(`/comunidad/${id}`);
-  revalidatePath("/comunidad");
-  revalidatePath("/cuenta");
-
-  return { ok: `Listo, le diste una ${MONEDA.singular}.` };
-}

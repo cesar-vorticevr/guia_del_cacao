@@ -119,6 +119,66 @@ export function FormularioNuevoProducto() {
   );
 }
 
+/**
+ * Agregar un producto, plegado tras un botón y **arriba de la lista**.
+ *
+ * El formulario vivía abierto al final de la página. Con un catálogo de quince
+ * productos eso son tres pantallas de retícula antes de llegar a él: agregar
+ * algo obligaba a recorrer todo lo que ya estaba hecho para encontrar el sitio
+ * donde se hace lo nuevo.
+ *
+ * Es el mismo trato que «Nuevo evento» en la agenda, y por la misma razón: quien
+ * entra a mirar su catálogo no pidió un formulario en blanco, y en celular ese
+ * formulario ocupaba más pantalla que los productos.
+ *
+ * Con el catálogo vacío arranca **abierto**: ahí no hay nada que mirar, y el
+ * único paso posible es el que el formulario hace. Pedir un clic de más para
+ * llegar a lo único que se puede hacer es pedirlo por nada.
+ */
+export function NuevoProducto({
+  children,
+  deEntrada = false,
+}: {
+  children: React.ReactNode;
+  deEntrada?: boolean;
+}) {
+  const [abierto, setAbierto] = useState(deEntrada);
+
+  if (!abierto) {
+    return (
+      <button
+        type="button"
+        onClick={() => setAbierto(true)}
+        className="min-h-12 w-fit rounded-full bg-selva px-6 font-bold text-crema shadow-dura-sm transition-transform active:translate-y-0.5"
+      >
+        Agregar un producto
+      </button>
+    );
+  }
+
+  return (
+    <section className="grid max-w-2xl gap-4 rounded-3xl bg-crema-2 p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-2xl">Agregar un producto</h2>
+
+        {/* Sin catálogo no se ofrece cerrar: dejaría la pantalla en blanco con
+            un botón, que es de donde se venía. */}
+        {!deEntrada && (
+          <button
+            type="button"
+            onClick={() => setAbierto(false)}
+            className="min-h-10 rounded-full px-4 text-sm font-bold text-cacao underline"
+          >
+            Cerrar
+          </button>
+        )}
+      </div>
+
+      {children}
+    </section>
+  );
+}
+
 export function FormularioEditarProducto({ producto }: { producto: Producto }) {
   const [estado, accion] = useActionState(editarDelCatalogo, INICIAL);
 

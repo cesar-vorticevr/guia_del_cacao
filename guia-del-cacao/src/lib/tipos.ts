@@ -10,10 +10,16 @@ export type Tier = {
   id: number;
   nombre: string;
   precio_mensual: number;
+  /** Sin uso desde la spec v2, que elimina el sistema de puntos. Siempre false. */
   puede_dar_puntos: boolean;
+  /** Si su micrositio enseña reseñas y acepta nuevas. Es lo que separa al Tier 1 del Tier 2. */
+  permite_resenas: boolean;
   puede_publicar_contenido: boolean;
   en_banner_principal: boolean;
-  /** Cuántas sucursales caben en total con este plan. */
+  /**
+   * Sin uso desde la spec v2: el cobro es por sucursal y no hay tope por plan.
+   * Se queda en 999 en la base para que nada tropiece con un límite.
+   */
   max_sucursales: number;
 };
 
@@ -79,7 +85,8 @@ export const ESTADO: Record<
   },
   pendiente_aprobacion: {
     texto: "En revisión",
-    explicacion: "Ya pagaste. Un administrador lo está revisando.",
+    explicacion:
+      "Un administrador lo está revisando. Tus 15 días de prueba empiezan cuando lo apruebe, no ahora.",
     tono: "bg-turquesa/20 text-selva-2",
   },
   publicado: {

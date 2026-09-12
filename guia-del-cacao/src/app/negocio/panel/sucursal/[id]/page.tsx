@@ -165,8 +165,9 @@ export default async function EditorMicrositio({
             role="status"
             className="mt-4 rounded-2xl border-2 border-lima/50 bg-lima/15 px-4 py-3 font-bold text-selva-2"
           >
-            Listo: tu micrositio ya está en el directorio. No hace falta que
-            nadie lo apruebe.
+            Listo: tu micrositio pasó a revisión y empezaron tus 15 días de
+            prueba. Los días no corren mientras esperas — el conteo arranca
+            cuando lo aprobemos y aparezca en el directorio.
           </p>
         )}
 

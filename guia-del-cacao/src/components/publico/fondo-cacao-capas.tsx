@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 /**
  * Las capas decorativas del fondo: ramas, hojas y mazorcas que se desplazan a
@@ -59,12 +59,16 @@ type Instancia = {
    */
   lado: "izquierda" | "derecha" | "centrada";
   /**
-   * Hueco entre la pieza y la columna. En 0 se pegan; en negativo la pieza se
-   * mete ese tanto por debajo del contenido. Se mide contra la columna y no
-   * contra la pantalla porque el margen libre cambia con cada monitor: anclarlo
-   * a la pantalla dejaba la mitad de la rama encima del texto en 1280.
+   * Cuántos píxeles de la pieza asoman dentro de la pantalla. El resto queda
+   * fuera, cortado por la orilla.
+   *
+   * Se mide contra la **pantalla** y no contra la columna de contenido. Antes
+   * colgaban de la columna —1180 px como mucho— así que en un monitor ancho las
+   * piezas se quedaban a trescientos píxeles del borde y el fondo no llegaba a
+   * las orillas. Contra la pantalla llegan siempre, y decir cuánto asoma en vez
+   * de cuánto se separa hace que el resultado no dependa del ancho del monitor.
    */
-  separacion: number;
+  asomo: number;
   ancho: number;
   /** Fracción del recorrido en la que arranca, para que no suban todas juntas. */
   fase: number;
@@ -90,26 +94,26 @@ type Instancia = {
  * problema de legibilidad.
  */
 const INSTANCIAS: Instancia[] = [
-  { pieza: "ramaTresMazorcas", lado: "izquierda", separacion: -20, ancho: 380, fase: 0, velocidad: 0.15, giro: 0, opacidad: 0.42, desde: 1280 },
-  { pieza: "ramaTresMazorcas", lado: "derecha", separacion: 0, ancho: 320, fase: 0.62, velocidad: 0.19, giro: 6, espejo: true, opacidad: 0.32, desde: 1280 },
-  { pieza: "ramaUnaMazorca", lado: "derecha", separacion: -15, ancho: 290, fase: 0.28, velocidad: 0.26, giro: -6, espejo: true, opacidad: 0.38, desde: 1280 },
-  { pieza: "ramaUnaMazorca", lado: "izquierda", separacion: 10, ancho: 250, fase: 0.8, velocidad: 0.3, giro: 5, opacidad: 0.32, desde: 1280 },
+  { pieza: "ramaTresMazorcas", lado: "izquierda", asomo: 240, ancho: 380, fase: 0, velocidad: 0.15, giro: 0, opacidad: 0.42, desde: 1280 },
+  { pieza: "ramaTresMazorcas", lado: "derecha", asomo: 200, ancho: 320, fase: 0.62, velocidad: 0.19, giro: 6, espejo: true, opacidad: 0.32, desde: 1280 },
+  { pieza: "ramaUnaMazorca", lado: "derecha", asomo: 190, ancho: 290, fase: 0.28, velocidad: 0.26, giro: -6, espejo: true, opacidad: 0.38, desde: 1280 },
+  { pieza: "ramaUnaMazorca", lado: "izquierda", asomo: 160, ancho: 250, fase: 0.8, velocidad: 0.3, giro: 5, opacidad: 0.32, desde: 1280 },
 
   // La rama de hojas es horizontal: en un margen de 130 px no cabe de ninguna
   // manera. Su lugar es detrás de todo, ancha y casi transparente — a esta
   // opacidad es textura del fondo, no un dibujo que compita con lo que se lee.
-  { pieza: "ramaDeHojas", lado: "centrada", separacion: 0, ancho: 900, fase: 0.45, velocidad: 0.1, giro: 0, opacidad: 0.12, desde: 1280 },
+  { pieza: "ramaDeHojas", lado: "centrada", asomo: 900, ancho: 900, fase: 0.45, velocidad: 0.1, giro: 0, opacidad: 0.12, desde: 1280 },
 
-  { pieza: "mazorcaAmarilla", lado: "izquierda", separacion: -35, ancho: 120, fase: 0.18, velocidad: 0.42, giro: -12, opacidad: 0.34, desde: 640 },
-  { pieza: "mazorcaRosa", lado: "derecha", separacion: -30, ancho: 110, fase: 0.66, velocidad: 0.47, giro: 14, opacidad: 0.34, desde: 640 },
-  { pieza: "hoja", lado: "izquierda", separacion: -45, ancho: 105, fase: 0.38, velocidad: 0.56, giro: 25, opacidad: 0.36, desde: 640 },
+  { pieza: "mazorcaAmarilla", lado: "izquierda", asomo: 85, ancho: 120, fase: 0.18, velocidad: 0.42, giro: -12, opacidad: 0.34, desde: 640 },
+  { pieza: "mazorcaRosa", lado: "derecha", asomo: 78, ancho: 110, fase: 0.66, velocidad: 0.47, giro: 14, opacidad: 0.34, desde: 640 },
+  { pieza: "hoja", lado: "izquierda", asomo: 72, ancho: 105, fase: 0.38, velocidad: 0.56, giro: 25, opacidad: 0.36, desde: 640 },
 
   // Las tres que también salen en celular, donde la columna se come la pantalla
   // entera y lo único disponible es la orilla. La segunda hoja es la misma
   // ilustración volteada y con otro giro: por eso se pidió asimétrica.
-  { pieza: "flores", lado: "izquierda", separacion: -30, ancho: 80, fase: 0.52, velocidad: 0.72, giro: 0, opacidad: 0.3, desde: 0 },
-  { pieza: "granos", lado: "derecha", separacion: -26, ancho: 75, fase: 0.22, velocidad: 0.82, giro: 20, opacidad: 0.26, desde: 0 },
-  { pieza: "hoja", lado: "derecha", separacion: -34, ancho: 95, fase: 0.88, velocidad: 0.64, giro: -30, espejo: true, opacidad: 0.3, desde: 0 },
+  { pieza: "flores", lado: "izquierda", asomo: 52, ancho: 80, fase: 0.52, velocidad: 0.72, giro: 0, opacidad: 0.3, desde: 0 },
+  { pieza: "granos", lado: "derecha", asomo: 48, ancho: 75, fase: 0.22, velocidad: 0.82, giro: 20, opacidad: 0.26, desde: 0 },
+  { pieza: "hoja", lado: "derecha", asomo: 60, ancho: 95, fase: 0.88, velocidad: 0.64, giro: -30, espejo: true, opacidad: 0.3, desde: 0 },
 ];
 
 const VISIBILIDAD: Record<Instancia["desde"], string> = {
@@ -133,12 +137,13 @@ function corrimiento(instancia: Instancia) {
   return instancia.lado === "centrada" ? -instancia.ancho / 2 : 0;
 }
 
-/** De qué borde de la columna cuelga, y a cuánto. */
+/** De qué borde de la pantalla cuelga, y cuánto se queda fuera. */
 function anclaje(instancia: Instancia) {
   if (instancia.lado === "centrada") return { left: "50%" };
 
-  const afuera = -(instancia.ancho + instancia.separacion);
-  return instancia.lado === "izquierda" ? { left: afuera } : { right: afuera };
+  // Lo que no asoma se sale por la orilla, en negativo.
+  const fuera = -(instancia.ancho - instancia.asomo);
+  return instancia.lado === "izquierda" ? { left: fuera } : { right: fuera };
 }
 
 export function CapasDeCacao({
@@ -149,13 +154,32 @@ export function CapasDeCacao({
    * `relative` y recortar lo que se salga.
    */
   variante = "pantalla",
+  /**
+   * Deja fuera la pieza centrada, que es la única que pasa por detrás del
+   * texto en vez de asomarse por la orilla.
+   *
+   * Existe porque el fondo se quitó una vez de detrás del contenido: competía
+   * con lo que se venía a leer. En el encabezado de la portada hace falta que
+   * se vea cacao, pero no a costa de leer el titular sobre una rama.
+   */
+  soloOrillas = false,
 }: {
   disponibles: string[];
   variante?: "pantalla" | "franja";
+  soloOrillas?: boolean;
 }) {
   const nodos = useRef<(HTMLDivElement | null)[]>([]);
   const caja = useRef<HTMLDivElement | null>(null);
   const yaEstan = new Set(disponibles);
+
+  // Se filtra una vez y se usa la misma lista en el efecto y al pintar: si las
+  // dos recorrieran listas distintas, los índices de `nodos` dejarían de
+  // corresponder y cada pieza se movería con la velocidad de otra.
+  const piezas = useMemo(
+    () =>
+      soloOrillas ? INSTANCIAS.filter((i) => i.lado !== "centrada") : INSTANCIAS,
+    [soloOrillas],
+  );
 
   useEffect(() => {
     // El contenedor ya se oculta solo con `motion-reduce:hidden`; esto es para
@@ -177,7 +201,7 @@ export function CapasDeCacao({
 
       const y = window.scrollY;
 
-      INSTANCIAS.forEach((instancia, i) => {
+      piezas.forEach((instancia, i) => {
         const nodo = nodos.current[i];
         if (!nodo) return;
 
@@ -209,24 +233,33 @@ export function CapasDeCacao({
       window.removeEventListener("scroll", alMoverse);
       window.removeEventListener("resize", alMoverse);
     };
-  }, [variante]);
+  }, [variante, piezas]);
 
   return (
     <div
       ref={caja}
       aria-hidden
-      className={`pointer-events-none inset-0 z-0 overflow-hidden select-none motion-reduce:hidden ${
-        variante === "franja" ? "absolute" : "fixed"
+      className={`pointer-events-none z-0 overflow-hidden select-none motion-reduce:hidden ${
+        variante === "franja"
+          ? "absolute inset-y-0 left-1/2 w-[104vw] -translate-x-1/2"
+          : "fixed inset-0"
       }`}
     >
       {/*
-        Esta columna interior repite exactamente el ancho del `main` del layout
-        público. Es la referencia contra la que se cuelgan las piezas: así el
-        margen que ocupan crece con el monitor en vez de invadir el contenido.
-        Si el ancho del `main` cambia, este tiene que cambiar con él.
+        La referencia es el ancho entero, no la columna de contenido.
+
+        Antes esto repetía el ancho del `main` —1180 px como mucho— y las piezas
+        colgaban de sus bordes. En un monitor de 1850 eso las dejaba a
+        trescientos píxeles de la orilla: el fondo se acababa antes que la
+        pantalla y se veía una franja de crema vacía a cada lado.
+
+        Colgando de la pantalla llegan siempre al borde, y lo que las mantiene
+        lejos del texto ya no es esta caja sino cuánto asoma cada una: casi
+        todas se quedan medio cortadas por la orilla, que es donde el contenido
+        no llega ni en celular.
       */}
-      <div className="relative mx-auto h-full w-[92vw] max-w-[1180px]">
-        {INSTANCIAS.map((instancia, i) => {
+      <div className="relative h-full w-full">
+        {piezas.map((instancia, i) => {
           const pieza = PIEZAS[instancia.pieza];
           const existe = yaEstan.has(pieza.archivo);
 

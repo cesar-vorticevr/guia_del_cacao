@@ -78,11 +78,78 @@
       transform: translateY(105vh) rotate(540deg);
     }
   }
+
+  /*
+    El festejo del corazón, al guardar un negocio en favoritos.
+
+    Es corto —novecientos milisegundos— porque pasa mientras alguien recorre el
+    directorio: una animación larga se vuelve un estorbo a la tercera tarjeta.
+    El corazón se despega y se desvanece hacia arriba, y dos chispas salen a los
+    lados. Las tres terminan en `opacity: 0`, así que no dejan nada encima
+    cuando acaban.
+  */
+  --animate-favorito-sube: favorito-sube 0.9s ease-out forwards;
+  --animate-favorito-chispa-izq: favorito-chispa-izq 0.9s ease-out forwards;
+  --animate-favorito-chispa-der: favorito-chispa-der 0.9s ease-out forwards;
+
+  @keyframes favorito-sube {
+    0% {
+      opacity: 1;
+      transform: scale(0.6);
+    }
+    35% {
+      opacity: 1;
+      transform: scale(1.5) translateY(-6px);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.1) translateY(-34px);
+    }
+  }
+
+  @keyframes favorito-chispa-izq {
+    0% {
+      opacity: 0;
+      transform: translate(0, 0) scale(0.4);
+    }
+    30% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-22px, -20px) scale(1);
+    }
+  }
+
+  @keyframes favorito-chispa-der {
+    0% {
+      opacity: 0;
+      transform: translate(0, 0) scale(0.4);
+    }
+    30% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(22px, -18px) scale(1);
+    }
+  }
 }
 
 @layer base {
   html {
     scroll-behavior: smooth;
+
+    /*
+      El fondo de cacao se sale de la columna de contenido para llegar a las
+      orillas de la pantalla, y sin esto esos pixeles de mas abrirían una barra
+      de scroll horizontal.
+
+      `clip` y no `hidden`: `hidden` convierte el elemento en un contexto de
+      scroll, y con eso `position: sticky` deja de pegarse — que es justo lo que
+      hace la fecha de cada día en el muro de la comunidad.
+    */
+    overflow-x: clip;
   }
 
   body {

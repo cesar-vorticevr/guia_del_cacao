@@ -12,6 +12,11 @@ import { crearClienteServidor } from "@/lib/supabase/server";
 
 export type TarjetaDirectorio = {
   id: string;
+  /**
+   * La marca a la que pertenece. Hace falta en la tarjeta porque el catálogo
+   * cuelga de la marca (migración 000022) y el buscador busca por producto.
+   */
+  marca_id: string;
   /** Promedio de estrellas, o null si nadie la ha calificado. */
   calificacion?: Calificacion | null;
   slug: string;
@@ -27,16 +32,21 @@ export type TarjetaDirectorio = {
    * que las incluye es un dato de la tabla `tiers`, y escribir el número aquí
    * obligaría a acordarse de este sitio el día que cambien los planes.
    */
-  tiers: { puede_dar_puntos: boolean } | null;
+  tiers: { puede_dar_puntos: boolean; permite_resenas: boolean } | null;
   /** Entidad federativa. Es el filtro principal desde que la guía es nacional. */
   entidad: string;
   /** Ciudad o municipio; las sucursales anteriores al alcance nacional no la tienen. */
   ciudad: string | null;
-  marcas: { nombre_comercial: string; categoria_id: number } | null;
+  marcas: {
+    nombre_comercial: string;
+    /** La principal: da el color de la tarjeta y el orden. */
+    categoria_id: number;
+    /** Todas, incluida la principal. Un negocio puede ser finca, museo y taller. */
+    categorias?: { id: number; nombre: string }[];
+  } | null;
 };
 
 export type MicrositioPublico = TarjetaDirectorio & {
-  marca_id: string;
   ubicacion_maps_url: string | null;
   whatsapp: string | null;
   facebook: string | null;
@@ -46,7 +56,6 @@ export type MicrositioPublico = TarjetaDirectorio & {
   correo_contacto: string | null;
   telefono: string | null;
   galeria: string[];
-  marcas: { nombre_comercial: string; categoria_id: number } | null;
 };
 
 export type Publicacion = {
@@ -59,7 +68,12 @@ export type Publicacion = {
   /** Solo en eventos: si se canceló, sigue a la vista pero tachado. */
   cancelado_en?: string | null;
   fecha_publicacion: string;
-  rango_exclusivo?: number | null;
+  /** Cuántos corazones tiene. Solo en eventos, por ahora. */
+  apoyos?: number;
+  /** Si quien mira ya le dio el suyo. */
+  miApoyo?: boolean;
+  /** Cuántos comentarios visibles tiene. */
+  comentarios?: number;
   sucursales: {
     slug: string;
     nombre_sucursal: string;
@@ -76,7 +90,9 @@ export type Publicacion = {
 export { nombrarNegocio };
 
 const CAMPOS_TARJETA =
-  "id, slug, nombre_sucursal, logo, imagen_fondo, acerca_de, tier_id, entidad, ciudad, tiers(puede_dar_puntos), marcas(nombre_comercial, categoria_id)";
+  `id, marca_id, slug, nombre_sucursal, logo, imagen_fondo, acerca_de, tier_id,
+   entidad, ciudad, tiers(puede_dar_puntos, permite_resenas),
+   marcas(nombre_comercial, categoria_id, marcas_categorias(categorias(id, nombre)))`;
 
 /**
  * Directorio.
@@ -107,10 +123,17 @@ export async function listarDirectorio(
     .order("tier_id", { ascending: false })
     .order("fecha_publicacion", { ascending: false });
 
-  const todas = (data ?? []) as unknown as TarjetaDirectorio[];
+  // Se aplanan antes de filtrar: el filtro mira **todas** las categorías de la
+  // marca y no solo la principal, que es lo que hace que un negocio que es
+  // finca y museo salga en los dos filtros.
+  const todas = (data ?? []).map((fila) =>
+    aplanarCategorias(fila as unknown as TarjetaDirectorio),
+  );
 
   const visibles = categoriaId
-    ? todas.filter((s) => s.marcas?.categoria_id === categoriaId)
+    ? todas.filter((s) =>
+        (s.marcas?.categorias ?? []).some((c) => c.id === categoriaId),
+      )
     : todas;
 
   return conCalificaciones(visibles);
@@ -141,14 +164,20 @@ export async function micrositioPorSlug(slug: string) {
   const { data } = await supabase
     .from("sucursales")
     .select(
-      `${CAMPOS_TARJETA}, marca_id, ubicacion_maps_url, whatsapp, facebook,
+      `${CAMPOS_TARJETA}, ubicacion_maps_url, whatsapp, facebook,
        instagram, youtube, tiktok, correo_contacto, telefono, galeria`,
     )
     .eq("slug", slug)
     .eq("estado", "publicado")
     .maybeSingle();
 
-  return (data as unknown as MicrositioPublico) ?? null;
+  if (!data) return null;
+
+  // Mismo aplanado que en el directorio: el micrositio también enseña a qué se
+  // dedica, y con la forma cruda de PostgREST no podría.
+  return aplanarCategorias(
+    data as unknown as TarjetaDirectorio,
+  ) as MicrositioPublico;
 }
 
 /**
@@ -201,15 +230,16 @@ export async function bannersDePortada() {
 const CAMPOS_PUBLICACION =
   "id, titulo, subtitulo, contenido, imagenes, fecha_publicacion, sucursales(slug, nombre_sucursal, marcas(nombre_comercial))";
 
-export async function listarEventos() {
+export async function listarEventos(perfilId?: string) {
   const supabase = await crearClienteServidor();
 
   const { data } = await supabase
     .from("eventos")
-    .select(`${CAMPOS_PUBLICACION}, fecha_evento, cancelado_en, rango_exclusivo`)
+    .select(`${CAMPOS_PUBLICACION}, fecha_evento, cancelado_en`)
     .order("fecha_evento", { ascending: false });
 
-  const todos = (data ?? []) as unknown as Publicacion[];
+  const crudos = (data ?? []) as unknown as Publicacion[];
+  const todos = await conCorazonesYComentarios(crudos, perfilId);
   const ahora = Date.now();
 
   // "Próximo" o "pasado" se decide por la fecha, sin que nadie lo marque a
@@ -223,6 +253,64 @@ export async function listarEventos() {
       ),
     pasados: todos.filter((e) => new Date(e.fecha_evento!).getTime() < ahora),
   };
+}
+
+/**
+ * Los corazones y los comentarios de un lote de eventos.
+ *
+ * Se cuentan de un jalón y no evento por evento: PostgREST no agrupa, así que
+ * se traen los renglones del lote y se cuentan aquí. Son dos consultas para
+ * toda la agenda en vez de dos por evento.
+ */
+async function conCorazonesYComentarios(
+  eventos: Publicacion[],
+  perfilId?: string,
+): Promise<Publicacion[]> {
+  if (eventos.length === 0) return eventos;
+
+  const supabase = await crearClienteServidor();
+  const ids = eventos.map((e) => e.id);
+
+  const [apoyos, comentarios] = await Promise.all([
+    supabase
+      .from("apoyos_evento")
+      .select("evento_id, usuario_id")
+      .in("evento_id", ids),
+    supabase
+      .from("comentarios_publicacion")
+      .select("evento_id, oculto")
+      .in("evento_id", ids),
+  ]);
+
+  const cuantos = new Map<string, number>();
+  const mios = new Set<string>();
+
+  for (const fila of (apoyos.data ?? []) as {
+    evento_id: string;
+    usuario_id: string;
+  }[]) {
+    cuantos.set(fila.evento_id, (cuantos.get(fila.evento_id) ?? 0) + 1);
+    if (fila.usuario_id === perfilId) mios.add(fila.evento_id);
+  }
+
+  const charla = new Map<string, number>();
+
+  for (const fila of (comentarios.data ?? []) as {
+    evento_id: string;
+    oculto: boolean;
+  }[]) {
+    // Un comentario oculto por moderación no cuenta: el número tiene que
+    // cuadrar con los que se pueden leer al abrir el evento.
+    if (fila.oculto) continue;
+    charla.set(fila.evento_id, (charla.get(fila.evento_id) ?? 0) + 1);
+  }
+
+  return eventos.map((evento) => ({
+    ...evento,
+    apoyos: cuantos.get(evento.id) ?? 0,
+    miApoyo: mios.has(evento.id),
+    comentarios: charla.get(evento.id) ?? 0,
+  }));
 }
 
 export async function listarNoticias() {
@@ -371,6 +459,50 @@ export async function calificacionesDe(
   );
 }
 
+/**
+ * Aplana las categorías que llegan por la tabla intermedia.
+ *
+ * PostGREST devuelve `marcas_categorias: [{ categorias: {...} }]` —un envoltorio
+ * por cada fila del cruce— y la tarjeta solo quiere la lista. La principal se
+ * pone primera porque es la que da el color; el resto va por nombre para que el
+ * orden no dependa de en qué orden se guardaron.
+ */
+export function aplanarCategorias(tarjeta: TarjetaDirectorio): TarjetaDirectorio {
+  const marcas = tarjeta.marcas as
+    | (NonNullable<TarjetaDirectorio["marcas"]> & {
+        marcas_categorias?: { categorias: { id: number; nombre: string } | null }[];
+      })
+    | null;
+
+  if (!marcas) return tarjeta;
+
+  /*
+    Idempotente a propósito: la llaman el directorio y también
+    `conCalificaciones`, y sin esta salida la segunda pasada dejaba la lista
+    vacía —ya no queda `marcas_categorias` que aplanar, porque la primera lo
+    reemplazó por el resultado— y las pastillas desaparecían de la tarjeta.
+  */
+  if (marcas.categorias) return tarjeta;
+
+  const todas = (marcas.marcas_categorias ?? [])
+    .map((fila) => fila.categorias)
+    .filter((c): c is { id: number; nombre: string } => Boolean(c));
+
+  const principal = todas.find((c) => c.id === marcas.categoria_id);
+  const demas = todas
+    .filter((c) => c.id !== marcas.categoria_id)
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+
+  return {
+    ...tarjeta,
+    marcas: {
+      nombre_comercial: marcas.nombre_comercial,
+      categoria_id: marcas.categoria_id,
+      categorias: principal ? [principal, ...demas] : demas,
+    },
+  };
+}
+
 async function conCalificaciones(
   tarjetas: TarjetaDirectorio[],
 ): Promise<TarjetaDirectorio[]> {
@@ -379,7 +511,7 @@ async function conCalificaciones(
   const porSucursal = await calificacionesDe(tarjetas.map((t) => t.id));
 
   return tarjetas.map((tarjeta) => ({
-    ...tarjeta,
+    ...aplanarCategorias(tarjeta),
     calificacion: porSucursal.get(tarjeta.id) ?? null,
   }));
 }
@@ -396,7 +528,7 @@ export async function eventoPorId(id: string) {
 
   const { data } = await supabase
     .from("eventos")
-    .select(`${CAMPOS_PUBLICACION}, fecha_evento, rango_exclusivo`)
+    .select(`${CAMPOS_PUBLICACION}, fecha_evento`)
     .eq("id", id)
     .maybeSingle();
 
@@ -436,7 +568,7 @@ export async function agendaDe(sucursalId: string) {
   const [eventos, noticias] = await Promise.all([
     supabase
       .from("eventos")
-      .select(`${CAMPOS_PUBLICACION}, fecha_evento, rango_exclusivo`)
+      .select(`${CAMPOS_PUBLICACION}, fecha_evento`)
       .eq("sucursal_id", sucursalId)
       .gte("fecha_evento", ahora.toISOString())
       .order("fecha_evento"),

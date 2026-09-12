@@ -32,8 +32,21 @@ async function ilustracionesEnDisco(): Promise<string[]> {
  */
 export async function FondoDeCacao({
   variante = "pantalla",
+  /**
+   * Deja fuera la pieza que pasa por detrás del texto y conserva solo las que
+   * se asoman por la orilla. Es lo que hace que el encabezado de la portada
+   * pueda tener cacao sin leerse sobre una rama.
+   */
+  soloOrillas = false,
 }: {
   variante?: "pantalla" | "franja";
+  soloOrillas?: boolean;
 }) {
-  return <CapasDeCacao disponibles={await ilustracionesEnDisco()} variante={variante} />;
+  return (
+    <CapasDeCacao
+      disponibles={await ilustracionesEnDisco()}
+      variante={variante}
+      soloOrillas={soloOrillas}
+    />
+  );
 }

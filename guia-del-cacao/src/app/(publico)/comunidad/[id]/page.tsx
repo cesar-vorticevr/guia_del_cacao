@@ -2,16 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Comentarios } from "@/components/publico/comentarios";
-import { BotonApoyar, BotonBorrarTema } from "@/components/publico/foro";
+import { BotonBorrarTema } from "@/components/publico/foro";
 import { perfilActual } from "@/lib/auth/sesion";
 import { temaPorId, yaApoye } from "@/lib/datos/foro";
-import { anotarVisita, bolsaDeRegalos } from "@/lib/datos/comunidad";
+import { anotarVisita } from "@/lib/datos/comunidad";
 import { GaleriaPublicacion } from "@/components/publico/galeria-publicacion";
-import { RegalarMazorca } from "@/components/publico/regalar-mazorca";
-import { AvisosDeMonedas } from "@/components/negocio/avisos-de-monedas";
+import { MeGusta } from "@/components/publico/me-gusta";
 import { CelebrarPublicacion } from "@/components/publico/celebrar-publicacion";
 import { urlDePublicacion } from "@/lib/imagenes";
-import { pasaporteDe } from "@/lib/datos/puntos";
 import {
   comentariosDe,
   conElPropioArriba,
@@ -67,28 +65,19 @@ export default async function Publicacion({
   */
   if (perfil) await anotarVisita(perfil.id, id);
 
-  // La bolsa se pregunta una vez para toda la pantalla: con quince comentarios
-  // serían quince consultas para saber quince veces lo mismo.
-  const bolsa = await bolsaDeRegalos(perfil?.id);
-
-  const esCliente = perfil?.rol === "cliente" && perfil.rol_confirmado;
   const esMio = perfil?.id === tema.autor_id;
 
-  // Apoyar y comentar dependen de cosas que solo se pueden preguntar sabiendo
-  // quién mira: cuántas mazorcas le quedan y si ya apoyó.
-  let monedas = 0;
-  let apoyado = false;
-
-  if (esCliente) {
-    [monedas, apoyado] = await Promise.all([
-      pasaporteDe(perfil.id).then((p) => p.puntos),
-      yaApoye(perfil.id, id),
-    ]);
-  }
+  // Si ya le dio corazón, para pintarlo lleno sin que tenga que tocarlo.
+  const apoyado = perfil ? await yaApoye(perfil.id, id) : false;
 
   const mios = cuantosSon(comentarios, perfil?.id);
   const leQueda = mios < TOPE_COMENTARIOS.publicacion;
 
+  /*
+    Comentar ya no pide ser cliente ni tener mazorcas: comenta cualquier cuenta
+    (migración 000044). Lo único que queda es el tope de comentarios por
+    publicación, que existe para que una conversación no la acapare una persona.
+  */
   const motivo = !perfil ? (
     <>
       <Link
@@ -99,15 +88,12 @@ export default async function Publicacion({
       </Link>{" "}
       para comentar.
     </>
-  ) : !esCliente ? (
-    "Comentar es de las cuentas de cliente."
   ) : (
     `Ya dejaste tus ${TOPE_COMENTARIOS.publicacion} comentarios aquí.`
   );
 
   return (
     <article className="mx-auto max-w-2xl py-6">
-      <AvisosDeMonedas />
       {nueva && <CelebrarPublicacion />}
 
       <Link href="/comunidad" className="font-bold text-selva underline">
@@ -136,46 +122,21 @@ export default async function Publicacion({
       )}
 
       {/*
-        Regalar va antes que apoyar: es lo que cualquiera puede hacer hoy con la
-        bolsa que le dio la plataforma, mientras que apoyar cuesta una mazorca
-        propia y es de las cuentas de cliente.
+        El corazón, con su contador y el de comentarios al lado. Aquí había dos
+        cosas que se fueron con las mazorcas: un botón para **regalar** una de
+        las cinco que la plataforma daba al día, y un "apoyar" que costaba una
+        mazorca propia y era solo de las cuentas de cliente. Ahora es un
+        corazón, gratis, y lo da cualquiera.
       */}
-      <div className="mt-6 flex flex-wrap items-center gap-4">
-        <RegalarMazorca
-          aPerfil={tema.autor_id}
-          aNombre={tema.perfiles_publicos?.nombre ?? "quien publicó"}
-          publicacionId={id}
-          yaLeDi={bolsa.yaLesDi.has(tema.autor_id)}
-          quedan={bolsa.quedan}
-          esMia={Boolean(esMio)}
+      <div className="mt-6">
+        <MeGusta
+          clase="publicacion"
+          id={id}
+          inicial={apoyado}
+          cuantos={tema.apoyos}
+          comentarios={comentarios.filter((c) => !c.oculto).length}
           haySesion={Boolean(perfil)}
         />
-
-        <span className="font-mono text-xs text-cacao/70">
-          {perfil && !esMio
-            ? `Te quedan ${bolsa.quedan} de las 5 de hoy`
-            : null}
-        </span>
-      </div>
-
-      <div className="mt-6">
-        {esCliente ? (
-          <BotonApoyar
-            temaId={id}
-            yaApoyaste={apoyado}
-            esMio={Boolean(esMio)}
-            monedas={monedas}
-            apoyos={tema.apoyos}
-          />
-        ) : (
-          <p className="rounded-3xl bg-crema-2 p-5 text-cacao">
-            {tema.apoyos === 0
-              ? "Todavía nadie lo apoya."
-              : `${tema.apoyos} ${
-                  tema.apoyos === 1 ? "persona lo apoya" : "personas lo apoyan"
-                }.`}
-          </p>
-        )}
       </div>
 
       {esMio && (
@@ -198,14 +159,10 @@ export default async function Publicacion({
             esMio: comentario.usuario_id === perfil?.id,
             autorId: comentario.usuario_id,
             respondeA: comentario.responde_a,
-            yaLeDi: bolsa.yaLesDi.has(comentario.usuario_id),
           }),
         )}
-        bolsa={bolsa.quedan}
-        haySesion={Boolean(perfil)}
-        yoSoy={perfil?.id ?? null}
-        puedeComentar={Boolean(esCliente && leQueda)}
-        motivo={esCliente && leQueda ? null : motivo}
+        puedeComentar={Boolean(perfil && leQueda)}
+        motivo={perfil && leQueda ? null : motivo}
         // Quien modera es quien publicó: es su conversación.
         puedeOcultar={Boolean(esMio)}
       />

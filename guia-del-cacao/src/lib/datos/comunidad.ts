@@ -23,6 +23,8 @@ export type Entrada = {
   /** ISO, solo para ordenar. Lo que se enseña es `fechaTexto`. */
   fecha: string;
   fechaTexto: string;
+/** Cuánto lleva publicada, en dos caracteres: "3d", "22s". */
+  hace: string;
   /** Quién la firma: la marca si publica un negocio, la persona si no. */
   autor: string;
   /** La sucursal, cuando la firma un negocio. Va debajo y en chico. */
@@ -34,6 +36,8 @@ export type Entrada = {
   urlDeFoto: Record<string, string>;
   comentarios: number;
   apoyos: number;
+  /** Si quien mira ya le dio corazón, para pintarlo lleno sin preguntar otra vez. */
+  miApoyo: boolean;
   /** Cuántos comentarios no ha visto quien mira. Cero si no hay sesión. */
   sinVer: number;
   /** Si la escribió quien mira. */
@@ -47,6 +51,35 @@ const CUANDO = new Intl.DateTimeFormat("es-MX", {
   month: "long",
   year: "numeric",
 });
+
+/**
+ * Cuánto lleva publicada, en dos caracteres.
+ *
+ * Solo dos unidades: **días** hasta seis ("3d") y de ahí en adelante
+ * **semanas** ("22s"). Nada de horas, meses ni años.
+ *
+ * Es a propósito, y a costa de precisión: esto vive en la esquina de la
+ * tarjeta, al lado de los contadores, y ahí no cabe una frase. Cuatro unidades
+ * distintas —min, h, d, a— obligaban a leer la letra para saber de qué se
+ * hablaba; con dos, el número se entiende de un vistazo. Una publicación de
+ * hace cinco meses dice "22s", que es menos exacto que "5 meses" y más rápido
+ * de comparar contra la de al lado.
+ *
+ * Lo de hoy dice "hoy" y no "0d": cero días es un número que nadie usa para
+ * decir que algo acaba de pasar.
+ *
+ * **Se calcula en el servidor**, igual que `fechaTexto`. Calculado en el
+ * navegador diría un número distinto al de la primera pintada —pasan segundos
+ * entre una y otra— y React avisaría del desajuste en cada publicación.
+ */
+export function haceCuanto(iso: string, ahora = Date.now()): string {
+  const dias = Math.floor((ahora - new Date(iso).getTime()) / 86_400_000);
+
+  if (dias < 1) return "hoy";
+  if (dias < 7) return `${dias}d`;
+
+  return `${Math.floor(dias / 7)}s`;
+}
 
 const CAMPOS = `
   id, titulo, contenido, fecha, imagenes, oculta_en, autor_id,
@@ -69,24 +102,62 @@ type Fila = {
   } | null;
 };
 
+/** Cuántas publicaciones trae cada tirón del scroll. */
+export const POR_TIRON = 10;
+
+export type Pagina = {
+  entradas: Entrada[];
+  /** El cursor para el siguiente tirón, o null si ya no hay más. */
+  siguiente: string | null;
+};
+
 /**
- * El muro, ya con lo que necesita cada filtro.
+ * Un tramo del muro, ya con lo que necesita cada filtro.
+ *
+ * **Pagina con cursor y no con `offset`.** El muro crece por arriba: con
+ * `offset`, una publicación nueva mientras alguien va bajando corre la lista un
+ * lugar, y el siguiente tirón repite una que ya vio o se salta otra. Un cursor
+ * por fecha no se mueve.
+ *
+ * **Y el filtro va en la consulta, no en el navegador.** Filtrar solo lo que ya
+ * se cargó dejaría fuera lo viejo sin decirlo: alguien con veinte publicaciones
+ * vería tres en "mis publicaciones" y creería que perdió las demás.
  *
  * Los comentarios y los apoyos se cuentan de un jalón y no publicación por
- * publicación: PostgREST no agrupa, así que se traen los renglones de lo que
- * cabe en un muro y se cuentan aquí, que es una consulta en vez de cuarenta.
+ * publicación: PostgREST no agrupa, así que se traen los renglones del tramo y
+ * se cuentan aquí, que es una consulta en vez de cuarenta.
  */
-export async function muroDeComunidad(perfilId?: string): Promise<Entrada[]> {
+export async function muroDeComunidad(
+  perfilId?: string,
+  filtro: Filtro = "todo",
+  /** Fecha ISO de la última que ya se vio. Sin ella, el muro empieza arriba. */
+  cursor?: string,
+): Promise<Pagina> {
   const supabase = await crearClienteServidor();
 
-  const { data } = await supabase
+  let consulta = supabase
     .from("publicaciones")
     .select(CAMPOS)
-    .order("fecha", { ascending: false })
-    .limit(100);
+    .order("fecha", { ascending: false });
 
-  const filas = (data ?? []) as unknown as Fila[];
-  if (filas.length === 0) return [];
+  /*
+    "Mis publicaciones" se acota en la base. "Comentarios nuevos" no se puede
+    —depende de comparar cada comentario con la última visita, dos tablas y una
+    resta que PostgREST no hace— así que ese se resuelve más abajo, sobre el
+    tramo ya traído.
+  */
+  if (filtro === "mias" && perfilId) consulta = consulta.eq("autor_id", perfilId);
+  if (cursor) consulta = consulta.lt("fecha", cursor);
+
+  // Se pide uno más de los que se van a enseñar: si vuelve, hay otra página, y
+  // así no hace falta una consulta aparte solo para contar.
+  const { data } = await consulta.limit(POR_TIRON + 1);
+
+  const traidas = (data ?? []) as unknown as Fila[];
+  const hayMas = traidas.length > POR_TIRON;
+  const filas = hayMas ? traidas.slice(0, POR_TIRON) : traidas;
+
+  if (filas.length === 0) return { entradas: [], siguiente: null };
 
   const ids = filas.map((f) => f.id);
 
@@ -95,7 +166,10 @@ export async function muroDeComunidad(perfilId?: string): Promise<Entrada[]> {
       .from("comentarios")
       .select("publicacion_id, fecha, oculto")
       .in("publicacion_id", ids),
-    supabase.from("apoyos").select("publicacion_id").in("publicacion_id", ids),
+    supabase
+      .from("apoyos")
+      .select("publicacion_id, usuario_id")
+      .in("publicacion_id", ids),
     perfilId
       ? supabase
           .from("vistas_publicacion")
@@ -106,11 +180,20 @@ export async function muroDeComunidad(perfilId?: string): Promise<Entrada[]> {
   ]);
 
   const cuantosApoyos = new Map<string, number>();
-  for (const fila of apoyos.data ?? []) {
+  const mios = new Set<string>();
+
+  for (const fila of (apoyos.data ?? []) as {
+    publicacion_id: string;
+    usuario_id: string;
+  }[]) {
     cuantosApoyos.set(
       fila.publicacion_id,
       (cuantosApoyos.get(fila.publicacion_id) ?? 0) + 1,
     );
+
+    // Se saca del mismo lote: preguntar aparte "cuáles son míos" sería una
+    // segunda consulta por la mitad de los datos que ya están aquí.
+    if (fila.usuario_id === perfilId) mios.add(fila.publicacion_id);
   }
 
   const visto = new Map<string, number>();
@@ -156,7 +239,7 @@ export async function muroDeComunidad(perfilId?: string): Promise<Entrada[]> {
     }
   }
 
-  return filas.map((fila) => {
+  const entradas = filas.map((fila) => {
     const { marca, sucursal } = nombrarNegocio(fila.sucursales);
 
     return {
@@ -166,6 +249,7 @@ export async function muroDeComunidad(perfilId?: string): Promise<Entrada[]> {
       resumen: fila.contenido,
       fecha: fila.fecha,
       fechaTexto: CUANDO.format(new Date(fila.fecha)),
+      hace: haceCuanto(fila.fecha),
       autor: marca ?? fila.perfiles_publicos?.nombre ?? "Alguien",
       detalle: sucursal,
       imagen: urlDePublicacion(fila.imagenes?.[0]),
@@ -177,11 +261,29 @@ export async function muroDeComunidad(perfilId?: string): Promise<Entrada[]> {
       ),
       comentarios: cuantosComentarios.get(fila.id) ?? 0,
       apoyos: cuantosApoyos.get(fila.id) ?? 0,
+      miApoyo: mios.has(fila.id),
       sinVer: cuantosSinVer.get(fila.id) ?? 0,
       mia: fila.autor_id === perfilId,
       oculta: fila.oculta_en !== null,
     };
   });
+
+  /*
+    El filtro de "comentarios nuevos" se aplica aquí porque depende de comparar
+    la fecha de cada comentario con la de la última visita.
+
+    Eso hace que un tirón pueda quedarse corto o vacío aunque haya más adelante,
+    y por eso el cursor sale de la **última fila traída** y no de la última
+    enseñada: si saliera de la enseñada, el muro se pararía en el primer tramo
+    sin novedades y parecería que ya no hay nada.
+  */
+  const visibles =
+    filtro === "nuevos" ? entradas.filter((e) => e.sinVer > 0) : entradas;
+
+  return {
+    entradas: visibles,
+    siguiente: hayMas ? filas[filas.length - 1].fecha : null,
+  };
 }
 
 /** Una publicación, con todo lo suyo, para su propia página. */
@@ -235,34 +337,4 @@ export async function anotarVisita(perfilId: string, publicacionId: string) {
     },
     { onConflict: "perfil_id,publicacion_id" },
   );
-}
-
-/**
- * Lo que hace falta para pintar los botones de regalar en una pantalla.
- *
- * Se pregunta de una vez y no botón por botón: en una publicación con quince
- * comentarios serían quince consultas para saber quince veces lo mismo.
- */
-export async function bolsaDeRegalos(perfilId: string | undefined) {
-  if (!perfilId) return { quedan: 0, yaLesDi: new Set<string>() };
-
-  const supabase = await crearClienteServidor();
-
-  const hoy = new Date().toLocaleDateString("en-CA", {
-    timeZone: "America/Mexico_City",
-  });
-
-  const [{ data: quedan }, { data: dados }] = await Promise.all([
-    supabase.rpc("regalos_que_me_quedan", { p_perfil: perfilId }),
-    supabase
-      .from("regalos_mazorca")
-      .select("a_perfil")
-      .eq("de_perfil", perfilId)
-      .eq("dia", hoy),
-  ]);
-
-  return {
-    quedan: Number(quedan ?? 0),
-    yaLesDi: new Set((dados ?? []).map((fila) => fila.a_perfil as string)),
-  };
 }

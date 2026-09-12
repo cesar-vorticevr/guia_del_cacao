@@ -86,9 +86,8 @@ export function BarraInferior({
   monedas: number | null;
   destinoPerfil: string;
   /**
-   * "Mi cacao" para un cliente, "Perfil" para un negocio o un administrador.
-   * A quien no junta mazorcas, llamarle así a su panel le promete algo
-   * que ahí no existe.
+   * "Mi cuenta" para un visitante, "Perfil" para un negocio o un
+   * administrador, y "Entrar" para quien todavía no ha entrado.
    */
   etiquetaPerfil: string;
   iconoPerfil: "mazorca" | "persona";

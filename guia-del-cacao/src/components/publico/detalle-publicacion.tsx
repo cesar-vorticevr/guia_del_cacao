@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { urlImagen } from "@/lib/imagenes";
 import { nombrarNegocio, type Publicacion } from "@/lib/datos/publico";
-import { rango } from "@/lib/vocabulario";
 
 const FECHA = new Intl.DateTimeFormat("es-MX", {
   weekday: "long",
@@ -71,12 +70,6 @@ export function DetallePublicacion({
         </p>
       )}
 
-      {publicacion.rango_exclusivo && (
-        <p className="mt-4 inline-block rounded-full bg-mango px-4 py-2 font-mono text-sm font-bold text-ink">
-          Solo para {rango(publicacion.rango_exclusivo).plural}
-        </p>
-      )}
-
       {portada && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -95,7 +88,7 @@ export function DetallePublicacion({
           href={`/marca/${publicacion.sucursales.slug}`}
           className="mt-6 inline-flex min-h-14 items-center rounded-full bg-selva px-6 font-display text-lg font-semibold text-crema shadow-dura-sm transition-transform active:translate-y-0.5"
         >
-          Ver el micrositio
+          Ver negocio
         </Link>
       )}
     </article>

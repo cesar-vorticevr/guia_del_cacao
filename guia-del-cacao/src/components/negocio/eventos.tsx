@@ -59,72 +59,84 @@ export function TarjetaEvento({
   const cancelado = estado.clave === "cancelado";
 
   return (
-    <li className="rounded-3xl bg-crema-2 p-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex min-w-0 gap-4">
-          <span className="relative block size-20 shrink-0 overflow-hidden rounded-2xl bg-white">
-            {foto ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={foto}
-                alt=""
-                className={`size-full object-cover ${cancelado ? "grayscale" : ""}`}
-              />
-            ) : (
-              <span
-                aria-hidden="true"
-                className="grid size-full place-items-center font-display text-2xl text-selva-2"
-              >
-                {evento.titulo.charAt(0)}
-              </span>
-            )}
-
-            {/*
-              La raya va en un SVG de esquina a esquina y no con un `rotate` de
-              CSS: girado, un div se sale de la caja o queda corto según la
-              proporción, y aquí la foto es cuadrada pero la marca tiene que
-              cruzarla entera siempre.
-            */}
-            {cancelado && (
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 100 100"
-                preserveAspectRatio="none"
-                className="absolute inset-0 size-full"
-              >
-                <line
-                  x1="0"
-                  y1="100"
-                  x2="100"
-                  y2="0"
-                  stroke="#ff5d73"
-                  strokeWidth="6"
-                />
-              </svg>
-            )}
+    /*
+      La misma tarjeta vertical que la agenda pública y el explorador: foto en
+      4:3 arriba, lo demás debajo. Era un renglón con una miniatura de 80 px, y a
+      ese tamaño el cartel de una cata no se lee — que es justo lo que el negocio
+      necesita comprobar antes de que lo vea su público.
+    */
+    <li className="flex h-full flex-col overflow-hidden rounded-3xl border-2 border-ink/10 bg-white shadow-dura">
+      {/*
+        La foto va absoluta dentro de la caja, no en el flujo: con `h-full` en el
+        flujo una foto alta estira su caja y las tarjetas de la fila dejan de
+        alinearse.
+      */}
+      <span className="relative block aspect-[4/3] w-full shrink-0 overflow-hidden bg-crema-2">
+        {foto ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={foto}
+            alt=""
+            loading="lazy"
+            className={`absolute inset-0 size-full object-cover ${cancelado ? "grayscale" : ""}`}
+          />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="absolute inset-0 grid place-items-center font-display text-5xl text-selva/30"
+          >
+            {evento.titulo.charAt(0)}
           </span>
+        )}
 
-          <div className="min-w-0">
-            <p className="font-display text-xl font-semibold text-selva-2">
-              {evento.titulo}
-            </p>
-            <p className="font-mono text-xs tracking-wide text-cacao/70 uppercase">
-              {fechaTexto}
-            </p>
-            {evento.sucursal && (
-              <p className="mt-0.5 text-cacao">{evento.sucursal}</p>
-            )}
-          </div>
-        </div>
+        {/*
+          La raya va en un SVG de esquina a esquina y no con un `rotate` de
+          CSS: girado, un div se sale de la caja o queda corto según la
+          proporción, y la marca tiene que cruzar la foto entera siempre.
+        */}
+        {cancelado && (
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            className="absolute inset-0 size-full"
+          >
+            <line
+              x1="0"
+              y1="100"
+              x2="100"
+              y2="0"
+              stroke="#ff5d73"
+              strokeWidth="6"
+            />
+          </svg>
+        )}
 
+        {/* El estado va sobre la foto: es lo primero que hay que saber de un
+            evento propio —si está al aire, si se canceló, si ya pasó— y en una
+            retícula se busca en la esquina, no en el texto. */}
         <span
-          className={`rounded-full px-3 py-1 font-mono text-xs font-bold ${estado.tono}`}
+          className={`absolute right-2 top-2 rounded-full px-3 py-1 font-mono text-xs font-bold ${estado.tono}`}
         >
           {estado.texto}
         </span>
+      </span>
+
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5 p-4">
+        <p className="font-mono text-xs tracking-wide text-cacao/70 uppercase">
+          {fechaTexto}
+        </p>
+
+        <p className="font-display text-base leading-tight font-semibold text-selva-2">
+          {evento.titulo}
+        </p>
+
+        {evento.sucursal && (
+          <p className="text-sm text-cacao">{evento.sucursal}</p>
+        )}
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-2 border-t-2 border-ink/5 px-4 py-2.5">
         {editable && (
           <Link href={`/eventos/${evento.id}/editar`} className={SECUNDARIO}>
             Editar

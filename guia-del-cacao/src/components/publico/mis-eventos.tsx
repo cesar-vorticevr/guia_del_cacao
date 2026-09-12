@@ -128,7 +128,8 @@ export function MisEventos({
           {proximos.length > 0 && (
             <div className="mt-4">
               <p className="mb-3 font-bold text-selva-2">Próximos</p>
-              <ul className="grid gap-4">
+              {/* La misma retícula que la agenda pública y el explorador. */}
+              <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {proximos.map((evento) => (
                   <TarjetaEvento
                     key={evento.id}
@@ -146,7 +147,9 @@ export function MisEventos({
           {pasados.length > 0 && (
             <div className="mt-6">
               <p className="mb-3 font-bold text-selva-2">Ya pasaron</p>
-              <ul className="grid gap-4 opacity-80">
+              {/* Atenuados y abajo: son archivo, y lo que hay que atender está
+                  arriba. Bajan solos en cuanto pasa la fecha. */}
+              <ul className="grid gap-4 opacity-80 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {pasados.map((evento) => (
                   <TarjetaEvento
                     key={evento.id}

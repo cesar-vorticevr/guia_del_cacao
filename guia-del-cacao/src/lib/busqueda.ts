@@ -77,23 +77,40 @@ export function parecido(consulta: string, campos: (string | null | undefined)[]
   const busca = normalizar(consulta);
   if (busca.length === 0) return true;
 
-  const texto = normalizar(campos.filter(Boolean).join(" "));
-  if (texto.length === 0) return false;
+  const textos = campos.filter(Boolean).map((campo) => normalizar(campo as string));
+  if (textos.length === 0) return false;
 
-  if (texto.includes(busca)) return true;
+  if (textos.some((texto) => texto.includes(busca))) return true;
 
   // Con una o dos letras, lo demás es demasiado flexible: devolvería medio
   // directorio y la lista dejaría de moverse al escribir.
   if (busca.length < 3) return false;
 
-  if (esSubsecuencia(busca, texto)) return true;
+  /*
+    La subsecuencia se prueba **palabra por palabra**, no sobre el texto
+    entero.
+
+    Esta regla existe para las letras que se caen al escribir una palabra:
+    «chclt» tiene que encontrar «Chocolatería». Eso pasa dentro de una palabra,
+    no repartido por una frase — y aplicada a una frase deja de filtrar nada.
+
+    Antes se probaba sobre todos los campos pegados en un solo texto, y así
+    «jicara» encontraba a un negocio cuyo «acerca de» decía «cacao de sombra
+    bajo arboles nativos, fermentacion en cajas de madera»: la j de «bajo», la
+    i de «nativos», la c de «fermentacion» y el resto desperdigado. Cualquier
+    descripción de setenta letras contiene casi cualquier palabra de seis si se
+    permite saltar entre palabras.
+
+    El defecto venía de antes y se volvió evidente al empezar a buscar
+    productos, que es cuando la gente escribe palabras largas y concretas.
+  */
+  const palabras = textos.flatMap((texto) => texto.split(/\s+/));
+  if (palabras.some((palabra) => esSubsecuencia(busca, palabra))) return true;
 
   // Una errata por cada cuatro letras, hasta dos. "grijalba" alcanza a
   // "grijalva"; "chocolate" no alcanza a "cafetería".
   const tope = Math.min(2, Math.floor(busca.length / 4));
   if (tope === 0) return false;
 
-  return texto
-    .split(/\s+/)
-    .some((palabra) => distancia(busca, palabra, tope) <= tope);
+  return palabras.some((palabra) => distancia(busca, palabra, tope) <= tope);
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EscudoDeMarca } from "@/components/marca";
 import { BannerRotativo } from "@/components/publico/banner-rotativo";
 import { BuscadorPortada } from "@/components/publico/buscador-portada";
 import { FondoDeCacao } from "@/components/publico/fondo-cacao";
@@ -11,15 +12,32 @@ import {
   listarEventos,
 } from "@/lib/datos/publico";
 import { listarCategorias } from "@/lib/datos/categorias";
+import { misFavoritosEntre } from "@/lib/datos/favoritos";
+import { catalogoPorMarca } from "@/lib/datos/busqueda-de-productos";
+import { perfilActual } from "@/lib/auth/sesion";
 import { tonoDeCategoria } from "@/lib/paleta";
 import { urlImagen } from "@/lib/imagenes";
 
 export default async function Home() {
+  // El perfil va primero porque lo necesitan los eventos —para saber a cuáles
+  // ya les dio corazón quien mira— y los favoritos del directorio.
+  const perfil = await perfilActual();
+
   const [banners, sucursales, categorias, eventos] = await Promise.all([
     bannersDePortada(),
     listarDirectorio(),
     listarCategorias(),
-    listarEventos(),
+    listarEventos(perfil?.id),
+  ]);
+
+  // Solo un cliente guarda favoritos. A un negocio o a un administrador el
+  // corazón les prometería algo que su cuenta no hace.
+  const esCliente = perfil?.rol === "cliente" && perfil.rol_confirmado;
+  const [favoritos, catalogo] = await Promise.all([
+    misFavoritosEntre(esCliente ? perfil.id : undefined, sucursales.map((s) => s.id)),
+    // El catálogo viaja a la página para que el buscador sugiera por producto
+    // sin ir al servidor por cada letra.
+    catalogoPorMarca(sucursales.map((s) => s.marca_id)),
   ]);
 
   // Los promedios de todo el banner en una sola consulta, no una por foto.
@@ -47,76 +65,137 @@ export default async function Home() {
         el sitio se lee más limpio. El color de la marca no se pierde: lo ponen
         las píldoras de categoría, que además son navegación y no adorno.
       */}
-      <section className="px-2 pb-4 pt-12 text-center sm:pt-20">
-        <h1 className="mx-auto max-w-3xl text-balance font-display text-4xl leading-tight text-selva-2 sm:text-6xl">
-          El cacao de México, en un solo lugar
-        </h1>
-
-        <p className="mx-auto mt-4 max-w-2xl text-pretty text-lg text-cacao">
-          Productoras, chocolaterías, museos y talleres. Encuentra a quién
-          visitar y qué está pasando cerca de ti.
-        </p>
-
+      <section className="relative px-2 pb-4 pt-8 text-center sm:pt-14">
         {/*
+          Las ilustraciones de cacao vivían solo en la franja del directorio, al
+          final de la página. Arriba —lo único que ve quien llega— no había ni
+          una mazorca: en un directorio de chocolate, la primera pantalla era
+          texto sobre crema. Aquí no hacen falta archivos nuevos, son las
+          mismas ocho de `public/parallax`.
+
+          La sección lleva `relative` pero **no** `overflow-hidden`: la capa se
+          recorta sola, y recortar aquí se comería el desplegable de
+          sugerencias del buscador, que cuelga por debajo de su caja.
+        */}
+        <FondoDeCacao variante="franja" soloOrillas />
+
+        <div className="relative z-10">
+          {/*
+            El escudo abre la portada. Sin él, la primera pantalla era texto
+            verde sobre crema y la marca solo aparecía en 28 px arriba, dentro
+            de la barra: aquí es lo que dice de qué va esto antes de leer nada.
+          */}
+          <EscudoDeMarca className="mx-auto size-28 sm:size-36" />
+
+          <h1 className="mx-auto mt-3 max-w-3xl text-balance font-display text-4xl leading-tight text-selva-2 sm:text-6xl">
+            El cacao de México, en un solo lugar
+          </h1>
+
+          <p className="mx-auto mt-4 max-w-2xl text-pretty text-lg text-cacao">
+            Productoras, chocolaterías, museos y talleres. Encuentra a quién
+            visitar y qué está pasando cerca de ti.
+          </p>
+
+          {/*
           El buscador sugiere sobre este mismo directorio, el que ya se trajo
           para las tarjetas de abajo. Por eso las sugerencias no cuestan una
           consulta por letra: los datos ya estaban en la página.
         */}
-        <BuscadorPortada sucursales={sucursales} categorias={nombresDeCategoria} />
+          <BuscadorPortada
+            sucursales={sucursales}
+            categorias={nombresDeCategoria}
+            catalogo={catalogo}
+          />
 
-        {/*
+          {/*
           Las categorías van pegadas al buscador, como el "Try asking" de las
           guías de viaje: son el atajo de quien todavía no sabe qué escribir.
           Envuelven en varios renglones en vez de irse a un carril horizontal —
           en celular lo que no se ve, no existe.
         */}
-        <nav aria-label="Categorías" className="mt-6">
-          <ul className="flex flex-wrap justify-center gap-2.5">
-            {categorias.map((categoria) => (
-              <li key={categoria.id}>
-                <Link
-                  href={`/directorio?categoria=${categoria.id}`}
-                  className={`block rounded-full border-2 border-ink/10 px-4 py-2 text-sm font-bold shadow-dura-sm transition-transform active:translate-y-0.5 ${
-                    tonoDeCategoria(categoria.id).solido
-                  }`}
-                >
-                  {categoria.nombre}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+          <nav aria-label="Categorías" className="mt-6">
+            <ul className="flex flex-wrap justify-center gap-2.5">
+              {categorias.map((categoria) => (
+                <li key={categoria.id}>
+                  <Link
+                    href={`/directorio?categoria=${categoria.id}`}
+                    className={`block rounded-full border-2 border-ink/10 px-4 py-2 text-sm font-bold shadow-dura-sm transition-transform active:translate-y-0.5 ${
+                      tonoDeCategoria(categoria.id).solido
+                    }`}
+                  >
+                    {categoria.nombre}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
       </section>
 
-      <section className="pt-12">
+      {/*
+        Antes esto empezaba a los 713 px con la pantalla en 698: el primer
+        negocio caía justo por debajo del pliegue, así que la primera pantalla
+        entera era encabezado y filtros, sin un solo negocio a la vista. Con el
+        aire de arriba recortado, asoma el borde de la primera tarjeta, que es
+        lo que le dice a alguien que hay algo más abajo.
+      */}
+      <section className="pt-8">
         <h2 className="mb-4 font-display text-2xl">Destacados</h2>
         <BannerRotativo diapositivas={diapositivas} />
       </section>
 
       {/*
-        La única franja con fondo de cacao. `relative` y `overflow-hidden` no
-        son opcionales: el fondo se cuelga de esta caja y se mide contra ella,
-        y sin el recorte las piezas se pasearían por el resto de la portada.
+        La franja del directorio, de orilla a orilla.
+
+        Era una caja redondeada dentro de la columna de contenido, y su
+        `overflow-hidden` —que hace falta para recortar el fondo— volvía a
+        encerrar las piezas en 1180 px: el fondo se paraba donde acababa la
+        caja, no donde acaba la pantalla.
+
+        Ahora la sección misma se sale de la columna con sangrado completo
+        —`left-1/2`, `w-screen`, `-translate-x-1/2`— y el recorte pasa a ser en
+        el borde de la pantalla, que es donde tiene que estar. Las esquinas
+        redondeadas se van con eso: una banda que toca las dos orillas no tiene
+        esquinas que redondear.
+
+        El contenido sigue en la columna, con su propia caja centrada dentro.
+
+        El ancho es `104vw` y no `100vw` a proposito: `100vw` cuenta la barra de
+        scroll vertical y el area de contenido no, asi que una banda centrada de
+        exactamente `100vw` se queda unos pixeles corta de un lado y deja una
+        rendija de crema distinto en la orilla. Con holgura tapa de sobra, y el
+        `overflow-x: clip` del armazon recorta lo que sale sin abrir barra
+        horizontal.
       */}
-      <section className="relative mt-14 overflow-hidden rounded-[2rem] bg-crema-2/60 px-5 py-10 sm:px-8">
+      <section className="relative left-1/2 mt-14 w-[104vw] -translate-x-1/2 overflow-hidden bg-crema-2/60 py-10">
         <FondoDeCacao variante="franja" />
 
-        <div className="relative z-10">
+        <div className="relative z-10 mx-auto w-[92vw] max-w-[1180px]">
           <h2 className="font-display text-2xl">En el directorio</h2>
 
           {sucursales.length === 0 ? (
             <p className="mt-4 rounded-3xl bg-crema p-6 text-cacao">
-              Todavía no hay micrositios publicados. Si tienes un negocio de cacao,{" "}
-              <Link href="/registro/negocio" className="font-bold text-selva underline">
+              Todavía no hay micrositios publicados. Si tienes un negocio de
+              cacao,{" "}
+              <Link
+                href="/registro/negocio"
+                className="font-bold text-selva underline"
+              >
                 este es buen momento para ser el primero
               </Link>
               .
             </p>
           ) : (
             <>
-              <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+              <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {sucursales.slice(0, 6).map((sucursal) => (
-                  <TarjetaSucursal key={sucursal.id} sucursal={sucursal} />
+                  <TarjetaSucursal
+                    key={sucursal.id}
+                    sucursal={sucursal}
+                    favorito={favoritos.has(sucursal.id)}
+                    puedeGuardar={esCliente}
+                    haySesion={Boolean(perfil)}
+                  />
                 ))}
               </ul>
 
@@ -154,9 +233,14 @@ export default async function Home() {
           </p>
         ) : (
           <>
-            <ul className="mt-4 grid gap-5 sm:grid-cols-2">
+            <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {eventos.proximos.slice(0, 4).map((evento) => (
-                <TarjetaPublicacion key={evento.id} publicacion={evento} tipo="evento" />
+                <TarjetaPublicacion
+                  key={evento.id}
+                  publicacion={evento}
+                  haySesion={Boolean(perfil)}
+                  tipo="evento"
+                />
               ))}
             </ul>
 

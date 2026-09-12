@@ -35,7 +35,17 @@ export default async function LayoutDelPanel({
   const supabase = await crearClienteServidor();
   const { data: marcas } = await supabase
     .from("marcas")
-    .select("id, nombre_comercial, categorias(nombre)")
+    /*
+      La categoría se pide **por su llave**, no como `categorias(nombre)`.
+      Desde que un negocio puede tener varias (migración 000042) hay dos caminos
+      de `marcas` a `categorias` —la columna `categoria_id` y la tabla puente—
+      y PostgREST responde PGRST201 sin elegir ninguno. Aquí es la principal, la
+      de la columna, que es la que encabeza el panel.
+
+      El error llega como `data` en null, así que se leía igual que "este
+      negocio no tiene marca" y el panel entero rebotaba a completar-marca.
+    */
+    .select("id, nombre_comercial, categorias!marcas_categoria_id_fkey(nombre)")
     .eq("perfil_id", perfil.id);
 
   if (!marcas || marcas.length === 0) redirect("/negocio/completar-marca");

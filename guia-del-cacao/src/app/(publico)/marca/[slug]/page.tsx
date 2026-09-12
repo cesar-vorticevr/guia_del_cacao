@@ -15,12 +15,16 @@ import {
   resenasDe,
 } from "@/lib/datos/publico";
 import { TarjetaPublicacion } from "@/components/publico/tarjeta-publicacion";
+import { PortadaAmpliable } from "@/components/publico/portada-ampliable";
+import { CatalogoPublico } from "@/components/publico/catalogo-publico";
+import { BotonFavorito } from "@/components/publico/boton-favorito";
+import { esFavorito } from "@/lib/datos/favoritos";
 import { productosDe } from "@/lib/datos/sucursales";
 import { tienePendienteEn } from "@/lib/datos/puntos";
 import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { BUCKET_RESENAS, urlImagen } from "@/lib/imagenes";
-import { pesos } from "@/lib/tipos";
+import { REDES, enlaceDeRed } from "@/lib/redes";
 
 export async function generateMetadata({
   params,
@@ -44,14 +48,6 @@ const CUANDO = new Intl.DateTimeFormat("es-MX", {
   year: "numeric",
 });
 
-const REDES = [
-  { campo: "whatsapp", texto: "WhatsApp" },
-  { campo: "facebook", texto: "Facebook" },
-  { campo: "instagram", texto: "Instagram" },
-  { campo: "youtube", texto: "YouTube" },
-  { campo: "tiktok", texto: "TikTok" },
-] as const;
-
 export default async function Micrositio({
   params,
 }: {
@@ -63,6 +59,10 @@ export default async function Micrositio({
   // Un micrositio en borrador o en revisión no existe para el público, igual
   // que uno inventado: la misma respuesta para no delatar cuáles hay.
   if (!sucursal) notFound();
+
+  // Sale de la bandera del plan y no de comparar `tier_id >= 2`: cuál es el
+  // primer plan que trae reseñas es un dato de la tabla `tiers`.
+  const aceptaResenas = sucursal.tiers?.permite_resenas ?? false;
 
   const [productos, resenas, perfil, calificacion, agenda] = await Promise.all([
     productosDe(sucursal.id),
@@ -81,12 +81,14 @@ export default async function Micrositio({
   let misEstrellas: number | null = null;
   let resenaPropia: Awaited<ReturnType<typeof miResena>> = null;
   let tienePendiente = false;
+  let guardado = false;
 
   if (perfil?.rol === "cliente" && perfil.rol_confirmado) {
-    [misEstrellas, resenaPropia, tienePendiente] = await Promise.all([
+    [misEstrellas, resenaPropia, tienePendiente, guardado] = await Promise.all([
       miCalificacion(perfil.id, sucursal.id),
       miResena(perfil.id, sucursal.id),
       tienePendienteEn(perfil.id, sucursal.id),
+      esFavorito(perfil.id, sucursal.id),
     ]);
   }
 
@@ -129,19 +131,29 @@ export default async function Micrositio({
 
   const hayContacto = Boolean(
     sucursal.ubicacion_maps_url ||
-      sucursal.telefono ||
-      sucursal.correo_contacto ||
-      REDES.some(({ campo }) => sucursal[campo]),
+    sucursal.telefono ||
+    sucursal.correo_contacto ||
+    // Se pregunta por el enlace y no por el campo: un campo con "@" a secas no
+    // da ningún botón, y la sección saldría con el título sobre el vacío.
+    REDES.some(({ campo }) => enlaceDeRed(campo, sucursal[campo])),
   );
 
   return (
     <>
       <header className="pt-4">
-        <div
-          className="h-40 rounded-3xl bg-cacao bg-cover bg-center sm:h-56"
-          style={fondo ? { backgroundImage: `url(${fondo})` } : undefined}
-          role="presentation"
-        />
+        {/*
+          La portada se abre al tocarla. Recortada a la altura de la cabecera
+          se ve una franja de la finca o del mostrador, y esa foto es justo lo
+          que alguien mira antes de decidir si va hasta allá.
+        */}
+        {fondo ? (
+          <PortadaAmpliable
+            foto={fondo}
+            negocio={sucursal.marcas?.nombre_comercial ?? sucursal.nombre_sucursal}
+          />
+        ) : (
+          <div className="h-40 rounded-3xl bg-cacao sm:h-56" role="presentation" />
+        )}
 
         <div className="-mt-10 flex items-end gap-4 px-4">
           {logo ? (
@@ -162,8 +174,27 @@ export default async function Micrositio({
         </div>
 
         <div className="px-4 pt-3">
-          <h1 className="font-display text-3xl">{sucursal.marcas?.nombre_comercial}</h1>
-          <p className="mt-1 text-cacao">{sucursal.nombre_sucursal}</p>
+          {/*
+            El corazón va junto al nombre y no flotando sobre la portada: aquí
+            ya se entró al negocio, así que guardarlo es una decisión, no un
+            gesto de paso, y merece estar donde se lee quién es.
+          */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="font-display text-3xl">
+                {sucursal.marcas?.nombre_comercial}
+              </h1>
+              <p className="mt-1 text-cacao">{sucursal.nombre_sucursal}</p>
+            </div>
+
+            <BotonFavorito
+              sucursalId={sucursal.id}
+              nombre={sucursal.marcas?.nombre_comercial ?? sucursal.nombre_sucursal}
+              inicial={guardado}
+              puedeGuardar={perfil?.rol === "cliente" && perfil.rol_confirmado}
+              haySesion={Boolean(perfil)}
+            />
+          </div>
 
           {/* Las estrellas son decorativas; lo que lee un lector de pantalla
               es el número que va al lado, que dice lo mismo con palabras. */}
@@ -218,7 +249,10 @@ export default async function Micrositio({
                   Dinos qué compraste y el negocio te las abona.
                 </span>
               </span>
-              <span aria-hidden="true" className="shrink-0 font-display text-2xl text-ink">
+              <span
+                aria-hidden="true"
+                className="shrink-0 font-display text-2xl text-ink"
+              >
                 →
               </span>
             </Link>
@@ -247,63 +281,43 @@ export default async function Micrositio({
       {productos.length > 0 && (
         <section className="px-4 pt-6">
           <h2 className="font-display text-xl">Catálogo</h2>
-          <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-            {productos.map((producto) => (
-              <li
-                key={producto.id}
-                className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-dura"
-              >
-                {producto.imagen && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={urlImagen(producto.imagen) ?? ""}
-                    alt={producto.nombre}
-                    className="size-16 shrink-0 rounded-2xl border-2 border-selva/10 object-cover"
-                  />
-                )}
 
-                <span className="min-w-0 flex-1">
-                  <span className="block font-bold text-selva-2">{producto.nombre}</span>
-                  {producto.descripcion && (
-                    <span className="block text-cacao">{producto.descripcion}</span>
-                  )}
-                </span>
-
-                {producto.precio !== null && (
-                  <span className="shrink-0 font-mono font-bold text-selva">
-                    {pesos(producto.precio)}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
+          {/*
+            Las URLs se arman aquí, en el servidor: el catálogo es de cliente
+            —abre el visor— y un componente de cliente que importara
+            `urlImagen` se traería con él el cliente de Supabase de servidor.
+          */}
+          <CatalogoPublico
+            productos={productos.map((producto) => ({
+              id: producto.id,
+              nombre: producto.nombre,
+              descripcion: producto.descripcion,
+              precio: producto.precio,
+              foto: urlImagen(producto.imagen) ?? null,
+            }))}
+          />
         </section>
       )}
 
       {/*
-        Lo que el negocio anuncia hoy. El micrositio no es un archivo: un evento
-        que ya pasó se cae solo y una noticia dura lo que diga DIAS_DE_NOTICIA
-        (hoy, un mes). Las dos
-        siguen existiendo en /eventos y /noticias y en su propia página — no se
-        borra nada, solo dejan de ocupar el espacio del negocio.
+        Lo que el negocio anuncia hoy: **sus eventos, y nada más**. Un evento
+        que ya pasó se cae solo, porque el micrositio no es un archivo.
+
+        Aquí había también "Noticias recientes". Se fue: lo que un negocio
+        escribe vive en la comunidad, junto a lo que escribe todo el mundo, y
+        repetirlo en su ficha hacía que la misma publicación se leyera dos
+        veces. No se borra nada — sigue en /comunidad y en su propia página.
       */}
       {agenda.eventos.length > 0 && (
         <section className="px-4 pt-6">
           <h2 className="font-display text-xl">Próximos eventos</h2>
-          <ul className="mt-3 grid gap-4">
+          <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {agenda.eventos.map((evento) => (
-              <TarjetaPublicacion key={evento.id} publicacion={evento} tipo="evento" />
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {agenda.noticias.length > 0 && (
-        <section className="px-4 pt-6">
-          <h2 className="font-display text-xl">Noticias recientes</h2>
-          <ul className="mt-3 grid gap-4">
-            {agenda.noticias.map((noticia) => (
-              <TarjetaPublicacion key={noticia.id} publicacion={noticia} tipo="noticia" />
+              <TarjetaPublicacion
+                key={evento.id}
+                publicacion={evento}
+                tipo="evento"
+              />
             ))}
           </ul>
         </section>
@@ -312,126 +326,146 @@ export default async function Micrositio({
       {/* Sin ningún dato de contacto, el encabezado solo, sobre el vacío, se ve
           como un error. Mejor no dibujar la sección. */}
       {hayContacto && (
-      <section className="px-4 pt-6">
-        <h2 className="font-display text-xl">Contacto</h2>
-        <ul className="mt-3 flex flex-wrap gap-2.5">
-          {sucursal.ubicacion_maps_url && (
-            <li>
-              <a
-                href={sucursal.ubicacion_maps_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block rounded-full bg-selva px-4 py-2.5 font-bold text-crema"
-              >
-                Cómo llegar
-              </a>
-            </li>
-          )}
-
-          {sucursal.telefono && (
-            <li>
-              <a
-                href={`tel:${sucursal.telefono}`}
-                className="block rounded-full border-2 border-selva/20 bg-white px-4 py-2.5 font-bold text-selva-2"
-              >
-                {sucursal.telefono}
-              </a>
-            </li>
-          )}
-
-          {sucursal.correo_contacto && (
-            <li>
-              <a
-                href={`mailto:${sucursal.correo_contacto}`}
-                className="block rounded-full border-2 border-selva/20 bg-white px-4 py-2.5 font-bold text-selva-2"
-              >
-                Correo
-              </a>
-            </li>
-          )}
-
-          {REDES.map(({ campo, texto }) => {
-            const valor = sucursal[campo];
-            if (!valor) return null;
-
-            const href =
-              campo === "whatsapp"
-                ? `https://wa.me/${valor.replace(/\D/g, "")}`
-                : valor;
-
-            return (
-              <li key={campo}>
+        <section className="px-4 pt-6">
+          <h2 className="font-display text-xl">Contacto</h2>
+          <ul className="mt-3 flex flex-wrap gap-2.5">
+            {sucursal.ubicacion_maps_url && (
+              <li>
                 <a
-                  href={href}
+                  href={sucursal.ubicacion_maps_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block rounded-full border-2 border-selva/20 bg-white px-4 py-2.5 font-bold text-selva-2"
+                  className="block rounded-full bg-selva px-4 py-2.5 font-bold text-crema"
                 >
-                  {texto}
+                  Cómo llegar
                 </a>
               </li>
-            );
-          })}
-        </ul>
-      </section>
+            )}
+
+            {sucursal.telefono && (
+              <li>
+                <a
+                  href={`tel:${sucursal.telefono}`}
+                  className="block rounded-full border-2 border-selva/20 bg-white px-4 py-2.5 font-bold text-selva-2"
+                >
+                  {sucursal.telefono}
+                </a>
+              </li>
+            )}
+
+            {sucursal.correo_contacto && (
+              <li>
+                <a
+                  href={`mailto:${sucursal.correo_contacto}`}
+                  className="block rounded-full border-2 border-selva/20 bg-white px-4 py-2.5 font-bold text-selva-2"
+                >
+                  Correo
+                </a>
+              </li>
+            )}
+
+            {/*
+              El enlace lo arma `enlaceDeRed` y no se toma del campo: el negocio
+              escribe su usuario (`@lamazorca`) y eso como `href` era un enlace
+              roto dentro de su propio micrositio.
+            */}
+            {REDES.map(({ campo, texto }) => {
+              const href = enlaceDeRed(campo, sucursal[campo]);
+              if (!href) return null;
+
+              return (
+                <li key={campo}>
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block rounded-full border-2 border-selva/20 bg-white px-4 py-2.5 font-bold text-selva-2"
+                  >
+                    {texto}
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       )}
 
-      <section className="px-4 pt-8">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 className="font-display text-xl">Reseñas</h2>
+      {/*
+        Las reseñas son la función del plan Plus. En un Básico la sección no
+        existe: ni el listado ni el formulario ni el promedio (spec v2 §5.4).
+        No es solo esconder el formulario —la base también rechaza el insert—,
+        pero enseñar "Todavía nadie ha dejado una reseña" en un micrositio donde
+        nadie puede dejarla sería mentir sobre por qué está vacío.
 
-          {calificacion && (
-            <p>
-              <Promedio promedio={calificacion.promedio} total={calificacion.total} />
+        Si el negocio baja de plan, lo que ya se escribió no se borra: deja de
+        verse y vuelve solo cuando recupera el plan.
+      */}
+      {aceptaResenas && (
+        <section className="px-4 pt-8">
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <h2 className="font-display text-xl">Reseñas</h2>
+
+            {calificacion && (
+              <p>
+                <Promedio
+                  promedio={calificacion.promedio}
+                  total={calificacion.total}
+                />
+              </p>
+            )}
+          </div>
+
+          {resenas.length === 0 ? (
+            <p className="mt-3 text-cacao">
+              Todavía nadie ha dejado una reseña.
             </p>
-          )}
-        </div>
-
-        {resenas.length === 0 ? (
-          <p className="mt-3 text-cacao">Todavía nadie ha dejado una reseña.</p>
-        ) : (
-          <ListaResenas
-            resenas={resenas.map((resena) => ({
-              id: resena.id,
-              nombre: resena.perfiles_publicos?.nombre ?? "Visitante",
-              texto: resena.texto,
-              fechaTexto: CUANDO.format(new Date(resena.fecha)),
-              medioUrl: urlImagen(resena.foto, BUCKET_RESENAS),
-              editada: resena.fecha_edicion !== null,
-              estrellas: estrellas.get(resena.usuario_id) ?? null,
-              respuesta: resena.respuesta_marca,
-            }))}
-            esDuenio={esDuenio}
-            slug={slug}
-          />
-        )}
-
-        <div className="mt-6 grid gap-4">
-          {!perfil && (
-            <p className="rounded-3xl bg-crema-2 p-5 text-cacao">
-              <Link href={`/login?volver=/marca/${slug}`} className="font-bold text-selva underline">
-                Inicia sesión
-              </Link>{" "}
-              para calificar y dejar tu reseña.
-            </p>
-          )}
-
-          {perfil?.rol === "cliente" && (
-            <FormularioResena
-              sucursalId={sucursal.id}
+          ) : (
+            <ListaResenas
+              resenas={resenas.map((resena) => ({
+                id: resena.id,
+                nombre: resena.perfiles_publicos?.nombre ?? "Visitante",
+                texto: resena.texto,
+                fechaTexto: CUANDO.format(new Date(resena.fecha)),
+                medioUrl: urlImagen(resena.foto, BUCKET_RESENAS),
+                editada: resena.fecha_edicion !== null,
+                estrellas: estrellas.get(resena.usuario_id) ?? null,
+                respuesta: resena.respuesta_marca,
+              }))}
+              esDuenio={esDuenio}
               slug={slug}
-              misEstrellas={misEstrellas}
-              miResena={
-                resenaPropia && {
-                  texto: resenaPropia.texto,
-                  medioUrl: urlImagen(resenaPropia.foto, BUCKET_RESENAS),
-                  puedeCambiarla: resenaPropia.puedeCambiarla,
-                }
-              }
             />
           )}
-        </div>
-      </section>
+
+          <div className="mt-6 grid gap-4">
+            {!perfil && (
+              <p className="rounded-3xl bg-crema-2 p-5 text-cacao">
+                <Link
+                  href={`/login?volver=/marca/${slug}`}
+                  className="font-bold text-selva underline"
+                >
+                  Inicia sesión
+                </Link>{" "}
+                para calificar y dejar tu reseña.
+              </p>
+            )}
+
+            {perfil?.rol === "cliente" && (
+              <FormularioResena
+                sucursalId={sucursal.id}
+                slug={slug}
+                misEstrellas={misEstrellas}
+                miResena={
+                  resenaPropia && {
+                    texto: resenaPropia.texto,
+                    medioUrl: urlImagen(resenaPropia.foto, BUCKET_RESENAS),
+                    puedeCambiarla: resenaPropia.puedeCambiarla,
+                  }
+                }
+              />
+            )}
+          </div>
+        </section>
+      )}
     </>
   );
 }

@@ -28,8 +28,8 @@ import { cancelarPlan, contratarPlan } from "@/lib/negocio/plan";
 import { ENTIDADES } from "@/lib/entidades";
 import { FUNCIONES } from "@/lib/funciones";
 import { LIMITES } from "@/lib/limites";
+import { REDES } from "@/lib/redes";
 import { ACEPTA, MEDIDAS, PESO } from "@/lib/imagenes";
-import { RANGOS } from "@/lib/vocabulario";
 
 const INICIAL: EstadoAccion = {};
 
@@ -132,6 +132,13 @@ export function FormularioMicrositio({
         <legend className="px-2 font-display text-lg font-semibold text-selva-2">
           Contacto y redes
         </legend>
+
+        <p className="text-sm text-cacao">
+          Lo que pongas aquí sale como botón en tu micrositio. En las redes basta
+          tu usuario —<span className="font-mono">@lamazorca</span>—; si prefieres,
+          pega el enlace completo de tu página.
+        </p>
+
         <Campo
           nombre="telefono"
           etiqueta="Teléfono"
@@ -140,43 +147,35 @@ export function FormularioMicrositio({
           valor={sucursal.telefono}
         />
         <Campo
-          nombre="whatsapp"
-          etiqueta="WhatsApp"
-          tipo="tel"
-          requerido={false}
-          valor={sucursal.whatsapp}
-        />
-        <Campo
           nombre="correo_contacto"
           etiqueta="Correo de contacto"
           tipo="email"
           requerido={false}
           valor={sucursal.correo_contacto}
         />
-        <Campo
-          nombre="facebook"
-          etiqueta="Facebook"
-          requerido={false}
-          valor={sucursal.facebook}
-        />
-        <Campo
-          nombre="instagram"
-          etiqueta="Instagram"
-          requerido={false}
-          valor={sucursal.instagram}
-        />
-        <Campo
-          nombre="youtube"
-          etiqueta="YouTube"
-          requerido={false}
-          valor={sucursal.youtube}
-        />
-        <Campo
-          nombre="tiktok"
-          etiqueta="TikTok"
-          requerido={false}
-          valor={sucursal.tiktok}
-        />
+
+        {/*
+          Las redes salen de `REDES`, la misma lista con la que el micrositio
+          arma los enlaces: si algún día se agrega una, se agrega en un sitio.
+
+          Y cada una lleva su marcador, que es lo que faltaba. Eran cinco campos
+          vacíos titulados "Instagram", y cada negocio adivinaba: unos ponían la
+          dirección completa, otros el usuario y otros el nombre de su página
+          con espacios. Ahora se ve qué se espera, y `enlaceDeRed` aguanta las
+          otras formas de escribirlo.
+        */}
+        {REDES.map(({ campo, texto, marcador, ayuda }) => (
+          <Campo
+            key={campo}
+            nombre={campo}
+            etiqueta={texto}
+            tipo={campo === "whatsapp" ? "tel" : "text"}
+            requerido={false}
+            valor={sucursal[campo]}
+            marcador={marcador}
+            ayuda={ayuda}
+          />
+        ))}
       </fieldset>
 
       <BotonEnviar>
@@ -274,7 +273,22 @@ export function FormularioImagen({
   );
 }
 
-export function FormularioPublicar({ sucursalId }: { sucursalId: string }) {
+/**
+ * Elegir plan y mandar la sucursal a revisión.
+ *
+ * El plan se elige aquí y no en la cuenta porque desde la spec v2 el cobro es
+ * por sucursal: dos locales de la misma marca pueden estar en planes distintos,
+ * así que la pregunta solo tiene respuesta parada frente a una de ellas.
+ *
+ * No se pide tarjeta. Se abren quince días de prueba y ya.
+ */
+export function FormularioPublicar({
+  sucursalId,
+  tiers,
+}: {
+  sucursalId: string;
+  tiers: Tier[];
+}) {
   const [estado, accion] = useActionState(publicarSucursal, INICIAL);
 
   return (
@@ -282,7 +296,15 @@ export function FormularioPublicar({ sucursalId }: { sucursalId: string }) {
       <input type="hidden" name="sucursal_id" value={sucursalId} />
       <Resultado estado={estado} />
 
-      <BotonEnviar>Publicar en el directorio</BotonEnviar>
+      {/* `Planes` ya trae dentro el radio `tier_id`, que es lo que viaja. */}
+      <Planes tiers={tiers} />
+
+      <p className="rounded-2xl bg-crema-2 px-4 py-3 text-sm text-cacao">
+        Pruebas quince días sin pagar y sin dejar tarjeta. Los días empiezan a
+        contar cuando aprobemos tu micrositio, no ahora.
+      </p>
+
+      <BotonEnviar>Empezar mi prueba de 15 días</BotonEnviar>
     </form>
   );
 }
@@ -349,18 +371,11 @@ export function FormularioEvento({ sucursales }: { sucursales: Sucursal[] }) {
         etiqueta="Fecha del evento"
         tipo="datetime-local"
       />
-      <Selector
-        nombre="rango_exclusivo"
-        etiqueta="¿Exclusivo para algún rango?"
-        requerido={false}
-        opciones={[
-          { valor: "", texto: "Abierto a todos" },
-          ...RANGOS.filter((r) => r.nivel > 1).map((r) => ({
-            valor: String(r.nivel),
-            texto: r.nivel === 4 ? `Solo ${r.plural}` : `${r.plural} o más`,
-          })),
-        ]}
-      />
+      {/*
+        Ya no se pregunta si el evento es exclusivo de algún rango. Los rangos
+        del cliente salieron del producto con las mazorcas (spec v2), y sin
+        ellos esa opción solo servía para dejar un evento invisible para todos.
+      */}
 
       <BotonEnviar>Publicar evento</BotonEnviar>
     </form>
@@ -570,13 +585,19 @@ function Planes({
 
   if (!tier) return null;
 
+  /*
+    Ya no se anuncia un tope de sucursales: desde la spec v2 el cobro es por
+    sucursal y no hay tope. "Hasta 20 sucursales" en un plan que se paga por
+    cada una prometía un permiso que no es del plan.
+  */
   const ventajas = [
     {
       hay: true,
-      texto:
-        tier.max_sucursales === 1
-          ? "Una sucursal"
-          : `Hasta ${tier.max_sucursales} sucursales`,
+      texto: "Tu micrositio en el directorio, con catálogo y contacto",
+    },
+    {
+      hay: tier.permite_resenas,
+      texto: "Recibe reseñas de tus clientes y respóndeles",
     },
     // Las mazorcas están apagadas: anunciarlas como ventaja de un plan sería
     // cobrar por algo que nadie puede usar todavía.
@@ -731,9 +752,9 @@ export function FormularioCancelarSuscripcion() {
 /**
  * Editar un evento ya publicado.
  *
- * No lleva la sucursal ni el rango exclusivo: mover un evento de local es
- * crearlo en otro sitio, no editarlo, y el rango se decide al publicar. Lo que
- * sí cambia con el tiempo es el nombre, lo que se cuenta, la fecha y la foto.
+ * No lleva la sucursal: mover un evento de local es crearlo en otro sitio, no
+ * editarlo. Lo que sí cambia con el tiempo es el nombre, lo que se cuenta, la
+ * fecha y la foto.
  */
 export function FormularioEditarEvento({
   evento,

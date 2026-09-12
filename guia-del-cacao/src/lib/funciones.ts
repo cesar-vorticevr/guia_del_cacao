@@ -25,13 +25,26 @@ export const FUNCIONES = {
   /** Cupones del negocio y sus canjes, que se pagaban con mazorcas. */
   cupones: false,
 
-  /** El muro de publicaciones con fotos, comentarios y regalos. */
-  comunidad: false,
+  /**
+   * El muro de publicaciones con fotos y comentarios.
+   *
+   * Encendido. Ya no cuesta mazorcas: el tope es una publicación al día por
+   * cuenta (migración 000044), que hace el mismo trabajo —que el muro no se
+   * llene de ruido— sin pedirle nada a nadie.
+   */
+  comunidad: true,
 
   /** Los grados del cliente según lo que junta. Sin mazorcas no hay qué medir. */
   rangos: false,
 } as const;
 
-/** Si nada de lo que costaba mazorcas está encendido, la cuenta no las muestra. */
-export const HAY_ECONOMIA_DE_MAZORCAS =
-  FUNCIONES.mazorcas || FUNCIONES.cupones || FUNCIONES.comunidad;
+/**
+ * Si nada de lo que se paga con mazorcas está encendido, la cuenta no las
+ * muestra ni las cuenta.
+ *
+ * La comunidad **no** entra en esta cuenta aunque esté encendida: publicar
+ * costaba una mazorca y ya no cuesta nada. Si siguiera aquí, encender el muro
+ * traería de vuelta el marcador y la pastilla del pasaporte, que es justo lo
+ * que se quitó.
+ */
+export const HAY_ECONOMIA_DE_MAZORCAS = FUNCIONES.mazorcas || FUNCIONES.cupones;
