@@ -478,6 +478,35 @@ En la interfaz, lo propio que está oculto **no sale en el muro ni en la agenda*
 aunque su dueño lo vea por RLS: ahí, entre lo de los demás, se leería como
 publicado. Sale en su sección —«Tus eventos», «Tus noticias»— y con su aviso.
 
+## El panel se ve como el sitio público
+
+Sucursales, Catálogo y «Tus eventos» usan la **misma tarjeta vertical** que el
+explorador, el catálogo del micrositio y la agenda: foto arriba en su caja de
+proporción fija, el texto debajo y los botones en una franja al pie.
+
+Eran tres listas de renglones con miniaturas de 64 a 80 px. El problema no era
+que se vieran distintas: era que el negocio **nunca veía en su panel la imagen
+con la que la gente decide si entra**, y para comprobar una foto tenía que
+abrir el micrositio publicado.
+
+Las columnas no son las mismas en las tres, y es a propósito:
+
+- **Catálogo**, 2/3/4 — igual que el del micrositio, que es lo que se está
+  editando.
+- **Tus eventos**, 2/3/4 — igual que la agenda pública, por lo mismo.
+- **Sucursales**, 1/2/3. Esta tarjeta lleva además el estado, la lista de lo que
+  falta para publicar y hasta cuatro botones; a cuatro por fila esa lista sale
+  en una columna donde cada renglón se parte en dos.
+
+Dos cosas que llevan la información en el sitio donde se busca, no en el texto:
+el **estado** va sobre la foto (esquina superior derecha, en las dos), y un
+producto **que no maneja ninguna sucursal** lo avisa una etiqueta sobre su foto
+— es lo que hay que notar de un golpe al repasar el catálogo, porque significa
+que ese producto no lo ve nadie.
+
+En «Tus eventos» los que ya ocurrieron bajan solos a **«Ya pasaron»**, atenuados,
+y sin el botón de cancelar: cancelar algo que ya pasó no le avisa a nadie.
+
 ## Lo que se publica se maneja donde se lee
 
 Eventos y Foro **dejaron de ser pestañas del panel**. Editar en un cuarto aparte

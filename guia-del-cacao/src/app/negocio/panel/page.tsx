@@ -19,6 +19,7 @@ import { PrimerosPasos } from "@/components/negocio/primeros-pasos";
 import { ConfirmarCorreo } from "@/components/negocio/confirmar-correo";
 import { BotonEliminarSucursal } from "@/components/negocio/catalogo";
 import { catalogoDeMarca } from "@/lib/datos/catalogo";
+import { urlImagen } from "@/lib/imagenes";
 import { ESTADO } from "@/lib/tipos";
 
 export const metadata: Metadata = {
@@ -209,36 +210,88 @@ export default async function PanelNegocio({
             </div>
 
 
-            <ul className="grid gap-4">
+            {/*
+              La misma retícula que el explorador: la foto de portada arriba y
+              lo demás debajo. Eran renglones de texto sin foto, y el negocio
+              nunca veía en su panel la imagen con la que la gente decide si
+              entra — tenía que abrir el micrositio publicado para comprobarla.
+
+              Tres columnas y no cuatro: esta tarjeta lleva además el estado, lo
+              que falta para publicar y hasta cuatro botones. A cuatro por fila
+              esa lista de pendientes sale en una columna donde cada renglón se
+              parte en dos.
+            */}
+            <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {sucursales.map((sucursal) => {
                 const nuevas = sinLeer.get(sucursal.slug) ?? 0;
+                const portada = urlImagen(sucursal.imagen_fondo);
+                const insignia = urlImagen(sucursal.logo);
+                const calificacion = promedios.get(sucursal.id);
+                const falta = faltantes.get(sucursal.id) ?? [];
 
                 return (
-                  <li key={sucursal.id} className="rounded-3xl bg-crema-2 p-6">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
+                  <li
+                    key={sucursal.id}
+                    className="flex h-full flex-col overflow-hidden rounded-3xl border-2 border-ink/10 bg-white shadow-dura"
+                  >
+                    {/*
+                      La portada va absoluta dentro de la caja 4:3, no en el
+                      flujo: con `h-full` en el flujo una foto alta estira su
+                      caja y las tarjetas de la fila dejan de alinearse.
+                    */}
+                    <Link
+                      href={`/negocio/panel/sucursal/${sucursal.id}`}
+                      aria-label={`Editar ${sucursal.nombre_sucursal}`}
+                      className="relative block aspect-[4/3] w-full shrink-0 overflow-hidden bg-crema-2"
+                    >
+                      {portada ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={portada}
+                          alt=""
+                          loading="lazy"
+                          className="absolute inset-0 size-full object-cover"
+                        />
+                      ) : (
+                        /*
+                          Sin portada, el hueco lo dice con palabras y no con la
+                          inicial del nombre: aquí falta una foto que hay que
+                          subir, y en el panel eso es una tarea, no un adorno.
+                        */
+                        <span className="absolute inset-0 grid place-items-center px-4 text-center font-bold text-selva/50">
+                          Sin foto de portada
+                        </span>
+                      )}
+
+                      {/* El logo de insignia, como en el micrositio: es lo que
+                          identifica la sucursal de un vistazo cuando las
+                          portadas de dos locales son parecidas. */}
+                      {insignia && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={insignia}
+                          alt=""
+                          className="absolute bottom-2 left-2 size-12 rounded-2xl border-2 border-crema bg-white object-cover"
+                        />
+                      )}
+
+                      <span className="absolute right-2 top-2">
+                        <InsigniaEstado estado={sucursal.estado} />
+                      </span>
+                    </Link>
+
+                    <div className="flex flex-1 flex-col gap-1 p-5">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
                         <p className="font-display text-xl font-semibold text-selva-2">
                           {sucursal.nombre_sucursal}
                         </p>
-                        <p className="mt-0.5">
-                          {promedios.get(sucursal.id) ? (
-                            <Promedio
-                              promedio={promedios.get(sucursal.id)!.promedio}
-                              total={promedios.get(sucursal.id)!.total}
-                            />
-                          ) : (
-                            <SinCalificar />
-                          )}
-                        </p>
-                      </div>
 
-                      <div className="flex items-center gap-3">
                         {/*
-                            Los avisos viven en la sucursal, no en una lista
-                            aparte: así ya dicen de quién son sin tener que
-                            leerlos. Y solo aparecen cuando hay algo — un
-                            icono permanente deja de mirarse.
-                          */}
+                          Los avisos viven en la sucursal, no en una lista
+                          aparte: así ya dicen de quién son sin tener que
+                          leerlos. Y solo aparecen cuando hay algo — un icono
+                          permanente deja de mirarse.
+                        */}
                         <AvisosDeSucursal
                           slug={sucursal.slug}
                           resenasNuevas={
@@ -251,49 +304,66 @@ export default async function PanelNegocio({
                             solicitudes.get(sucursal.id)?.nuevas ?? 0
                           }
                         />
-
-                        <InsigniaEstado estado={sucursal.estado} />
                       </div>
+
+                      <p>
+                        {calificacion ? (
+                          <Promedio
+                            promedio={calificacion.promedio}
+                            total={calificacion.total}
+                          />
+                        ) : (
+                          <SinCalificar />
+                        )}
+                      </p>
+
+                      <p className="text-sm text-cacao">
+                        {ESTADO[sucursal.estado].explicacion}
+                      </p>
+
+                      {sucursal.motivo_rechazo && (
+                        <p className="mt-2 rounded-2xl bg-guayaba/15 px-4 py-3 text-sm text-cacao">
+                          <strong>Motivo:</strong> {sucursal.motivo_rechazo}
+                        </p>
+                      )}
+
+                      {/*
+                        Lo que falta va pegado al fondo con `mt-auto`: así los
+                        botones quedan a la misma altura en toda la fila aunque
+                        una sucursal tenga cuatro pendientes y otra ninguno.
+                      */}
+                      {sucursal.estado !== "publicado" && (
+                        <div className="mt-auto pt-3">
+                          {falta.length ? (
+                            <div className="rounded-2xl border-2 border-mango/50 bg-mango/10 px-4 py-3">
+                              <p className="font-bold text-selva-2">
+                                Para publicarla te falta:
+                              </p>
+                              <ul className="mt-1.5 grid gap-1">
+                                {falta.map((pendiente) => (
+                                  <li
+                                    key={pendiente}
+                                    className="flex items-center gap-2 text-sm text-cacao"
+                                  >
+                                    <span
+                                      aria-hidden="true"
+                                      className="size-2 shrink-0 rounded-full bg-guayaba"
+                                    />
+                                    {pendiente}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : (
+                            <p className="rounded-2xl bg-lima/25 px-4 py-3 font-bold text-selva-2">
+                              Ya está completa: solo falta publicarla.
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
 
-                    <p className="mt-2 text-cacao">
-                      {ESTADO[sucursal.estado].explicacion}
-                    </p>
-
-                    {sucursal.motivo_rechazo && (
-                      <p className="mt-2 rounded-2xl bg-guayaba/15 px-4 py-3 text-cacao">
-                        <strong>Motivo:</strong> {sucursal.motivo_rechazo}
-                      </p>
-                    )}
-
-                    {sucursal.estado !== "publicado" &&
-                      (faltantes.get(sucursal.id)?.length ? (
-                        <div className="mt-3 rounded-2xl border-2 border-mango/50 bg-mango/10 px-4 py-3">
-                          <p className="font-bold text-selva-2">
-                            Para publicarla te falta:
-                          </p>
-                          <ul className="mt-1.5 grid gap-1">
-                            {faltantes.get(sucursal.id)!.map((pendiente) => (
-                              <li
-                                key={pendiente}
-                                className="flex items-center gap-2 text-cacao"
-                              >
-                                <span
-                                  aria-hidden="true"
-                                  className="size-2 shrink-0 rounded-full bg-guayaba"
-                                />
-                                {pendiente}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ) : (
-                        <p className="mt-3 rounded-2xl bg-lima/25 px-4 py-3 font-bold text-selva-2">
-                          Ya está completa: solo falta publicarla.
-                        </p>
-                      ))}
-
-                    <div className="mt-4 flex flex-wrap gap-3">
+                    <div className="flex flex-wrap gap-2 border-t-2 border-ink/5 px-5 py-3">
                       <Link
                         href={`/negocio/panel/sucursal/${sucursal.id}`}
                         className={SECUNDARIO}
@@ -312,7 +382,7 @@ export default async function PanelNegocio({
 
                       {sucursal.estado !== "publicado" &&
                         sucursal.estado !== "pendiente_aprobacion" &&
-                        !faltantes.get(sucursal.id)?.length && (
+                        !falta.length && (
                           <Link
                             href={`/negocio/panel/sucursal/${sucursal.id}/publicar`}
                             className="min-h-11 rounded-full bg-mango px-5 py-2.5 text-sm font-bold text-ink"
