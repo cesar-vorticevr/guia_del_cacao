@@ -88,15 +88,22 @@ export function TarjetaSucursal({
           4:3 y no cuadrada: las portadas se suben apaisadas —son fotos de un
           local o de una finca— y recortarlas a cuadro les corta los lados, que
           es justo donde está el sitio.
+
+          La foto va **absoluta** dentro de esta caja, no en el flujo. Con
+          `h-full` en el flujo, la altura del hueco se resolvía contra la de la
+          imagen y la imagen contra la del hueco: una foto alta ganaba y
+          estiraba la caja, así que cada tarjeta acababa con la portada de un
+          tamaño distinto y los títulos a distinta altura. Fuera del flujo, la
+          proporción la manda solo `aspect`.
         */}
-        <span className="relative block aspect-[4/3] w-full shrink-0 bg-crema-2">
+        <span className="relative block aspect-[4/3] w-full shrink-0 overflow-hidden bg-crema-2">
           {portada ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={portada}
               alt=""
               loading="lazy"
-              className="size-full object-cover"
+              className="absolute inset-0 size-full object-cover"
             />
           ) : (
             /*
@@ -106,7 +113,7 @@ export function TarjetaSucursal({
             */
             <span
               aria-hidden="true"
-              className={`grid size-full place-items-center font-display text-5xl ${tono.suave}`}
+              className={`absolute inset-0 grid place-items-center font-display text-5xl ${tono.suave}`}
             >
               {sucursal.nombre_sucursal.charAt(0)}
             </span>
@@ -164,37 +171,53 @@ export function TarjetaSucursal({
           {/*
             A qué se dedica, en pastillas pequeñas. Un negocio puede ser finca,
             museo y taller a la vez, y enseñar solo una lo vendía por menos de
-            lo que es. Se cortan en tres: la cuarta ya no cabe en el ancho de
-            una tarjeta de cuatro por fila, y el resto se cuenta.
+            lo que es.
+
+            Se cortan en **dos** y el resto se cuenta. Con tres, en el ancho de
+            una tarjeta de cuatro por fila el contador caía a un segundo
+            renglón, y entonces las tarjetas de una misma fila dejaban las
+            estrellas a distinta altura. `flex-nowrap` remata: esta fila no
+            puede crecer hacia abajo.
           */}
           {oficios.length > 0 && (
-            <span className="mt-0.5 flex flex-wrap gap-1">
-              {oficios.slice(0, 3).map((oficio) => (
+            <span className="mt-0.5 flex flex-nowrap items-center gap-1 overflow-hidden">
+              {oficios.slice(0, 2).map((oficio) => (
                 <span
                   key={oficio.id}
-                  className={`rounded-full px-2 py-0.5 text-[0.7rem] font-bold ${
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-[0.7rem] font-bold whitespace-nowrap ${
                     tonoDeCategoria(oficio.id).suave
                   }`}
                 >
                   {oficio.nombre}
                 </span>
               ))}
-              {oficios.length > 3 && (
-                <span className="px-1 py-0.5 text-[0.7rem] font-bold text-cacao/60">
-                  +{oficios.length - 3}
+              {oficios.length > 2 && (
+                <span className="shrink-0 px-1 py-0.5 text-[0.7rem] font-bold text-cacao/60">
+                  +{oficios.length - 2}
                 </span>
               )}
             </span>
           )}
 
-          {sucursal.calificacion && (
-            <span className="mt-0.5 block">
+          {/*
+            La fila de estrellas se reserva aunque no haya ninguna, con un
+            hueco de su mismo alto. Si desapareciera, en una fila de cuatro
+            tarjetas las que tienen calificación dejarían su descripción veinte
+            píxeles más abajo que las que no.
+
+            El hueco va vacío y no con un "sin calificaciones": desde que las
+            reseñas son del plan Plus, un micrositio Básico no es que no tenga
+            opiniones — es que su plan no las enseña, y decir lo primero sería
+            mentir sobre el negocio.
+          */}
+          <span className="mt-0.5 block min-h-6">
+            {sucursal.calificacion && (
               <Promedio
                 promedio={sucursal.calificacion.promedio}
                 total={sucursal.calificacion.total}
               />
-            </span>
-          )}
+            )}
+          </span>
 
           {/*
             El producto encontrado sustituye al "acerca de", no se suma: quien

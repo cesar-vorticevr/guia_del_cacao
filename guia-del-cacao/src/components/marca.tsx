@@ -25,6 +25,31 @@ export function Mazorca({ className = "size-7" }: { className?: string }) {
   );
 }
 
+/**
+ * El escudo completo, para la portada.
+ *
+ * Es el mismo archivo que el encabezado no puede usar: un escudo casi cuadrado
+ * con el nombre, un mapa y granos dentro. A 28 px sus letras quedarían en tres
+ * píxeles —de ahí la mazorca sola arriba—, pero a 140 se lee entero y es lo que
+ * le dice a quien llega de qué va esto antes de leer una palabra.
+ *
+ * `priority` porque es lo primero que se ve: cargarlo tarde deja un hueco justo
+ * encima del titular.
+ */
+export function EscudoDeMarca({ className = "size-32 sm:size-36" }: { className?: string }) {
+  return (
+    <Image
+      src="/marca/logotipo.png"
+      alt="Guía del Cacao"
+      width={1254}
+      height={1254}
+      priority
+      sizes="(min-width: 640px) 144px, 128px"
+      className={className}
+    />
+  );
+}
+
 export function Logotipo({ href = "/" }: { href?: string }) {
   return (
     <Link

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EscudoDeMarca } from "@/components/marca";
 import { BannerRotativo } from "@/components/publico/banner-rotativo";
 import { BuscadorPortada } from "@/components/publico/buscador-portada";
 import { FondoDeCacao } from "@/components/publico/fondo-cacao";
@@ -76,7 +77,14 @@ export default async function Home() {
         <FondoDeCacao variante="franja" soloOrillas />
 
         <div className="relative z-10">
-          <h1 className="mx-auto max-w-3xl text-balance font-display text-4xl leading-tight text-selva-2 sm:text-6xl">
+          {/*
+            El escudo abre la portada. Sin él, la primera pantalla era texto
+            verde sobre crema y la marca solo aparecía en 28 px arriba, dentro
+            de la barra: aquí es lo que dice de qué va esto antes de leer nada.
+          */}
+          <EscudoDeMarca className="mx-auto size-28 sm:size-36" />
+
+          <h1 className="mx-auto mt-3 max-w-3xl text-balance font-display text-4xl leading-tight text-selva-2 sm:text-6xl">
             El cacao de México, en un solo lugar
           </h1>
 
