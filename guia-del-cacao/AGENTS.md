@@ -709,6 +709,37 @@ delante, que es lo que hacía falta para que el botón de WhatsApp abriera algo.
 De paso, de ahí solo salen enlaces `https:`. Un `href` copiado del formulario sin
 mirar acepta `javascript:`.
 
+## Un formulario que falla no se vacía
+
+**React 19 vacía un formulario no controlado al terminar su acción**, con error
+o sin él. Los campos del sitio son `defaultValue`, así que equivocarse en el
+precio de un producto borraba el nombre, el SKU y la descripción y había que
+teclearlo todo otra vez. En el alta de un producto está resuelto y el patrón
+sirve para cualquier otro formulario del panel:
+
+1. **La acción devuelve lo que venía escrito** (`valores`) y **qué campo falló**
+   (`campo`), además del mensaje. Los valores se leen *antes* de validar nada,
+   así que cualquier salida por error los devuelve.
+2. **Los campos se montan de nuevo** con una `key` que cambia en cada envío. Sin
+   remontar no sirve de nada: un `defaultValue` nuevo no se vuelve a leer si el
+   campo sigue montado. La `key` se ajusta **en el render**, no en un efecto —
+   en un efecto hay una pintada intermedia con el formulario ya vacío, que es
+   justo el parpadeo que se quería quitar, y además el lint lo prohíbe
+   (`react-hooks/set-state-in-effect`).
+3. **El mensaje va en su campo.** `Campo` y `Area` aceptan `problema`: borde
+   guayaba, `aria-invalid` y el texto debajo, en lugar de la ayuda. Arriba queda
+   solo «Revisa lo que está marcado abajo» — repetir el mensaje en los dos
+   sitios hace leer dos veces para encontrar una sola cosa.
+4. **El foco cae en el campo marcado**, y eso sí es un efecto. Sin él, en
+   celular hay que bajar buscando cuál de los cinco salió en rojo.
+
+Una cosa **sí se pierde y hay que decirlo**: la foto. Un `input file` no se
+puede rellenar desde el código —lo impide el navegador— así que el campo avisa
+«La foto no se guardó: vuelve a elegirla» cuando el envío traía una. Callarlo
+acabaría en productos guardados sin foto sin que nadie se diera cuenta.
+
+Al **acertar** sí se vacía, y es lo correcto: se acaba de agregar un producto y
+lo siguiente es agregar otro.
 ## El catálogo es de la marca
 
 Desde la migración **000022** los productos cuelgan de `marcas`, no de

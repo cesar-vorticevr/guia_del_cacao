@@ -7,7 +7,47 @@ import { perfilActual } from "@/lib/auth/sesion";
 import { revisarImagen } from "@/lib/imagenes";
 import { LIMITES, revisarLargo } from "@/lib/limites";
 
-export type EstadoCatalogo = { error?: string; ok?: string };
+/** Los campos del producto, tal como los escribio quien los mando. */
+export type ValoresProducto = {
+  nombre: string;
+  sku: string;
+  descripcion: string;
+  precio: string;
+};
+
+export type EstadoCatalogo = {
+  error?: string;
+  ok?: string;
+  /**
+   * Qué campo hay que corregir, para marcarlo en la pantalla.
+   *
+   * Con cinco campos, «el precio no es un número válido» obliga a buscar cuál
+   * de los cinco es el precio. Con el nombre del campo, la pantalla lo pinta
+   * en rojo y pone el mensaje justo debajo.
+   */
+  campo?: keyof ValoresProducto | "imagen";
+  /**
+   * Lo que venía escrito, para volver a pintarlo.
+   *
+   * Hace falta porque React 19 **vacía un formulario no controlado** al
+   * terminar la acción, con error o sin él. Quien escribía un producto con su
+   * descripción y su SKU y se equivocaba en el precio lo perdía todo y tenía
+   * que teclearlo otra vez.
+   *
+   * Solo se devuelve cuando hay error: al acertar, la caja tiene que quedar
+   * limpia para el producto siguiente.
+   */
+  valores?: ValoresProducto;
+  /**
+   * Si la foto que venía se quedó sin subir.
+   *
+   * Un `input file` no se puede rellenar desde el código —lo impide el
+   * navegador, y con razón—, así que la foto elegida **sí se pierde** aunque
+   * el resto se conserve. Se avisa en su campo, en vez de dejar que el
+   * producto se guarde sin ella sin que nadie lo note.
+   */
+  fotoPerdida?: boolean;
+};
 
 function texto(datos: FormData, campo: string) {
   const valor = (datos.get(campo)?.toString() ?? "").trim();
@@ -44,9 +84,51 @@ async function miMarca() {
 }
 
 /** Lee nombre, precio y descripción de un formulario de producto. */
-function leerProducto(datos: FormData) {
+/** Lo escrito, sin recortar ni convertir: es tal cual hay que repintarlo. */
+function valoresDe(datos: FormData): ValoresProducto {
+  const leer = (campo: string) => datos.get(campo)?.toString() ?? "";
+
+  return {
+    nombre: leer("nombre"),
+    sku: leer("sku"),
+    descripcion: leer("descripcion"),
+    precio: leer("precio"),
+  };
+}
+
+/** ¿Venía una foto en el envío? Decide si hay que avisar de que se perdió. */
+function tieneFoto(archivo: FormDataEntryValue | null) {
+  return archivo instanceof File && archivo.size > 0;
+}
+
+/*
+  El tipo de vuelta se declara a mano y no se deja inferir: con cuatro `return`
+  distintos, TypeScript arma una unión donde `error` acaba siendo
+  `string | undefined` y comprobar `"error" in campos` ya no lo acota. Declarado,
+  la comprobación separa las dos formas y `campos.error` es una cadena.
+*/
+type ProblemaDelProducto = {
+  error: string;
+  campo: EstadoCatalogo["campo"];
+};
+
+type ProductoLeido = {
+  nombre: string;
+  descripcion: string | null;
+  precio: number | null;
+  sku: string | null;
+};
+
+function leerProducto(
+  datos: FormData,
+): ProblemaDelProducto | ProductoLeido {
   const nombre = texto(datos, "nombre");
-  if (!nombre) return { error: "El producto necesita un nombre." as const };
+  if (!nombre) {
+    return {
+      error: "El producto necesita un nombre." as const,
+      campo: "nombre" as const,
+    };
+  }
 
   const descripcion = texto(datos, "descripcion");
   const largo = revisarLargo(
@@ -54,13 +136,16 @@ function leerProducto(datos: FormData) {
     LIMITES.descripcionProducto,
     "La descripción del producto",
   );
-  if (largo) return { error: largo };
+  if (largo) return { error: largo, campo: "descripcion" as const };
 
   const precioTexto = texto(datos, "precio");
   const precio = precioTexto ? Number(precioTexto) : null;
 
   if (precio !== null && (Number.isNaN(precio) || precio < 0)) {
-    return { error: "El precio no es un número válido." as const };
+    return {
+      error: "Escribe solo el número, sin el signo de pesos." as const,
+      campo: "precio" as const,
+    };
   }
 
   return { nombre, descripcion, precio, sku: texto(datos, "sku") };
@@ -96,11 +181,26 @@ export async function agregarAlCatalogo(
 ): Promise<EstadoCatalogo> {
   const marcaId = await miMarca();
 
+  /*
+    Lo escrito se guarda antes de validar nada, y cualquier salida por error de
+    aquí para abajo lo devuelve. Así la pantalla lo vuelve a pintar en vez de
+    dejar el formulario en blanco.
+  */
+  const valores = valoresDe(datos);
+  const traiaFoto = tieneFoto(datos.get("imagen"));
+
+  const devolver = (error: string, campo?: EstadoCatalogo["campo"]) => ({
+    error,
+    campo,
+    valores,
+    fotoPerdida: traiaFoto,
+  });
+
   const campos = leerProducto(datos);
-  if ("error" in campos) return { error: campos.error };
+  if ("error" in campos) return devolver(campos.error, campos.campo);
 
   const foto = await subirFoto(datos.get("imagen"), marcaId);
-  if (foto.error) return { error: foto.error };
+  if (foto.error) return devolver(foto.error, "imagen");
 
   const supabase = await crearClienteServidor();
 
@@ -116,7 +216,7 @@ export async function agregarAlCatalogo(
   if (error) {
     // Sin esto quedaría una foto huérfana en el bucket cada vez que falla.
     if (foto.ruta) await supabase.storage.from("micrositios").remove([foto.ruta]);
-    return { error: "No se pudo agregar el producto." };
+    return devolver("No se pudo agregar el producto. Inténtalo de nuevo.");
   }
 
   revalidatePath("/negocio/panel/catalogo");
@@ -134,11 +234,22 @@ export async function editarDelCatalogo(
   const marcaId = await miMarca();
   const productoId = datos.get("producto_id")?.toString() ?? "";
 
+  // Igual que al agregar: lo escrito vuelve si algo falla.
+  const valores = valoresDe(datos);
+  const traiaFoto = tieneFoto(datos.get("imagen"));
+
+  const devolver = (error: string, campo?: EstadoCatalogo["campo"]) => ({
+    error,
+    campo,
+    valores,
+    fotoPerdida: traiaFoto,
+  });
+
   const campos = leerProducto(datos);
-  if ("error" in campos) return { error: campos.error };
+  if ("error" in campos) return devolver(campos.error, campos.campo);
 
   const foto = await subirFoto(datos.get("imagen"), marcaId);
-  if (foto.error) return { error: foto.error };
+  if (foto.error) return devolver(foto.error, "imagen");
 
   const supabase = await crearClienteServidor();
 
@@ -156,7 +267,7 @@ export async function editarDelCatalogo(
     .eq("id", productoId)
     .eq("marca_id", marcaId);
 
-  if (error) return { error: "No se pudo guardar el producto." };
+  if (error) return devolver("No se pudo guardar el producto. Inténtalo de nuevo.");
 
   revalidatePath("/negocio/panel/catalogo");
   redirect("/negocio/panel/catalogo?guardado=1");

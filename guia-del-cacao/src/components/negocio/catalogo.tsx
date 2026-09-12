@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Area, Aviso, BotonEnviar, Campo } from "@/components/formulario";
 import {
@@ -18,7 +18,19 @@ import { pesos, type Producto } from "@/lib/tipos";
 
 const INICIAL: EstadoCatalogo = {};
 
+/**
+ * El aviso de arriba.
+ *
+ * Cuando el error es de un campo concreto, **aquí no se repite el mensaje**:
+ * sale marcado abajo, y decirlo dos veces hace leer dos veces para encontrar
+ * una sola cosa. Queda una línea que manda a mirar, porque el formulario puede
+ * ser más largo que la pantalla y hace falta saber que algo falló.
+ *
+ * Con `role="alert"`, además, un lector de pantalla lo anuncia al volver la
+ * respuesta; el detalle lo da el propio campo, que ya está enfocado.
+ */
 function Resultado({ estado }: { estado: EstadoCatalogo }) {
+  if (estado.campo) return <Aviso>Revisa lo que está marcado abajo.</Aviso>;
   if (estado.error) return <Aviso>{estado.error}</Aviso>;
   if (estado.ok) {
     return (
@@ -40,38 +52,76 @@ function Resultado({ estado }: { estado: EstadoCatalogo }) {
  * el producto todavía no existe cuando se está creando, así que viaja con el
  * formulario. En la edición sí podría subirse sola, pero tener dos
  * comportamientos para el mismo campo confunde más de lo que ahorra.
+ *
+ * **Si el envío falla, los campos se vuelven a pintar con lo que se escribió**
+ * y el que hay que corregir sale marcado. Antes se perdía todo: React 19 vacía
+ * un formulario no controlado al terminar la acción, así que equivocarse en el
+ * precio costaba volver a teclear el nombre, el SKU y la descripción.
  */
-function CamposProducto({ producto }: { producto?: Producto }) {
+function CamposProducto({
+  producto,
+  estado,
+}: {
+  producto?: Producto;
+  /** Lo que dijo el servidor: qué falló, dónde, y lo que venía escrito. */
+  estado?: EstadoCatalogo;
+}) {
   const { pending } = useFormStatus();
+
+  /*
+    Lo que se pinta: lo que se acaba de mandar si hubo error, y si no, lo que
+    está guardado. En ese orden — al corregir un error, lo último que escribió
+    la persona manda sobre lo que había en la base.
+  */
+  const puesto = estado?.valores;
+  const deCampo = (campo: keyof NonNullable<EstadoCatalogo["valores"]>) =>
+    puesto ? puesto[campo] : undefined;
+
+  /** El mensaje va en su campo, y solo en el que falló. */
+  const problemaDe = (campo: EstadoCatalogo["campo"]) =>
+    estado && estado.campo === campo ? estado.error : undefined;
 
   return (
     <>
-      <Campo nombre="nombre" etiqueta="Nombre del producto" valor={producto?.nombre} />
+      <Campo
+        nombre="nombre"
+        etiqueta="Nombre del producto"
+        valor={deCampo("nombre") ?? producto?.nombre}
+        problema={problemaDe("nombre")}
+      />
 
       <Campo
         nombre="sku"
         etiqueta="SKU"
         requerido={false}
-        valor={producto?.sku}
+        valor={deCampo("sku") ?? producto?.sku}
         marcador="BAR-70-100"
         ayuda="Opcional. Tu clave interna, para cruzarlo con tu inventario."
+        problema={problemaDe("sku")}
       />
 
       <Area
         nombre="descripcion"
         etiqueta="Descripción"
-        valor={producto?.descripcion}
+        valor={deCampo("descripcion") ?? producto?.descripcion}
         filas={3}
         limite={LIMITES.descripcionProducto}
+        problema={problemaDe("descripcion")}
       />
 
       <Campo
         nombre="precio"
         etiqueta="Precio"
         requerido={false}
-        valor={producto?.precio !== null && producto?.precio !== undefined ? String(producto.precio) : null}
+        valor={
+          deCampo("precio") ??
+          (producto?.precio !== null && producto?.precio !== undefined
+            ? String(producto.precio)
+            : null)
+        }
         marcador="120"
         ayuda="Opcional. Déjalo vacío si prefieres no publicarlo."
+        problema={problemaDe("precio")}
       />
 
       <label className="block">
@@ -80,6 +130,7 @@ function CamposProducto({ producto }: { producto?: Producto }) {
           <span className="font-normal text-cacao/70">(opcional)</span>
         </span>
         <input
+          id="imagen"
           type="file"
           name="imagen"
           accept={ACEPTA}
@@ -91,6 +142,24 @@ function CamposProducto({ producto }: { producto?: Producto }) {
           </span>
         ) : (
           <>
+            {/*
+              El único campo que de verdad se pierde. Un `input file` no se
+              puede rellenar desde el código —lo impide el navegador—, así que
+              se avisa en vez de dejar que el producto se guarde sin foto sin
+              que nadie lo note.
+            */}
+            {estado?.fotoPerdida && (
+              <span className="mt-1.5 block text-sm font-bold text-guayaba">
+                La foto no se guardó: vuelve a elegirla.
+              </span>
+            )}
+
+            {problemaDe("imagen") && (
+              <span className="mt-1.5 block text-sm font-bold text-guayaba">
+                {problemaDe("imagen")}
+              </span>
+            )}
+
             <span className="mt-1.5 block text-sm text-cacao/70">
               Cuadrada. {MEDIDAS.producto}
             </span>
@@ -107,13 +176,51 @@ function CamposProducto({ producto }: { producto?: Producto }) {
   );
 }
 
+/**
+ * La `key` de los campos, y el foco en el que haya que corregir.
+ *
+ * **La key** es lo que devuelve lo escrito. React 19 vacía un formulario no
+ * controlado al terminar la acción, y un `defaultValue` nuevo no se vuelve a
+ * leer si el campo sigue montado; cambiando la key se montan de nuevo y
+ * estrenan el valor que devolvió el servidor. Se ajusta **en el render** y no
+ * en un efecto: en un efecto habría una pintada intermedia con el formulario
+ * ya vacío —el parpadeo que se quería quitar— y además es lo que el lint
+ * prohíbe.
+ *
+ * **El foco** sí va en un efecto, porque es lo que es: mover el cursor después
+ * de pintar. Sin él, en celular hay que bajar a buscar cuál de los cinco
+ * campos salió en rojo; con él, el teclado se abre en el que toca. Los `id` de
+ * `Campo` y de `Area` son el nombre del campo, que es justo lo que devuelve la
+ * acción.
+ */
+function useCamposQueVuelven(estado: EstadoCatalogo) {
+  const [visto, setVisto] = useState(estado);
+  const [intento, setIntento] = useState(0);
+
+  if (visto !== estado) {
+    setVisto(estado);
+    setIntento((n) => n + 1);
+  }
+
+  useEffect(() => {
+    if (!estado.campo) return;
+
+    const campo = document.getElementById(estado.campo);
+    campo?.focus();
+    campo?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [estado]);
+
+  return intento;
+}
+
 export function FormularioNuevoProducto() {
   const [estado, accion] = useActionState(agregarAlCatalogo, INICIAL);
+  const intento = useCamposQueVuelven(estado);
 
   return (
     <form action={accion} className="grid gap-4">
       <Resultado estado={estado} />
-      <CamposProducto />
+      <CamposProducto key={intento} estado={estado} />
       <BotonEnviar variante="secundario">Agregar al catálogo</BotonEnviar>
     </form>
   );
@@ -181,12 +288,13 @@ export function NuevoProducto({
 
 export function FormularioEditarProducto({ producto }: { producto: Producto }) {
   const [estado, accion] = useActionState(editarDelCatalogo, INICIAL);
+  const intento = useCamposQueVuelven(estado);
 
   return (
     <form action={accion} className="grid gap-4">
       <input type="hidden" name="producto_id" value={producto.id} />
       <Resultado estado={estado} />
-      <CamposProducto producto={producto} />
+      <CamposProducto key={intento} producto={producto} estado={estado} />
       <BotonEnviar>Guardar cambios</BotonEnviar>
     </form>
   );

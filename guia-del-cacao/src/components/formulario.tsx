@@ -15,6 +15,14 @@ type CampoProps = {
   marcador?: string;
   /** Tope de caracteres. Con él aparece el contador. */
   limite?: number;
+  /**
+   * Qué está mal en **este** campo, cuando el servidor lo dice.
+   *
+   * Se pinta en el campo y no solo arriba en el aviso general: con cinco
+   * campos, «el precio no es un número válido» obliga a buscar cuál de los
+   * cinco es el precio. Marcado, se ve de un golpe.
+   */
+  problema?: string | null;
 };
 
 export function Campo({
@@ -27,6 +35,7 @@ export function Campo({
   valor,
   marcador,
   limite,
+  problema,
 }: CampoProps) {
   const [largo, setLargo] = useState((valor ?? "").length);
   const [visible, setVisible] = useState(false);
@@ -67,9 +76,20 @@ export function Campo({
               ? (evento) => setLargo(evento.target.value.length)
               : undefined
           }
-          aria-describedby={ayuda ? `${nombre}-ayuda` : undefined}
+          aria-invalid={problema ? true : undefined}
+          aria-describedby={
+            problema
+              ? `${nombre}-problema`
+              : ayuda
+                ? `${nombre}-ayuda`
+                : undefined
+          }
           /* min-h-14: objetivo táctil grande, que es como se va a usar en la feria. */
-          className={`min-h-14 w-full rounded-2xl border-2 border-selva/20 bg-white text-base text-ink transition-colors placeholder:text-cacao/40 focus:border-selva ${
+          className={`min-h-14 w-full rounded-2xl border-2 bg-white text-base text-ink transition-colors placeholder:text-cacao/40 ${
+            problema
+              ? "border-guayaba focus:border-guayaba"
+              : "border-selva/20 focus:border-selva"
+          } ${
             conOjo ? "pr-14 pl-4" : "px-4"
           }`}
         />
@@ -93,10 +113,24 @@ export function Campo({
         )}
       </span>
 
-      {ayuda && (
-        <span id={`${nombre}-ayuda`} className="mt-1.5 block text-sm text-cacao/70">
-          {ayuda}
+      {/*
+        El problema sustituye a la ayuda mientras dure. Los dos juntos son dos
+        renglones de letra chica debajo del mismo campo, y el que importa es el
+        que dice qué corregir.
+      */}
+      {problema ? (
+        <span
+          id={`${nombre}-problema`}
+          className="mt-1.5 block text-sm font-bold text-guayaba"
+        >
+          {problema}
         </span>
+      ) : (
+        ayuda && (
+          <span id={`${nombre}-ayuda`} className="mt-1.5 block text-sm text-cacao/70">
+            {ayuda}
+          </span>
+        )
       )}
       {limite && <Contador largo={largo} limite={limite} />}
     </label>
@@ -133,6 +167,7 @@ export function Area({
   valor,
   filas = 4,
   limite,
+  problema,
 }: {
   nombre: string;
   etiqueta: string;
@@ -141,6 +176,8 @@ export function Area({
   filas?: number;
   /** Tope de caracteres. Con él aparece el contador. */
   limite?: number;
+  /** Qué está mal en este campo. Igual que en `Campo`. */
+  problema?: string | null;
 }) {
   const [largo, setLargo] = useState((valor ?? "").length);
 
@@ -154,9 +191,24 @@ export function Area({
         defaultValue={valor ?? ""}
         maxLength={limite}
         onChange={limite ? (evento) => setLargo(evento.target.value.length) : undefined}
-        className="w-full rounded-2xl border-2 border-selva/20 bg-white px-4 py-3 text-base text-ink focus:border-selva"
+        aria-invalid={problema ? true : undefined}
+        aria-describedby={problema ? `${nombre}-problema` : undefined}
+        className={`w-full rounded-2xl border-2 bg-white px-4 py-3 text-base text-ink ${
+          problema
+            ? "border-guayaba focus:border-guayaba"
+            : "border-selva/20 focus:border-selva"
+        }`}
       />
-      {ayuda && <span className="mt-1.5 block text-sm text-cacao/70">{ayuda}</span>}
+      {problema ? (
+        <span
+          id={`${nombre}-problema`}
+          className="mt-1.5 block text-sm font-bold text-guayaba"
+        >
+          {problema}
+        </span>
+      ) : (
+        ayuda && <span className="mt-1.5 block text-sm text-cacao/70">{ayuda}</span>
+      )}
       {limite && <Contador largo={largo} limite={limite} />}
     </label>
   );
