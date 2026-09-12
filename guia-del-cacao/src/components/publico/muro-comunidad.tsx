@@ -1,18 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { PortadaPublicacion } from "@/components/publico/portada-publicacion";
-import { VerMas } from "@/components/publico/ver-mas";
+import { masDelMuro } from "@/lib/publico/muro";
+import { FUNCIONES } from "@/lib/funciones";
 import type { Entrada, Filtro } from "@/lib/datos/comunidad";
 
 /**
- * El muro de la comunidad.
+ * El muro de la comunidad, agrupado por día y con scroll infinito.
  *
- * Se filtraba por tipo —temas, eventos, noticias— porque había tres tablas
- * detrás. Ahora todo es una publicación, así que los filtros son por lo que le
- * toca a quien mira: todo, lo suyo, y lo que le respondieron sin que lo haya
- * leído. Filtran en el momento, sin recargar: ya vienen cargadas.
+ * Se lee como un muro y no como un directorio: se entra a ver qué pasó, no a
+ * buscar algo concreto. Por eso va en una columna, en orden y con la fecha
+ * separando los días — "Hoy", "Ayer" y luego el día con su nombre. Así bajar
+ * tiene sentido: se sabe en qué día se está.
+ *
+ * **Los tramos los trae el servidor**, de diez en diez y con cursor. No se
+ * cargan todas de golpe para luego irlas destapando: un muro crece sin techo, y
+ * el día que haya mil publicaciones esa página pesaría mil publicaciones.
+ *
+ * El filtro también es del servidor y reinicia el recorrido: filtrar solo lo ya
+ * cargado escondería lo viejo sin avisar.
  */
 const FILTROS: { valor: Filtro; texto: string }[] = [
   { valor: "todo", texto: "Todo" },
@@ -20,77 +28,163 @@ const FILTROS: { valor: Filtro; texto: string }[] = [
   { valor: "nuevos", texto: "Comentarios nuevos" },
 ];
 
-function cuenta(entradas: Entrada[], filtro: Filtro) {
-  if (filtro === "mias") return entradas.filter((e) => e.mia).length;
-  if (filtro === "nuevos") return entradas.filter((e) => e.sinVer > 0).length;
-  return entradas.length;
+const DIA = new Intl.DateTimeFormat("es-MX", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+});
+
+/** El día de una fecha en hora de México, para agrupar como agrupa la base. */
+function claveDelDia(iso: string) {
+  return new Date(iso).toLocaleDateString("en-CA", {
+    timeZone: "America/Mexico_City",
+  });
+}
+
+/**
+ * "Hoy" y "Ayer" en vez de la fecha, que es como se nombra un día reciente.
+ * Más atrás, el nombre del día: en un muro, "martes 9 de septiembre" ubica
+ * mejor que "09/09/2026".
+ */
+function nombreDelDia(clave: string) {
+  const hoy = claveDelDia(new Date().toISOString());
+
+  const ayer = claveDelDia(
+    new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+  );
+
+  if (clave === hoy) return "Hoy";
+  if (clave === ayer) return "Ayer";
+
+  // `clave` es YYYY-MM-DD; se le pone el mediodía para que el formateador no
+  // la corra un día hacia atrás al interpretarla como medianoche UTC.
+  return DIA.format(new Date(`${clave}T12:00:00`));
 }
 
 export function MuroComunidad({
-  entradas,
+  iniciales,
+  cursorInicial,
   /** Sin sesión no se pintan «mis publicaciones» ni «comentarios nuevos». */
   haySesion,
 }: {
-  entradas: Entrada[];
+  iniciales: Entrada[];
+  cursorInicial: string | null;
   haySesion: boolean;
 }) {
   const [filtro, setFiltro] = useState<Filtro>("todo");
+  const [entradas, setEntradas] = useState(iniciales);
+  const [cursor, setCursor] = useState(cursorInicial);
+  const [cargando, setCargando] = useState(false);
 
-  const visibles =
-    filtro === "mias"
-      ? entradas.filter((e) => e.mia)
-      : filtro === "nuevos"
-        ? entradas.filter((e) => e.sinVer > 0)
-        : entradas;
+  const centinela = useRef<HTMLDivElement | null>(null);
+
+  /*
+    Una petición a la vez. Sin esto, el observador dispara varias veces mientras
+    el centinela sigue a la vista y el muro acaba con la misma página repetida
+    tres veces.
+  */
+  const enVuelo = useRef(false);
+
+  const traerMas = useCallback(async () => {
+    if (enVuelo.current || cursor === null) return;
+
+    enVuelo.current = true;
+    setCargando(true);
+
+    try {
+      const pagina = await masDelMuro(filtro, cursor);
+
+      setEntradas((previas) => {
+        // Se descartan las repetidas por id: si alguien publica mientras otro
+        // baja, un tramo puede traer algo que ya estaba en pantalla.
+        const yaEstan = new Set(previas.map((e) => e.id));
+        return [...previas, ...pagina.entradas.filter((e) => !yaEstan.has(e.id))];
+      });
+
+      setCursor(pagina.siguiente);
+    } finally {
+      enVuelo.current = false;
+      setCargando(false);
+    }
+  }, [cursor, filtro]);
+
+  // El centinela va debajo del último día. Cuando entra en pantalla, se pide el
+  // siguiente tramo; el margen de 400 px lo pide un poco antes de llegar, para
+  // que el muro no se sienta parar.
+  useEffect(() => {
+    const nodo = centinela.current;
+    if (!nodo || cursor === null) return;
+
+    const observador = new IntersectionObserver(
+      (entradas) => {
+        if (entradas[0]?.isIntersecting) void traerMas();
+      },
+      { rootMargin: "400px" },
+    );
+
+    observador.observe(nodo);
+    return () => observador.disconnect();
+  }, [cursor, traerMas]);
+
+  // Cambiar de filtro reinicia el recorrido: es otra consulta, con su cursor.
+  const cambiarFiltro = async (nuevo: Filtro) => {
+    if (nuevo === filtro) return;
+
+    setFiltro(nuevo);
+    setCargando(true);
+    enVuelo.current = true;
+
+    try {
+      const pagina = await masDelMuro(nuevo, null);
+      setEntradas(pagina.entradas);
+      setCursor(pagina.siguiente);
+    } finally {
+      enVuelo.current = false;
+      setCargando(false);
+    }
+  };
 
   const opciones = haySesion ? FILTROS : FILTROS.slice(0, 1);
 
+  // Los días se agrupan en el orden en que vienen, que ya es de nuevo a viejo.
+  const dias: { clave: string; entradas: Entrada[] }[] = [];
+
+  for (const entrada of entradas) {
+    const clave = claveDelDia(entrada.fecha);
+    const ultimo = dias[dias.length - 1];
+
+    if (ultimo?.clave === clave) ultimo.entradas.push(entrada);
+    else dias.push({ clave, entradas: [entrada] });
+  }
+
   return (
     <>
-      <nav aria-label="Filtrar el muro" className="pt-5">
-        <ul className="flex flex-wrap gap-2.5">
-          {opciones.map((opcion) => {
-            const activa = filtro === opcion.valor;
-            const cuantas = cuenta(entradas, opcion.valor);
+      {opciones.length > 1 && (
+        <nav aria-label="Filtrar el muro" className="pt-5">
+          <ul className="flex flex-wrap gap-2.5">
+            {opciones.map((opcion) => {
+              const activa = filtro === opcion.valor;
 
-            return (
-              <li key={opcion.valor}>
-                <button
-                  type="button"
-                  onClick={() => setFiltro(opcion.valor)}
-                  aria-pressed={activa}
-                  className={`inline-flex min-h-11 items-center gap-2 rounded-full px-4 font-bold transition-colors ${
-                    activa
-                      ? "bg-selva text-crema"
-                      : "border-2 border-selva/25 bg-white text-selva-2 hover:border-selva"
-                  }`}
-                >
-                  {opcion.texto}
-
-                  {/*
-                    El conteo de «comentarios nuevos» va en guayaba y no en gris:
-                    es lo único de esta fila que reclama algo de quien mira, y en
-                    gris se leía como un número más.
-                  */}
-                  <span
-                    className={`rounded-full px-2 py-0.5 font-mono text-xs ${
-                      opcion.valor === "nuevos" && cuantas > 0
-                        ? "bg-guayaba font-bold text-ink"
-                        : activa
-                          ? "bg-crema/25"
-                          : "bg-ink/5 text-cacao/70"
+              return (
+                <li key={opcion.valor}>
+                  <button
+                    type="button"
+                    onClick={() => void cambiarFiltro(opcion.valor)}
+                    aria-pressed={activa}
+                    className={`min-h-11 rounded-full border-2 border-ink/10 px-4 py-2 text-sm font-bold shadow-dura-sm transition-transform active:translate-y-0.5 ${
+                      activa ? "bg-selva text-crema" : "bg-white text-cacao"
                     }`}
                   >
-                    {cuantas}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+                    {opcion.texto}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+      )}
 
-      {visibles.length === 0 ? (
+      {entradas.length === 0 && !cargando ? (
         <p className="mt-5 rounded-3xl bg-crema-2 p-6 text-cacao">
           {filtro === "mias"
             ? "Todavía no has publicado nada."
@@ -99,91 +193,131 @@ export function MuroComunidad({
               : "Todavía no hay nada publicado."}
         </p>
       ) : (
-        <VerMas
-          className="mt-5 grid gap-5 sm:grid-cols-2"
-          etiqueta="Ver más publicaciones"
-          paso={8}
-        >
-          {visibles.map((entrada) => (
-            <li key={entrada.id}>
+        /*
+          Una sola columna, y estrecha. Un muro se lee de arriba abajo: en dos
+          columnas el orden se rompe —¿la de la derecha va antes o después?— y
+          las fechas de los días dejarían de partir nada.
+        */
+        <div className="mx-auto mt-5 grid max-w-2xl gap-8">
+          {dias.map((dia) => (
+            <section key={dia.clave} aria-label={nombreDelDia(dia.clave)}>
               {/*
-                La foto va arriba y del ancho de la tarjeta. Sin ella el muro
-                era una lista de párrafos donde ninguna publicación se
-                distinguía de la siguiente hasta leerla.
+                La fecha se queda pegada arriba al bajar: en un muro largo, sin
+                ella se pierde de vista en qué día se está leyendo.
               */}
-              <Link
-                href={entrada.href}
-                className="group grid h-full content-start overflow-hidden rounded-3xl bg-crema-2 transition-transform active:translate-y-0.5"
-              >
-                <PortadaPublicacion
-                  id={entrada.id}
-                  foto={entrada.imagen}
-                  titulo={entrada.titulo}
-                  className="h-44 w-full"
-                />
+              <h3 className="sticky top-2 z-10 mb-3 inline-block rounded-full bg-selva-2 px-4 py-1.5 font-mono text-xs font-bold tracking-wide text-crema uppercase">
+                {nombreDelDia(dia.clave)}
+              </h3>
 
-                <div className="p-5">
-                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                    <p className="font-mono text-xs tracking-wide text-cacao/70 uppercase">
-                      {entrada.fechaTexto}
-                    </p>
-
-                    {entrada.oculta && (
-                      <span className="rounded-full bg-ink/10 px-2 py-0.5 font-mono text-xs font-bold text-cacao">
-                        Oculta
-                      </span>
-                    )}
-                  </div>
-
-                  <p className="mt-1 font-display text-xl font-semibold text-selva-2 underline-offset-4 group-hover:underline">
-                    {entrada.titulo}
-                  </p>
-
-                  <p className="mt-1 text-cacao">
-                    {entrada.autor}
-                    {entrada.detalle && (
-                      <span className="text-cacao/70">
-                        {" "}
-                        · {entrada.detalle}
-                      </span>
-                    )}
-                  </p>
-
-                  <p className="mt-2 line-clamp-2 text-cacao">
-                    {entrada.resumen}
-                  </p>
-
-                  <p className="mt-3 flex flex-wrap items-center gap-3 font-mono text-xs text-cacao/70">
-                    <span className="inline-flex items-center gap-1.5">
-                      {entrada.comentarios}{" "}
-                      {entrada.comentarios === 1 ? "comentario" : "comentarios"}
+              <ul className="grid gap-5">
+                {dia.entradas.map((entrada) => (
+                  <li key={entrada.id}>
+                    <Link
+                      href={entrada.href}
+                      className="group grid h-full content-start overflow-hidden rounded-3xl bg-crema-2 transition-transform active:translate-y-0.5"
+                    >
                       {/*
-                      El punto solo aparece cuando hay respuestas que esa persona
-                      no ha visto. Si estuviera siempre que hay comentarios, dejaría
-                      de significar "hay algo nuevo" y sería parte del dibujo.
-                    */}
-                      {entrada.sinVer > 0 && (
-                        <span
-                          className="grid size-5 place-items-center rounded-full bg-guayaba font-bold text-ink"
-                          aria-label={`${entrada.sinVer} sin leer`}
-                        >
-                          {entrada.sinVer}
-                        </span>
-                      )}
-                    </span>
+                        La foto va arriba y del ancho de la tarjeta. Sin ella el
+                        muro era una lista de párrafos donde ninguna
+                        publicación se distinguía de la siguiente hasta leerla.
+                      */}
+                      <PortadaPublicacion
+                        id={entrada.id}
+                        foto={entrada.imagen}
+                        titulo={entrada.titulo}
+                        className="h-56 w-full"
+                      />
 
-                    {entrada.apoyos > 0 && (
-                      <span>
-                        {entrada.apoyos}{" "}
-                        {entrada.apoyos === 1 ? "mazorca" : "mazorcas"}
-                      </span>
-                    )}
-                  </p>
-                </div>
-              </Link>
-            </li>
+                      <div className="p-5">
+                        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                          <p className="text-cacao">
+                            <span className="font-bold text-selva-2">
+                              {entrada.autor}
+                            </span>
+                            {entrada.detalle && (
+                              <span className="text-cacao/70">
+                                {" "}
+                                · {entrada.detalle}
+                              </span>
+                            )}
+                          </p>
+
+                          {entrada.oculta && (
+                            <span className="rounded-full bg-ink/10 px-2 py-0.5 font-mono text-xs font-bold text-cacao">
+                              Oculta
+                            </span>
+                          )}
+                        </div>
+
+                        <p className="mt-1 font-display text-xl font-semibold text-selva-2 underline-offset-4 group-hover:underline">
+                          {entrada.titulo}
+                        </p>
+
+                        <p className="mt-2 line-clamp-3 text-cacao">
+                          {entrada.resumen}
+                        </p>
+
+                        <p className="mt-3 flex flex-wrap items-center gap-3 font-mono text-xs text-cacao/70">
+                          <span className="inline-flex items-center gap-1.5">
+                            {entrada.comentarios}{" "}
+                            {entrada.comentarios === 1
+                              ? "comentario"
+                              : "comentarios"}
+                            {/*
+                              El punto solo aparece cuando hay respuestas que
+                              esa persona no ha visto. Si estuviera siempre que
+                              hay comentarios, dejaría de significar "hay algo
+                              nuevo" y sería parte del dibujo.
+                            */}
+                            {entrada.sinVer > 0 && (
+                              <span
+                                className="grid size-5 place-items-center rounded-full bg-guayaba font-bold text-ink"
+                                aria-label={`${entrada.sinVer} sin leer`}
+                              >
+                                {entrada.sinVer}
+                              </span>
+                            )}
+                          </span>
+
+                          {/*
+                            Los apoyos se contaban en mazorcas. Con las mazorcas
+                            apagadas, el número sigue en la base pero no se
+                            nombra con una moneda que ya no existe.
+                          */}
+                          {FUNCIONES.mazorcas && entrada.apoyos > 0 && (
+                            <span>
+                              {entrada.apoyos}{" "}
+                              {entrada.apoyos === 1 ? "mazorca" : "mazorcas"}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
           ))}
-        </VerMas>
+
+          {/*
+            El centinela y el aviso de carga. El aviso existe para que bajar al
+            final no se sienta el final: sin él, el segundo que tarda el tramo
+            parece que ya no hay nada más.
+          */}
+          <div ref={centinela} aria-hidden={!cargando}>
+            {cargando && (
+              <p role="status" className="py-4 text-center text-cacao/70">
+                Trayendo más…
+              </p>
+            )}
+
+            {cursor === null && entradas.length > 0 && (
+              <p className="py-4 text-center text-sm text-cacao/50">
+                Llegaste al final del muro.
+              </p>
+            )}
+          </div>
+        </div>
       )}
     </>
   );

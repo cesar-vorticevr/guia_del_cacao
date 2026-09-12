@@ -69,24 +69,62 @@ type Fila = {
   } | null;
 };
 
+/** Cuántas publicaciones trae cada tirón del scroll. */
+export const POR_TIRON = 10;
+
+export type Pagina = {
+  entradas: Entrada[];
+  /** El cursor para el siguiente tirón, o null si ya no hay más. */
+  siguiente: string | null;
+};
+
 /**
- * El muro, ya con lo que necesita cada filtro.
+ * Un tramo del muro, ya con lo que necesita cada filtro.
+ *
+ * **Pagina con cursor y no con `offset`.** El muro crece por arriba: con
+ * `offset`, una publicación nueva mientras alguien va bajando corre la lista un
+ * lugar, y el siguiente tirón repite una que ya vio o se salta otra. Un cursor
+ * por fecha no se mueve.
+ *
+ * **Y el filtro va en la consulta, no en el navegador.** Filtrar solo lo que ya
+ * se cargó dejaría fuera lo viejo sin decirlo: alguien con veinte publicaciones
+ * vería tres en "mis publicaciones" y creería que perdió las demás.
  *
  * Los comentarios y los apoyos se cuentan de un jalón y no publicación por
- * publicación: PostgREST no agrupa, así que se traen los renglones de lo que
- * cabe en un muro y se cuentan aquí, que es una consulta en vez de cuarenta.
+ * publicación: PostgREST no agrupa, así que se traen los renglones del tramo y
+ * se cuentan aquí, que es una consulta en vez de cuarenta.
  */
-export async function muroDeComunidad(perfilId?: string): Promise<Entrada[]> {
+export async function muroDeComunidad(
+  perfilId?: string,
+  filtro: Filtro = "todo",
+  /** Fecha ISO de la última que ya se vio. Sin ella, el muro empieza arriba. */
+  cursor?: string,
+): Promise<Pagina> {
   const supabase = await crearClienteServidor();
 
-  const { data } = await supabase
+  let consulta = supabase
     .from("publicaciones")
     .select(CAMPOS)
-    .order("fecha", { ascending: false })
-    .limit(100);
+    .order("fecha", { ascending: false });
 
-  const filas = (data ?? []) as unknown as Fila[];
-  if (filas.length === 0) return [];
+  /*
+    "Mis publicaciones" se acota en la base. "Comentarios nuevos" no se puede
+    —depende de comparar cada comentario con la última visita, dos tablas y una
+    resta que PostgREST no hace— así que ese se resuelve más abajo, sobre el
+    tramo ya traído.
+  */
+  if (filtro === "mias" && perfilId) consulta = consulta.eq("autor_id", perfilId);
+  if (cursor) consulta = consulta.lt("fecha", cursor);
+
+  // Se pide uno más de los que se van a enseñar: si vuelve, hay otra página, y
+  // así no hace falta una consulta aparte solo para contar.
+  const { data } = await consulta.limit(POR_TIRON + 1);
+
+  const traidas = (data ?? []) as unknown as Fila[];
+  const hayMas = traidas.length > POR_TIRON;
+  const filas = hayMas ? traidas.slice(0, POR_TIRON) : traidas;
+
+  if (filas.length === 0) return { entradas: [], siguiente: null };
 
   const ids = filas.map((f) => f.id);
 
@@ -156,7 +194,7 @@ export async function muroDeComunidad(perfilId?: string): Promise<Entrada[]> {
     }
   }
 
-  return filas.map((fila) => {
+  const entradas = filas.map((fila) => {
     const { marca, sucursal } = nombrarNegocio(fila.sucursales);
 
     return {
@@ -182,6 +220,23 @@ export async function muroDeComunidad(perfilId?: string): Promise<Entrada[]> {
       oculta: fila.oculta_en !== null,
     };
   });
+
+  /*
+    El filtro de "comentarios nuevos" se aplica aquí porque depende de comparar
+    la fecha de cada comentario con la de la última visita.
+
+    Eso hace que un tirón pueda quedarse corto o vacío aunque haya más adelante,
+    y por eso el cursor sale de la **última fila traída** y no de la última
+    enseñada: si saliera de la enseñada, el muro se pararía en el primer tramo
+    sin novedades y parecería que ya no hay nada.
+  */
+  const visibles =
+    filtro === "nuevos" ? entradas.filter((e) => e.sinVer > 0) : entradas;
+
+  return {
+    entradas: visibles,
+    siguiente: hayMas ? filas[filas.length - 1].fecha : null,
+  };
 }
 
 /** Una publicación, con todo lo suyo, para su propia página. */

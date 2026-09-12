@@ -5,12 +5,10 @@ import { FormularioTema } from "@/components/publico/foro";
 import { AvisosDeMonedas } from "@/components/negocio/avisos-de-monedas";
 import { MuroComunidad } from "@/components/publico/muro-comunidad";
 import { MiPublicacion } from "@/components/publico/mi-publicacion";
-import { SubeAPremier } from "@/components/publico/sube-a-premier";
 import { perfilActual } from "@/lib/auth/sesion";
 import { muroDeComunidad } from "@/lib/datos/comunidad";
 import { misSucursales } from "@/lib/datos/sucursales";
 import { FUNCIONES } from "@/lib/funciones";
-import { MONEDA } from "@/lib/vocabulario";
 
 export const metadata: Metadata = { title: "Comunidad · Guía del Cacao" };
 
@@ -26,30 +24,44 @@ export const metadata: Metadata = { title: "Comunidad · Guía del Cacao" };
  * le respondieron; debajo, todo lo demás.
  */
 export default async function Comunidad() {
-  // Apagada para el lanzamiento (ver lib/funciones.ts). La página se queda
-  // entera: el día que se encienda no hay que volver a escribirla.
   if (!FUNCIONES.comunidad) redirect("/directorio");
 
   const perfil = await perfilActual();
-  const entradas = await muroDeComunidad(perfil?.id);
+
+  // Solo el primer tramo. Los siguientes los pide el muro al ir bajando.
+  const primerTramo = await muroDeComunidad(perfil?.id);
 
   const puedeParticipar =
     perfil?.rol_confirmado &&
     (perfil.rol === "cliente" || perfil.rol === "negocio");
   const esNegocio = perfil?.rol === "negocio";
 
-  // Publicar como negocio es del plan Premier y con la sucursal en el
-  // directorio: lo mismo que exige la base, para no ofrecer un formulario que
-  // va a ser rechazado al guardar.
+  /*
+    Publicar ya no es del plan: lo puede hacer cualquier cuenta, una vez al día
+    (migración 000044). Lo único que se sigue pidiendo a un negocio es tener una
+    sucursal publicada, porque es con la que firma la publicación y no se puede
+    firmar con un micrositio que nadie puede abrir.
+  */
   const sucursales = esNegocio ? await misSucursales(perfil.id) : [];
-  const conPremier = sucursales.filter(
-    (s) => s.tier_id === 3 && s.estado === "publicado",
-  );
+  const publicadas = sucursales.filter((s) => s.estado === "publicado");
 
   const puedePublicar = esNegocio
-    ? conPremier.length > 0
+    ? publicadas.length > 0
     : Boolean(puedeParticipar);
-  const ultima = entradas.find((entrada) => entrada.mia);
+
+  // Su publicación de hoy, si ya publicó: es lo que explica por qué el
+  // formulario no aparece.
+  const hoy = new Date().toLocaleDateString("en-CA", {
+    timeZone: "America/Mexico_City",
+  });
+
+  const deHoy = primerTramo.entradas.find(
+    (entrada) =>
+      entrada.mia &&
+      new Date(entrada.fecha).toLocaleDateString("en-CA", {
+        timeZone: "America/Mexico_City",
+      }) === hoy,
+  );
 
   return (
     <>
@@ -71,35 +83,45 @@ export default async function Comunidad() {
             </Link>{" "}
             para publicar y comentar.
           </p>
+        ) : deHoy ? (
+          /*
+            Ya publicó hoy. Se le dice aquí y no al fallar el guardado: escribir
+            un texto, elegir cuatro fotos y recibir entonces un "ya publicaste
+            hoy" es hacerle perder el trabajo.
+          */
+          <p className="rounded-3xl border-2 border-mango/50 bg-mango/15 p-5 text-cacao">
+            <strong className="block font-display text-lg text-selva-2">
+              Ya publicaste hoy
+            </strong>
+            Es una publicación al día por cuenta, para que el muro no se llene.
+            Mañana puedes volver a publicar.
+          </p>
         ) : esNegocio && !puedePublicar ? (
-          <SubeAPremier que="noticias" />
+          <p className="rounded-3xl border-2 border-mango/50 bg-mango/15 p-5 text-cacao">
+            <strong className="block font-display text-lg text-selva-2">
+              Publica tu micrositio primero
+            </strong>
+            Una publicación va firmada por una de tus sucursales, y todavía no
+            tienes ninguna en el directorio.
+          </p>
         ) : puedePublicar ? (
-          <FormularioTema sucursales={conPremier} />
+          <FormularioTema sucursales={publicadas} />
         ) : null}
       </div>
 
-      {perfil && !esNegocio && (
-        /*
-          El precio se dice antes de escribir, no al fallar el guardado. Es la
-          misma mazorca que devuelve un apoyo, así que decirlo aquí también
-          explica para qué sirve apoyar.
-        */
-        <p className="mt-3 text-sm text-cacao/70">
-          Publicar cuesta una {MONEDA.singular}. Si a alguien le gusta y te
-          apoya, la recuperas.
-        </p>
-      )}
-
-      {ultima && (
+      {deHoy && (
         <section className="pt-8">
-          <h2 className="font-display text-2xl">Tu última publicación</h2>
-          <MiPublicacion entrada={ultima} />
+          <h2 className="font-display text-2xl">Tu publicación de hoy</h2>
+          <MiPublicacion entrada={deHoy} />
         </section>
       )}
 
       <section className="pt-8">
-        <h2 className="font-display text-2xl">Todas las publicaciones</h2>
-        <MuroComunidad entradas={entradas} haySesion={Boolean(perfil)} />
+        <MuroComunidad
+          iniciales={primerTramo.entradas}
+          cursorInicial={primerTramo.siguiente}
+          haySesion={Boolean(perfil)}
+        />
       </section>
     </>
   );
