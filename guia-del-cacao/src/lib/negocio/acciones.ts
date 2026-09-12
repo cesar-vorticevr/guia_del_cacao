@@ -520,8 +520,6 @@ export async function crearEvento(
   const fecha = texto(datos, "fecha_evento");
   if (!fecha) return { error: "Elige la fecha del evento." };
 
-  const rango = texto(datos, "rango_exclusivo");
-
   const supabase = await crearClienteServidor();
 
   const portada = await subirPortada(
@@ -539,7 +537,6 @@ export async function crearEvento(
     contenido: texto(datos, "contenido"),
     imagenes: portada.imagenes,
     fecha_evento: new Date(fecha).toISOString(),
-    rango_exclusivo: rango ? Number(rango) : null,
   });
 
   if (error) {

@@ -2,7 +2,6 @@ import Link from "next/link";
 import { urlImagen } from "@/lib/imagenes";
 import { nombrarNegocio } from "@/lib/nombres";
 import type { Publicacion } from "@/lib/datos/publico";
-import { rango } from "@/lib/vocabulario";
 
 const FECHA = new Intl.DateTimeFormat("es-MX", {
   day: "numeric",
@@ -80,11 +79,6 @@ export function TarjetaPublicacion({
             {publicacion.contenido}
           </span>
 
-          {publicacion.rango_exclusivo && (
-            <span className="mt-3 inline-block rounded-full bg-mango px-3 py-1 font-mono text-xs font-bold text-ink">
-              Solo para {rango(publicacion.rango_exclusivo).plural}
-            </span>
-          )}
         </span>
 
         {portada && (

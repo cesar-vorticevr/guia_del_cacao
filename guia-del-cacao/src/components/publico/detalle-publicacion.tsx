@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { urlImagen } from "@/lib/imagenes";
 import { nombrarNegocio, type Publicacion } from "@/lib/datos/publico";
-import { rango } from "@/lib/vocabulario";
 
 const FECHA = new Intl.DateTimeFormat("es-MX", {
   weekday: "long",
@@ -68,12 +67,6 @@ export function DetallePublicacion({
         <p className="mt-3">
           <span className="block font-display text-xl text-selva">{marca}</span>
           {sucursal && <span className="block text-cacao">{sucursal}</span>}
-        </p>
-      )}
-
-      {publicacion.rango_exclusivo && (
-        <p className="mt-4 inline-block rounded-full bg-mango px-4 py-2 font-mono text-sm font-bold text-ink">
-          Solo para {rango(publicacion.rango_exclusivo).plural}
         </p>
       )}
 

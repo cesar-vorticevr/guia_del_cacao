@@ -29,7 +29,6 @@ import { ENTIDADES } from "@/lib/entidades";
 import { FUNCIONES } from "@/lib/funciones";
 import { LIMITES } from "@/lib/limites";
 import { ACEPTA, MEDIDAS, PESO } from "@/lib/imagenes";
-import { RANGOS } from "@/lib/vocabulario";
 
 const INICIAL: EstadoAccion = {};
 
@@ -372,18 +371,11 @@ export function FormularioEvento({ sucursales }: { sucursales: Sucursal[] }) {
         etiqueta="Fecha del evento"
         tipo="datetime-local"
       />
-      <Selector
-        nombre="rango_exclusivo"
-        etiqueta="¿Exclusivo para algún rango?"
-        requerido={false}
-        opciones={[
-          { valor: "", texto: "Abierto a todos" },
-          ...RANGOS.filter((r) => r.nivel > 1).map((r) => ({
-            valor: String(r.nivel),
-            texto: r.nivel === 4 ? `Solo ${r.plural}` : `${r.plural} o más`,
-          })),
-        ]}
-      />
+      {/*
+        Ya no se pregunta si el evento es exclusivo de algún rango. Los rangos
+        del cliente salieron del producto con las mazorcas (spec v2), y sin
+        ellos esa opción solo servía para dejar un evento invisible para todos.
+      */}
 
       <BotonEnviar>Publicar evento</BotonEnviar>
     </form>
@@ -760,9 +752,9 @@ export function FormularioCancelarSuscripcion() {
 /**
  * Editar un evento ya publicado.
  *
- * No lleva la sucursal ni el rango exclusivo: mover un evento de local es
- * crearlo en otro sitio, no editarlo, y el rango se decide al publicar. Lo que
- * sí cambia con el tiempo es el nombre, lo que se cuenta, la fecha y la foto.
+ * No lleva la sucursal: mover un evento de local es crearlo en otro sitio, no
+ * editarlo. Lo que sí cambia con el tiempo es el nombre, lo que se cuenta, la
+ * fecha y la foto.
  */
 export function FormularioEditarEvento({
   evento,

@@ -68,7 +68,6 @@ export type Publicacion = {
   /** Solo en eventos: si se canceló, sigue a la vista pero tachado. */
   cancelado_en?: string | null;
   fecha_publicacion: string;
-  rango_exclusivo?: number | null;
   sucursales: {
     slug: string;
     nombre_sucursal: string;
@@ -230,7 +229,7 @@ export async function listarEventos() {
 
   const { data } = await supabase
     .from("eventos")
-    .select(`${CAMPOS_PUBLICACION}, fecha_evento, cancelado_en, rango_exclusivo`)
+    .select(`${CAMPOS_PUBLICACION}, fecha_evento, cancelado_en`)
     .order("fecha_evento", { ascending: false });
 
   const todos = (data ?? []) as unknown as Publicacion[];
@@ -464,7 +463,7 @@ export async function eventoPorId(id: string) {
 
   const { data } = await supabase
     .from("eventos")
-    .select(`${CAMPOS_PUBLICACION}, fecha_evento, rango_exclusivo`)
+    .select(`${CAMPOS_PUBLICACION}, fecha_evento`)
     .eq("id", id)
     .maybeSingle();
 
@@ -504,7 +503,7 @@ export async function agendaDe(sucursalId: string) {
   const [eventos, noticias] = await Promise.all([
     supabase
       .from("eventos")
-      .select(`${CAMPOS_PUBLICACION}, fecha_evento, rango_exclusivo`)
+      .select(`${CAMPOS_PUBLICACION}, fecha_evento`)
       .eq("sucursal_id", sucursalId)
       .gte("fecha_evento", ahora.toISOString())
       .order("fecha_evento"),
