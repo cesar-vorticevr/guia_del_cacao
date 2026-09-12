@@ -36,7 +36,7 @@ const ENLACES = [
   // y a quien no ha entrado lo manda derecho al alta sin estorbarle.
   { href: "/soy-negocio", texto: "Agregar mi negocio" },
   { href: "/terminos", texto: "Condiciones del Servicio" },
-  { href: "/privacidad", texto: "Política de Privacidad" },
+  { href: "/privacidad", texto: "Aviso de Privacidad" },
 ];
 
 /**

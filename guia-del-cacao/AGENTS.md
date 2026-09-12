@@ -860,6 +860,40 @@ El botón lleva a dónde ibas: `/login?volver=/cupones` viaja como
 empiece por `/` y no por `//`— para que un enlace preparado no use nuestro
 dominio para mandar a alguien afuera justo después de identificarse.
 
+## Las dos paginas legales: se leen contra el codigo
+
+`/privacidad` y `/terminos` llevaban un cuadro que decia **«Documento en
+preparacion»** y describian con detalle las mazorcas y los cupones — las
+funciones apagadas. Ya no: el cuadro se fue y las dos describen lo que la
+plataforma hace hoy, porque las va a revisar Google.
+
+La identidad del responsable vive en `lib/legal.ts` (`RESPONSABLE`,
+`DOMICILIO`, `ACTUALIZADO`), no repetida en cada pagina. El aviso de privacidad
+mexicano exige identidad y domicilio (LFPDPPP art. 16), y quien revisa el sitio
+los busca ahi.
+
+**`ACTUALIZADO` se cambia a mano**, solo cuando el texto cambia de fondo. No
+lleva `new Date()`: una fecha que se mueve sola dice «revisado hoy» de un
+documento que nadie toco en un año, y es justo el dato que sirve para saber si
+lo que aceptaste sigue vigente.
+
+Tres afirmaciones se comprobaron en el repositorio antes de escribirlas, y **hay
+que corregir la pagina el dia que dejen de ser ciertas**:
+
+- **No hay datos bancarios.** No existe Stripe, Conekta ni ninguna pasarela.
+- **No hay analitica ni cookies de publicidad.** Tampoco Vercel Analytics.
+- **El cobro es simulado.** `src/lib/pagos.ts` siempre aprueba y no hace ningun
+  cargo. Por eso el apartado de cobro de las condiciones **se pinta desde
+  `PAGO_SIMULADO`** y no a mano: hoy dice que no hay pago en linea, y el dia que
+  entre la pasarela esa bandera cambia y el texto la sigue. Prometer una
+  facturacion que no existe es ofrecer un trato que no se puede cumplir.
+
+El resto tambien se lee contra el codigo: una reseña por negocio, una
+publicacion al dia, cinco comentarios por publicacion, el plan por sucursal con
+quince dias de prueba que arrancan al aprobarla. Cada regla tiene detras un
+trigger o una politica; si alguna cambia en la base, estos textos se quedan
+mintiendo.
+
 ## El fondo de cacao
 
 Ramas, hojas y mazorcas que se desplazan a distinta velocidad al hacer scroll.

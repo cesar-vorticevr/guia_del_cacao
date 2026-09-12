@@ -4,6 +4,7 @@ import { BannerRotativo } from "@/components/publico/banner-rotativo";
 import { BuscadorPortada } from "@/components/publico/buscador-portada";
 import { FondoDeCacao } from "@/components/publico/fondo-cacao";
 import { TarjetaPublicacion } from "@/components/publico/tarjeta-publicacion";
+import { TarjetaEntrada } from "@/components/publico/tarjeta-entrada";
 import { TarjetaSucursal } from "@/components/publico/tarjeta-sucursal";
 import {
   bannersDePortada,
@@ -12,6 +13,8 @@ import {
   listarEventos,
 } from "@/lib/datos/publico";
 import { listarCategorias } from "@/lib/datos/categorias";
+import { muroDeComunidad } from "@/lib/datos/comunidad";
+import { FUNCIONES } from "@/lib/funciones";
 import { misFavoritosEntre } from "@/lib/datos/favoritos";
 import { catalogoPorMarca } from "@/lib/datos/busqueda-de-productos";
 import { perfilActual } from "@/lib/auth/sesion";
@@ -23,11 +26,23 @@ export default async function Home() {
   // ya les dio corazón quien mira— y los favoritos del directorio.
   const perfil = await perfilActual();
 
-  const [banners, sucursales, categorias, eventos] = await Promise.all([
+  const [banners, sucursales, categorias, eventos, muro] = await Promise.all([
     bannersDePortada(),
     listarDirectorio(),
     listarCategorias(),
     listarEventos(perfil?.id),
+    /*
+      El primer tramo del muro, que ya viene de diez en diez con su cursor.
+      Se piden los de siempre y se ensenan cuatro: no hay consulta aparte para
+      la portada, y asi lo que se ve aqui es exactamente lo que se vera al
+      entrar a la comunidad.
+
+      Si la comunidad estuviera apagada no se consulta nada: la seccion no se
+      pinta, y pedir el muro para tirarlo seria trabajo para la nada.
+    */
+    FUNCIONES.comunidad
+      ? muroDeComunidad(perfil?.id)
+      : Promise.resolve({ entradas: [], siguiente: null }),
   ]);
 
   // Solo un cliente guarda favoritos. A un negocio o a un administrador el
@@ -253,6 +268,50 @@ export default async function Home() {
           </>
         )}
       </section>
+
+      {/*
+        Y la comunidad cierra, en su propia franja de orilla a orilla con el
+        fondo de cacao detras — la segunda de la portada, igual que la del
+        directorio. Las dos bandas reparten la pagina en tres tramos y dejan los
+        eventos respirando en medio, sobre el crema limpio.
+
+        El `104vw` y el `overflow-hidden` no son de adorno: `100vw` cuenta la
+        barra de scroll y el area de contenido no, asi que una banda de
+        exactamente `100vw` deja una rendija de crema distinto en la orilla.
+
+        Se pinta solo si hay algo publicado. Un titulo sobre una caja que dice
+        'todavia no hay nada' es peor que no tener la seccion: la portada es lo
+        primero que ve alguien, y ahi un hueco se lee como sitio abandonado.
+      */}
+      {FUNCIONES.comunidad && muro.entradas.length > 0 && (
+        <section className="relative left-1/2 mt-14 w-[104vw] -translate-x-1/2 overflow-hidden bg-crema-2/60 py-10">
+          <FondoDeCacao variante="franja" />
+
+          <div className="relative z-10 mx-auto w-[92vw] max-w-[1180px]">
+            <h2 className="font-display text-2xl">En la comunidad</h2>
+            <p className="mt-1 text-cacao">
+              Lo que cuentan los negocios y quienes los visitan.
+            </p>
+
+            <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {muro.entradas.slice(0, 4).map((entrada) => (
+                <TarjetaEntrada
+                  key={entrada.id}
+                  entrada={entrada}
+                  haySesion={Boolean(perfil)}
+                />
+              ))}
+            </ul>
+
+            <Link
+              href="/comunidad"
+              className="mt-6 inline-flex min-h-12 items-center rounded-full bg-selva px-6 py-3 font-bold text-crema shadow-dura-sm transition-transform active:translate-y-0.5"
+            >
+              Ver la comunidad
+            </Link>
+          </div>
+        </section>
+      )}
     </>
   );
 }
