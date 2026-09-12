@@ -23,7 +23,7 @@ export type Entrada = {
   /** ISO, solo para ordenar. Lo que se enseña es `fechaTexto`. */
   fecha: string;
   fechaTexto: string;
-  /** Cuánto lleva publicada, corto: "ahora", "5 min", "3 h", "2 d", "1 a". */
+/** Cuánto lleva publicada, en dos caracteres: "3d", "22s". */
   hace: string;
   /** Quién la firma: la marca si publica un negocio, la persona si no. */
   autor: string;
@@ -53,43 +53,32 @@ const CUANDO = new Intl.DateTimeFormat("es-MX", {
 });
 
 /**
- * Cuánto lleva publicada, en corto.
+ * Cuánto lleva publicada, en dos caracteres.
  *
- * Es lo que sustituyó a las cabeceras por día del muro: una publicación de
- * ayer no necesita su propio encabezado, necesita decir "1 d" en chico. Así el
- * muro es un solo hilo continuo y cada tarjeta se ubica sola.
+ * Solo dos unidades: **días** hasta seis ("3d") y de ahí en adelante
+ * **semanas** ("22s"). Nada de horas, meses ni años.
+ *
+ * Es a propósito, y a costa de precisión: esto vive en la esquina de la
+ * tarjeta, al lado de los contadores, y ahí no cabe una frase. Cuatro unidades
+ * distintas —min, h, d, a— obligaban a leer la letra para saber de qué se
+ * hablaba; con dos, el número se entiende de un vistazo. Una publicación de
+ * hace cinco meses dice "22s", que es menos exacto que "5 meses" y más rápido
+ * de comparar contra la de al lado.
+ *
+ * Lo de hoy dice "hoy" y no "0d": cero días es un número que nadie usa para
+ * decir que algo acaba de pasar.
  *
  * **Se calcula en el servidor**, igual que `fechaTexto`. Calculado en el
  * navegador diría un número distinto al de la primera pintada —pasan segundos
  * entre una y otra— y React avisaría del desajuste en cada publicación.
- *
- * Las unidades se cortan a mano en vez de usar `Intl.RelativeTimeFormat`
- * porque ese devuelve "hace 3 días" incluso en estilo corto, y aquí hacen falta
- * dos caracteres: esto va en letra pequeña al lado del autor, no en una frase.
  */
 export function haceCuanto(iso: string, ahora = Date.now()): string {
-  const segundos = Math.max(0, Math.floor((ahora - new Date(iso).getTime()) / 1000));
+  const dias = Math.floor((ahora - new Date(iso).getTime()) / 86_400_000);
 
-  if (segundos < 60) return "ahora";
+  if (dias < 1) return "hoy";
+  if (dias < 7) return `${dias}d`;
 
-  const minutos = Math.floor(segundos / 60);
-  if (minutos < 60) return `${minutos} min`;
-
-  const horas = Math.floor(minutos / 60);
-  if (horas < 24) return `${horas} h`;
-
-  const dias = Math.floor(horas / 24);
-  if (dias < 7) return `${dias} d`;
-
-  const semanas = Math.floor(dias / 7);
-  if (semanas < 5) return `${semanas} sem`;
-
-  // Los meses van con "mes" y no con "m": "m" ya es minuto unas líneas arriba,
-  // y "5 m" tendría que adivinarse por el contexto.
-  const meses = Math.floor(dias / 30);
-  if (meses < 12) return `${meses} mes${meses === 1 ? "" : "es"}`;
-
-  return `${Math.floor(dias / 365)} a`;
+  return `${Math.floor(dias / 7)}s`;
 }
 
 const CAMPOS = `

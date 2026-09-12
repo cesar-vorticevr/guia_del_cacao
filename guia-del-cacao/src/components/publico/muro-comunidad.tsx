@@ -190,19 +190,6 @@ export function MuroComunidad({
                         {entrada.autor}
                       </span>
 
-                      {/*
-                            Cuánto lleva, en chico y al lado del autor: es lo
-                            que sustituyó a las cabeceras por día. La fecha
-                            completa va en el `title`, para quien quiera el
-                            dato exacto sin que ocupe sitio.
-                          */}
-                      <span
-                        title={entrada.fechaTexto}
-                        className="font-mono text-xs text-cacao/60"
-                      >
-                        {entrada.hace}
-                      </span>
-
                       {entrada.detalle && (
                         <span className="w-full text-cacao/70">
                           {entrada.detalle}
@@ -231,7 +218,7 @@ export function MuroComunidad({
                       `a` es HTML inválido— pero dentro de la misma caja, en su
                       franja al pie.
                     */}
-                <div className="flex flex-wrap items-center gap-3 border-t-2 border-ink/5 px-4 py-2.5">
+                <div className="flex items-center gap-3 border-t-2 border-ink/5 px-4 py-2.5">
                   <MeGusta
                     clase="publicacion"
                     id={entrada.id}
@@ -249,12 +236,28 @@ export function MuroComunidad({
                       */}
                   {entrada.sinVer > 0 && (
                     <span
-                      className="grid size-5 place-items-center rounded-full bg-guayaba font-mono text-xs font-bold text-ink"
+                      className="grid size-5 shrink-0 place-items-center rounded-full bg-guayaba font-mono text-xs font-bold text-ink"
                       aria-label={`${entrada.sinVer} sin leer`}
                     >
                       {entrada.sinVer}
                     </span>
                   )}
+
+                  {/*
+                    Cuánto lleva, pegado a la derecha con `ml-auto`. Estaba al
+                    lado del autor y ahí se leía como parte del título; aquí es
+                    lo que es: un dato de la esquina, junto a los otros dos
+                    números.
+
+                    La fecha completa va en el `title`, para quien quiera el
+                    dato exacto sin que ocupe sitio.
+                  */}
+                  <span
+                    title={entrada.fechaTexto}
+                    className="ml-auto shrink-0 font-mono text-xs text-cacao/60"
+                  >
+                    {entrada.hace}
+                  </span>
                 </div>
               </li>
             ))}
