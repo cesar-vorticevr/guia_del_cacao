@@ -30,8 +30,14 @@ export function MeGusta({
   /** Cuántos hay en total, contando el propio si ya lo dio. */
   cuantos: number;
   haySesion: boolean;
-  /** Va al lado, porque los dos números se leen juntos. */
-  comentarios: number;
+  /**
+   * Va al lado, porque los dos números se leen juntos.
+   *
+   * Se omite en el corazón de un comentario: un comentario no tiene
+   * comentarios, y un globo en cero al lado parecía una conversación vacía
+   * dentro de otra.
+   */
+  comentarios?: number;
 }) {
   const [dado, setDado] = useState(inicial);
   const [total, setTotal] = useState(cuantos);
@@ -97,21 +103,23 @@ export function MeGusta({
         <span className="font-bold tabular-nums">{total}</span>
       </button>
 
-      <span className="inline-flex items-center gap-1.5">
-        <svg viewBox="0 0 24 24" className="size-4" aria-hidden="true">
-          <path
-            d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.3-.6L3 21l1.7-5a8.1 8.1 0 0 1-.7-3.5 8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 8 8.4Z"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
-        </svg>
-        <span className="font-bold tabular-nums">{comentarios}</span>
-        <span className="sr-only">
-          {comentarios === 1 ? "comentario" : "comentarios"}
+      {comentarios !== undefined && (
+        <span className="inline-flex items-center gap-1.5">
+          <svg viewBox="0 0 24 24" className="size-4" aria-hidden="true">
+            <path
+              d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.3-.6L3 21l1.7-5a8.1 8.1 0 0 1-.7-3.5 8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 8 8.4Z"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span className="font-bold tabular-nums">{comentarios}</span>
+          <span className="sr-only">
+            {comentarios === 1 ? "comentario" : "comentarios"}
+          </span>
         </span>
-      </span>
+      )}
 
       {aviso && (
         <span

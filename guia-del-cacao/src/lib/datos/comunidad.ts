@@ -1,6 +1,7 @@
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { nombrarNegocio } from "@/lib/nombres";
 import { urlDePublicacion } from "@/lib/imagenes";
+import { enDiasYSemanas } from "@/lib/tiempo";
 
 /**
  * El muro de la comunidad: publicaciones, y nada más.
@@ -51,35 +52,6 @@ const CUANDO = new Intl.DateTimeFormat("es-MX", {
   month: "long",
   year: "numeric",
 });
-
-/**
- * Cuánto lleva publicada, en dos caracteres.
- *
- * Solo dos unidades: **días** hasta seis ("3d") y de ahí en adelante
- * **semanas** ("22s"). Nada de horas, meses ni años.
- *
- * Es a propósito, y a costa de precisión: esto vive en la esquina de la
- * tarjeta, al lado de los contadores, y ahí no cabe una frase. Cuatro unidades
- * distintas —min, h, d, a— obligaban a leer la letra para saber de qué se
- * hablaba; con dos, el número se entiende de un vistazo. Una publicación de
- * hace cinco meses dice "22s", que es menos exacto que "5 meses" y más rápido
- * de comparar contra la de al lado.
- *
- * Lo de hoy dice "hoy" y no "0d": cero días es un número que nadie usa para
- * decir que algo acaba de pasar.
- *
- * **Se calcula en el servidor**, igual que `fechaTexto`. Calculado en el
- * navegador diría un número distinto al de la primera pintada —pasan segundos
- * entre una y otra— y React avisaría del desajuste en cada publicación.
- */
-export function haceCuanto(iso: string, ahora = Date.now()): string {
-  const dias = Math.floor((ahora - new Date(iso).getTime()) / 86_400_000);
-
-  if (dias < 1) return "hoy";
-  if (dias < 7) return `${dias}d`;
-
-  return `${Math.floor(dias / 7)}s`;
-}
 
 const CAMPOS = `
   id, titulo, contenido, fecha, imagenes, oculta_en, autor_id,
@@ -249,7 +221,7 @@ export async function muroDeComunidad(
       resumen: fila.contenido,
       fecha: fila.fecha,
       fechaTexto: CUANDO.format(new Date(fila.fecha)),
-      hace: haceCuanto(fila.fecha),
+      hace: enDiasYSemanas(fila.fecha),
       autor: marca ?? fila.perfiles_publicos?.nombre ?? "Alguien",
       detalle: sucursal,
       imagen: urlDePublicacion(fila.imagenes?.[0]),

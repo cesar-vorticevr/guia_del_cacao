@@ -11,11 +11,14 @@ import { MeGusta } from "@/components/publico/me-gusta";
 import { CelebrarPublicacion } from "@/components/publico/celebrar-publicacion";
 import { urlDePublicacion } from "@/lib/imagenes";
 import {
+  apoyosDeComentarios,
   comentariosDe,
   conElPropioArriba,
   cuantosSon,
+  participantesDe,
   TOPE_COMENTARIOS,
 } from "@/lib/datos/comentarios";
+import { haceCuanto } from "@/lib/tiempo";
 
 const CUANDO = new Intl.DateTimeFormat("es-MX", {
   day: "numeric",
@@ -69,6 +72,20 @@ export default async function Publicacion({
 
   // Si ya le dio corazón, para pintarlo lleno sin que tenga que tocarlo.
   const apoyado = perfil ? await yaApoye(perfil.id, id) : false;
+
+  /*
+    Los corazones de los comentarios, todos en una consulta, y a quién se puede
+    etiquetar: quien publicó y quien comentó, nadie más.
+  */
+  const corazones = await apoyosDeComentarios(
+    comentarios.map((c) => c.id),
+    perfil?.id,
+  );
+
+  const participantes = participantesDe(comentarios, {
+    id: tema.autor_id,
+    nombre: tema.perfiles_publicos?.nombre ?? "",
+  });
 
   const mios = cuantosSon(comentarios, perfil?.id);
   const leQueda = mios < TOPE_COMENTARIOS.publicacion;
@@ -153,14 +170,20 @@ export default async function Publicacion({
             id: comentario.id,
             autor: comentario.perfiles_publicos?.nombre ?? "Alguien",
             texto: comentario.texto,
-            fechaTexto: CUANDO.format(new Date(comentario.fecha)),
+            hace: haceCuanto(comentario.fecha),
+            fechaExacta: CUANDO.format(new Date(comentario.fecha)),
             editado: comentario.fecha_edicion !== null,
             oculto: comentario.oculto,
             esMio: comentario.usuario_id === perfil?.id,
             autorId: comentario.usuario_id,
             respondeA: comentario.responde_a,
+            apoyos: corazones.get(comentario.id)?.cuantos ?? 0,
+            miApoyo: corazones.get(comentario.id)?.mio ?? false,
           }),
         )}
+        participantes={participantes}
+        puedeGustar
+        haySesion={Boolean(perfil)}
         puedeComentar={Boolean(perfil && leQueda)}
         motivo={perfil && leQueda ? null : motivo}
         // Quien modera es quien publicó: es su conversación.

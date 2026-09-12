@@ -4,9 +4,16 @@ import { revalidatePath } from "next/cache";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { perfilActual } from "@/lib/auth/sesion";
 
-export type Clase = "publicacion" | "evento";
+export type Clase = "publicacion" | "evento" | "comentario";
 
 export type EstadoMeGusta = { dado: boolean; error?: string };
+
+/** Dónde vive el corazón de cada cosa. La tabla y la columna que la señala. */
+const DONDE: Record<Clase, { tabla: string; columna: string }> = {
+  publicacion: { tabla: "apoyos", columna: "publicacion_id" },
+  evento: { tabla: "apoyos_evento", columna: "evento_id" },
+  comentario: { tabla: "apoyos_comentario", columna: "comentario_id" },
+};
 
 /**
  * Pone o quita el corazón de una publicación o de un evento.
@@ -16,8 +23,8 @@ export type EstadoMeGusta = { dado: boolean; error?: string };
  * aquí, para que dos toques rápidos no se crucen y acaben dejando lo contrario
  * de lo que se ve en pantalla.
  *
- * Las dos clases viven en tablas distintas —`apoyos` y `apoyos_evento`— porque
- * cuelgan de cosas distintas, así que lo único que se comparte es esto.
+ * Cada clase vive en su tabla —`apoyos`, `apoyos_evento`, `apoyos_comentario`—
+ * porque cuelgan de cosas distintas, así que lo único que se comparte es esto.
  */
 export async function marcarMeGusta(
   clase: Clase,
@@ -32,8 +39,7 @@ export async function marcarMeGusta(
 
   const supabase = await crearClienteServidor();
 
-  const tabla = clase === "evento" ? "apoyos_evento" : "apoyos";
-  const columna = clase === "evento" ? "evento_id" : "publicacion_id";
+  const { tabla, columna } = DONDE[clase];
 
   if (dar) {
     /*
@@ -64,7 +70,7 @@ export async function marcarMeGusta(
     número en el cliente y no espera a esto; esto es para que al volver a la
     página el número ya venga bien del servidor.
   */
-  revalidatePath(clase === "evento" ? "/eventos" : "/comunidad");
+  revalidatePath(clase === "evento" ? "/eventos" : "/comunidad", "layout");
   revalidatePath("/");
 
   return { dado: dar };

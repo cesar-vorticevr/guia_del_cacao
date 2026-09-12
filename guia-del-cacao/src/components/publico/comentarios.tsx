@@ -1,7 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { Aviso, BotonEnviar } from "@/components/formulario";
+import { CajaDeComentario } from "@/components/publico/caja-de-comentario";
+import { MeGusta } from "@/components/publico/me-gusta";
+import { trozosConMenciones } from "@/lib/menciones";
 import {
   borrarComentario,
   comentar,
@@ -9,7 +12,7 @@ import {
   ocultarComentario,
   type EstadoComentario,
 } from "@/lib/comentarios/acciones";
-import type { Contexto } from "@/lib/datos/comentarios";
+import type { Contexto, Participante } from "@/lib/datos/comentarios";
 
 const INICIAL: EstadoComentario = {};
 
@@ -17,8 +20,17 @@ export type ComentarioVista = {
   id: string;
   autor: string;
   texto: string;
-  /** Ya formateada en el servidor, para que no baile entre servidor y navegador. */
-  fechaTexto: string;
+  /**
+   * Cuánto lleva ahí: «ahora», «5m», «3h», «2d», «6s».
+   *
+   * Era la fecha completa —«11 de septiembre de 2026»—, que en una
+   * conversación no dice lo que hace falta saber: si esto se escribió hace un
+   * rato o el año pasado. Se calcula en el servidor para que no baile entre
+   * servidor y navegador.
+   */
+  hace: string;
+  /** La fecha exacta, para el `title` de quien quiera el dato al detalle. */
+  fechaExacta: string;
   editado: boolean;
   oculto: boolean;
   esMio: boolean;
@@ -26,6 +38,10 @@ export type ComentarioVista = {
   autorId?: string;
   /** A cuál contesta, si contesta a alguno. */
   respondeA?: string | null;
+  /** Cuántos corazones lleva. */
+  apoyos: number;
+  /** Si quien mira ya le dio el suyo. */
+  miApoyo: boolean;
 };
 
 function Confirmacion({ estado }: { estado: EstadoComentario }) {
@@ -44,11 +60,40 @@ function Confirmacion({ estado }: { estado: EstadoComentario }) {
 }
 
 /**
- * Los comentarios de un evento, una noticia o un tema del foro.
+ * El texto de un comentario, con las etiquetas resaltadas.
+ *
+ * La etiqueta se resuelve contra la lista de participantes y no con una regla
+ * de «arroba hasta el espacio»: los nombres llevan espacios. Lo que no encaja
+ * con nadie se queda como texto llano.
+ */
+function Texto({
+  texto,
+  nombres,
+}: {
+  texto: string;
+  nombres: string[];
+}) {
+  return (
+    <p className="mt-1.5 whitespace-pre-line text-cacao">
+      {trozosConMenciones(texto, nombres).map((trozo, indice) =>
+        trozo.mencion ? (
+          <strong key={indice} className="font-bold text-selva">
+            {trozo.texto}
+          </strong>
+        ) : (
+          <span key={indice}>{trozo.texto}</span>
+        ),
+      )}
+    </p>
+  );
+}
+
+/**
+ * Los comentarios de un evento, una noticia o una publicación de la comunidad.
  *
  * Es el mismo componente para los tres porque para quien lee y escribe es el
- * mismo gesto; lo que cambia son los topes y quién modera, y eso llega en
- * props. Las reglas de verdad las impone la base.
+ * mismo gesto; lo que cambia son los topes, quién modera y si hay hilo, y eso
+ * llega en props. Las reglas de verdad las impone la base.
  *
  * El propio va siempre arriba: quien acaba de escribir quiere verlo sin
  * buscarlo, y si se lo ocultaron es la única señal de que sigue ahí.
@@ -60,6 +105,9 @@ export function Comentarios({
   puedeComentar,
   motivo,
   puedeOcultar,
+  participantes = [],
+  puedeGustar = false,
+  haySesion = false,
 }: {
   contexto: Contexto;
   referenciaId: string;
@@ -72,6 +120,15 @@ export function Comentarios({
   motivo: React.ReactNode;
   /** Si quien mira modera aquí: el negocio en su publicación, el autor del tema. */
   puedeOcultar: boolean;
+  /** A quién se puede etiquetar: solo quienes ya participaron aquí. */
+  participantes?: Participante[];
+  /**
+   * Si los comentarios llevan corazón. Solo los de la comunidad: los de un
+   * evento se comentan una vez y no hay hilo al que asentir (migración 000047).
+   */
+  puedeGustar?: boolean;
+  /** Para el corazón: sin sesión lleva a registrarse en vez de darlo. */
+  haySesion?: boolean;
 }) {
   const [estado, accion] = useActionState(comentar, INICIAL);
 
@@ -83,6 +140,61 @@ export function Comentarios({
   const [respondiendo, setRespondiendo] = useState<ComentarioVista | null>(
     null,
   );
+
+  const [texto, setTexto] = useState("");
+  const caja = useRef<HTMLTextAreaElement | null>(null);
+
+  /*
+    Al publicar se vacía la caja. La caja es controlada —el botón de «Responder»
+    tiene que poder escribir dentro— así que no se limpia sola con el `reset`
+    del formulario.
+
+    Se ajusta **en el render** y no en un efecto: un efecto que llama a
+    `setState` hace una segunda pintada con la caja todavía llena, y además es
+    lo que el lint prohíbe. Se compara el objeto entero y no `estado.ok`: el
+    mensaje de éxito es siempre el mismo texto, así que comparándolo la caja no
+    se vaciaría en el segundo comentario.
+  */
+  const [visto, setVisto] = useState(estado);
+
+  if (visto !== estado) {
+    setVisto(estado);
+
+    if (estado.ok) {
+      setTexto("");
+      setRespondiendo(null);
+    }
+  }
+
+  const nombres = participantes.map((p) => p.nombre);
+
+  /**
+   * Responder: cuelga la respuesta del comentario raíz y **etiqueta a quien se
+   * contesta**.
+   *
+   * Son dos cosas distintas y por eso van juntas. El hilo es de un solo nivel
+   * —lo impone la base— así que contestarle a una respuesta cuelga del mismo
+   * comentario de arriba; sin la etiqueta, esa respuesta quedaba debajo del
+   * hilo sin decir a quién de los cinco le hablaba.
+   *
+   * La etiqueta se antepone en vez de reemplazar lo escrito: quien ya llevaba
+   * medio comentario redactado no lo pierde por pulsar «Responder».
+   */
+  const responder = (raiz: ComentarioVista, aQuien: ComentarioVista) => {
+    setRespondiendo(raiz);
+
+    const etiqueta = `@${aQuien.autor} `;
+
+    setTexto((previo) =>
+      previo.includes(`@${aQuien.autor}`) ? previo : etiqueta + previo,
+    );
+
+    requestAnimationFrame(() => {
+      const nodo = caja.current;
+      nodo?.focus();
+      nodo?.setSelectionRange(etiqueta.length, etiqueta.length);
+    });
+  };
 
   // Un nivel: las respuestas cuelgan del comentario de arriba, como en la base.
   const raices = comentarios.filter((c) => !c.respondeA);
@@ -118,7 +230,11 @@ export function Comentarios({
                   referenciaId={referenciaId}
                   puedeOcultar={puedeOcultar}
                   puedeResponder={puedeComentar}
-                  alResponder={() => setRespondiendo(comentario)}
+                  alResponder={() => responder(comentario, comentario)}
+                  participantes={participantes}
+                  nombres={nombres}
+                  puedeGustar={puedeGustar}
+                  haySesion={haySesion}
                 />
 
                 {/*
@@ -138,8 +254,16 @@ export function Comentarios({
                         referenciaId={referenciaId}
                         puedeOcultar={puedeOcultar}
                         puedeResponder={puedeComentar}
-                        alResponder={() => setRespondiendo(comentario)}
-                        esRespuesta
+                        /*
+                          Cuelga de la raíz —el hilo es de un nivel— pero
+                          etiqueta a quien escribió esta respuesta, que es a
+                          quien se le está hablando.
+                        */
+                        alResponder={() => responder(comentario, respuesta)}
+                        participantes={participantes}
+                        nombres={nombres}
+                        puedeGustar={puedeGustar}
+                        haySesion={haySesion}
                       />
                     </ul>
                   </li>
@@ -185,12 +309,24 @@ export function Comentarios({
               <span className="mb-1.5 block font-bold text-selva-2">
                 {respondiendo ? "Tu respuesta" : "Tu comentario"}
               </span>
-              <textarea
-                name="texto"
-                rows={3}
-                placeholder="¿Qué opinas?"
-                className="w-full rounded-2xl border-2 border-selva/20 bg-white px-4 py-3 text-base text-ink placeholder:text-cacao/40 focus:border-selva"
+
+              <CajaDeComentario
+                nombre="texto"
+                valor={texto}
+                alCambiar={setTexto}
+                participantes={participantes}
+                caja={caja}
+                marcador="¿Qué opinas?"
               />
+
+              {/* Se dice una vez y en chico: quien no lo necesita no lo lee, y
+                  quien escribe un arroba lo descubre solo. */}
+              {participantes.length > 0 && (
+                <span className="mt-1.5 block text-xs text-cacao/70">
+                  Escribe <span className="font-mono font-bold">@</span> para
+                  etiquetar a alguien de esta conversación.
+                </span>
+              )}
             </label>
 
             <BotonEnviar>{respondiendo ? "Responder" : "Comentar"}</BotonEnviar>
@@ -212,7 +348,10 @@ function Uno({
   puedeOcultar,
   puedeResponder = false,
   alResponder,
-  esRespuesta = false,
+  participantes,
+  nombres,
+  puedeGustar,
+  haySesion,
 }: {
   comentario: ComentarioVista;
   contexto: Contexto;
@@ -220,11 +359,24 @@ function Uno({
   puedeOcultar: boolean;
   puedeResponder?: boolean;
   alResponder?: () => void;
-  /** Las respuestas van más discretas: el hilo ya dice de quién cuelgan. */
-  esRespuesta?: boolean;
+  participantes: Participante[];
+  nombres: string[];
+  puedeGustar: boolean;
+  haySesion: boolean;
 }) {
   const [editando, setEditando] = useState(false);
   const [estado, accion] = useActionState(editarComentario, INICIAL);
+  const [texto, setTexto] = useState(comentario.texto);
+
+  // Al guardar se cierra el editor. Antes se quedaba abierto con el texto ya
+  // guardado, y no había forma de saber si había entrado. En el render y no
+  // en un efecto, por lo mismo que arriba.
+  const [visto, setVisto] = useState(estado);
+
+  if (visto !== estado) {
+    setVisto(estado);
+    if (estado.ok) setEditando(false);
+  }
 
   const comunes = (
     <>
@@ -249,8 +401,16 @@ function Uno({
             <span className="ml-2 font-normal text-sm text-cacao/70">(tú)</span>
           )}
         </p>
-        <p className="font-mono text-xs text-cacao/70">
-          {comentario.fechaTexto}
+
+        {/*
+          Cuánto lleva, no cuándo fue. La fecha exacta queda en el `title` para
+          quien la quiera, sin ocupar sitio.
+        */}
+        <p
+          title={comentario.fechaExacta}
+          className="font-mono text-xs text-cacao/60"
+        >
+          {comentario.hace}
           {comentario.editado && " · editado"}
         </p>
       </div>
@@ -268,18 +428,21 @@ function Uno({
           {comunes}
           <Confirmacion estado={estado} />
 
-          <textarea
-            name="texto"
-            rows={3}
-            defaultValue={comentario.texto}
-            className="w-full rounded-2xl border-2 border-selva/20 bg-white px-4 py-3 text-base text-ink focus:border-selva"
+          <CajaDeComentario
+            nombre="texto"
+            valor={texto}
+            alCambiar={setTexto}
+            participantes={participantes}
           />
 
           <div className="flex flex-wrap gap-2">
             <BotonEnviar variante="secundario">Guardar</BotonEnviar>
             <button
               type="button"
-              onClick={() => setEditando(false)}
+              onClick={() => {
+                setTexto(comentario.texto);
+                setEditando(false);
+              }}
               className="min-h-11 rounded-full px-4 text-sm font-bold text-cacao underline"
             >
               Cancelar
@@ -287,13 +450,26 @@ function Uno({
           </div>
         </form>
       ) : (
-        <p className="mt-1.5 whitespace-pre-line text-cacao">
-          {comentario.texto}
-        </p>
+        <Texto texto={comentario.texto} nombres={nombres} />
       )}
 
-      {(comentario.esMio || puedeOcultar) && !editando && (
+      {!editando && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
+          {/*
+            El corazón va primero y lo ve cualquiera, no solo quien modera o
+            quien escribió: asentir es lo que más se hace en una conversación, y
+            sin él había que gastar uno de los cinco comentarios en decir "eso".
+          */}
+          {puedeGustar && (
+            <MeGusta
+              clase="comentario"
+              id={comentario.id}
+              inicial={comentario.miApoyo}
+              cuantos={comentario.apoyos}
+              haySesion={haySesion}
+            />
+          )}
+
           {comentario.esMio && (
             <>
               <button
@@ -322,7 +498,13 @@ function Uno({
             mazorcas: no hay moneda que dar.
           */}
 
-          {puedeResponder && !esRespuesta && alResponder && (
+          {/*
+            Responder también en las respuestas. Antes solo en las raíces,
+            porque sin etiqueta una respuesta a una respuesta quedaba sin decir
+            a quién le hablaba; con el arroba ya lo dice, y contestarle a quien
+            te contestó es lo normal de una conversación.
+          */}
+          {puedeResponder && alResponder && (
             <button
               type="button"
               onClick={alResponder}

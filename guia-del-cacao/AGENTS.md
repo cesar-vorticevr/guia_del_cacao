@@ -203,6 +203,60 @@ El video se pinta con `<video controls>` y sin `autoPlay`. Los controles del
 navegador ya traen play, pausa, volumen y barra, funcionan con teclado y en
 celular abren el reproductor que la persona ya sabe usar.
 
+## En un comentario: cuánto lleva, un corazón y un arroba
+
+Tres cosas que se añadieron juntas porque son la misma conversación:
+
+- **Cuánto lleva, no cuándo fue.** El sello decía «11 de septiembre de 2026»,
+  que en un hilo no dice lo que hace falta: si esto se escribió hace un rato o
+  el año pasado. Ahora dice «ahora», «5m», «3h», «2d», «6s», «2a», y la fecha
+  exacta se queda en el `title`. Las dos escalas viven en `lib/tiempo.ts`:
+  `haceCuanto` es esta, y `enDiasYSemanas` es la del muro —solo `d` y `s`, que
+  se decidió así a propósito para una retícula de cuatro columnas—. **Las dos se
+  calculan en el servidor**, o React avisa del desajuste en cada fila.
+- **Corazón**, en `apoyos_comentario` (migración 000047). Sin él, estar de
+  acuerdo obligaba a gastar uno de los cinco comentarios en decir «eso».
+- **Etiquetar con arroba**, y solo a **quien ya participó** aquí: quien publicó
+  y quien comentó. Es la regla, no una limitación — un buscador de toda la gente
+  del sitio dentro de un comentario es por donde entra el spam. Lo resuelve
+  `participantesDe()` sin consultar nada: las dos listas ya están en memoria.
+
+La mención **no se guarda aparte**: vive en el texto. No hay tabla de menciones
+ni columna que apunte a nadie. Como los nombres llevan espacios —«César
+García»—, al pintar se busca, después de cada arroba, el nombre más largo de esa
+lista que encaje (`lib/menciones.ts`); lo que no encaja con nadie se queda como
+texto llano. El día que haya avisos de «te etiquetaron» habrá que guardarlas.
+
+«Responder» hace dos cosas: cuelga la respuesta del comentario **raíz** —el hilo
+es de un nivel, lo impone la base— y **etiqueta a quien se contesta**. Por eso
+ahora el botón sale también en las respuestas: antes no, porque sin la etiqueta
+una respuesta a una respuesta quedaba sin decir a quién le hablaba.
+
+**Solo en la comunidad.** En un evento se comenta una vez, y esa tabla no tiene
+ni `responde_a`: donde no hay hilo no hay a qué asentir ni a quién contestarle.
+Etiquetar sí, porque el negocio y quien pregunta se hablan.
+
+### El `select` de comentarios: dos trampas en la misma línea
+
+Las dos tablas se leen con el mismo código, y las dos veces que eso se rompió
+fue por la lista de campos. Las dos fallan igual —`data` en null— y las dos se
+leen en pantalla como **«Todavía nadie ha comentado»**, con los comentarios ahí
+guardados:
+
+1. **`responde_a` solo existe en `comentarios`.** Pedirla también del lado de
+   los eventos daba 42703. Los comentarios de un evento no se vieron nunca hasta
+   que se separó la lista.
+2. **El autor se pide por el nombre de su llave.** `apoyos_comentario` apunta a
+   un perfil, así que desde la migración 000047 hay dos caminos de
+   `comentarios` a `perfiles` y PostgREST responde PGRST201. Va
+   `perfiles_publicos!comentarios_usuario_id_fkey`, y del otro lado
+   `!comentarios_publicacion_usuario_id_fkey`.
+
+La segunda es el **tercer** caso del mismo tropiezo en el repo, después de
+`perfiles_publicos` desde `temas_foro` y de `categorias` desde `marcas`. Cada
+vez que una migración agrega un segundo camino entre dos tablas hay que repasar
+los embeds de las dos.
+
 ## Comentarios: dos tablas, reglas opuestas
 
 - **`comentarios_publicacion`** — en un evento o una noticia se comenta **una

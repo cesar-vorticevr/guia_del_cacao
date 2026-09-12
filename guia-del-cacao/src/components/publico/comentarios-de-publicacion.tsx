@@ -6,9 +6,11 @@ import {
   conElPropioArriba,
   cuantosSon,
   moderaLaPublicacion,
+  participantesDe,
   TOPE_COMENTARIOS,
   type Contexto,
 } from "@/lib/datos/comentarios";
+import { haceCuanto } from "@/lib/tiempo";
 
 const CUANDO = new Intl.DateTimeFormat("es-MX", {
   day: "numeric",
@@ -62,14 +64,28 @@ export async function ComentariosDePublicacion({
         id: comentario.id,
         autor: comentario.perfiles_publicos?.nombre ?? "Visitante",
         texto: comentario.texto,
-        fechaTexto: CUANDO.format(new Date(comentario.fecha)),
+        hace: haceCuanto(comentario.fecha),
+        fechaExacta: CUANDO.format(new Date(comentario.fecha)),
         editado: comentario.fecha_edicion !== null,
         oculto: comentario.oculto,
         esMio: comentario.usuario_id === perfil?.id,
+        /*
+          Sin corazon y sin hilo: aqui se comenta una vez, asi que no hay a
+          que asentir ni a quien contestarle. La tabla de este lado
+          -comentarios_publicacion- no tiene ni responde_a.
+        */
+        apoyos: 0,
+        miApoyo: false,
       }))}
       puedeComentar={Boolean(esCliente && leQueda)}
       motivo={motivo}
       puedeOcultar={modera}
+      /*
+        Etiquetar si, porque el negocio y quien pregunta se hablan: quien
+        participo aqui es quien comento. El autor no se pasa: la publicacion
+        es de una sucursal, no de una persona con nombre que etiquetar.
+      */
+      participantes={participantesDe(comentarios)}
     />
   );
 }
