@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { FormularioTema } from "@/components/publico/foro";
 import { MuroComunidad } from "@/components/publico/muro-comunidad";
+import { FondoDeCacao } from "@/components/publico/fondo-cacao";
 import { MiPublicacion } from "@/components/publico/mi-publicacion";
 import { perfilActual } from "@/lib/auth/sesion";
 import { muroDeComunidad } from "@/lib/datos/comunidad";
@@ -64,6 +65,19 @@ export default async function Comunidad() {
 
   return (
     <>
+      {/*
+        El fondo de cacao acompaña al muro entero, no a una franja.
+
+        Va en `pantalla` —colgado del viewport, no de una caja— porque un muro
+        no tiene largo conocido: crece con cada tirón del scroll infinito, y una
+        franja de altura fija se habría quedado corta a la segunda página.
+        Colgado del viewport se mueve con el scroll y acompaña hasta el final.
+
+        Con `soloOrillas`, que deja fuera la pieza ancha que pasa por detrás del
+        texto: aquí lo que se viene a hacer es leer.
+      */}
+      <FondoDeCacao variante="pantalla" soloOrillas />
+
 
 
       <h1 className="pt-8 font-display text-3xl">Comunidad</h1>

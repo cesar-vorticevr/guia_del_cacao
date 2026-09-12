@@ -10,11 +10,14 @@ import type { Entrada, Filtro } from "@/lib/datos/comunidad";
 /**
  * El muro de la comunidad, agrupado por día y con scroll infinito.
  *
- * Las publicaciones van en la misma retícula que el directorio y el catálogo
- * —foto arriba, quién escribe y de qué trata debajo— y los días las agrupan:
- * "Hoy", "Ayer" y luego el día con su nombre. La fecha de cada día se queda
- * pegada arriba al bajar, así que el orden se sigue leyendo con cuatro por
- * fila: dentro de un día, de izquierda a derecha.
+ * Las publicaciones van en la misma retícula que el directorio y el catálogo:
+ * foto arriba, quién escribe y de qué trata debajo.
+ *
+ * **Es un hilo continuo, sin cabeceras por día.** Las tuvo —"Hoy", "Ayer", el
+ * nombre del día— y partían el muro en tramos que con pocas publicaciones
+ * dejaban un encabezado por tarjeta. Ahora cada una dice en chico cuánto lleva
+ * ("3 h", "2 d", "1 a"), que es lo que hace falta para ubicarla y no obliga a
+ * cortar nada.
  *
  * **Los tramos los trae el servidor**, de diez en diez y con cursor. No se
  * cargan todas de golpe para luego irlas destapando: un muro crece sin techo, y
@@ -28,39 +31,6 @@ const FILTROS: { valor: Filtro; texto: string }[] = [
   { valor: "mias", texto: "Mis publicaciones" },
   { valor: "nuevos", texto: "Comentarios nuevos" },
 ];
-
-const DIA = new Intl.DateTimeFormat("es-MX", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-});
-
-/** El día de una fecha en hora de México, para agrupar como agrupa la base. */
-function claveDelDia(iso: string) {
-  return new Date(iso).toLocaleDateString("en-CA", {
-    timeZone: "America/Mexico_City",
-  });
-}
-
-/**
- * "Hoy" y "Ayer" en vez de la fecha, que es como se nombra un día reciente.
- * Más atrás, el nombre del día: en un muro, "martes 9 de septiembre" ubica
- * mejor que "09/09/2026".
- */
-function nombreDelDia(clave: string) {
-  const hoy = claveDelDia(new Date().toISOString());
-
-  const ayer = claveDelDia(
-    new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-  );
-
-  if (clave === hoy) return "Hoy";
-  if (clave === ayer) return "Ayer";
-
-  // `clave` es YYYY-MM-DD; se le pone el mediodía para que el formateador no
-  // la corra un día hacia atrás al interpretarla como medianoche UTC.
-  return DIA.format(new Date(`${clave}T12:00:00`));
-}
 
 export function MuroComunidad({
   iniciales,
@@ -99,7 +69,10 @@ export function MuroComunidad({
         // Se descartan las repetidas por id: si alguien publica mientras otro
         // baja, un tramo puede traer algo que ya estaba en pantalla.
         const yaEstan = new Set(previas.map((e) => e.id));
-        return [...previas, ...pagina.entradas.filter((e) => !yaEstan.has(e.id))];
+        return [
+          ...previas,
+          ...pagina.entradas.filter((e) => !yaEstan.has(e.id)),
+        ];
       });
 
       setCursor(pagina.siguiente);
@@ -147,17 +120,6 @@ export function MuroComunidad({
 
   const opciones = haySesion ? FILTROS : FILTROS.slice(0, 1);
 
-  // Los días se agrupan en el orden en que vienen, que ya es de nuevo a viejo.
-  const dias: { clave: string; entradas: Entrada[] }[] = [];
-
-  for (const entrada of entradas) {
-    const clave = claveDelDia(entrada.fecha);
-    const ultimo = dias[dias.length - 1];
-
-    if (ultimo?.clave === clave) ultimo.entradas.push(entrada);
-    else dias.push({ clave, entradas: [entrada] });
-  }
-
   return (
     <>
       {opciones.length > 1 && (
@@ -194,108 +156,109 @@ export function MuroComunidad({
               : "Todavía no hay nada publicado."}
         </p>
       ) : (
-        <div className="mt-5 grid gap-8">
-          {dias.map((dia) => (
-            <section key={dia.clave} aria-label={nombreDelDia(dia.clave)}>
-              {/*
-                La fecha se queda pegada arriba al bajar: en un muro largo, sin
-                ella se pierde de vista en qué día se está leyendo.
-              */}
-              <h3 className="sticky top-2 z-10 mb-3 inline-block rounded-full bg-selva-2 px-4 py-1.5 font-mono text-xs font-bold tracking-wide text-crema uppercase">
-                {nombreDelDia(dia.clave)}
-              </h3>
-
-              <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {dia.entradas.map((entrada) => (
-                  <li
-                    key={entrada.id}
-                    className="group flex h-full flex-col overflow-hidden rounded-3xl border-2 border-ink/10 bg-white shadow-dura transition-all hover:-translate-y-0.5 hover:shadow-dura-alta"
-                  >
-                    <Link href={entrada.href} className="flex flex-1 flex-col">
-                      {/*
+        <div className="mt-5">
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {entradas.map((entrada) => (
+              <li
+                key={entrada.id}
+                className="group flex h-full flex-col overflow-hidden rounded-3xl border-2 border-ink/10 bg-white shadow-dura transition-all hover:-translate-y-0.5 hover:shadow-dura-alta"
+              >
+                <Link href={entrada.href} className="flex flex-1 flex-col">
+                  {/*
                         La foto en 4:3 y fuera del flujo, como en el directorio
                         y el catálogo: con `h-full` en el flujo, una foto alta
                         estira su caja y las tarjetas de la fila dejan de
                         alinearse.
                       */}
-                      <span className="relative block aspect-[4/3] w-full shrink-0 overflow-hidden bg-crema-2">
-                        <PortadaPublicacion
-                          id={entrada.id}
-                          foto={entrada.imagen}
-                          titulo={entrada.titulo}
-                          className="absolute inset-0 size-full"
-                        />
-                      </span>
+                  <span className="relative block aspect-[4/3] w-full shrink-0 overflow-hidden bg-crema-2">
+                    <PortadaPublicacion
+                      id={entrada.id}
+                      foto={entrada.imagen}
+                      titulo={entrada.titulo}
+                      className="absolute inset-0 size-full"
+                    />
+                  </span>
 
-                      <div className="flex flex-1 flex-col gap-1 p-4">
-                        {/*
+                  <div className="flex flex-1 flex-col gap-1 p-4">
+                    {/*
                           Quién escribe va primero: en una retícula de cuatro, lo
                           que hace abrir una publicación es de quién es y de qué
                           trata, en ese orden.
                         */}
-                        <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
-                          <span className="font-bold text-selva-2">
-                            {entrada.autor}
-                          </span>
-                          {entrada.detalle && (
-                            <span className="text-cacao/70">
-                              {entrada.detalle}
-                            </span>
-                          )}
+                    <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
+                      <span className="font-bold text-selva-2">
+                        {entrada.autor}
+                      </span>
 
-                          {entrada.oculta && (
-                            <span className="rounded-full bg-ink/10 px-2 py-0.5 font-mono text-[0.7rem] font-bold text-cacao">
-                              Oculta
-                            </span>
-                          )}
-                        </p>
+                      {/*
+                            Cuánto lleva, en chico y al lado del autor: es lo
+                            que sustituyó a las cabeceras por día. La fecha
+                            completa va en el `title`, para quien quiera el
+                            dato exacto sin que ocupe sitio.
+                          */}
+                      <span
+                        title={entrada.fechaTexto}
+                        className="font-mono text-xs text-cacao/60"
+                      >
+                        {entrada.hace}
+                      </span>
 
-                        <p className="font-display text-base leading-tight font-semibold text-selva-2 underline-offset-4 group-hover:underline">
-                          {entrada.titulo}
-                        </p>
+                      {entrada.detalle && (
+                        <span className="w-full text-cacao/70">
+                          {entrada.detalle}
+                        </span>
+                      )}
 
-                        <p className="mt-auto line-clamp-3 pt-1 text-sm text-cacao">
-                          {entrada.resumen}
-                        </p>
+                      {entrada.oculta && (
+                        <span className="rounded-full bg-ink/10 px-2 py-0.5 font-mono text-[0.7rem] font-bold text-cacao">
+                          Oculta
+                        </span>
+                      )}
+                    </p>
 
-                      </div>
-                    </Link>
+                    <p className="font-display text-base leading-tight font-semibold text-selva-2 underline-offset-4 group-hover:underline">
+                      {entrada.titulo}
+                    </p>
 
-                    {/*
+                    <p className="mt-auto line-clamp-3 pt-1 text-sm text-cacao">
+                      {entrada.resumen}
+                    </p>
+                  </div>
+                </Link>
+
+                {/*
                       El corazón va fuera del enlace —un `button` dentro de un
                       `a` es HTML inválido— pero dentro de la misma caja, en su
                       franja al pie.
                     */}
-                    <div className="flex flex-wrap items-center gap-3 border-t-2 border-ink/5 px-4 py-2.5">
-                      <MeGusta
-                        clase="publicacion"
-                        id={entrada.id}
-                        inicial={entrada.miApoyo}
-                        cuantos={entrada.apoyos}
-                        comentarios={entrada.comentarios}
-                        haySesion={haySesion}
-                      />
+                <div className="flex flex-wrap items-center gap-3 border-t-2 border-ink/5 px-4 py-2.5">
+                  <MeGusta
+                    clase="publicacion"
+                    id={entrada.id}
+                    inicial={entrada.miApoyo}
+                    cuantos={entrada.apoyos}
+                    comentarios={entrada.comentarios}
+                    haySesion={haySesion}
+                  />
 
-                      {/*
+                  {/*
                         El punto solo aparece cuando hay respuestas que esa
                         persona no ha visto. Si estuviera siempre que hay
                         comentarios, dejaría de significar "hay algo nuevo" y
                         sería parte del dibujo.
                       */}
-                      {entrada.sinVer > 0 && (
-                        <span
-                          className="grid size-5 place-items-center rounded-full bg-guayaba font-mono text-xs font-bold text-ink"
-                          aria-label={`${entrada.sinVer} sin leer`}
-                        >
-                          {entrada.sinVer}
-                        </span>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
+                  {entrada.sinVer > 0 && (
+                    <span
+                      className="grid size-5 place-items-center rounded-full bg-guayaba font-mono text-xs font-bold text-ink"
+                      aria-label={`${entrada.sinVer} sin leer`}
+                    >
+                      {entrada.sinVer}
+                    </span>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
 
           {/*
             El centinela y el aviso de carga. El aviso existe para que bajar al

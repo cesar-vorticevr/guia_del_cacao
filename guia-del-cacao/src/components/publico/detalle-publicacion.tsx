@@ -88,7 +88,7 @@ export function DetallePublicacion({
           href={`/marca/${publicacion.sucursales.slug}`}
           className="mt-6 inline-flex min-h-14 items-center rounded-full bg-selva px-6 font-display text-lg font-semibold text-crema shadow-dura-sm transition-transform active:translate-y-0.5"
         >
-          Ver el micrositio
+          Ver negocio
         </Link>
       )}
     </article>

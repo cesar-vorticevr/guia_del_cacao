@@ -305,11 +305,13 @@ export default async function Micrositio({
       )}
 
       {/*
-        Lo que el negocio anuncia hoy. El micrositio no es un archivo: un evento
-        que ya pasó se cae solo y una noticia dura lo que diga DIAS_DE_NOTICIA
-        (hoy, un mes). Las dos
-        siguen existiendo en /eventos y /noticias y en su propia página — no se
-        borra nada, solo dejan de ocupar el espacio del negocio.
+        Lo que el negocio anuncia hoy: **sus eventos, y nada más**. Un evento
+        que ya pasó se cae solo, porque el micrositio no es un archivo.
+
+        Aquí había también "Noticias recientes". Se fue: lo que un negocio
+        escribe vive en la comunidad, junto a lo que escribe todo el mundo, y
+        repetirlo en su ficha hacía que la misma publicación se leyera dos
+        veces. No se borra nada — sigue en /comunidad y en su propia página.
       */}
       {agenda.eventos.length > 0 && (
         <section className="px-4 pt-6">
@@ -320,21 +322,6 @@ export default async function Micrositio({
                 key={evento.id}
                 publicacion={evento}
                 tipo="evento"
-              />
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {agenda.noticias.length > 0 && (
-        <section className="px-4 pt-6">
-          <h2 className="font-display text-xl">Noticias recientes</h2>
-          <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {agenda.noticias.map((noticia) => (
-              <TarjetaPublicacion
-                key={noticia.id}
-                publicacion={noticia}
-                tipo="noticia"
               />
             ))}
           </ul>
