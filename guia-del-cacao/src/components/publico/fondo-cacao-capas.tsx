@@ -241,7 +241,7 @@ export function CapasDeCacao({
       aria-hidden
       className={`pointer-events-none z-0 overflow-hidden select-none motion-reduce:hidden ${
         variante === "franja"
-          ? "absolute inset-y-0 left-1/2 w-screen -translate-x-1/2"
+          ? "absolute inset-y-0 left-1/2 w-[104vw] -translate-x-1/2"
           : "fixed inset-0"
       }`}
     >

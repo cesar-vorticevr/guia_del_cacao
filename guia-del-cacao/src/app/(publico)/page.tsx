@@ -145,14 +145,32 @@ export default async function Home() {
       </section>
 
       {/*
-        La única franja con fondo de cacao. `relative` y `overflow-hidden` no
-        son opcionales: el fondo se cuelga de esta caja y se mide contra ella,
-        y sin el recorte las piezas se pasearían por el resto de la portada.
+        La franja del directorio, de orilla a orilla.
+
+        Era una caja redondeada dentro de la columna de contenido, y su
+        `overflow-hidden` —que hace falta para recortar el fondo— volvía a
+        encerrar las piezas en 1180 px: el fondo se paraba donde acababa la
+        caja, no donde acaba la pantalla.
+
+        Ahora la sección misma se sale de la columna con sangrado completo
+        —`left-1/2`, `w-screen`, `-translate-x-1/2`— y el recorte pasa a ser en
+        el borde de la pantalla, que es donde tiene que estar. Las esquinas
+        redondeadas se van con eso: una banda que toca las dos orillas no tiene
+        esquinas que redondear.
+
+        El contenido sigue en la columna, con su propia caja centrada dentro.
+
+        El ancho es `104vw` y no `100vw` a proposito: `100vw` cuenta la barra de
+        scroll vertical y el area de contenido no, asi que una banda centrada de
+        exactamente `100vw` se queda unos pixeles corta de un lado y deja una
+        rendija de crema distinto en la orilla. Con holgura tapa de sobra, y el
+        `overflow-x: clip` del armazon recorta lo que sale sin abrir barra
+        horizontal.
       */}
-      <section className="relative mt-14 overflow-hidden rounded-[2rem] bg-crema-2/60 px-5 py-10 sm:px-8">
+      <section className="relative left-1/2 mt-14 w-[104vw] -translate-x-1/2 overflow-hidden bg-crema-2/60 py-10">
         <FondoDeCacao variante="franja" />
 
-        <div className="relative z-10">
+        <div className="relative z-10 mx-auto w-[92vw] max-w-[1180px]">
           <h2 className="font-display text-2xl">En el directorio</h2>
 
           {sucursales.length === 0 ? (
