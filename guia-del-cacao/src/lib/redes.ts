@@ -120,3 +120,134 @@ export function enlaceDeRed(campo: string, valor: string | null | undefined) {
 
   return `https://${red.dominio}/${arroba}${usuario}`;
 }
+
+/**
+ * Un dato de contacto: cómo se llama, qué dice y a dónde lleva.
+ *
+ * El `texto` es **el dato**, no una invitación a pulsarlo. Un botón que dice
+ * "Correo" esconde justo lo que se viene a buscar: quien mira el micrositio en
+ * la computadora quiere copiar la dirección para escribirle desde su correo de
+ * siempre, y quien lo imprime necesita algo que se pueda teclear. `mailto:` no
+ * sirve para ninguna de las dos.
+ */
+export type DatoDeContacto = {
+  /** Cuál es, para quien quiera tratarlos distinto. `maps` no tiene dato legible. */
+  clave: "maps" | "telefono" | "correo" | CampoDeRed;
+  etiqueta: string;
+  /** El dato como lo escribiría una persona: el número, el correo, `@lamazorca`. */
+  texto: string;
+  /** A dónde lleva al pulsarlo. */
+  enlace: string;
+};
+
+/** Una dirección sin `https://` ni `www.` ni barra final: lo que se teclea. */
+function legible(url: string) {
+  return url.replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/$/, "");
+}
+
+/**
+ * Cómo se enseña una red: `@lamazorca` cuando se puede, la dirección cuando no.
+ *
+ * Son dos cosas distintas: `instagram.com/lamazorca` es a dónde va el botón, y
+ * `@lamazorca` es como se llama esa cuenta en boca de cualquiera. Lo segundo se
+ * lee de un vistazo, se dicta por teléfono y cabe en una tarjeta.
+ *
+ * Sale del **enlace ya armado** y no de lo que el negocio escribió, para que
+ * los cuatro modos de poner lo mismo —`@lamazorca`, `lamazorca`,
+ * `instagram.com/lamazorca` y la dirección entera— se lean igual. Escrito
+ * sobre el campo crudo, quien tecleó el dominio se quedaba viendo el dominio y
+ * su vecino veía el arroba, por haber escrito distinto la misma cuenta.
+ *
+ * Una ruta más honda (`facebook.com/pages/la-mazorca/123`) o un dominio ajeno
+ * (`fb.me/…`) se enseñan tal cual: ahí no hay un usuario que sacar, y recortarlo
+ * a un arroba inventaría una cuenta que no existe.
+ */
+function comoSeLee(valor: string, enlace: string, dominio: string | undefined) {
+  // Sin dominio es WhatsApp, que no lleva usuario sino número. Se enseña el
+  // número tal como lo escribió el negocio: `wa.me/5299311000002` no se lo
+  // dicta nadie a nadie, y el 52 que le pone `enlaceDeRed` es del enlace, no
+  // de cómo se llama ese teléfono en Tabasco.
+  if (!dominio) return valor.trim();
+
+  const prefijo = `https://${dominio}/`;
+  if (!enlace.startsWith(prefijo)) return legible(enlace);
+
+  const resto = enlace.slice(prefijo.length);
+  if (!resto || resto.includes("/")) return legible(enlace);
+
+  return `@${resto.replace(/^@/, "")}`;
+}
+
+/**
+ * Los datos de contacto de una sucursal, en el orden en que se enseñan.
+ *
+ * Una sola lista para las dos salidas —la sección del micrositio y el bloque
+ * del PDF— para que no puedan discrepar. Antes la pantalla armaba sus botones
+ * a mano y acabó enseñando el teléfono pero no el correo ni el número de
+ * WhatsApp: cada uno se había escrito por separado y nadie los vio juntos.
+ *
+ * Los enlaces salen de `enlaceDeRed`, así que lo que no dé una dirección que se
+ * pueda abrir tampoco sale aquí: un campo con "@" a secas no deja un renglón
+ * vacío con su etiqueta.
+ */
+export function listaDeContacto(sucursal: {
+  ubicacion_maps_url?: string | null;
+  telefono?: string | null;
+  correo_contacto?: string | null;
+  whatsapp?: string | null;
+  facebook?: string | null;
+  instagram?: string | null;
+  youtube?: string | null;
+  tiktok?: string | null;
+}): DatoDeContacto[] {
+  const lista: DatoDeContacto[] = [];
+
+  // El mismo cuidado que en `enlaceDeRed`: un campo de texto libre que acaba
+  // de `href` acepta `javascript:`, y este además se imprime como dirección.
+  const mapa = sucursal.ubicacion_maps_url?.trim();
+  if (mapa && /^https?:\/\//i.test(mapa)) {
+    lista.push({
+      clave: "maps",
+      etiqueta: "Cómo llegar",
+      texto: legible(mapa),
+      enlace: mapa,
+    });
+  }
+
+  const telefono = sucursal.telefono?.trim();
+  if (telefono) {
+    lista.push({
+      clave: "telefono",
+      etiqueta: "Teléfono",
+      texto: telefono,
+      // El `href` va sin espacios ni guiones aunque el negocio los escriba:
+      // `tel:993 100 0014` no marca en todos los teléfonos.
+      enlace: `tel:${telefono.replace(/[^\d+]/g, "")}`,
+    });
+  }
+
+  const correo = sucursal.correo_contacto?.trim();
+  if (correo) {
+    lista.push({
+      clave: "correo",
+      etiqueta: "Correo",
+      texto: correo,
+      enlace: `mailto:${correo}`,
+    });
+  }
+
+  for (const red of REDES) {
+    const valor = sucursal[red.campo];
+    const enlace = enlaceDeRed(red.campo, valor);
+    if (!enlace || !valor) continue;
+
+    lista.push({
+      clave: red.campo,
+      etiqueta: red.texto,
+      texto: comoSeLee(valor, enlace, red.dominio),
+      enlace,
+    });
+  }
+
+  return lista;
+}

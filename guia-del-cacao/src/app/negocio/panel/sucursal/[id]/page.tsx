@@ -8,6 +8,7 @@ import { estrellasPorUsuario, resenasDe } from "@/lib/datos/publico";
 import { ListaResenas } from "@/components/publico/lista-resenas";
 import { BUCKET_RESENAS } from "@/lib/imagenes";
 import { BarraDePasos } from "@/components/negocio/barra-de-pasos";
+import { Pestanas } from "@/components/negocio/pestanas";
 import {
   FormularioGaleria,
   FormularioImagen,
@@ -21,9 +22,11 @@ import {
 } from "@/lib/negocio/acciones";
 import {
   NOMBRE_DEL_PASO,
+  SECCIONES_DEL_EDITOR,
   esPasoDelAlta,
+  esSeccionDelEditor,
   vecinos,
-  type PasoDelAlta,
+  type SeccionDelEditor,
 } from "@/lib/negocio/pasos";
 import { perfilActual } from "@/lib/auth/sesion";
 import { miSucursal } from "@/lib/datos/sucursales";
@@ -85,25 +88,57 @@ export default async function EditorMicrositio({
     es la señal: en borrador se está dando de alta, publicado ya está dado.
   */
   const guiado = editable && sucursal.estado !== "publicado";
-  const actual: PasoDelAlta = esPasoDelAlta(paso) ? paso : "imagenes";
-  const { anterior, siguiente } = vecinos(actual);
+
+  /*
+    Qué sección se está viendo. En el alta solo valen sus tres pasos; editando
+    vale también «resenas», que en un borrador no existe.
+
+    En los dos casos se enseña **una sola**. Antes, editando, se enseñaban todas
+    a la vez en una columna: llegar al catálogo eran cuatro pantallas de
+    recorrido y cambiar un teléfono obligaba a pasar por el logo, la portada y
+    la galería.
+  */
+  const actual: SeccionDelEditor = guiado
+    ? esPasoDelAlta(paso)
+      ? paso
+      : "imagenes"
+    : esSeccionDelEditor(paso)
+      ? paso
+      : "imagenes";
+
+  // `vecinos` es del alta y solo entiende sus tres pasos; fuera de ella no se
+  // usa, pero se le pasa algo válido para no tener que ramificar aquí.
+  const { anterior, siguiente } = vecinos(
+    esPasoDelAlta(actual) ? actual : "imagenes",
+  );
+
   const ruta = (destino: string) =>
     `/negocio/panel/sucursal/${sucursal.id}?paso=${destino}`;
 
-  const ver = (seccion: PasoDelAlta) => !guiado || actual === seccion;
+  const ver = (seccion: SeccionDelEditor) => actual === seccion;
 
   /*
-    Las reseñas no se piden cuando no puede haberlas. Un micrositio en borrador
-    nunca estuvo a la vista de nadie, así que la sección solo enseñaba "todavía
-    nadie ha dejado reseña" a quien apenas está dando de alta su negocio: ruido
-    en el momento de menos paciencia. Y de paso se ahorran dos consultas.
+    Cuándo salen las reseñas, en una sola condición que usan la consulta y el
+    dibujo. Separadas, se podía pedir lo que no se iba a pintar, o peor,
+    pintarlo con una lista vacía que nunca se pidió.
+
+    No en el alta: un micrositio en borrador nunca estuvo a la vista de nadie, y
+    la sección solo enseñaría "todavía nadie ha dejado reseña" a quien apenas da
+    de alta su negocio. Tampoco en otra pestaña, que serían dos consultas para
+    algo que no se va a ver.
+
+    Y sí cuando está en revisión, aunque entonces no haya pestañas que tocar: es
+    el único momento en que no se puede editar nada, y dejar las reseñas fuera
+    haría que esa pantalla no tuviera absolutamente nada que mirar.
   */
-  const [resenas, estrellas] = guiado
-    ? [[], new Map<string, number>()]
-    : await Promise.all([
+  const verResenas = !guiado && (!editable || ver("resenas"));
+
+  const [resenas, estrellas] = verResenas
+    ? await Promise.all([
         resenasDe(sucursal.id),
         estrellasPorUsuario(sucursal.id),
-      ]);
+      ])
+    : [[], new Map<string, number>()];
 
   return (
     <div className="mx-auto grid max-w-2xl gap-8">
@@ -185,12 +220,43 @@ export default async function EditorMicrositio({
         </p>
       )}
 
-      {guiado && (
-        <div className="grid gap-3">
-          <BarraDePasos sucursalId={sucursal.id} actual={actual} />
-          <p className="text-cacao">{NOMBRE_DEL_PASO[actual].detalle}</p>
-        </div>
-      )}
+      {/*
+        Dos navegaciones para dos momentos distintos.
+
+        En el alta, pasos numerados: hay un orden sugerido y saber cuántos
+        faltan es parte de terminar. Editando, pestañas sin número: ya no es una
+        secuencia sino cuatro sitios a los que se va directo, y numerarlos
+        sugeriría un recorrido que nadie tiene que hacer.
+      */}
+      {editable &&
+        (guiado ? (
+          <div className="grid gap-3">
+            <BarraDePasos
+              sucursalId={sucursal.id}
+              actual={esPasoDelAlta(actual) ? actual : "imagenes"}
+            />
+            <p className="text-cacao">{NOMBRE_DEL_PASO[actual].detalle}</p>
+          </div>
+        ) : (
+          <div className="grid gap-3">
+            <Pestanas
+              base={`/negocio/panel/sucursal/${sucursal.id}`}
+              parametro="paso"
+              etiqueta="Secciones del micrositio"
+              actual={actual}
+              pestanas={SECCIONES_DEL_EDITOR.map((seccion) => ({
+                clave: seccion,
+                texto: NOMBRE_DEL_PASO[seccion].titulo,
+                // El contador de reseñas sale del promedio, que ya se pidió
+                // para el encabezado: no cuesta una consulta más.
+                ...(seccion === "resenas" && calificacion
+                  ? { cuenta: calificacion.total }
+                  : {}),
+              }))}
+            />
+            <p className="text-cacao">{NOMBRE_DEL_PASO[actual].detalle}</p>
+          </div>
+        ))}
 
       {editable && (
         <>
@@ -388,7 +454,7 @@ export default async function EditorMicrositio({
         </>
       )}
 
-      {!guiado && (
+      {verResenas && (
         <section className="grid gap-3">
           <h2 className="font-display text-2xl">Lo que dicen de ti</h2>
 

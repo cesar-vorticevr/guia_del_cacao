@@ -28,14 +28,26 @@ export function Pestanas({
   pestanas,
   actual,
   base,
+  parametro = "ver",
+  etiqueta = "Secciones del panel",
 }: {
   pestanas: Pestana[];
   actual: string;
-  /** Ruta a la que se le cuelga el `?ver=`. */
+  /** Ruta a la que se le cuelga el parámetro. */
   base: string;
+  /**
+   * Cómo se llama el parámetro en la URL.
+   *
+   * El panel usa `?ver=`; el editor de un micrositio, `?paso=`, que es el que
+   * ya entendían la barra del alta y el redirect de guardar. Se pasa en vez de
+   * unificarlos para no tener que traducir de uno a otro en cada guardado.
+   */
+  parametro?: string;
+  /** Lo que lee un lector de pantalla al entrar en la fila. */
+  etiqueta?: string;
 }) {
   return (
-    <nav aria-label="Secciones del panel" className="border-b-2 border-ink/10">
+    <nav aria-label={etiqueta} className="border-b-2 border-ink/10">
       <ul className="flex flex-wrap gap-1">
         {pestanas.map((pestana) => {
           const activa = pestana.clave === actual;
@@ -43,7 +55,7 @@ export function Pestanas({
           return (
             <li key={pestana.clave}>
               <Link
-                href={pestana.href ?? `${base}?ver=${pestana.clave}`}
+                href={pestana.href ?? `${base}?${parametro}=${pestana.clave}`}
                 aria-current={activa ? "page" : undefined}
                 className={`-mb-0.5 inline-flex min-h-12 items-center gap-2 rounded-t-2xl border-b-4 px-5 font-bold transition-colors ${
                   activa

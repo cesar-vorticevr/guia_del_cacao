@@ -147,6 +147,10 @@ export async function guardarMicrositio(
       tiktok: texto(datos, "tiktok"),
       correo_contacto: texto(datos, "correo_contacto"),
       telefono: texto(datos, "telefono"),
+      // Una casilla desmarcada no viaja en el formulario, así que la ausencia
+      // es el "no": no se puede distinguir de "no me lo mandaste" y aquí no
+      // hace falta, porque este formulario siempre la dibuja.
+      catalogo_descargable: datos.get("catalogo_descargable") === "on",
     })
     .eq("id", id);
 

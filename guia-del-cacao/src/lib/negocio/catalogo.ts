@@ -6,6 +6,8 @@ import { crearClienteServidor } from "@/lib/supabase/server";
 import { perfilActual } from "@/lib/auth/sesion";
 import { revisarImagen } from "@/lib/imagenes";
 import { LIMITES, revisarLargo } from "@/lib/limites";
+import { normalizar } from "@/lib/negocio/columnas-catalogo";
+import { leerFormato } from "@/lib/negocio/formato-catalogo";
 
 /** Los campos del producto, tal como los escribio quien los mando. */
 export type ValoresProducto = {
@@ -351,5 +353,112 @@ export async function guardarSeleccion(
       elegidos.length === 0
         ? "Esta sucursal se quedó sin productos. Necesita al menos uno para publicarse."
         : `Listo: ${elegidos.length} ${elegidos.length === 1 ? "producto" : "productos"} en esta sucursal.`,
+  };
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Carga masiva desde el formato de Excel
+   ───────────────────────────────────────────────────────────────────────── */
+
+export type EstadoImportacion = {
+  error?: string;
+  ok?: string;
+  /** Qué renglón hay que corregir y por qué. Vacío si el archivo está bien. */
+  problemas?: { fila: number; motivo: string }[];
+  /** Los que ya estaban en el catálogo y no se volvieron a crear. */
+  repetidos?: string[];
+};
+
+/**
+ * Carga un catálogo entero desde el formato que la plataforma entrega.
+ *
+ * Aquí queda solo lo que necesita sesión y base: de quién es la marca, qué
+ * nombres ya tiene y el insert. Abrir el archivo y decidir qué entra es trabajo
+ * de `leerFormato`, que no toca ninguna de las dos cosas y por eso se puede
+ * probar con un archivo suelto.
+ *
+ * **No inserta nada si hay un solo renglón mal.** Importar a medias deja al
+ * negocio sin saber por dónde iba: tendría que comparar su hoja con su catálogo
+ * renglón por renglón para averiguar qué entró.
+ */
+export async function importarCatalogo(
+  _previo: EstadoImportacion,
+  datos: FormData,
+): Promise<EstadoImportacion> {
+  const marcaId = await miMarca();
+
+  const archivo = datos.get("archivo");
+  if (!(archivo instanceof File) || archivo.size === 0) {
+    return { error: "Elige el archivo de Excel que llenaste." };
+  }
+
+  /*
+    `.xls` es el formato binario viejo de Excel y no se puede leer aquí. Se dice
+    con nombre y apellido porque "no se pudo leer el archivo" manda a revisar el
+    contenido, que está bien: lo que hay que cambiar es el formato al guardarlo.
+  */
+  if (!archivo.name.toLowerCase().endsWith(".xlsx")) {
+    return {
+      error:
+        "El archivo tiene que ser .xlsx. Si el tuyo es .xls o .csv, ábrelo en Excel y guárdalo como «Libro de Excel (.xlsx)».",
+    };
+  }
+
+  /*
+    Lo que ya está en el catálogo, para no duplicarlo. Se compara por nombre
+    normalizado: "Barra 70%" y "barra 70 %" son el mismo producto para quien lo
+    vende, aunque no lo sean para la base.
+  */
+  const supabase = await crearClienteServidor();
+  const { data: yaEstan } = await supabase
+    .from("productos_servicios")
+    .select("nombre")
+    .eq("marca_id", marcaId);
+
+  const lectura = await leerFormato(
+    await archivo.arrayBuffer(),
+    new Set((yaEstan ?? []).map((p) => normalizar(p.nombre as string))),
+  );
+
+  if (lectura.error) return { error: lectura.error };
+
+  if (lectura.problemas.length > 0) {
+    const cuantos = lectura.problemas.length;
+
+    return {
+      error: `El archivo tiene ${cuantos} ${cuantos === 1 ? "renglón" : "renglones"} que corregir. No se agregó nada.`,
+      problemas: lectura.problemas.slice(0, 20),
+    };
+  }
+
+  if (lectura.nuevos.length === 0) {
+    return lectura.repetidos.length > 0
+      ? {
+          error:
+            "Todos los productos del archivo ya estaban en tu catálogo. No se agregó nada.",
+          repetidos: lectura.repetidos.slice(0, 20),
+        }
+      : { error: "El archivo no trae ningún producto." };
+  }
+
+  const { error } = await supabase
+    .from("productos_servicios")
+    .insert(lectura.nuevos.map((producto) => ({ ...producto, marca_id: marcaId })));
+
+  if (error) {
+    return {
+      error: "No se pudieron guardar los productos. Inténtalo de nuevo.",
+    };
+  }
+
+  revalidatePath("/negocio/panel/catalogo");
+  revalidatePath("/negocio/panel");
+
+  const cuantos = lectura.nuevos.length;
+
+  return {
+    ok: `Se agregaron ${cuantos} ${cuantos === 1 ? "producto" : "productos"} a tu catálogo. Ya solo les faltan las fotos.`,
+    repetidos: lectura.repetidos.slice(0, 20),
   };
 }

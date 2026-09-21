@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { marcarMeGusta, type Clase } from "@/lib/publico/me-gusta";
@@ -22,6 +23,7 @@ export function MeGusta({
   cuantos,
   haySesion,
   comentarios,
+  hrefComentarios,
 }: {
   clase: Clase;
   id: string;
@@ -38,6 +40,13 @@ export function MeGusta({
    * dentro de otra.
    */
   comentarios?: number;
+  /**
+   * A dónde va el globo de comentarios al pulsarlo.
+   *
+   * Solo lo pasa el muro. En la página de la publicación no se pone, porque
+   * llevaría al mismo sitio donde ya se está.
+   */
+  hrefComentarios?: string;
 }) {
   const [dado, setDado] = useState(inicial);
   const [total, setTotal] = useState(cuantos);
@@ -104,21 +113,16 @@ export function MeGusta({
       </button>
 
       {comentarios !== undefined && (
-        <span className="inline-flex items-center gap-1.5">
-          <svg viewBox="0 0 24 24" className="size-4" aria-hidden="true">
-            <path
-              d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.3-.6L3 21l1.7-5a8.1 8.1 0 0 1-.7-3.5 8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 8 8.4Z"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <span className="font-bold tabular-nums">{comentarios}</span>
-          <span className="sr-only">
-            {comentarios === 1 ? "comentario" : "comentarios"}
-          </span>
-        </span>
+        /*
+          El globo **lleva a la conversación** cuando se le da a dónde ir, y es
+          lo que faltaba: en el muro era un número pintado, se pulsaba y no
+          pasaba nada. Un icono de comentar que no abre los comentarios se lee
+          como que la plataforma no deja comentar.
+
+          Sin `hrefComentarios` sigue siendo texto: en la propia página de la
+          publicación ya se está donde llevaría.
+        */
+        <Burbuja cuantos={comentarios} href={hrefComentarios} />
       )}
 
       {aviso && (
@@ -130,5 +134,55 @@ export function MeGusta({
         </span>
       )}
     </span>
+  );
+}
+
+/**
+ * El globo de comentarios con su número.
+ *
+ * Con `href` es un enlace a la conversación; sin él, texto. Es lo único que
+ * cambia entre el muro y la página de la publicación, y se separa aquí para no
+ * repetir el dibujo del globo dos veces.
+ */
+function Burbuja({ cuantos, href }: { cuantos: number; href?: string }) {
+  const dentro = (
+    <>
+      <svg viewBox="0 0 24 24" className="size-4" aria-hidden="true">
+        <path
+          d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.3-.6L3 21l1.7-5a8.1 8.1 0 0 1-.7-3.5 8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 8 8.4Z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <span className="font-bold tabular-nums">{cuantos}</span>
+    </>
+  );
+
+  const queDice =
+    cuantos === 1 ? "1 comentario" : `${cuantos} comentarios`;
+
+  if (!href) {
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        {dentro}
+        <span className="sr-only">
+          {cuantos === 1 ? "comentario" : "comentarios"}
+        </span>
+      </span>
+    );
+  }
+
+  return (
+    <Link
+      href={href}
+      aria-label={
+        cuantos === 0 ? "Comentar" : `Ver ${queDice}`
+      }
+      className="inline-flex min-h-9 items-center gap-1.5 rounded-full border-2 border-ink/10 bg-white px-3 transition-transform hover:text-selva active:scale-95"
+    >
+      {dentro}
+    </Link>
   );
 }

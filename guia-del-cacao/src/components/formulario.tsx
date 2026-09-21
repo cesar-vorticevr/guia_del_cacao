@@ -255,6 +255,45 @@ export function Selector({
   );
 }
 
+/**
+ * Una casilla de sí o no.
+ *
+ * El texto va **a la derecha** y dentro del mismo `<label>`, no encima como en
+ * `Campo`: una etiqueta arriba y un cuadrito debajo se leen como dos cosas, y
+ * lo que se toca con el dedo en un teléfono es el renglón entero.
+ *
+ * Ojo al leerla en el servidor: una casilla desmarcada **no viaja** en el
+ * `FormData`. Quien la reciba tiene que tratar la ausencia como "no", no como
+ * "no me lo mandaron, déjalo como estaba".
+ */
+export function Casilla({
+  nombre,
+  etiqueta,
+  ayuda,
+  marcada = false,
+}: {
+  nombre: string;
+  etiqueta: string;
+  ayuda?: string;
+  marcada?: boolean;
+}) {
+  return (
+    <label className="flex cursor-pointer items-start gap-3">
+      <input
+        type="checkbox"
+        name={nombre}
+        defaultChecked={marcada}
+        className="mt-0.5 size-5 shrink-0 accent-selva"
+      />
+
+      <span className="block">
+        <span className="block font-bold text-selva-2">{etiqueta}</span>
+        {ayuda && <span className="mt-1 block text-sm text-cacao/80">{ayuda}</span>}
+      </span>
+    </label>
+  );
+}
+
 export function Aviso({ children }: { children: React.ReactNode }) {
   if (!children) return null;
 

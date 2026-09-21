@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { perfilActual } from "@/lib/auth/sesion";
-import { revisarImagen } from "@/lib/imagenes";
+import { revisarMedio } from "@/lib/imagenes";
 import { TOPE_FOTOS } from "@/lib/limites";
 import { MONEDA } from "@/lib/vocabulario";
 
@@ -47,7 +47,7 @@ async function subirFotos(
   const rutas: string[] = [];
 
   for (const [i, archivo] of archivos.entries()) {
-    const problema = revisarImagen(archivo);
+    const problema = revisarMedio(archivo);
     if (problema) return { error: problema };
 
     const extension = archivo.name.split(".").pop()?.toLowerCase() ?? "jpg";
@@ -59,7 +59,7 @@ async function subirFotos(
 
     if (error) {
       return {
-        error: "No se pudo subir una de las fotos. Inténtalo de nuevo.",
+        error: "No se pudo subir uno de los archivos. Inténtalo de nuevo.",
       };
     }
 
@@ -80,9 +80,9 @@ function fotosDe(datos: FormData) {
 }
 
 /** Lo que aceptan los campos, igual que los `check` de la base. */
-function revisarTexto(titulo: string, contenido: string) {
-  if (titulo.length < 5) return "Ponle un título de al menos 5 letras.";
-  if (titulo.length > 120) return "El título no puede pasar de 120 caracteres.";
+function revisarTexto(contenido: string) {
+  // Ya no revisa el título: desde la migración 000050 una publicación no lleva.
+  // Donde hace falta un nombre se saca de estas mismas palabras.
   if (contenido.length < 10) return "Cuenta un poco más.";
   if (contenido.length > 3000) return "No puede pasar de 3000 caracteres.";
   return null;
@@ -106,11 +106,10 @@ export async function crearTema(
     return { error: "La comunidad es de clientes y de negocios." };
   }
 
-  const titulo = (datos.get("titulo")?.toString() ?? "").trim();
   const contenido = (datos.get("contenido")?.toString() ?? "").trim();
   const sucursalId = datos.get("sucursal_id")?.toString() || null;
 
-  const mal = revisarTexto(titulo, contenido);
+  const mal = revisarTexto(contenido);
   if (mal) return { error: mal };
 
   /*
@@ -135,7 +134,9 @@ export async function crearTema(
     .from("publicaciones")
     .insert({
       autor_id: perfil.id,
-      titulo,
+      // Nace sin título, y así se queda: lo que se publica aquí es una foto con
+      // lo que quien la sube quiera contar, no un hilo de foro con encabezado.
+      titulo: null,
       contenido,
       imagenes: subidas.rutas,
       sucursal_id: perfil.rol === "negocio" ? sucursalId : null,
@@ -166,16 +167,14 @@ export async function editarTema(
   if (!perfil) redirect("/login");
 
   const id = datos.get("publicacion_id")?.toString() ?? "";
-  const titulo = (datos.get("titulo")?.toString() ?? "").trim();
   const contenido = (datos.get("contenido")?.toString() ?? "").trim();
 
-  const mal = revisarTexto(titulo, contenido);
+  const mal = revisarTexto(contenido);
   if (mal) return { error: mal };
 
   const supabase = await crearClienteServidor();
 
   const cambios: Record<string, unknown> = {
-    titulo,
     contenido,
     fecha_edicion: new Date().toISOString(),
   };

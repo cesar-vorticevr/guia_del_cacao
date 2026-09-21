@@ -8,6 +8,7 @@ import {
   Aviso,
   BotonEnviar,
   Campo,
+  Casilla,
   Selector,
 } from "@/components/formulario";
 import {
@@ -176,6 +177,25 @@ export function FormularioMicrositio({
             ayuda={ayuda}
           />
         ))}
+      </fieldset>
+
+      {/*
+        Va aquí, en el paso de datos y pegado al contacto, y no en el paso del
+        catálogo: lo que se decide no es qué productos hay sino si tu lista de
+        precios —con tu teléfono al pie— puede salir de la plataforma en un
+        archivo. Esa es una decisión de contacto, no de inventario.
+      */}
+      <fieldset className="grid gap-4 rounded-3xl border-2 border-selva/15 p-5">
+        <legend className="px-2 font-display text-lg font-semibold text-selva-2">
+          Tu catálogo en PDF
+        </legend>
+
+        <Casilla
+          nombre="catalogo_descargable"
+          etiqueta="Deja que cualquiera baje tu catálogo"
+          marcada={sucursal.catalogo_descargable}
+          ayuda="Aparece un botón en tu micrositio que arma un PDF con tus productos, tus precios, tus datos de contacto y la fecha del día. Sirve para que te compartan por WhatsApp o te impriman en el mostrador. Desmárcala si prefieres que tu lista de precios no ande en un archivo suelto."
+        />
       </fieldset>
 
       <BotonEnviar>

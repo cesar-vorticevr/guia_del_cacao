@@ -1,6 +1,6 @@
 import { crearClienteServidor } from "@/lib/supabase/server";
-import { nombrarNegocio } from "@/lib/nombres";
-import { urlDePublicacion } from "@/lib/imagenes";
+import { comoSeLlama, nombrarNegocio } from "@/lib/nombres";
+import { urlDePublicacion, urlImagen } from "@/lib/imagenes";
 import { enDiasYSemanas } from "@/lib/tiempo";
 
 /**
@@ -30,6 +30,17 @@ export type Entrada = {
   autor: string;
   /** La sucursal, cuando la firma un negocio. Va debajo y en chico. */
   detalle: string | null;
+  /**
+   * La cara de quien firma, para el renglón de arriba de la publicación.
+   *
+   * Hoy es el logo del negocio, o null. La foto de una persona no entra aquí
+   * todavía: `perfiles.foto_perfil` existe en el esquema y se pide en media
+   * docena de consultas, pero no hay un solo sitio en la interfaz que la pinte
+   * y está vacía en 36 de 37 cuentas, así que no hay cómo saber si guarda una
+   * ruta del bucket o la URL que devuelve Google. Sin eso, el respaldo es la
+   * inicial del nombre, que nunca falta.
+   */
+  avatar: string | null;
   imagen: string | null;
   /** Las rutas guardadas, para poder editarlas una por una. */
   rutas: string[];
@@ -41,6 +52,14 @@ export type Entrada = {
   miApoyo: boolean;
   /** Cuántos comentarios no ha visto quien mira. Cero si no hay sesión. */
   sinVer: number;
+  /**
+   * Si quien mira la tiene guardada. Siempre false sin sesión.
+   *
+   * No hay un contador al lado como con los corazones, y es a propósito:
+   * guardar es un apartado personal, no una señal pública. Nadie ve cuántos
+   * guardaron algo.
+   */
+  guardada: boolean;
   /** Si la escribió quien mira. */
   mia: boolean;
   /** El autor la escondió: solo él la ve, y con este aviso. */
@@ -56,12 +75,13 @@ const CUANDO = new Intl.DateTimeFormat("es-MX", {
 const CAMPOS = `
   id, titulo, contenido, fecha, imagenes, oculta_en, autor_id,
   perfiles_publicos!publicaciones_autor_id_fkey(nombre),
-  sucursales(nombre_sucursal, marcas(nombre_comercial))
+  sucursales(nombre_sucursal, logo, marcas(nombre_comercial))
 `;
 
 type Fila = {
   id: string;
-  titulo: string;
+  /** Opcional desde la migración 000050: una publicación ya no se titula. */
+  titulo: string | null;
   contenido: string;
   fecha: string;
   imagenes: string[] | null;
@@ -70,6 +90,7 @@ type Fila = {
   perfiles_publicos: { nombre: string } | null;
   sucursales: {
     nombre_sucursal: string;
+    logo: string | null;
     marcas: { nombre_comercial: string } | null;
   } | null;
 };
@@ -133,7 +154,7 @@ export async function muroDeComunidad(
 
   const ids = filas.map((f) => f.id);
 
-  const [comentarios, apoyos, vistas] = await Promise.all([
+  const [comentarios, apoyos, vistas, guardados] = await Promise.all([
     supabase
       .from("comentarios")
       .select("publicacion_id, fecha, oculto")
@@ -149,7 +170,25 @@ export async function muroDeComunidad(
           .eq("perfil_id", perfilId)
           .in("publicacion_id", ids)
       : Promise.resolve({ data: [] }),
+    /*
+      Cuáles tiene guardadas quien mira. Sin sesión no se pregunta: la política
+      de `guardados` solo deja ver las propias, así que sin cuenta la consulta
+      volvería vacía de todos modos y es un viaje de menos.
+    */
+    perfilId
+      ? supabase
+          .from("guardados")
+          .select("publicacion_id")
+          .eq("usuario_id", perfilId)
+          .in("publicacion_id", ids)
+      : Promise.resolve({ data: [] }),
   ]);
+
+  const guardadas = new Set(
+    ((guardados.data ?? []) as { publicacion_id: string }[]).map(
+      (fila) => fila.publicacion_id,
+    ),
+  );
 
   const cuantosApoyos = new Map<string, number>();
   const mios = new Set<string>();
@@ -217,13 +256,14 @@ export async function muroDeComunidad(
     return {
       id: fila.id,
       href: `/comunidad/${fila.id}`,
-      titulo: fila.titulo,
+      titulo: comoSeLlama(fila.titulo, fila.contenido),
       resumen: fila.contenido,
       fecha: fila.fecha,
       fechaTexto: CUANDO.format(new Date(fila.fecha)),
       hace: enDiasYSemanas(fila.fecha),
       autor: marca ?? fila.perfiles_publicos?.nombre ?? "Alguien",
       detalle: sucursal,
+      avatar: urlImagen(fila.sucursales?.logo),
       imagen: urlDePublicacion(fila.imagenes?.[0]),
       rutas: fila.imagenes ?? [],
       urlDeFoto: Object.fromEntries(
@@ -235,6 +275,7 @@ export async function muroDeComunidad(
       apoyos: cuantosApoyos.get(fila.id) ?? 0,
       miApoyo: mios.has(fila.id),
       sinVer: cuantosSinVer.get(fila.id) ?? 0,
+      guardada: guardadas.has(fila.id),
       mia: fila.autor_id === perfilId,
       oculta: fila.oculta_en !== null,
     };

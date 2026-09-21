@@ -5,7 +5,7 @@ import { temasPermitidos } from "@/lib/vocabulario";
 export type Tema = {
   id: string;
   autor_id: string;
-  titulo: string;
+  titulo: string | null;
   contenido: string;
   fecha: string;
   fecha_edicion: string | null;

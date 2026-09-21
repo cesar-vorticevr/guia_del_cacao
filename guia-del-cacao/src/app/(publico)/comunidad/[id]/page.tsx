@@ -3,13 +3,14 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Comentarios } from "@/components/publico/comentarios";
 import { BotonBorrarTema } from "@/components/publico/foro";
-import { perfilActual } from "@/lib/auth/sesion";
+import { origenDelSitio, perfilActual } from "@/lib/auth/sesion";
 import { temaPorId, yaApoye } from "@/lib/datos/foro";
 import { anotarVisita } from "@/lib/datos/comunidad";
-import { GaleriaPublicacion } from "@/components/publico/galeria-publicacion";
+import { CarruselPublicacion } from "@/components/publico/carrusel-publicacion";
 import { MeGusta } from "@/components/publico/me-gusta";
 import { CelebrarPublicacion } from "@/components/publico/celebrar-publicacion";
-import { urlDePublicacion } from "@/lib/imagenes";
+import { esVideo, urlDePublicacion } from "@/lib/imagenes";
+import { comoSeLlama } from "@/lib/nombres";
 import {
   apoyosDeComentarios,
   comentariosDe,
@@ -19,6 +20,8 @@ import {
   TOPE_COMENTARIOS,
 } from "@/lib/datos/comentarios";
 import { haceCuanto } from "@/lib/tiempo";
+import { tarjetaSocial } from "@/lib/compartir";
+import { BotonCompartir } from "@/components/publico/boton-compartir";
 
 const CUANDO = new Intl.DateTimeFormat("es-MX", {
   day: "numeric",
@@ -36,7 +39,13 @@ export async function generateMetadata({
 
   if (!tema) return { title: "No encontrado · Guía del Cacao" };
 
-  return { title: `${tema.titulo} · Comunidad · Guía del Cacao` };
+  return tarjetaSocial({
+    titulo: `${comoSeLlama(tema.titulo, tema.contenido)} · Comunidad`,
+    descripcion: tema.contenido,
+    imagen: urlDePublicacion(tema.imagenes?.[0]),
+    ruta: `/comunidad/${id}`,
+    tipo: "article",
+  });
 }
 
 export default async function Publicacion({
@@ -52,10 +61,13 @@ export default async function Publicacion({
   // dispara el festejo, ya en la página de la publicación recién hecha.
   const { nueva } = await searchParams;
 
-  const [tema, perfil, comentarios] = await Promise.all([
+  const [tema, perfil, comentarios, origen] = await Promise.all([
     temaPorId(id),
     perfilActual(),
     comentariosDe("publicacion", id),
+    // El botón de compartir necesita la dirección completa: una relativa no
+    // sirve fuera del sitio.
+    origenDelSitio(),
   ]);
 
   if (!tema) notFound();
@@ -67,6 +79,16 @@ export default async function Publicacion({
     navegador que no siempre llega.
   */
   if (perfil) await anotarVisita(perfil.id, id);
+
+  const nombre = comoSeLlama(tema.titulo, tema.contenido);
+
+  /*
+    Lo que lleva la publicación, en el orden en que se subió. Si es video se
+    decide por la extensión, igual que en el resto del sitio.
+  */
+  const medios = tema.imagenes
+    .map((ruta) => ({ url: urlDePublicacion(ruta), esVideo: esVideo(ruta) }))
+    .filter((m): m is { url: string; esVideo: boolean } => m.url !== null);
 
   const esMio = perfil?.id === tema.autor_id;
 
@@ -123,20 +145,27 @@ export default async function Publicacion({
         {tema.fecha_edicion && " · editado"}
       </p>
 
-      <h1 className="mt-1.5 font-display text-3xl">{tema.titulo}</h1>
+      {/*
+        El mismo orden que en el muro: primero lo que se ve y después lo que se
+        lee. Y el mismo carrusel, no la galería de antes — la galería ponía las
+        fotos en retícula, que es cómo se mira un álbum, no cómo se mira una
+        publicación. Aquí se pasa de una a otra, igual que allá.
+
+        Ya no hay título: desde la migración 000050 una publicación no se
+        titula. Donde hace falta un nombre —la pestaña, la tarjeta al
+        compartir— lo saca `comoSeLlama` de las primeras palabras del texto.
+      */}
+      {medios.length > 0 && (
+        <CarruselPublicacion
+          medios={medios}
+          titulo={nombre}
+          className="mt-3 overflow-hidden rounded-2xl border-2 border-ink/10"
+        />
+      )}
 
       <p className="mt-4 whitespace-pre-line text-lg text-cacao">
         {tema.contenido}
       </p>
-
-      {tema.imagenes.length > 0 && (
-        <GaleriaPublicacion
-          fotos={tema.imagenes
-            .map((ruta) => urlDePublicacion(ruta))
-            .filter((u): u is string => u !== null)}
-          titulo={tema.titulo}
-        />
-      )}
 
       {/*
         El corazón, con su contador y el de comentarios al lado. Aquí había dos
@@ -145,7 +174,7 @@ export default async function Publicacion({
         mazorca propia y era solo de las cuentas de cliente. Ahora es un
         corazón, gratis, y lo da cualquiera.
       */}
-      <div className="mt-6">
+      <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
         <MeGusta
           clase="publicacion"
           id={id}
@@ -154,6 +183,10 @@ export default async function Publicacion({
           comentarios={comentarios.filter((c) => !c.oculto).length}
           haySesion={Boolean(perfil)}
         />
+
+        {/* Junto al corazón y a los comentarios: son las tres cosas que se
+            hacen con una publicación cuando ya se leyó. */}
+        <BotonCompartir url={`${origen}/comunidad/${id}`} titulo={nombre} />
       </div>
 
       {esMio && (

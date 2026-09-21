@@ -6,6 +6,7 @@ import {
   FormularioNuevoProducto,
   NuevoProducto,
 } from "@/components/negocio/catalogo";
+import { ImportarCatalogo } from "@/components/negocio/importar-catalogo";
 import { catalogoDeMarca, usoEnSucursales } from "@/lib/datos/catalogo";
 import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
@@ -47,6 +48,8 @@ export default async function Catalogo({
     usoEnSucursales(marca.id),
   ]);
 
+  const sinFoto = productos.filter((producto) => !producto.imagen).length;
+
   return (
     <div className="grid gap-8">
       <div>
@@ -72,17 +75,41 @@ export default async function Catalogo({
         al final quedaba detrás de toda la retícula. Se despliega al pulsarlo
         para no recibir a nadie con un formulario en blanco que no pidió.
       */}
-      <NuevoProducto deEntrada={productos.length === 0}>
-        <FormularioNuevoProducto />
-      </NuevoProducto>
+      <div className="grid gap-3">
+        <NuevoProducto deEntrada={productos.length === 0}>
+          <FormularioNuevoProducto />
+        </NuevoProducto>
+
+        {/*
+          La carga masiva va debajo del alta de uno y no encima: el caso normal
+          es agregar un producto, y quien llega con cien ya viene buscando cómo
+          no teclearlos. Ponerla arriba mandaría a todos a Excel primero.
+        */}
+        <ImportarCatalogo />
+      </div>
 
       <section className="grid gap-4">
-        <h2 className="font-display text-xl">
-          Tus productos{" "}
-          <span className="font-body font-mono text-sm font-normal text-cacao/70">
-            {productos.length}
-          </span>
-        </h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <h2 className="font-display text-xl">
+            Tus productos{" "}
+            <span className="font-body font-mono text-sm font-normal text-cacao/70">
+              {productos.length}
+            </span>
+          </h2>
+
+          {/*
+            Cuántos van sin foto. Es lo que queda pendiente después de una carga
+            desde Excel —la hoja no lleva imágenes— y sin contarlo la única
+            forma de saberlo es repasar la retícula buscando las iniciales.
+          */}
+          {sinFoto > 0 && (
+            <p className="text-sm text-cacao">
+              <span className="font-mono font-bold text-selva-2">{sinFoto}</span>{" "}
+              {sinFoto === 1 ? "sigue sin foto" : "siguen sin foto"}. Ábrelos
+              para subirla.
+            </p>
+          )}
+        </div>
 
         {productos.length === 0 ? (
           <p className="rounded-3xl bg-crema-2 p-6 text-cacao">

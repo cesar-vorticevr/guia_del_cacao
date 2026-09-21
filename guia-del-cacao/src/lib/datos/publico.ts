@@ -56,6 +56,8 @@ export type MicrositioPublico = TarjetaDirectorio & {
   correo_contacto: string | null;
   telefono: string | null;
   galeria: string[];
+  /** Si el negocio dejó que su catálogo se pueda bajar en PDF. */
+  catalogo_descargable: boolean;
 };
 
 export type Publicacion = {
@@ -165,7 +167,8 @@ export async function micrositioPorSlug(slug: string) {
     .from("sucursales")
     .select(
       `${CAMPOS_TARJETA}, ubicacion_maps_url, whatsapp, facebook,
-       instagram, youtube, tiktok, correo_contacto, telefono, galeria`,
+       instagram, youtube, tiktok, correo_contacto, telefono, galeria,
+       catalogo_descargable`,
     )
     .eq("slug", slug)
     .eq("estado", "publicado")

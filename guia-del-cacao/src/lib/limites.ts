@@ -24,13 +24,47 @@
 export const MINIMO_CONTRASENA = 8;
 
 /**
- * Cuántas fotos lleva una publicación de la comunidad: de una a cuatro.
+ * Cuántos archivos lleva una publicación de la comunidad: de uno a diez.
+ *
+ * Diez porque es lo que aguanta un carrusel antes de que nadie llegue al final.
+ * Fueron cuatro hasta que el muro pasó a leerse como un feed.
  *
  * Vive aquí y no en `foro/acciones.ts` por lo mismo que el mínimo de la
  * contraseña: ese archivo es `"use server"` y ahí solo pueden exportarse
  * funciones asíncronas. El mismo `check` está en la base, que es la que manda.
  */
-export const TOPE_FOTOS = 4;
+export const TOPE_FOTOS = 10;
+
+/**
+ * Cuánto puede durar un video de la comunidad.
+ *
+ * **Solo lo comprueba el navegador**, midiendo el archivo antes de subirlo:
+ * Postgres no sabe cuánto dura un video y aquí no hay nada que lo recodifique.
+ * Lo que sí acota de verdad es el tope de peso del bucket —20 MB—, que es el
+ * número del que depende el costo, así que colar un video largo por fuera de
+ * la interfaz no sale más caro que subir uno corto de buena calidad.
+ *
+ * Treinta segundos, además, no es solo cuenta: en un muro nadie mira más.
+ */
+export const TOPE_SEGUNDOS_VIDEO = 30;
+
+/**
+ * Lo más alta que se enseña una foto, en proporción ancho/alto.
+ *
+ * 4:5 es el vertical de cualquier muro: cabe una persona de cuerpo entero y un
+ * cartel completo, y aun así deja ver que debajo sigue habiendo algo. Lo que
+ * venga más alto —una captura de pantalla de teléfono, un 9:16 de reel— se
+ * recorta por arriba y por abajo hasta aquí.
+ *
+ * Estuvo en un tope de píxeles (30rem) y era peor: la misma foto se recortaba
+ * distinto según el ancho de la pantalla, así que no había forma de enseñar en
+ * la vista previa cómo iba a quedar. Una proporción no depende del aparato.
+ *
+ * Vive aquí porque lo usan los dos sitios que tienen que coincidir: el carrusel
+ * que la pinta y la vista previa que la promete. Si se separan, la vista previa
+ * miente.
+ */
+export const PROPORCION_MINIMA = 4 / 5;
 
 export const LIMITES = {
   /** Un párrafo largo: alcanza para contar el negocio sin volverse un folleto. */

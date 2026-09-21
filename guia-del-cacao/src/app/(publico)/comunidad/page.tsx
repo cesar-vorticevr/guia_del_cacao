@@ -3,9 +3,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { FormularioTema } from "@/components/publico/foro";
 import { MuroComunidad } from "@/components/publico/muro-comunidad";
-import { FondoDeCacao } from "@/components/publico/fondo-cacao";
 import { MiPublicacion } from "@/components/publico/mi-publicacion";
-import { perfilActual } from "@/lib/auth/sesion";
+import { origenDelSitio, perfilActual } from "@/lib/auth/sesion";
 import { muroDeComunidad } from "@/lib/datos/comunidad";
 import { misSucursales } from "@/lib/datos/sucursales";
 import { FUNCIONES } from "@/lib/funciones";
@@ -26,7 +25,7 @@ export const metadata: Metadata = { title: "Comunidad · Guía del Cacao" };
 export default async function Comunidad() {
   if (!FUNCIONES.comunidad) redirect("/directorio");
 
-  const perfil = await perfilActual();
+  const [perfil, origen] = await Promise.all([perfilActual(), origenDelSitio()]);
 
   // Solo el primer tramo. Los siguientes los pide el muro al ir bajando.
   const primerTramo = await muroDeComunidad(perfil?.id);
@@ -66,28 +65,37 @@ export default async function Comunidad() {
   return (
     <>
       {/*
-        El fondo de cacao acompaña al muro entero, no a una franja.
+        Aquí no va el fondo de cacao, y es el único sitio del que se quitó.
 
-        Va en `pantalla` —colgado del viewport, no de una caja— porque un muro
-        no tiene largo conocido: crece con cada tirón del scroll infinito, y una
-        franja de altura fija se habría quedado corta a la segunda página.
-        Colgado del viewport se mueve con el scroll y acompaña hasta el final.
+        Lo tuvo, colgado del viewport y con `soloOrillas`. En escritorio se
+        asomaba por los márgenes y estaba bien; en celular no hay márgenes —la
+        columna se come la pantalla— y las tres piezas que salen a esa anchura
+        quedaban justo detrás del texto. Se leía "Publica lo tuyo" sobre una
+        rama.
 
-        Con `soloOrillas`, que deja fuera la pieza ancha que pasa por detrás del
-        texto: aquí lo que se viene a hacer es leer.
+        La decoración sigue en la portada, que es donde se entra y donde una
+        textura invita. Un muro se viene a leer, y detrás de un texto que se lee
+        no va nada. Para devolverlo basta con una línea:
+        `<FondoDeCacao variante="pantalla" soloOrillas />`.
       */}
-      <FondoDeCacao variante="pantalla" soloOrillas />
 
+      {/*
+        Todo el muro vive en una columna angosta y centrada, no a los 1180 px
+        del contenedor. Un renglón de texto a lo ancho de una pantalla de
+        escritorio se pierde al saltar de línea, y una publicación estirada a
+        1180 px deja de parecer una publicación. 40rem es la medida de una
+        columna de lectura cómoda, y es la misma que usa cualquier muro.
+      */}
+      <div className="mx-auto w-full max-w-[40rem]">
+        <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 pt-7 pb-4">
+          <h1 className="font-display text-2xl">Comunidad</h1>
+          <p className="text-sm text-cacao/80">
+            Publica lo tuyo y comenta lo de los demás.
+          </p>
+        </header>
 
-
-      <h1 className="pt-8 font-display text-3xl">Comunidad</h1>
-      <p className="mt-2 max-w-prose text-cacao">
-        Lo que se está diciendo: publica lo tuyo y comenta lo de los demás.
-      </p>
-
-      <div className="pt-5">
         {!perfil ? (
-          <p className="rounded-3xl bg-crema-2 p-5 text-cacao">
+          <p className="rounded-2xl border-2 border-ink/10 bg-white p-4 text-sm text-cacao shadow-dura-sm">
             <Link
               href="/login?volver=/comunidad"
               className="font-bold text-selva underline"
@@ -102,40 +110,44 @@ export default async function Comunidad() {
             un texto, elegir cuatro fotos y recibir entonces un "ya publicaste
             hoy" es hacerle perder el trabajo.
           */
-          <p className="rounded-3xl border-2 border-mango/50 bg-mango/15 p-5 text-cacao">
-            <strong className="block font-display text-lg text-selva-2">
+          <p className="rounded-2xl border-2 border-mango/50 bg-mango/15 p-4 text-sm text-cacao">
+            <strong className="block font-display text-base text-selva-2">
               Ya publicaste hoy
             </strong>
             Es una publicación al día por cuenta, para que el muro no se llene.
             Mañana puedes volver a publicar.
           </p>
         ) : esNegocio && !puedePublicar ? (
-          <p className="rounded-3xl border-2 border-mango/50 bg-mango/15 p-5 text-cacao">
-            <strong className="block font-display text-lg text-selva-2">
+          <p className="rounded-2xl border-2 border-mango/50 bg-mango/15 p-4 text-sm text-cacao">
+            <strong className="block font-display text-base text-selva-2">
               Publica tu micrositio primero
             </strong>
             Una publicación va firmada por una de tus sucursales, y todavía no
             tienes ninguna en el directorio.
           </p>
         ) : puedePublicar ? (
-          <FormularioTema sucursales={publicadas} />
+          <FormularioTema
+            sucursales={publicadas}
+            inicial={(perfil.nombre ?? "?").charAt(0).toUpperCase()}
+          />
         ) : null}
-      </div>
 
-      {deHoy && (
-        <section className="pt-8">
-          <h2 className="font-display text-2xl">Tu publicación de hoy</h2>
-          <MiPublicacion entrada={deHoy} />
+        {deHoy && (
+          <section className="pt-6">
+            <h2 className="pb-2 font-display text-lg">Tu publicación de hoy</h2>
+            <MiPublicacion entrada={deHoy} />
+          </section>
+        )}
+
+        <section className="pt-5">
+          <MuroComunidad
+            iniciales={primerTramo.entradas}
+            cursorInicial={primerTramo.siguiente}
+            haySesion={Boolean(perfil)}
+            origen={origen}
+          />
         </section>
-      )}
-
-      <section className="pt-8">
-        <MuroComunidad
-          iniciales={primerTramo.entradas}
-          cursorInicial={primerTramo.siguiente}
-          haySesion={Boolean(perfil)}
-        />
-      </section>
+      </div>
     </>
   );
 }

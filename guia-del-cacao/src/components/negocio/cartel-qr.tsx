@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { bajarBlob, cargarImagen, enNombreDeArchivo } from "@/lib/descargas";
 import { MONEDA } from "@/lib/vocabulario";
 
 /*
@@ -25,44 +26,11 @@ const PASOS = [
   `Te damos tus ${MONEDA.plural}.`,
 ];
 
-/**
- * Carga una imagen para dibujarla en el lienzo.
- *
- * `crossOrigin` es obligatorio aunque el bucket ya mande `Access-Control-Allow-Origin`:
- * sin el atributo el navegador no pide permiso, marca el lienzo como contaminado
- * y `toBlob` falla al final, cuando ya no se puede hacer nada. Si el logo no
- * carga se devuelve `null` y el cartel sale sin él, que es mejor que no salir.
- */
-function cargarImagen(src: string): Promise<HTMLImageElement | null> {
-  return new Promise((listo) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => listo(img);
-    img.onerror = () => listo(null);
-    img.src = src;
-  });
-}
-
 /** El SVG del QR, envuelto como imagen para poder dibujarlo. */
 function qrComoImagen(svg: string) {
   return cargarImagen(
     `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
   );
-}
-
-/**
- * El nombre de la sucursal, en algo que Windows y macOS acepten como archivo.
- *
- * Los acentos se separan de su letra (NFD) y se quitan como marca aparte, en vez
- * de mantener una tabla de equivalencias que siempre olvida alguna.
- */
-function enNombreDeArchivo(texto: string) {
-  return texto
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
 }
 
 /** Parte un texto en las líneas que caben en `ancho`. */
@@ -278,15 +246,7 @@ export function CartelQr({
 
       if (!blob) throw new Error("no se pudo guardar la imagen");
 
-      const url = URL.createObjectURL(blob);
-      const enlace = document.createElement("a");
-      enlace.href = url;
-      enlace.download = `qr-${enNombreDeArchivo(sucursal)}.png`;
-      enlace.click();
-
-      // Se libera en el siguiente turno: revocarla de inmediato cancela la
-      // descarga en algunos navegadores, que todavía no han leído el blob.
-      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      bajarBlob(blob, `qr-${enNombreDeArchivo(sucursal)}.png`);
 
       setEstado("listo");
     } catch {

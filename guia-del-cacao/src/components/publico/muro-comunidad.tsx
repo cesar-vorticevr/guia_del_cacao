@@ -1,15 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { TarjetaEntrada } from "@/components/publico/tarjeta-entrada";
+import { PublicacionEnMuro } from "@/components/publico/publicacion-en-muro";
 import { masDelMuro } from "@/lib/publico/muro";
 import type { Entrada, Filtro } from "@/lib/datos/comunidad";
 
 /**
- * El muro de la comunidad, agrupado por día y con scroll infinito.
+ * El muro de la comunidad, en una columna y con scroll infinito.
  *
- * Las publicaciones van en la misma retícula que el directorio y el catálogo:
- * foto arriba, quién escribe y de qué trata debajo.
+ * Las publicaciones van una debajo de otra, a lo ancho de la columna. Estuvo en
+ * la misma retícula de cuatro que el directorio y el catálogo, y era el sitio
+ * equivocado para ella: una retícula sirve para ojear y elegir, y un muro se
+ * lee en orden. La columna devuelve ese orden y de paso deja que cada
+ * publicación diga quién habla antes de lo que dijo.
  *
  * **Es un hilo continuo, sin cabeceras por día.** Las tuvo —"Hoy", "Ayer", el
  * nombre del día— y partían el muro en tramos que con pocas publicaciones
@@ -35,10 +38,13 @@ export function MuroComunidad({
   cursorInicial,
   /** Sin sesión no se pintan «mis publicaciones» ni «comentarios nuevos». */
   haySesion,
+  origen,
 }: {
   iniciales: Entrada[];
   cursorInicial: string | null;
   haySesion: boolean;
+  /** Origen del sitio, para los enlaces de compartir de cada tarjeta. */
+  origen: string;
 }) {
   const [filtro, setFiltro] = useState<Filtro>("todo");
   const [entradas, setEntradas] = useState(iniciales);
@@ -154,13 +160,22 @@ export function MuroComunidad({
               : "Todavía no hay nada publicado."}
         </p>
       ) : (
-        <div className="mt-5">
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="mt-4">
+          {/*
+            Una columna, no una retícula de cuatro.
+
+            La retícula es de la portada y del directorio, donde se ojea para
+            elegir. Un muro se lee en orden, y en cuatro columnas el orden deja
+            de existir: la vista salta, no hay "la siguiente", y lo publicado
+            hace un minuto y hace un mes comparten fila con el mismo peso.
+          */}
+          <ul className="grid gap-4">
             {entradas.map((entrada) => (
-              <TarjetaEntrada
+              <PublicacionEnMuro
                 key={entrada.id}
                 entrada={entrada}
                 haySesion={haySesion}
+                origen={origen}
               />
             ))}
           </ul>

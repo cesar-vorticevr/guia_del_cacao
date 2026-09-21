@@ -17,14 +17,17 @@ import {
 import { TarjetaPublicacion } from "@/components/publico/tarjeta-publicacion";
 import { PortadaAmpliable } from "@/components/publico/portada-ampliable";
 import { CatalogoPublico } from "@/components/publico/catalogo-publico";
+import { DescargarCatalogo } from "@/components/publico/descargar-catalogo";
 import { BotonFavorito } from "@/components/publico/boton-favorito";
+import { BotonCompartir } from "@/components/publico/boton-compartir";
 import { esFavorito } from "@/lib/datos/favoritos";
 import { productosDe } from "@/lib/datos/sucursales";
 import { tienePendienteEn } from "@/lib/datos/puntos";
-import { perfilActual } from "@/lib/auth/sesion";
+import { origenDelSitio, perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { BUCKET_RESENAS, urlImagen } from "@/lib/imagenes";
-import { REDES, enlaceDeRed } from "@/lib/redes";
+import { listaDeContacto } from "@/lib/redes";
+import { tarjetaSocial } from "@/lib/compartir";
 
 export async function generateMetadata({
   params,
@@ -36,10 +39,21 @@ export async function generateMetadata({
 
   if (!sucursal) return { title: "No encontrado · Guía del Cacao" };
 
-  return {
-    title: `${sucursal.marcas?.nombre_comercial} · Guía del Cacao`,
-    description: sucursal.acerca_de ?? undefined,
-  };
+  const marca = sucursal.marcas?.nombre_comercial ?? sucursal.nombre_sucursal;
+
+  /*
+    La portada antes que el logotipo: es una foto de la finca o del mostrador, y
+    es lo que hace que alguien abra el enlace. El logotipo llena mejor un
+    recuadro pequeño, pero en una tarjeta de 1200×630 se ve como un sello.
+  */
+  return tarjetaSocial({
+    titulo: marca,
+    descripcion:
+      sucursal.acerca_de ??
+      `${sucursal.nombre_sucursal}, en ${[sucursal.ciudad, sucursal.entidad].filter(Boolean).join(", ")}.`,
+    imagen: urlImagen(sucursal.imagen_fondo) ?? urlImagen(sucursal.logo),
+    ruta: `/marca/${slug}`,
+  });
 }
 
 const CUANDO = new Intl.DateTimeFormat("es-MX", {
@@ -64,13 +78,17 @@ export default async function Micrositio({
   // primer plan que trae reseñas es un dato de la tabla `tiers`.
   const aceptaResenas = sucursal.tiers?.permite_resenas ?? false;
 
-  const [productos, resenas, perfil, calificacion, agenda] = await Promise.all([
-    productosDe(sucursal.id),
-    resenasDe(sucursal.id),
-    perfilActual(),
-    calificacionDe(sucursal.id),
-    agendaDe(sucursal.id),
-  ]);
+  const [productos, resenas, perfil, calificacion, agenda, origen] =
+    await Promise.all([
+      productosDe(sucursal.id),
+      resenasDe(sucursal.id),
+      perfilActual(),
+      calificacionDe(sucursal.id),
+      agendaDe(sucursal.id),
+      // Para el pie del PDF: una hoja impresa tiene que saber decir de dónde
+      // salió y adónde volver.
+      origenDelSitio(),
+    ]);
 
   // El voto y el comentario viven en tablas distintas; esto es lo que los une
   // para poder enseñar las estrellas al lado de cada reseña y filtrar por ellas.
@@ -129,14 +147,20 @@ export default async function Micrositio({
   const fondo = urlImagen(sucursal.imagen_fondo);
   const logo = urlImagen(sucursal.logo);
 
-  const hayContacto = Boolean(
-    sucursal.ubicacion_maps_url ||
-    sucursal.telefono ||
-    sucursal.correo_contacto ||
-    // Se pregunta por el enlace y no por el campo: un campo con "@" a secas no
-    // da ningún botón, y la sección saldría con el título sobre el vacío.
-    REDES.some(({ campo }) => enlaceDeRed(campo, sucursal[campo])),
-  );
+  /*
+    Los datos de contacto, ya resueltos a enlaces. Los usan dos cosas: la
+    sección de abajo, para saber si tiene algo que enseñar, y el PDF del
+    catálogo, que se los lleva impresos.
+
+    Se pregunta por el enlace y no por el campo: un campo con "@" a secas no da
+    ningún botón, y la sección saldría con el título sobre el vacío.
+  */
+  const contacto = listaDeContacto(sucursal);
+  const hayContacto = contacto.length > 0;
+
+  // El mapa se aparta del resto: es un botón, no un dato que se lea.
+  const comoLlegar = contacto.find((dato) => dato.clave === "maps");
+  const datosDeContacto = contacto.filter((dato) => dato.clave !== "maps");
 
   return (
     <>
@@ -210,6 +234,20 @@ export default async function Micrositio({
               </span>
             </p>
           )}
+
+          {/*
+            Compartir va en su propio renglón y no junto al corazón: en
+            escritorio son cuatro botones —WhatsApp, Facebook, X y copiar— y
+            apretados contra el nombre del negocio no caben.
+          */}
+          <div className="mt-3">
+            <BotonCompartir
+              url={`${origen}/marca/${slug}`}
+              titulo={
+                sucursal.marcas?.nombre_comercial ?? sucursal.nombre_sucursal
+              }
+            />
+          </div>
         </div>
       </header>
 
@@ -280,7 +318,42 @@ export default async function Micrositio({
 
       {productos.length > 0 && (
         <section className="px-4 pt-6">
-          <h2 className="font-display text-xl">Catálogo</h2>
+          {/*
+            El botón del PDF va junto al encabezado y no al final de la
+            cuadrícula: quien quiere la lista de precios para llevársela lo
+            decide al ver que hay catálogo, no después de bajar por los
+            cuarenta productos.
+
+            Y sale solo si el negocio lo dejó encendido (migración 000048). La
+            decisión se respeta aquí, en el servidor, y no escondiendo el botón
+            con CSS: apagado, el componente no se dibuja y su código no viaja.
+          */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-display text-xl">Catálogo</h2>
+
+            {sucursal.catalogo_descargable && (
+              <DescargarCatalogo
+                datos={{
+                  marca:
+                    sucursal.marcas?.nombre_comercial ?? sucursal.nombre_sucursal,
+                  sucursal: sucursal.nombre_sucursal,
+                  lugar: [sucursal.ciudad, sucursal.entidad]
+                    .filter(Boolean)
+                    .join(", ") || null,
+                  logo,
+                  url: `${origen.replace(/^https?:\/\//, "")}/marca/${slug}`,
+                  contacto,
+                  productos: productos.map((producto) => ({
+                    id: producto.id,
+                    nombre: producto.nombre,
+                    descripcion: producto.descripcion,
+                    precio: producto.precio,
+                    foto: urlImagen(producto.imagen) ?? null,
+                  })),
+                }}
+              />
+            )}
+          </div>
 
           {/*
             Las URLs se arman aquí, en el servidor: el catálogo es de cliente
@@ -328,65 +401,71 @@ export default async function Micrositio({
       {hayContacto && (
         <section className="px-4 pt-6">
           <h2 className="font-display text-xl">Contacto</h2>
-          <ul className="mt-3 flex flex-wrap gap-2.5">
-            {sucursal.ubicacion_maps_url && (
-              <li>
-                <a
-                  href={sucursal.ubicacion_maps_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block rounded-full bg-selva px-4 py-2.5 font-bold text-crema"
-                >
-                  Cómo llegar
-                </a>
-              </li>
-            )}
 
-            {sucursal.telefono && (
-              <li>
-                <a
-                  href={`tel:${sucursal.telefono}`}
-                  className="block rounded-full border-2 border-selva/20 bg-white px-4 py-2.5 font-bold text-selva-2"
-                >
-                  {sucursal.telefono}
-                </a>
-              </li>
-            )}
+          {/*
+            "Cómo llegar" sigue siendo un botón y no una tarjeta con su dato:
+            un enlace de Maps no tiene nada legible que enseñar —nadie teclea
+            `maps.app.goo.gl/x7Yk2`— y además es la acción que más se pulsa,
+            así que se queda arriba y en verde pleno.
+          */}
+          {comoLlegar && (
+            <a
+              href={comoLlegar.enlace}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 flex min-h-12 w-full items-center justify-between gap-3 rounded-full bg-selva px-5 py-2.5 font-bold text-crema shadow-dura sm:w-auto sm:min-w-64"
+            >
+              Cómo llegar
+              <span aria-hidden="true" className="font-display text-lg">
+                →
+              </span>
+            </a>
+          )}
 
-            {sucursal.correo_contacto && (
-              <li>
-                <a
-                  href={`mailto:${sucursal.correo_contacto}`}
-                  className="block rounded-full border-2 border-selva/20 bg-white px-4 py-2.5 font-bold text-selva-2"
-                >
-                  Correo
-                </a>
-              </li>
-            )}
+          {/*
+            Lo demás se enseña **con el dato a la vista**. Eran pastillas con la
+            etiqueta sola —"Correo", "WhatsApp"— y el dato solo estaba en el
+            `href`: quien mira esto en la computadora para copiar la dirección y
+            escribir desde su correo de siempre, o quien lo apunta en un papel,
+            se quedaba sin nada. Un `mailto:` no se puede leer.
 
-            {/*
-              El enlace lo arma `enlaceDeRed` y no se toma del campo: el negocio
-              escribe su usuario (`@lamazorca`) y eso como `href` era un enlace
-              roto dentro de su propio micrositio.
-            */}
-            {REDES.map(({ campo, texto }) => {
-              const href = enlaceDeRed(campo, sucursal[campo]);
-              if (!href) return null;
+            La etiqueta va arriba y el dato debajo, no en el mismo renglón: un
+            correo largo en dos columnas no cabe al lado de su etiqueta, y
+            partido a la mitad deja de poder copiarse de un vistazo.
+          */}
+          {datosDeContacto.length > 0 && (
+            <ul className="mt-3 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+              {datosDeContacto.map((dato) => {
+                // `tel:` y `mailto:` los abre la propia máquina; una pestaña
+                // nueva para ellos deja un hueco en blanco que nadie cierra.
+                const fuera = dato.enlace.startsWith("http");
 
-              return (
-                <li key={campo}>
-                  <a
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block rounded-full border-2 border-selva/20 bg-white px-4 py-2.5 font-bold text-selva-2"
-                  >
-                    {texto}
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
+                return (
+                  <li key={dato.clave}>
+                    <a
+                      href={dato.enlace}
+                      {...(fuera && {
+                        target: "_blank",
+                        rel: "noopener noreferrer",
+                      })}
+                      className="block min-h-14 rounded-2xl border-2 border-ink/10 bg-white px-4 py-2.5 shadow-dura-sm transition-transform active:translate-y-0.5"
+                    >
+                      <span className="block text-sm font-bold text-selva-2">
+                        {dato.etiqueta}
+                      </span>
+                      {/*
+                        `break-all` y no `truncate`: un correo cortado con
+                        puntos suspensivos es un correo que ya no sirve.
+                      */}
+                      <span className="block break-all font-mono text-sm text-cacao">
+                        {dato.texto}
+                      </span>
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </section>
       )}
 

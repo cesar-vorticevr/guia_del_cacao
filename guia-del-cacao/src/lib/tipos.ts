@@ -53,6 +53,14 @@ export type Sucursal = {
   tiktok: string | null;
   correo_contacto: string | null;
   telefono: string | null;
+  /**
+   * Si el micrositio ofrece bajar el catálogo en PDF.
+   *
+   * No es un permiso: lo que lleva el PDF ya está a la vista en el micrositio,
+   * que es público. Es el negocio diciendo si quiere que su lista de precios
+   * ande en un archivo que se reenvía y se imprime.
+   */
+  catalogo_descargable: boolean;
   tier_id: number | null;
   /**
    * Las banderas de su plan. Vienen del join y no se deducen de `tier_id`:
