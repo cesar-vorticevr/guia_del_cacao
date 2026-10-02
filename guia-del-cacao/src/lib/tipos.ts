@@ -92,9 +92,11 @@ export const ESTADO: Record<
     tono: "bg-mango/25 text-cacao",
   },
   pendiente_aprobacion: {
-    texto: "En revisión",
+    // Ya nadie revisa: es una sucursal que se mandó cuando sí había revisión y
+    // se quedó esperando. El valor del enum sigue por esas filas.
+    texto: "Sin publicar",
     explicacion:
-      "Un administrador lo está revisando. Tus 15 días de prueba empiezan cuando lo apruebe, no ahora.",
+      "Ya no hace falta esperar una revisión: publícalo con el botón y sale en el directorio.",
     tono: "bg-turquesa/20 text-selva-2",
   },
   publicado: {

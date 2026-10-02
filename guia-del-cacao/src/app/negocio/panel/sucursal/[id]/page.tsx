@@ -80,14 +80,19 @@ export default async function EditorMicrositio({
   const logo = urlImagen(sucursal.logo);
   const fondo = urlImagen(sucursal.imagen_fondo);
 
-  const editable = sucursal.estado !== "pendiente_aprobacion";
+  /*
+    `pendiente_aprobacion` es lo que quedó de cuando había revisión: ya está
+    completo y con plan, solo le falta salir. No se arma por pasos otra vez;
+    se edita de corrido y se publica con el botón de arriba.
+  */
+  const enEspera = sucursal.estado === "pendiente_aprobacion";
 
   /*
     Un micrositio que todavía no sale en el directorio se arma por pasos; uno ya
     publicado se edita de corrido, que es como se corrige algo puntual. El estado
     es la señal: en borrador se está dando de alta, publicado ya está dado.
   */
-  const guiado = editable && sucursal.estado !== "publicado";
+  const guiado = !enEspera && sucursal.estado !== "publicado";
 
   /*
     Qué sección se está viendo. En el alta solo valen sus tres pasos; editando
@@ -125,13 +130,10 @@ export default async function EditorMicrositio({
     No en el alta: un micrositio en borrador nunca estuvo a la vista de nadie, y
     la sección solo enseñaría "todavía nadie ha dejado reseña" a quien apenas da
     de alta su negocio. Tampoco en otra pestaña, que serían dos consultas para
-    algo que no se va a ver.
-
-    Y sí cuando está en revisión, aunque entonces no haya pestañas que tocar: es
-    el único momento en que no se puede editar nada, y dejar las reseñas fuera
-    haría que esa pantalla no tuviera absolutamente nada que mirar.
+    algo que no se va a ver. Ni al llegar recién publicado: ahí lo que toca es
+    el aviso de que ya salió, no un «todavía nadie ha dejado reseña».
   */
-  const verResenas = !guiado && (!editable || ver("resenas"));
+  const verResenas = !guiado && ver("resenas");
 
   const [resenas, estrellas] = verResenas
     ? await Promise.all([
@@ -168,6 +170,15 @@ export default async function EditorMicrositio({
               </form>
             )}
 
+            {enEspera && (
+              <form action={mostrarSucursal}>
+                <input type="hidden" name="sucursal_id" value={sucursal.id} />
+                <button type="submit" className={SIGUIENTE}>
+                  Publicar ahora
+                </button>
+              </form>
+            )}
+
             {sucursal.estado === "pausado" && !sucursal.pausado_por_admin && (
               <form action={mostrarSucursal}>
                 <input type="hidden" name="sucursal_id" value={sucursal.id} />
@@ -179,8 +190,11 @@ export default async function EditorMicrositio({
           </div>
         </div>
 
-        {/* El promedio no aplica a un borrador: nadie ha podido calificarlo. */}
-        {!guiado && (
+        {/*
+          El promedio no aplica a un borrador: nadie ha podido calificarlo. Ni a
+          una recién publicada, que solo diría «sin calificaciones todavía».
+        */}
+        {!guiado && publicado !== "1" && (
           <p className="mt-1.5">
             {calificacion ? (
               <Promedio
@@ -193,16 +207,25 @@ export default async function EditorMicrositio({
           </p>
         )}
 
-        <p className="mt-2 text-cacao">{ESTADO[sucursal.estado].explicacion}</p>
-
-        {publicado === "1" && (
-          <p
+        {publicado === "1" && sucursal.estado === "publicado" ? (
+          <div
             role="status"
-            className="mt-4 rounded-2xl border-2 border-lima/50 bg-lima/15 px-4 py-3 font-bold text-selva-2"
+            className="mt-4 grid gap-3 rounded-2xl border-2 border-lima/50 bg-lima/15 px-4 py-3 text-selva-2"
           >
-            Listo: tu micrositio pasó a revisión y empezaron tus 15 días de
-            prueba. Los días no corren mientras esperas — el conteo arranca
-            cuando lo aprobemos y aparezca en el directorio.
+            <p className="font-bold">
+              ¡Listo! Tu micrositio ya está publicado y aparece en el
+              directorio. Tus 15 días de prueba empiezan hoy.
+            </p>
+            <Link
+              href={`/marca/${sucursal.slug}`}
+              className="font-bold text-selva underline"
+            >
+              Ver cómo quedó
+            </Link>
+          </div>
+        ) : (
+          <p className="mt-2 text-cacao">
+            {ESTADO[sucursal.estado].explicacion}
           </p>
         )}
 
@@ -213,13 +236,6 @@ export default async function EditorMicrositio({
         )}
       </div>
 
-      {!editable && (
-        <p className="rounded-3xl bg-turquesa/15 p-5 text-cacao">
-          Mientras esté en revisión no se puede editar, para que el
-          administrador vea exactamente lo que enviaste.
-        </p>
-      )}
-
       {/*
         Dos navegaciones para dos momentos distintos.
 
@@ -228,8 +244,7 @@ export default async function EditorMicrositio({
         secuencia sino cuatro sitios a los que se va directo, y numerarlos
         sugeriría un recorrido que nadie tiene que hacer.
       */}
-      {editable &&
-        (guiado ? (
+      {guiado ? (
           <div className="grid gap-3">
             <BarraDePasos
               sucursalId={sucursal.id}
@@ -256,11 +271,9 @@ export default async function EditorMicrositio({
             />
             <p className="text-cacao">{NOMBRE_DEL_PASO[actual].detalle}</p>
           </div>
-        ))}
+        )}
 
-      {editable && (
-        <>
-          {ver("imagenes") && (
+      {ver("imagenes") && (
             <>
               <section className="grid gap-5 rounded-3xl bg-crema-2 p-6">
                 <h2 className="font-display text-xl">Imágenes</h2>
@@ -442,7 +455,8 @@ export default async function EditorMicrositio({
               )}
             </div>
           ) : (
-            sucursal.estado !== "publicado" && (
+            sucursal.estado !== "publicado" &&
+            !enEspera && (
               <Link
                 href={`/negocio/panel/sucursal/${sucursal.id}/publicar`}
                 className="min-h-14 rounded-full bg-mango px-6 py-3.5 text-center font-display text-lg font-semibold text-ink"
@@ -451,8 +465,6 @@ export default async function EditorMicrositio({
               </Link>
             )
           )}
-        </>
-      )}
 
       {verResenas && (
         <section className="grid gap-3">

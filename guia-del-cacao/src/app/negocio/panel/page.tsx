@@ -18,6 +18,7 @@ import {
 import { PrimerosPasos } from "@/components/negocio/primeros-pasos";
 import { ConfirmarCorreo } from "@/components/negocio/confirmar-correo";
 import { BotonEliminarSucursal } from "@/components/negocio/catalogo";
+import { mostrarSucursal } from "@/lib/negocio/acciones";
 import { catalogoDeMarca } from "@/lib/datos/catalogo";
 import { urlImagen } from "@/lib/imagenes";
 import { ESTADO } from "@/lib/tipos";
@@ -390,6 +391,23 @@ export default async function PanelNegocio({
                             Publicar
                           </Link>
                         )}
+
+                      {/* Ya tiene plan: solo le faltaba la revisión que nadie hace. */}
+                      {sucursal.estado === "pendiente_aprobacion" && (
+                        <form action={mostrarSucursal}>
+                          <input
+                            type="hidden"
+                            name="sucursal_id"
+                            value={sucursal.id}
+                          />
+                          <button
+                            type="submit"
+                            className="min-h-11 rounded-full bg-mango px-5 py-2.5 text-sm font-bold text-ink"
+                          >
+                            Publicar
+                          </button>
+                        </form>
+                      )}
 
                       <BotonEliminarSucursal
                         sucursalId={sucursal.id}

@@ -243,9 +243,8 @@ export default function Terminos() {
       <p className="mt-3 text-cacao">
         Cada sucursal estrena{" "}
         <strong className="text-selva-2">quince días de prueba</strong>, con
-        todas las funciones de su plan. El conteo empieza cuando la sucursal
-        queda aprobada, no cuando eliges el plan: no se te van los días mientras
-        esperas. Durante la prueba puedes cambiar de plan sin costo.
+        todas las funciones de su plan. El conteo empieza el día que la
+        publicas. Durante la prueba puedes cambiar de plan sin costo.
       </p>
 
       <h3 className="mt-6 font-display text-xl">

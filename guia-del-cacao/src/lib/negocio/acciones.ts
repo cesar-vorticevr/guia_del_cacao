@@ -256,7 +256,7 @@ export async function publicarSucursal(
     sucursal.estado === "publicado" ||
     sucursal.estado === "pendiente_aprobacion"
   ) {
-    return { error: "Este micrositio ya esta publicado o en revision." };
+    return { error: "Este micrositio ya esta publicado." };
   }
 
   const tierId = Number(datos.get("tier_id")?.toString() ?? "");
@@ -279,8 +279,8 @@ export async function publicarSucursal(
     perder a ese tercio en la primera pantalla.
 
     La suscripcion nace **sin** `fecha_fin_trial`. El reloj lo arranca el
-    trigger cuando el administrador aprueba, para que la espera de la revision
-    no se le coma dias a nadie.
+    trigger `arrancar_prueba_al_aprobar` al pasar a `publicado`, que desde que
+    nadie revisa es este mismo momento.
   */
   const { error: errorPrueba } = await supabase.from("suscripciones").insert({
     sucursal_id: id,
@@ -300,13 +300,15 @@ export async function publicarSucursal(
   }
 
   /*
-    Pasa a revision, no al directorio. Lo aprueba un administrador (spec v2
-    §3.3, pasos 4 y 5), y hasta entonces no se ve.
+    Sale directo al directorio. Hubo una revisión del administrador (spec v2
+    §3.3, pasos 4 y 5), pero nadie la hacía y los micrositios se quedaban «En
+    revisión» para siempre. El trigger de la base sigue exigiendo plan y
+    micrositio completo, así que esto no es la única barrera.
   */
   const { error } = await supabase
     .from("sucursales")
     .update({
-      estado: "pendiente_aprobacion",
+      estado: "publicado",
       tier_id: tier.id,
       motivo_rechazo: null,
     })
@@ -317,7 +319,7 @@ export async function publicarSucursal(
       error:
         error.code === "P0001"
           ? error.message
-          : "No se pudo enviar a revision. Intentalo de nuevo.",
+          : "No se pudo publicar. Intentalo de nuevo.",
     };
   }
 
