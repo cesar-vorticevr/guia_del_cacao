@@ -60,6 +60,23 @@ export function FormularioNuevaSucursal() {
         etiqueta="Nombre de la sucursal"
         ayuda="Por ejemplo: Matriz Villahermosa, o Sucursal Comalcalco."
       />
+      {/*
+        La base exige la entidad desde el alta (migración 000035): sin ella el
+        insert choca con el not null y solo se veía «No se pudo crear».
+      */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Selector
+          nombre="entidad"
+          etiqueta="Estado"
+          opciones={ENTIDADES.map((nombre) => ({ valor: nombre, texto: nombre }))}
+        />
+        <Campo
+          nombre="ciudad"
+          etiqueta="Ciudad o municipio"
+          requerido={false}
+          marcador="Comalcalco"
+        />
+      </div>
       <BotonEnviar>Crear sucursal</BotonEnviar>
     </form>
   );

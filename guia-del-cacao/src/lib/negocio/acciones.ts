@@ -49,6 +49,13 @@ export async function crearSucursal(
 
   if (!nombre) return { error: "Escribe el nombre de la sucursal." };
 
+  // `entidad` es not null desde la migración 000035: sin ella el insert falla.
+  const entidad = texto(datos, "entidad");
+  if (!esEntidad(entidad)) {
+    return { error: "Elige el estado donde está la sucursal." };
+  }
+  const ciudad = texto(datos, "ciudad");
+
   const supabase = await crearClienteServidor();
 
   const { data: marca } = await supabase
@@ -72,7 +79,13 @@ export async function crearSucursal(
 
     const { data, error } = await supabase
       .from("sucursales")
-      .insert({ marca_id: marca.id, nombre_sucursal: nombre, slug })
+      .insert({
+        marca_id: marca.id,
+        nombre_sucursal: nombre,
+        slug,
+        entidad,
+        ciudad,
+      })
       .select("id")
       .maybeSingle();
 
