@@ -237,12 +237,12 @@ export async function subirImagen(
 // ---------------------------------------------------------------------------
 
 /**
- * Saca la sucursal al directorio.
+ * Saca la sucursal al directorio con el plan elegido y quince días de prueba.
  *
- * Ya no cobra nada: el plan se contrata a nivel cuenta y cubre a todas las
- * sucursales que quepan en su tope. Aqui solo se cambia el estado, y el trigger
- * de la base vuelve a exigir que la marca tenga plan activo — asi que esto no es
- * la unica barrera.
+ * Con código de convenio el plan es Premier a $99 (migración 000051): aquí
+ * solo se revisa que el código exista y esté vigente; el precio lo fija un
+ * trigger de la base, no esta función. El trigger de `sucursales` vuelve a exigir plan y micrositio
+ * completo, así que esto no es la única barrera.
  */
 export async function publicarSucursal(
   _previo: EstadoAccion,
@@ -259,18 +259,52 @@ export async function publicarSucursal(
     return { error: "Este micrositio ya esta publicado." };
   }
 
+  const codigo = texto(datos, "codigo_convenio");
   const tierId = Number(datos.get("tier_id")?.toString() ?? "");
-  if (!tierId) return { error: "Elige un plan para esta sucursal." };
+  if (!tierId && !codigo) return { error: "Elige un plan para esta sucursal." };
 
   const supabase = await crearClienteServidor();
 
-  const { data: tier } = await supabase
-    .from("tiers")
-    .select("id, nombre, precio_mensual")
-    .eq("id", tierId)
-    .maybeSingle();
+  /*
+    El convenio es del plan más alto, el que sale en el banner. Se busca por esa
+    bandera y no por `id = 3`: el número escrito a mano ya escondió una vez un
+    formulario que la base sí aceptaba.
+  */
+  const { data: tier } = codigo
+    ? await supabase
+        .from("tiers")
+        .select("id, nombre, precio_mensual")
+        .eq("en_banner_principal", true)
+        .order("precio_mensual", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    : await supabase
+        .from("tiers")
+        .select("id, nombre, precio_mensual")
+        .eq("id", tierId)
+        .maybeSingle();
 
   if (!tier) return { error: "Ese plan no existe." };
+
+  let convenioId: string | null = null;
+
+  if (codigo) {
+    const { data, error: errorConvenio } = await supabase.rpc(
+      "revisar_convenio",
+      { p_codigo: codigo },
+    );
+
+    if (errorConvenio) {
+      return {
+        error:
+          errorConvenio.code === "P0001"
+            ? errorConvenio.message
+            : "No se pudo revisar el código. Inténtalo de nuevo.",
+      };
+    }
+
+    convenioId = data as string;
+  }
 
   /*
     No se pide tarjeta: se abre la prueba y ya. Es el paso 3 de la spec v2 §3.3,
@@ -288,6 +322,7 @@ export async function publicarSucursal(
     monto_mensual: tier.precio_mensual,
     estado: "trial",
     fecha_proximo_cobro: proximoCobro().toISOString(),
+    convenio_id: convenioId,
   });
 
   if (errorPrueba) {

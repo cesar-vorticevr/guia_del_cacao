@@ -137,3 +137,11 @@ export function pesos(monto: number) {
     minimumFractionDigits: 0,
   }).format(monto);
 }
+
+/**
+ * Un código de convenio como lo guarda y lo compara la base
+ * (`public.normalizar_codigo`): sin espacios ni guiones y en mayúsculas.
+ */
+export function normalizarCodigo(codigo: string) {
+  return codigo.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+}

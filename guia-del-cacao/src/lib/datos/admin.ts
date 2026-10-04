@@ -153,3 +153,49 @@ export async function resumen() {
     perfiles: perfiles.count ?? 0,
   };
 }
+
+export type UsoDeConvenio = {
+  estado: string;
+  fecha_inicio: string;
+  precio_convenio_hasta: string | null;
+  sucursales: {
+    nombre_sucursal: string;
+    slug: string;
+    estado: EstadoSucursal;
+    marcas: { nombre_comercial: string } | null;
+  } | null;
+};
+
+export type ConvenioAdmin = {
+  id: string;
+  codigo: string;
+  descripcion: string;
+  vigente_desde: string;
+  vigente_hasta: string;
+  suscripciones: UsoDeConvenio[];
+};
+
+/**
+ * Los códigos de convenio con los negocios que publicaron con cada uno.
+ *
+ * «Quién del Festival ya está en la guía» es el número que se le reporta a la
+ * Secretaría, y sale de aquí. Una sucursal que cambió de plan deja una
+ * suscripción cancelada detrás; por eso cuenta solo la viva de cada una.
+ */
+export async function todosLosConvenios() {
+  const supabase = await crearClienteServidor();
+
+  const { data } = await supabase
+    .from("convenios")
+    .select(
+      "id, codigo, descripcion, vigente_desde, vigente_hasta, suscripciones(estado, fecha_inicio, precio_convenio_hasta, sucursales(nombre_sucursal, slug, estado, marcas(nombre_comercial)))",
+    )
+    .order("vigente_desde", { ascending: false });
+
+  return ((data ?? []) as unknown as ConvenioAdmin[]).map((convenio) => ({
+    ...convenio,
+    suscripciones: convenio.suscripciones
+      .filter((uso) => uso.estado !== "cancelado")
+      .sort((a, b) => b.fecha_inicio.localeCompare(a.fecha_inicio)),
+  }));
+}

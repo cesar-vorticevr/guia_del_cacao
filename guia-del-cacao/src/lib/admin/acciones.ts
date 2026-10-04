@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { perfilActual } from "@/lib/auth/sesion";
+import { normalizarCodigo } from "@/lib/tipos";
 
 export type EstadoAccion = { error?: string; ok?: string };
 
@@ -168,4 +169,48 @@ export async function cambiarRol(
 
   revalidatePath("/admin/usuarios");
   return { ok: "Rol actualizado." };
+}
+
+/**
+ * Da de alta un código de convenio para otro evento.
+ *
+ * El código se guarda sin espacios ni guiones y en mayúsculas, igual que como
+ * lo compara la base: «Festival Chocolate» y «festival-chocolate» son el mismo.
+ */
+export async function crearConvenio(
+  _previo: EstadoAccion,
+  datos: FormData,
+): Promise<EstadoAccion> {
+  await exigirAdmin();
+
+  const codigo = normalizarCodigo(datos.get("codigo")?.toString() ?? "");
+  const descripcion = datos.get("descripcion")?.toString().trim() ?? "";
+  const desde = datos.get("vigente_desde")?.toString() ?? "";
+  const hasta = datos.get("vigente_hasta")?.toString() ?? "";
+
+  if (!codigo) return { error: "Escribe el código, solo letras y números." };
+  if (!descripcion) return { error: "Escribe para qué es el código." };
+  if (!desde || !hasta) return { error: "Elige desde y hasta cuándo sirve." };
+  if (hasta < desde) return { error: "La fecha final va después de la inicial." };
+
+  const supabase = await crearClienteServidor();
+
+  const { error } = await supabase.from("convenios").insert({
+    codigo,
+    descripcion,
+    vigente_desde: desde,
+    vigente_hasta: hasta,
+  });
+
+  if (error) {
+    return {
+      error:
+        error.code === "23505"
+          ? `Ya existe el código ${codigo}.`
+          : "No se pudo crear el código.",
+    };
+  }
+
+  revalidatePath("/admin/convenios");
+  return { ok: `Listo, el código ${codigo} ya funciona en sus fechas.` };
 }

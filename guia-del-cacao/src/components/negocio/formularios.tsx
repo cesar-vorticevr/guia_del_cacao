@@ -8,6 +8,7 @@ import {
   Aviso,
   BotonEnviar,
   Campo,
+  CampoFoto,
   Casilla,
   Selector,
 } from "@/components/formulario";
@@ -30,7 +31,7 @@ import { ENTIDADES } from "@/lib/entidades";
 import { FUNCIONES } from "@/lib/funciones";
 import { LIMITES } from "@/lib/limites";
 import { REDES } from "@/lib/redes";
-import { ACEPTA, MEDIDAS, PESO } from "@/lib/imagenes";
+import { MEDIDAS, PROPORCIONES } from "@/lib/imagenes";
 
 const INICIAL: EstadoAccion = {};
 
@@ -222,69 +223,6 @@ export function FormularioMicrositio({
   );
 }
 
-/**
- * Campo de archivo con las medidas a la vista.
- *
- * La medida es una recomendación, no un requisito: la plataforma acepta
- * cualquier imagen y la recorta. Se dice de todos modos porque una foto en la
- * proporción correcta se ve bien sola, sin que nadie tenga que adivinar por
- * qué su logo salió cortado.
- */
-function CampoImagen({
-  etiqueta,
-  medida,
-  varias = false,
-}: {
-  etiqueta: string;
-  medida: string;
-  /** Para el carrusel: se eligen todas de un jalón, no una por una. */
-  varias?: boolean;
-}) {
-  // Vive dentro del `<form>`, así que puede saber si el envío está en curso.
-  const { pending } = useFormStatus();
-
-  return (
-    <label className="block">
-      <span className="mb-1.5 block font-bold text-selva-2">{etiqueta}</span>
-      <input
-        type="file"
-        name="archivo"
-        accept={ACEPTA}
-        multiple={varias}
-        /*
-          Elegir el archivo es la orden: se sube solo. El botón de "Subir" era un
-          segundo paso que nadie pedía y que se olvidaba a media captura — la foto
-          se veía elegida en el campo y en realidad no estaba guardada.
-
-          El input no se deshabilita mientras sube, aunque se vea la tentación:
-          un campo deshabilitado no se serializa, y hacerlo aquí correría el
-          riesgo de mandar el formulario sin el archivo.
-        */
-        onChange={(evento) => {
-          if (evento.currentTarget.files?.length) {
-            evento.currentTarget.form?.requestSubmit();
-          }
-        }}
-        className="w-full rounded-2xl border-2 border-dashed border-selva/25 bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-selva file:px-4 file:py-2 file:font-bold file:text-crema"
-      />
-
-      {pending ? (
-        <span
-          role="status"
-          className="mt-1.5 block text-sm font-bold text-selva"
-        >
-          Subiendo…
-        </span>
-      ) : (
-        <>
-          <span className="mt-1.5 block text-sm text-cacao/70">{medida}</span>
-          <span className="block text-sm text-cacao/70">{PESO}</span>
-        </>
-      )}
-    </label>
-  );
-}
-
 export function FormularioImagen({
   sucursalId,
   campo,
@@ -305,7 +243,13 @@ export function FormularioImagen({
       <input type="hidden" name="campo" value={campo} />
       <Resultado estado={estado} />
 
-      <CampoImagen etiqueta={etiqueta} medida={`${uso} ${medida}`} />
+      <CampoFoto
+        nombre="archivo"
+        etiqueta={etiqueta}
+        proporcion={campo === "logo" ? PROPORCIONES.logo : PROPORCIONES.fondo}
+        ayuda={`${uso} ${medida}`}
+        autoEnviar
+      />
     </form>
   );
 }
@@ -338,8 +282,25 @@ export function FormularioPublicar({
 
       <p className="rounded-2xl bg-crema-2 px-4 py-3 text-sm text-cacao">
         Pruebas quince días sin pagar y sin dejar tarjeta. Los días empiezan a
-        contar cuando aprobemos tu micrositio, no ahora.
+        contar en cuanto lo publiques.
       </p>
+
+      {/*
+        Abajo y opcional: casi nadie tiene código, y quien lo tiene llega
+        buscándolo. Con código el plan elegido arriba no cuenta —es Premier—, y
+        la ayuda lo dice para que nadie crea que eligió otro.
+      */}
+      <div className="rounded-2xl border-2 border-dashed border-selva/25 p-4">
+        <Campo
+          nombre="codigo_convenio"
+          etiqueta="¿Tienes código del Festival del Chocolate?"
+          requerido={false}
+          autoComplete="off"
+          marcador="FESTIVALCHOCOLATE"
+          limite={40}
+          ayuda="Con código, tu plan es Premier a $99 al mes durante tres meses, después de tus quince días gratis."
+        />
+      </div>
 
       <BotonEnviar>Empezar mi prueba de 15 días</BotonEnviar>
     </form>
@@ -354,10 +315,13 @@ export function FormularioGaleria({ sucursalId }: { sucursalId: string }) {
       <input type="hidden" name="sucursal_id" value={sucursalId} />
       <Resultado estado={estado} />
 
-      <CampoImagen
+      <CampoFoto
+        nombre="archivo"
         etiqueta="Agregar fotos"
+        proporcion={PROPORCIONES.galeria}
         varias
-        medida={`Puedes elegir varias de una vez. Hasta 8 en total, en el orden en que las subes. ${MEDIDAS.galeria}`}
+        autoEnviar
+        ayuda={`Puedes elegir varias de una vez. Hasta 8 en total, en el orden en que las subes. ${MEDIDAS.galeria}`}
       />
     </form>
   );
@@ -388,21 +352,16 @@ export function FormularioEvento({ sucursales }: { sucursales: Sucursal[] }) {
         filas={5}
       />
 
-      <label className="block">
-        <span className="mb-1.5 block font-bold text-selva-2">
-          Foto <span className="font-normal text-cacao/70">(opcional)</span>
-        </span>
-        <input
-          type="file"
-          name="imagen"
-          accept={ACEPTA}
-          className="w-full rounded-2xl border-2 border-dashed border-selva/25 bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-selva file:px-4 file:py-2 file:font-bold file:text-crema"
-        />
-        <span className="mt-1.5 block text-sm text-cacao/70">
-          {MEDIDAS.publicacion}
-        </span>
-        <span className="block text-sm text-cacao/70">{PESO}</span>
-      </label>
+      <CampoFoto
+        nombre="imagen"
+        etiqueta={
+          <>
+            Foto <span className="font-normal text-cacao/70">(opcional)</span>
+          </>
+        }
+        proporcion={PROPORCIONES.publicacion}
+        ayuda={MEDIDAS.publicacion}
+      />
       <Campo
         nombre="fecha_evento"
         etiqueta="Fecha del evento"
@@ -444,21 +403,16 @@ export function FormularioNoticia({ sucursales }: { sucursales: Sucursal[] }) {
         filas={5}
       />
 
-      <label className="block">
-        <span className="mb-1.5 block font-bold text-selva-2">
-          Foto <span className="font-normal text-cacao/70">(opcional)</span>
-        </span>
-        <input
-          type="file"
-          name="imagen"
-          accept={ACEPTA}
-          className="w-full rounded-2xl border-2 border-dashed border-selva/25 bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-selva file:px-4 file:py-2 file:font-bold file:text-crema"
-        />
-        <span className="mt-1.5 block text-sm text-cacao/70">
-          {MEDIDAS.publicacion}
-        </span>
-        <span className="block text-sm text-cacao/70">{PESO}</span>
-      </label>
+      <CampoFoto
+        nombre="imagen"
+        etiqueta={
+          <>
+            Foto <span className="font-normal text-cacao/70">(opcional)</span>
+          </>
+        }
+        proporcion={PROPORCIONES.publicacion}
+        ayuda={MEDIDAS.publicacion}
+      />
 
       <BotonEnviar>Publicar noticia</BotonEnviar>
     </form>
@@ -546,11 +500,11 @@ export function PublicacionPropia({
           <input type="hidden" name="clase" value={clase} />
           <input type="hidden" name="publicacion_id" value={publicacion.id} />
 
-          <input
-            type="file"
-            name="imagen"
-            accept={ACEPTA}
-            className="min-w-0 flex-1 rounded-2xl border-2 border-dashed border-selva/25 bg-white px-3 py-2 text-sm file:mr-2 file:rounded-full file:border-0 file:bg-selva file:px-3 file:py-1.5 file:font-bold file:text-crema"
+          <CampoFoto
+            nombre="imagen"
+            proporcion={PROPORCIONES.publicacion}
+            peso={null}
+            clase="min-w-0 flex-1"
           />
 
           <BotonEnviarChico>

@@ -222,7 +222,7 @@ export async function suscripcionDeMarca(marcaId: string) {
 
   const { data } = await supabase
     .from("suscripciones")
-    .select("id, sucursal_id, tier_id, monto_mensual, estado, fecha_fin_trial, fecha_proximo_cobro")
+    .select("id, sucursal_id, tier_id, monto_mensual, estado, fecha_fin_trial, fecha_proximo_cobro, convenio_id, precio_convenio_hasta")
     .in("sucursal_id", ids)
     .in("estado", ["trial", "activo", "pausado_por_pago"])
     .order("fecha_inicio");
@@ -235,6 +235,11 @@ export async function suscripcionDeMarca(marcaId: string) {
     ...primera,
     /** Cuántos micrositios están en este mismo plan. */
     cuantas: abiertas.filter((s) => s.tier_id === primera.tier_id).length,
+    /**
+     * La del convenio con Turismo, si hay una. Va aparte de `primera` porque
+     * una marca puede tener una sucursal de antes y otra con convenio.
+     */
+    convenio: abiertas.find((s) => s.convenio_id) ?? null,
     /** Si alguno sigue en periodo de prueba. */
     enPrueba: abiertas.some((s) => s.estado === "trial"),
     /** Cuándo termina la prueba más próxima, si hay alguna corriendo. */

@@ -126,6 +126,99 @@ el del bucket (`file_size_limit` en la migración de storage) y el de Next.js
 (`serverActions.bodySizeLimit` en `next.config.ts`, que por defecto es **1 MB**
 y cortaba cualquier foto de celular con un 500 mudo).
 
+## La foto se acomoda antes de subirse
+
+Elegir una foto abre el encuadre: se arrastra con el dedo, se pellizca con dos,
+y **lo que queda dentro del marco es lo que se sube**, ya recortado por el
+navegador. Antes la plataforma recortaba centrando y la única salida que se
+daba era «recorta la foto antes de subirla», que es pedirle a alguien que abra
+otra aplicación para poder usar esta.
+
+Son tres piezas: `lib/recorte.ts` (la aritmética y el lienzo, sin pantalla),
+`components/publico/ajustar-foto.tsx` (el encuadre y el gancho `useAcomodo`) y
+`CampoFoto` en `components/formulario.tsx`, que sustituyó a los `input file`
+sueltos que había repartidos por los formularios.
+
+**`PROPORCIONES` en `lib/imagenes.ts` es lo que hace que no mienta.** Cada campo
+se encuadra con la forma del sitio donde esa foto se va a ver, y es la misma que
+`MEDIDAS` recomienda con palabras. Si se cambia una hay que cambiar la otra, y
+si el marco de aquí deja de ser el de allá, el encuadre vuelve a ser una promesa
+que no se cumple. La de las publicaciones sale de `PROPORCION_MINIMA`, que es la
+del carrusel: son el mismo dato, no dos números parecidos.
+
+El encuadre **se guarda en unidades de marco, no en píxeles**, para que
+signifique lo mismo en un teléfono que en un escritorio y girar la pantalla a
+media faena no lo descuadre. Los píxeles solo aparecen al final, al decirle al
+lienzo qué trozo copiar.
+
+Dos cosas que hay que respetar al tocarlo:
+
+- **Las direcciones de `createObjectURL` se crean y se tiran en manejadores de
+  evento, nunca al pintar.** Atadas al render —un `useMemo` y un efecto que
+  revoca al limpiar—, el doble montaje de StrictMode revoca lo que se acaba de
+  crear y el marco sale en negro. Ya pasó.
+- El recorte sale en **WebP** salvo que entrara en JPG. Convertir un PNG a JPG
+  le quita la transparencia, que es justo lo que trae un logo bien hecho. Y el
+  nombre del archivo estrena la extensión que le toca, porque las acciones arman
+  la ruta del bucket con `archivo.name.split(".").pop()`.
+
+El comprobante de una compra (`puntos/pedir`) **no** pasa por aquí: de un ticket
+se quiere el ticket entero, y recortarlo solo sirve para perder el total.
+
+## Quitar una foto y cambiar el orden
+
+En la comunidad, las elegidas se pintan cuadriculadas (`fotos-elegidas.tsx`):
+cada una lleva su **×**, se **toca** para acomodarla y se **arrastra** para
+cambiar el orden. La primera es la portada, que es lo que hace que el orden
+importe.
+
+Fue un carrusel deslizante mientras solo había que mirarlas. Para ordenarlas no
+servía: llevar la última al primer sitio pedía arrastrar dos mil píxeles por
+dentro de un contenedor que a la vez quería desplazarse. Cuadriculadas caben
+las diez a la vista y el arrastre no pelea con nada.
+
+**El índice del arrastre vive en una referencia, no en estado.** No es una
+optimización: con estado, `pointerup` leía el valor de la pintada anterior
+—`null`— porque en un toque rápido los dos eventos llegan en la misma tarea, y
+el encuadre no se abría.
+
+Quitar la última foto **vacía el campo con `value = ""`**, no con una lista de
+cero elementos: una `FileList` vacía deja el campo con un archivo elegido a
+ojos del navegador y `required` no vuelve a saltar.
+
+## Las fotos vuelven al campo si el envío falla
+
+React 19 reinicia un formulario no controlado al terminar su acción, y un campo
+de archivo no se puede rellenar escribiéndole el valor. Así que un envío fallido
+dejaba el campo sin nada mientras las miniaturas seguían en pantalla: se veían
+cuatro fotos, no viajaba ninguna, y el segundo intento contestaba «ponle al
+menos una foto» señalando a las cuatro que se estaban viendo.
+
+`useAcomodo` escucha el `reset` del formulario y las devuelve, porque los `File`
+siguen en su estado. El `setTimeout` de ahí hace falta: el navegador vacía el
+campo **después** de despachar ese evento.
+
+(`catalogo` sigue dando su foto por perdida y avisando, porque ahí el campo no
+pasa por este gancho.)
+
+## El festejo de publicar
+
+Se lanza al **llegar** a la publicación, no al enviar: publicar redirige, y el
+festejo se iría con la pantalla que lo lanzó. La acción marca la llegada con
+`?nueva=1` y `celebrar-publicacion` lo pinta.
+
+**Lo pinta él, y eso es el arreglo.** Antes lanzaba un evento por el canal de
+`AvisosDeMonedas` y ese componente está montado en cupones y en el panel del
+negocio, no en la página de una publicación: el evento salía al vacío. Se
+publicaba, la pantalla no decía nada, y parecía que el festejo no existía.
+Existía y nunca se vio.
+
+La lluvia de mazorcas se comparte por importación (`lluvia-de-mazorcas.tsx`),
+no por un evento suelto en `window`. Y mientras las fotos suben hay otra cosa
+que mirar (`publicando.tsx`): varios megas por la red de una feria son segundos
+en los que solo cambiaba la palabra del botón, y lo que se hace entonces es
+volver a pulsar.
+
 ## Pedir monedas: qué vale cada solicitud
 
 El QR sigue siendo la puerta — a `/monedas/{slug}` no se llega de otro modo — y
@@ -980,3 +1073,31 @@ pidió menos movimiento no se pierde nada.
 ```
 npm run typecheck && npm run lint && npm run build
 ```
+
+## Convenio con Turismo: Premier a $99
+
+Los negocios del Festival del Chocolate publican en **Premier pagando $99
+durante tres meses**, contados desde que acaban sus quince días gratis
+(migración **000051**). El descuento lo pone la Guía; Turismo pone la
+convocatoria.
+
+- **Un solo código para todos, `FESTIVALCHOCOLATE`, y lo acota la fecha**:
+  sirve para publicar del 1 de octubre al 30 de noviembre de 2026. Se probó un
+  código por negocio y se descartó: repartir cientos de códigos distintos era
+  lo difícil, y uno que vence deja de circular solo. Vencido, quien ya lo usó
+  conserva sus tres meses.
+- Se compara **sin espacios, guiones ni minúsculas** (`normalizar_codigo` en
+  la base, `normalizarCodigo` en `lib/tipos.ts`): se dicta en voz alta en un
+  taller y cada quien lo escribe a su manera.
+- **El precio lo pone la base** (`aplicar_precio_de_convenio`), igual que el
+  cobro de un canje: exige que el código esté vigente al abrir la suscripción y
+  fija Premier y $99. Mandar el monto desde fuera dejaría elegir cuánto pagar.
+- **El plan no se cambia mientras dure.** `contratarPlan` se salta esas
+  suscripciones y el trigger rechaza cambiarles el `tier_id`.
+- Quién lo usó sale de `suscripciones.convenio_id`, y `/admin/convenios` lo
+  cuenta y lo descarga en CSV: es el reporte para la Secretaría. Desde ahí se
+  crean códigos para otros eventos.
+- Al terminar, Premier normal. Quien pague los meses 4 a 6 de contado conserva
+  los $99 **una sola vez**; repetible, Premier quedaría en $99 para siempre y
+  nadie elegiría los otros planes. Esa renovación se construye con la pasarela
+  de pago: hoy solo existe `precio_convenio_hasta`.

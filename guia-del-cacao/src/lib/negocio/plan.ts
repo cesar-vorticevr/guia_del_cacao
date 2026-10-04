@@ -54,7 +54,7 @@ async function suscripcionesAbiertas(marcaId: string) {
 
   const { data } = await supabase
     .from("suscripciones")
-    .select("id, sucursal_id, tier_id, monto_mensual, estado, fecha_fin_trial")
+    .select("id, sucursal_id, tier_id, monto_mensual, estado, fecha_fin_trial, convenio_id")
     .in("sucursal_id", ids)
     .in("estado", ["trial", "activo", "pausado_por_pago"]);
 
@@ -88,7 +88,21 @@ export async function contratarPlan(
 
   if (!tier) return { error: "Ese plan no existe." };
 
-  const abiertas = await suscripcionesAbiertas(marca.id);
+  const todas = await suscripcionesAbiertas(marca.id);
+
+  /*
+    Las de convenio no se tocan: son Premier a $99 hasta que termine el
+    convenio, y el trigger `aplicar_precio_de_convenio` rechazaría cambiarles el
+    plan. Si se cancelaran para abrir otra, el código ya gastado se perdería.
+  */
+  const abiertas = todas.filter((s) => !s.convenio_id);
+
+  if (abiertas.length === 0 && todas.length > 0) {
+    return {
+      error:
+        "Tus micrositios están en el convenio con Turismo: Premier a $99. El plan no se puede cambiar mientras dure.",
+    };
+  }
 
   if (abiertas.length === 0) {
     return {

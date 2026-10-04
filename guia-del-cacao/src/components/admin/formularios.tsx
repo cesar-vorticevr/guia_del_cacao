@@ -2,7 +2,12 @@
 
 import { useActionState } from "react";
 import { Aviso, BotonEnviar } from "@/components/formulario";
-import { cambiarRol, rechazarSucursal, type EstadoAccion } from "@/lib/admin/acciones";
+import {
+  cambiarRol,
+  crearConvenio,
+  rechazarSucursal,
+  type EstadoAccion,
+} from "@/lib/admin/acciones";
 
 const INICIAL: EstadoAccion = {};
 
@@ -83,5 +88,51 @@ export function BotonesRol({
         ))}
       </div>
     </div>
+  );
+}
+
+/** Un código nuevo, para el siguiente evento con convenio. */
+export function FormularioConvenio() {
+  const [estado, accion] = useActionState(crearConvenio, INICIAL);
+  const clase =
+    "w-full rounded-2xl border-2 border-selva/20 bg-white px-4 py-3 text-base text-ink focus:border-selva";
+
+  return (
+    <form action={accion} className="grid gap-3">
+      {estado.error && <Aviso>{estado.error}</Aviso>}
+      {estado.ok && (
+        <p role="status" className="font-bold text-selva">
+          {estado.ok}
+        </p>
+      )}
+
+      <label className="block">
+        <span className="mb-1.5 block font-bold text-selva-2">Código</span>
+        <input name="codigo" required className={`${clase} font-mono uppercase`} />
+      </label>
+
+      <label className="block">
+        <span className="mb-1.5 block font-bold text-selva-2">Para qué es</span>
+        <input
+          name="descripcion"
+          required
+          placeholder="Feria del Cacao 2027, con la Secretaría de Turismo"
+          className={clase}
+        />
+      </label>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-1.5 block font-bold text-selva-2">Sirve desde</span>
+          <input name="vigente_desde" type="date" required className={clase} />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block font-bold text-selva-2">Hasta</span>
+          <input name="vigente_hasta" type="date" required className={clase} />
+        </label>
+      </div>
+
+      <BotonEnviar variante="secundario">Crear código</BotonEnviar>
+    </form>
   );
 }

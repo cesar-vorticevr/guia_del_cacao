@@ -137,6 +137,25 @@ export default async function CuentaNegocio({
               </p>
 
               {/*
+                Dice cuándo se acaba, no solo que existe: el mes 4 sube a
+                Premier normal, y enterarse en el cobro es lo que hace que
+                alguien se vaya.
+              */}
+              {suscripcion.convenio && (
+                <p className="mt-3 rounded-2xl border-2 border-lima/60 bg-lima/20 px-4 py-3 text-cacao">
+                  <strong className="block text-selva-2">
+                    Convenio con Turismo
+                  </strong>
+                  Premier a $99 al mes
+                  {suscripcion.convenio.precio_convenio_hasta
+                    ? ` hasta el ${CUANDO.format(new Date(suscripcion.convenio.precio_convenio_hasta))}`
+                    : " durante tres meses, contados desde que termine tu prueba"}
+                  . Después pasa a su precio normal, o conservas los $99 tres
+                  meses más si los pagas de contado.
+                </p>
+              )}
+
+              {/*
                 Durante la prueba la fecha deja de ser un dato de consulta y
                 pasa a ser lo que importa, así que sube de la letra chica a su
                 propia línea. Y dice qué pasa el día 15, que es justo lo que
