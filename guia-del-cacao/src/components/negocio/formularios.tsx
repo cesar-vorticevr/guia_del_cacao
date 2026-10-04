@@ -25,7 +25,7 @@ import {
   subirImagen,
   type EstadoAccion,
 } from "@/lib/negocio/acciones";
-import { pesos, type Sucursal, type Tier } from "@/lib/tipos";
+import { precioDePlan, type Sucursal, type Tier } from "@/lib/tipos";
 import { cancelarPlan, contratarPlan } from "@/lib/negocio/plan";
 import { ENTIDADES } from "@/lib/entidades";
 import { FUNCIONES } from "@/lib/funciones";
@@ -281,8 +281,9 @@ export function FormularioPublicar({
       <Planes tiers={tiers} />
 
       <p className="rounded-2xl bg-crema-2 px-4 py-3 text-sm text-cacao">
-        Pruebas quince días sin pagar y sin dejar tarjeta. Los días empiezan a
-        contar en cuanto lo publiques.
+        El Básico es gratis siempre. Plus y Premier los pruebas quince días sin
+        pagar y sin dejar tarjeta; si al terminar no pagas, tu micrositio baja
+        al Básico y sigue en el directorio.
       </p>
 
       {/*
@@ -298,11 +299,11 @@ export function FormularioPublicar({
           autoComplete="off"
           marcador="FESTIVALCHOCOLATE"
           limite={40}
-          ayuda="Con código, tu plan es Premier a $99 al mes durante tres meses, después de tus quince días gratis."
+          ayuda="Con el código, tienes Premier gratis hasta el 31 de diciembre de 2026."
         />
       </div>
 
-      <BotonEnviar>Empezar mi prueba de 15 días</BotonEnviar>
+      <BotonEnviar>Publicar mi micrositio</BotonEnviar>
     </form>
   );
 }
@@ -643,7 +644,7 @@ function Planes({
                 opcion.id === elegido ? "text-crema/80" : "text-cacao/70"
               }`}
             >
-              {pesos(opcion.precio_mensual)}
+              {precioDePlan(opcion.precio_mensual)}
             </span>
           </label>
         ))}
@@ -660,8 +661,7 @@ function Planes({
             )}
           </p>
           <p className="font-mono text-lg font-bold text-selva">
-            {pesos(tier.precio_mensual)}
-            <span className="text-sm font-normal text-cacao/70">/mes</span>
+            {precioDePlan(tier.precio_mensual)}
           </p>
         </div>
 

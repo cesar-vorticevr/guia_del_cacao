@@ -222,7 +222,7 @@ export async function suscripcionDeMarca(marcaId: string) {
 
   const { data } = await supabase
     .from("suscripciones")
-    .select("id, sucursal_id, tier_id, monto_mensual, estado, fecha_fin_trial, fecha_proximo_cobro, convenio_id, precio_convenio_hasta")
+    .select("id, sucursal_id, tier_id, monto_mensual, estado, fecha_fin_trial, fecha_proximo_cobro, convenio_id")
     .in("sucursal_id", ids)
     .in("estado", ["trial", "activo", "pausado_por_pago"])
     .order("fecha_inicio");

@@ -82,9 +82,9 @@ export default async function Publicar({
       ) : (
         <>
           <p className="text-cacao">
-            Tu micrositio está completo. Elige con qué plan quieres que salga:
-            lo pruebas quince días sin pagar y sin dejar tarjeta, y puedes
-            cambiarlo cuantas veces quieras durante la prueba.
+            Tu micrositio está completo. Elige con qué plan quieres que salga.
+            El Básico es gratis siempre; Plus y Premier los pruebas quince días
+            sin pagar y sin dejar tarjeta.
           </p>
 
           <FormularioPublicar sucursalId={sucursal.id} tiers={tiers} />

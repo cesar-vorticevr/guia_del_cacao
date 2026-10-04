@@ -1074,30 +1074,72 @@ pidió menos movimiento no se pierde nada.
 npm run typecheck && npm run lint && npm run build
 ```
 
-## Convenio con Turismo: Premier a $99
+## Aparecer es gratis; se paga por destacar
 
-Los negocios del Festival del Chocolate publican en **Premier pagando $99
-durante tres meses**, contados desde que acaban sus quince días gratis
-(migración **000051**). El descuento lo pone la Guía; Turismo pone la
-convocatoria.
+Desde la migración **000051** el plan **Básico cuesta $0**: directorio,
+micrositio, catálogo y contacto, sin plazo. **Plus** ($199) suma reseñas y
+**Premier** ($299) eventos, noticias y el banner. El orden anterior —pagar por
+aparecer— pedía dinero por estar en una guía que todavía nadie visitaba. Cada
+negocio gratis es contenido que atrae visitantes, y eso es lo que hace que
+valga la pena pagar.
 
-- **Un solo código para todos, `FESTIVALCHOCOLATE`, y lo acota la fecha**:
-  sirve para publicar del 1 de octubre al 30 de noviembre de 2026. Se probó un
-  código por negocio y se descartó: repartir cientos de códigos distintos era
-  lo difícil, y uno que vence deja de circular solo. Vencido, quien ya lo usó
-  conserva sus tres meses.
-- Se compara **sin espacios, guiones ni minúsculas** (`normalizar_codigo` en
-  la base, `normalizarCodigo` en `lib/tipos.ts`): se dicta en voz alta en un
-  taller y cada quien lo escribe a su manera.
-- **El precio lo pone la base** (`aplicar_precio_de_convenio`), igual que el
-  cobro de un canje: exige que el código esté vigente al abrir la suscripción y
-  fija Premier y $99. Mandar el monto desde fuera dejaría elegir cuánto pagar.
+- **Nadie se oculta por no pagar.** Plus y Premier se prueban quince días; si la
+  prueba vence sin pago, `vencer_pruebas()` (pg_cron, cada noche a las 00:15 del
+  centro) cancela la suscripción y abre una de Básico. La sucursal sigue
+  publicada; solo se apaga lo de pago.
+- El Básico se publica **activo**, sin prueba: no hay nada que probar.
+- En pantalla el precio de un plan pasa por `precioDePlan()`: «Gratis», no «$0».
+
+### Convenio del Festival del Chocolate
+
+Con la Secretaría de Turismo: quien publique con el código
+**`FESTIVALCHOCOLATE`** del 1 de octubre al 30 de noviembre de 2026 tiene
+**Premier gratis hasta el 31 de diciembre**, para tenerlo durante el Festival.
+El 1 de enero, sin pago, baja al Básico como cualquier prueba.
+
+- **Un solo código para todos, acotado por fecha.** Se probó uno por negocio y
+  se descartó: repartirlos era lo difícil, y uno que vence deja de circular
+  solo. Vencido, quien ya lo usó conserva lo prometido.
+- Se compara **sin espacios, guiones ni minúsculas** (`normalizar_codigo` en la
+  base, `normalizarCodigo` en `lib/tipos.ts`): se dicta en voz alta en un taller.
+- **Plan, precio y fecha los pone la base** (`aplicar_precio_de_convenio`):
+  exige el código vigente al abrir la suscripción y fija Premier, $0, `trial` y
+  `fecha_fin_trial` = el día siguiente a `premier_gratis_hasta`. Mandarlos
+  desde fuera dejaría elegir cuánto pagar y hasta cuándo.
 - **El plan no se cambia mientras dure.** `contratarPlan` se salta esas
   suscripciones y el trigger rechaza cambiarles el `tier_id`.
-- Quién lo usó sale de `suscripciones.convenio_id`, y `/admin/convenios` lo
-  cuenta y lo descarga en CSV: es el reporte para la Secretaría. Desde ahí se
-  crean códigos para otros eventos.
-- Al terminar, Premier normal. Quien pague los meses 4 a 6 de contado conserva
-  los $99 **una sola vez**; repetible, Premier quedaría en $99 para siempre y
-  nadie elegiría los otros planes. Esa renovación se construye con la pasarela
-  de pago: hoy solo existe `precio_convenio_hasta`.
+- `/admin/convenios`: quién lo usó (por `suscripciones.convenio_id`, contando
+  también las ya vencidas), descarga en CSV y alta de códigos para otros eventos.
+
+## Lo que se mide, y lo que no
+
+`public.actividad` (migración **000052**) cuenta visitas a páginas, a
+micrositios y a eventos, búsquedas, filtros y cada botón de contacto: WhatsApp,
+teléfono, correo, mapa, redes, compartir y catálogo en PDF. Es el argumento para
+que un negocio pase a un plan de pago y el reporte para la Secretaría.
+
+- **Solo conteos.** Ni usuario, ni IP, ni identificador del navegador, ni
+  cookies. El aviso de privacidad lo dice así; si la tabla gana una columna que
+  identifique a alguien, el aviso cambia el mismo día.
+- **No cuenta al dueño en su propia página ni al administrador** (`anotar`):
+  inflaría justo los números que se le enseñan al negocio.
+- Un botón se mide con un atributo, no con un componente:
+  `data-medir="whatsapp" data-sucursal={id}`. `MedirSitio`, en el layout
+  público, escucha los clics de toda la página en la fase de captura —varios
+  botones paran la propagación— y anota cada página que se abre. `<Medir />`
+  anota algo una vez al pintar (visita a un micrositio, una búsqueda), una sola
+  vez por pestaña.
+- El navegador manda con `sendBeacon` a `/api/actividad`: un clic en WhatsApp
+  saca a la persona de la página y un `fetch` normal se cancelaría.
+- Los tipos están dos veces: el `check` de la tabla y `TIPOS_DE_ACTIVIDAD` en
+  `lib/actividad.ts`. Si se agrega uno, va en los dos.
+- Lo que ya vive en su tabla (reseñas, calificaciones, favoritos, cuentas) no se
+  copia: se cuenta donde está. Los favoritos solo los lee su dueño, así que su
+  cuenta sale de `favoritos_por_sucursal` / `favoritos_de_sucursal`, que dan el
+  número y no quién.
+- Se agrega en la base (`actividad_por_sucursal`, `actividad_por_dia`,
+  `detalles_frecuentes`), no en Next: en el Festival pueden ser decenas de miles
+  de filas.
+- `/admin/metricas` es el tablero, con CSV por negocio; cada negocio ve lo suyo
+  arriba de su panel («Lo que te trajo la guía», `TusNumeros`).
+

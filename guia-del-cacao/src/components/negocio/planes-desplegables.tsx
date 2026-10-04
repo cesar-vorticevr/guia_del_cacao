@@ -64,7 +64,7 @@ export function PlanesDesplegables({
           </span>
 
           <span className="mt-2 block max-w-prose text-cacao">
-            {siguiente.ventajas} Por {siguiente.precio} al mes.
+            {siguiente.ventajas} Por {siguiente.precio}.
           </span>
         </button>
       )}

@@ -21,7 +21,10 @@ export const metadata: Metadata = {
  *
  * - No hay pasarela de pago, así que no se tratan datos bancarios. Se verificó
  *   que no existe Stripe, Conekta ni ninguna otra en el repositorio.
- * - No hay analítica ni cookies de publicidad. Tampoco Vercel Analytics.
+ * - La única medición es la propia (migración 000052, `lib/actividad.ts`):
+ *   conteos sin nada que diga quién, sin cookies y sin terceros. No hay Google
+ *   Analytics ni Vercel Analytics. Si `actividad` gana una columna que
+ *   identifique a alguien, este texto cambia el mismo día.
  * - Las mazorcas, los cupones y los rangos están apagados
  *   (`lib/funciones.ts`), así que no se recaba nada de ellos. Estuvieron
  *   descritos aquí y era la parte que ya no decía la verdad.
@@ -118,10 +121,15 @@ export default function Privacidad() {
         </li>
         <li>
           <strong className="text-selva-2">
-            Sin analítica y sin publicidad.
+            Contamos visitas, no personas.
           </strong>{" "}
-          No usamos Google Analytics ni ninguna herramienta parecida, no te
-          seguimos entre sitios y no hay anuncios de terceros.
+          Llevamos la cuenta de cuántas veces se abre cada página, qué se busca
+          y cuántas veces se pulsa el WhatsApp, el teléfono, el mapa o las redes
+          de cada negocio, para enseñarle a cada negocio lo que la guía le
+          trae. Esa cuenta no guarda quién fuiste: ni tu cuenta, ni tu
+          dirección IP, ni un identificador de tu navegador. No usamos Google
+          Analytics ni herramientas de terceros, no te seguimos entre sitios y
+          no hay anuncios.
         </li>
         <li>
           <strong className="text-selva-2">Sin datos sensibles.</strong> No
@@ -295,7 +303,9 @@ export default function Privacidad() {
       </p>
       <p className="mt-3 text-cacao">
         No hay cookies de publicidad, de analítica ni de seguimiento entre
-        sitios. Puedes borrar las nuestras desde tu navegador cuando quieras; si
+        sitios. Para no contar dos veces la misma visita, tu navegador recuerda
+        qué páginas ya contamos mientras tengas la pestaña abierta; ese apunte
+        no sale de tu equipo y se borra al cerrarla. Puedes borrar las nuestras desde tu navegador cuando quieras; si
         lo haces, tendrás que volver a entrar.
       </p>
 

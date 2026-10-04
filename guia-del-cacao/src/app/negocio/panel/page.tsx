@@ -22,6 +22,8 @@ import { mostrarSucursal } from "@/lib/negocio/acciones";
 import { catalogoDeMarca } from "@/lib/datos/catalogo";
 import { urlImagen } from "@/lib/imagenes";
 import { ESTADO } from "@/lib/tipos";
+import { TusNumeros } from "@/components/negocio/tus-numeros";
+import { numerosDeSucursales } from "@/lib/datos/actividad";
 
 export const metadata: Metadata = {
   title: "Panel del negocio · Guía del Cacao",
@@ -89,7 +91,13 @@ export default async function PanelNegocio({
     sinLeerPorSucursal(),
     solicitudesPorSucursal(),
   ]);
-  const promedios = await calificacionesDe(sucursales.map((s) => s.id));
+  const publicadas = sucursales.filter((s) => s.estado === "publicado");
+  const [promedios, numeros] = await Promise.all([
+    calificacionesDe(sucursales.map((s) => s.id)),
+    publicadas.length > 0
+      ? numerosDeSucursales(publicadas.map((s) => s.id))
+      : null,
+  ]);
 
   // Qué le falta a cada micrositio, preguntado a la misma función que usa el
   // trigger al publicar: lo que aquí se ve completo se publica sin sorpresas.
@@ -127,7 +135,7 @@ export default async function PanelNegocio({
       {sucursales.length === 0 ? (
         <PrimerosPasos
           titulo="Pongamos tu negocio en la guía"
-          entrada="Son cuatro pasos y puedes dejarlo a medias: lo que armes se guarda, y solo se cobra cuando decidas publicarlo."
+          entrada="Son cuatro pasos y puedes dejarlo a medias: lo que armes se guarda, y publicar en el plan Básico es gratis."
           pasos={[
             {
               titulo: "Confirma tu correo",
@@ -185,6 +193,8 @@ export default async function PanelNegocio({
           {/* El título va aquí y no en el layout: cada pestaña titula su
                 propia pantalla, y arriba solo está de quién es el panel. */}
           <h1 className="font-display text-3xl">Sucursales</h1>
+
+          {numeros && <TusNumeros numeros={numeros} />}
 
           <section className="grid gap-4">
             {/*

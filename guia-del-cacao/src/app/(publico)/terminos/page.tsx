@@ -228,8 +228,8 @@ export default function Terminos() {
       </p>
       <ul className="mt-3 grid gap-2 text-cacao">
         <li>
-          <strong className="text-selva-2">Básico, $99 al mes</strong> — la ficha
-          en el directorio y el micrositio con catálogo.
+          <strong className="text-selva-2">Básico, gratis</strong> — la ficha
+          en el directorio y el micrositio con catálogo y contacto.
         </li>
         <li>
           <strong className="text-selva-2">Plus, $199 al mes</strong> — lo
@@ -237,14 +237,17 @@ export default function Terminos() {
         </li>
         <li>
           <strong className="text-selva-2">Premier, $299 al mes</strong> — lo
-          anterior y anunciar tus eventos en la agenda.
+          anterior, anunciar tus eventos en la agenda y salir en el banner de
+          la portada.
         </li>
       </ul>
       <p className="mt-3 text-cacao">
-        Cada sucursal estrena{" "}
+        Plus y Premier se estrenan con{" "}
         <strong className="text-selva-2">quince días de prueba</strong>, con
-        todas las funciones de su plan. El conteo empieza el día que la
-        publicas. Durante la prueba puedes cambiar de plan sin costo.
+        todas las funciones del plan. El conteo empieza el día que publicas.
+        Si al terminar la prueba no has pagado, tu sucursal{" "}
+        <strong className="text-selva-2">baja al plan Básico</strong>: sigue
+        publicada con todo su contenido, solo sin las funciones de pago.
       </p>
 
       <h3 className="mt-6 font-display text-xl">

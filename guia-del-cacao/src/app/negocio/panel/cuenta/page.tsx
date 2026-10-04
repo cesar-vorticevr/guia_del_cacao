@@ -15,7 +15,7 @@ import {
   suscripcionDeMarca,
 } from "@/lib/datos/sucursales";
 import { PAGO_SIMULADO } from "@/lib/pagos";
-import { pesos } from "@/lib/tipos";
+import { precioDePlan } from "@/lib/tipos";
 
 export const metadata: Metadata = { title: "Mi cuenta · Guía del Cacao" };
 
@@ -122,10 +122,7 @@ export default async function CuentaNegocio({
                   {plan?.nombre}
                 </p>
                 <p className="font-mono text-lg font-bold text-selva">
-                  {pesos(suscripcion.monto_mensual)}
-                  <span className="text-sm font-normal text-cacao/70">
-                    /mes
-                  </span>
+                  {precioDePlan(suscripcion.monto_mensual)}
                 </p>
               </div>
 
@@ -137,21 +134,16 @@ export default async function CuentaNegocio({
               </p>
 
               {/*
-                Dice cuándo se acaba, no solo que existe: el mes 4 sube a
-                Premier normal, y enterarse en el cobro es lo que hace que
-                alguien se vaya.
+                Dice de dónde sale el Premier gratis. La fecha de fin es la de
+                la prueba, que ya sale debajo con su cuenta regresiva.
               */}
               {suscripcion.convenio && (
                 <p className="mt-3 rounded-2xl border-2 border-lima/60 bg-lima/20 px-4 py-3 text-cacao">
                   <strong className="block text-selva-2">
-                    Convenio con Turismo
+                    Convenio del Festival del Chocolate
                   </strong>
-                  Premier a $99 al mes
-                  {suscripcion.convenio.precio_convenio_hasta
-                    ? ` hasta el ${CUANDO.format(new Date(suscripcion.convenio.precio_convenio_hasta))}`
-                    : " durante tres meses, contados desde que termine tu prueba"}
-                  . Después pasa a su precio normal, o conservas los $99 tres
-                  meses más si los pagas de contado.
+                  Tienes Premier gratis por el convenio con la Secretaría de
+                  Turismo.
                 </p>
               )}
 
@@ -171,9 +163,13 @@ export default async function CuentaNegocio({
                         : `Te quedan ${diasDePrueba(suscripcion.finDePrueba)} días de prueba`}
                   </strong>
                   Termina el {CUANDO.format(new Date(suscripcion.finDePrueba))}.
-                  Si para entonces no has agregado una forma de pago, tu
-                  micrositio sale del directorio — pero no se borra nada y vuelve
-                  en cuanto la agregues.
+                  Si para entonces no has pagado, tu micrositio baja al plan
+                  Básico, que es gratis: sigue en el directorio con todo lo tuyo,
+                  solo sin lo que era de pago.
+                </p>
+              ) : Number(suscripcion.monto_mensual) === 0 ? (
+                <p className="mt-1 text-sm text-cacao/70">
+                  No se te cobra nada.
                 </p>
               ) : (
                 <p className="mt-1 text-sm text-cacao/70">
@@ -185,8 +181,8 @@ export default async function CuentaNegocio({
           ) : (
             <p className="rounded-3xl bg-crema-2 p-6 text-cacao">
               Todavía no tienes ningún micrositio publicado. El plan se elige al
-              publicar cada uno, desde su ficha, y arranca con quince días de
-              prueba sin dejar tarjeta.
+              publicar cada uno, desde su ficha. El Básico es gratis; Plus y
+              Premier arrancan con quince días de prueba sin dejar tarjeta.
             </p>
           )}
 
@@ -214,7 +210,7 @@ export default async function CuentaNegocio({
                       ]
                         .filter(Boolean)
                         .join(", ") + ".",
-                    precio: pesos(siguiente.precio_mensual),
+                    precio: precioDePlan(siguiente.precio_mensual),
                   }
                 : undefined
             }

@@ -24,13 +24,13 @@ export async function GET(peticion: Request) {
     `"${(valor ?? "").replaceAll('"', '""')}"`;
 
   const filas = [
-    ["Negocio", "Sucursal", "Estado", "Desde", "Precio de convenio hasta"],
+    ["Negocio", "Sucursal", "Estado del micrositio", "Desde", "Premier gratis hasta"],
     ...convenio.suscripciones.map((uso) => [
       uso.sucursales?.marcas?.nombre_comercial,
       uso.sucursales?.nombre_sucursal,
       uso.sucursales?.estado,
       uso.fecha_inicio.slice(0, 10),
-      uso.precio_convenio_hasta?.slice(0, 10),
+      uso.fecha_fin_trial?.slice(0, 10),
     ]),
   ];
 

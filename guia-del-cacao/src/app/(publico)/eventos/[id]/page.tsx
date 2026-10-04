@@ -7,6 +7,7 @@ import { urlDePublicacion } from "@/lib/imagenes";
 import { tarjetaSocial } from "@/lib/compartir";
 import { BotonCompartir } from "@/components/publico/boton-compartir";
 import { origenDelSitio } from "@/lib/auth/sesion";
+import { Medir } from "@/components/publico/medir";
 
 export async function generateMetadata({
   params,
@@ -45,6 +46,7 @@ export default async function Evento({ params }: { params: Promise<{ id: string 
 
   return (
     <div className="mx-auto max-w-2xl">
+      <Medir tipo="vista_evento" evento={evento.id} />
       <DetallePublicacion publicacion={evento} tipo="evento" />
 
       {/*

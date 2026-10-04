@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Logotipo } from "@/components/marca";
 import { BarraInferior } from "@/components/publico/barra-inferior";
 import { EncabezadoQueVuelve } from "@/components/publico/encabezado-que-vuelve";
+import { MedirSitio } from "@/components/publico/medir";
 import { PastillaPasaporte } from "@/components/publico/pastilla-pasaporte";
 import { PieDePagina } from "@/components/publico/pie-de-pagina";
 import { destinoSegunRol, perfilActual } from "@/lib/auth/sesion";
@@ -96,6 +97,9 @@ export default async function LayoutPublico({
       <main className="relative z-10 mx-auto w-[92vw] max-w-[1180px] pb-10">
         {children}
       </main>
+
+      {/* Cuenta visitas y clics de contacto, sin saber de quién (000052). */}
+      <MedirSitio />
 
       <PieDePagina />
 

@@ -157,7 +157,7 @@ export async function resumen() {
 export type UsoDeConvenio = {
   estado: string;
   fecha_inicio: string;
-  precio_convenio_hasta: string | null;
+  fecha_fin_trial: string | null;
   sucursales: {
     nombre_sucursal: string;
     slug: string;
@@ -172,6 +172,7 @@ export type ConvenioAdmin = {
   descripcion: string;
   vigente_desde: string;
   vigente_hasta: string;
+  premier_gratis_hasta: string;
   suscripciones: UsoDeConvenio[];
 };
 
@@ -179,8 +180,9 @@ export type ConvenioAdmin = {
  * Los códigos de convenio con los negocios que publicaron con cada uno.
  *
  * «Quién del Festival ya está en la guía» es el número que se le reporta a la
- * Secretaría, y sale de aquí. Una sucursal que cambió de plan deja una
- * suscripción cancelada detrás; por eso cuenta solo la viva de cada una.
+ * Secretaría, y sale de aquí. Se cuentan también las suscripciones ya
+ * terminadas: al vencer el Premier gratis la sucursal baja a Básico con una
+ * suscripción nueva, sin convenio, y no por eso dejó de haberlo usado.
  */
 export async function todosLosConvenios() {
   const supabase = await crearClienteServidor();
@@ -188,14 +190,14 @@ export async function todosLosConvenios() {
   const { data } = await supabase
     .from("convenios")
     .select(
-      "id, codigo, descripcion, vigente_desde, vigente_hasta, suscripciones(estado, fecha_inicio, precio_convenio_hasta, sucursales(nombre_sucursal, slug, estado, marcas(nombre_comercial)))",
+      "id, codigo, descripcion, vigente_desde, vigente_hasta, premier_gratis_hasta, suscripciones(estado, fecha_inicio, fecha_fin_trial, sucursales(nombre_sucursal, slug, estado, marcas(nombre_comercial)))",
     )
     .order("vigente_desde", { ascending: false });
 
   return ((data ?? []) as unknown as ConvenioAdmin[]).map((convenio) => ({
     ...convenio,
-    suscripciones: convenio.suscripciones
-      .filter((uso) => uso.estado !== "cancelado")
-      .sort((a, b) => b.fecha_inicio.localeCompare(a.fecha_inicio)),
+    suscripciones: [...convenio.suscripciones].sort((a, b) =>
+      b.fecha_inicio.localeCompare(a.fecha_inicio),
+    ),
   }));
 }

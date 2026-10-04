@@ -214,7 +214,7 @@ export default async function EditorMicrositio({
           >
             <p className="font-bold">
               ¡Listo! Tu micrositio ya está publicado y aparece en el
-              directorio. Tus 15 días de prueba empiezan hoy.
+              directorio.
             </p>
             <Link
               href={`/marca/${sucursal.slug}`}

@@ -20,6 +20,8 @@ import { CatalogoPublico } from "@/components/publico/catalogo-publico";
 import { DescargarCatalogo } from "@/components/publico/descargar-catalogo";
 import { BotonFavorito } from "@/components/publico/boton-favorito";
 import { BotonCompartir } from "@/components/publico/boton-compartir";
+import { Medir } from "@/components/publico/medir";
+import { tipoDeContacto } from "@/lib/actividad";
 import { esFavorito } from "@/lib/datos/favoritos";
 import { productosDe } from "@/lib/datos/sucursales";
 import { tienePendienteEn } from "@/lib/datos/puntos";
@@ -164,6 +166,8 @@ export default async function Micrositio({
 
   return (
     <>
+      <Medir tipo="vista_micrositio" sucursal={sucursal.id} />
+
       <header className="pt-4">
         {/*
           La portada se abre al tocarla. Recortada a la altura de la cabecera
@@ -240,7 +244,7 @@ export default async function Micrositio({
             escritorio son cuatro botones —WhatsApp, Facebook, X y copiar— y
             apretados contra el nombre del negocio no caben.
           */}
-          <div className="mt-3">
+          <div className="mt-3" data-medir="compartir" data-sucursal={sucursal.id}>
             <BotonCompartir
               url={`${origen}/marca/${slug}`}
               titulo={
@@ -332,6 +336,7 @@ export default async function Micrositio({
             <h2 className="font-display text-xl">Catálogo</h2>
 
             {sucursal.catalogo_descargable && (
+              <div data-medir="catalogo_pdf" data-sucursal={sucursal.id}>
               <DescargarCatalogo
                 datos={{
                   marca:
@@ -352,6 +357,7 @@ export default async function Micrositio({
                   })),
                 }}
               />
+              </div>
             )}
           </div>
 
@@ -411,6 +417,8 @@ export default async function Micrositio({
           {comoLlegar && (
             <a
               href={comoLlegar.enlace}
+              data-medir="mapa"
+              data-sucursal={sucursal.id}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-3 flex min-h-12 w-full items-center justify-between gap-3 rounded-full bg-selva px-5 py-2.5 font-bold text-crema shadow-dura sm:w-auto sm:min-w-64"
@@ -439,11 +447,15 @@ export default async function Micrositio({
                 // `tel:` y `mailto:` los abre la propia máquina; una pestaña
                 // nueva para ellos deja un hueco en blanco que nadie cierra.
                 const fuera = dato.enlace.startsWith("http");
+                const medida = tipoDeContacto(dato.clave);
 
                 return (
                   <li key={dato.clave}>
                     <a
                       href={dato.enlace}
+                      data-medir={medida.tipo}
+                      data-sucursal={sucursal.id}
+                      data-detalle={medida.detalle}
                       {...(fuera && {
                         target: "_blank",
                         rel: "noopener noreferrer",

@@ -239,9 +239,9 @@ export async function subirImagen(
 /**
  * Saca la sucursal al directorio con el plan elegido y quince días de prueba.
  *
- * Con código de convenio el plan es Premier a $99 (migración 000051): aquí
- * solo se revisa que el código exista y esté vigente; el precio lo fija un
- * trigger de la base, no esta función. El trigger de `sucursales` vuelve a exigir plan y micrositio
+ * Con código de convenio el plan es Premier gratis hasta la fecha del
+ * convenio (migración 000051): aquí solo se revisa que el código exista y esté
+ * vigente; el precio y la fecha los fija un trigger de la base. El trigger de `sucursales` vuelve a exigir plan y micrositio
  * completo, así que esto no es la única barrera.
  */
 export async function publicarSucursal(
@@ -320,7 +320,9 @@ export async function publicarSucursal(
     sucursal_id: id,
     tier_id: tier.id,
     monto_mensual: tier.precio_mensual,
-    estado: "trial",
+    // El Básico es gratis (migración 000051): no hay nada que probar antes de
+    // pagar. Con convenio, el trigger fija Premier gratis y su fecha de fin.
+    estado: Number(tier.precio_mensual) === 0 ? "activo" : "trial",
     fecha_proximo_cobro: proximoCobro().toISOString(),
     convenio_id: convenioId,
   });

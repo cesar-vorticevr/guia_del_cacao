@@ -91,7 +91,7 @@ export async function contratarPlan(
   const todas = await suscripcionesAbiertas(marca.id);
 
   /*
-    Las de convenio no se tocan: son Premier a $99 hasta que termine el
+    Las de convenio no se tocan: son Premier gratis hasta que termine el
     convenio, y el trigger `aplicar_precio_de_convenio` rechazaría cambiarles el
     plan. Si se cancelaran para abrir otra, el código ya gastado se perdería.
   */
@@ -100,7 +100,7 @@ export async function contratarPlan(
   if (abiertas.length === 0 && todas.length > 0) {
     return {
       error:
-        "Tus micrositios están en el convenio con Turismo: Premier a $99. El plan no se puede cambiar mientras dure.",
+        "Tus micrositios tienen Premier gratis por el convenio del Festival. El plan no se puede cambiar mientras dure.",
     };
   }
 

@@ -45,9 +45,10 @@ export default async function Convenios() {
     <>
       <h1 className="font-display text-3xl">Convenios</h1>
       <p className="mt-2 text-cacao">
-        Quien escribe un código vigente al publicar queda en Premier a $99 al
-        mes durante tres meses, después de sus quince días gratis. El código
-        sirve para todos los que lo usen dentro de sus fechas.
+        Quien escribe un código vigente al publicar tiene Premier gratis hasta
+        la fecha del convenio. Después, si no paga, baja al Básico y sigue
+        publicado. El código sirve para todos los que lo usen dentro de sus
+        fechas.
       </p>
 
       {convenios.map((convenio) => {
@@ -74,7 +75,9 @@ export default async function Convenios() {
             </div>
             <p className="mt-1 text-cacao">{convenio.descripcion}</p>
             <p className="text-sm text-cacao/70">
-              Del {dia(convenio.vigente_desde)} al {dia(convenio.vigente_hasta)}
+              Sirve para publicar del {dia(convenio.vigente_desde)} al{" "}
+              {dia(convenio.vigente_hasta)} · Premier gratis hasta el{" "}
+              {dia(convenio.premier_gratis_hasta)}
             </p>
 
             <dl className="mt-5 grid grid-cols-2 gap-3 text-center">
@@ -125,8 +128,9 @@ export default async function Convenios() {
                       )}
                       <span className="text-sm text-cacao/70">
                         desde el {CUANDO.format(new Date(uso.fecha_inicio))}
-                        {uso.precio_convenio_hasta &&
-                          ` · $99 hasta el ${CUANDO.format(new Date(uso.precio_convenio_hasta))}`}
+                        {uso.estado === "trial"
+                          ? " · Premier gratis"
+                          : " · terminó su Premier gratis"}
                       </span>
                     </li>
                   ))}

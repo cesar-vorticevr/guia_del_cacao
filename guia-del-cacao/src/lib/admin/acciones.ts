@@ -187,11 +187,17 @@ export async function crearConvenio(
   const descripcion = datos.get("descripcion")?.toString().trim() ?? "";
   const desde = datos.get("vigente_desde")?.toString() ?? "";
   const hasta = datos.get("vigente_hasta")?.toString() ?? "";
+  const gratisHasta = datos.get("premier_gratis_hasta")?.toString() ?? "";
 
   if (!codigo) return { error: "Escribe el código, solo letras y números." };
   if (!descripcion) return { error: "Escribe para qué es el código." };
   if (!desde || !hasta) return { error: "Elige desde y hasta cuándo sirve." };
   if (hasta < desde) return { error: "La fecha final va después de la inicial." };
+  if (!gratisHasta || gratisHasta < hasta) {
+    return {
+      error: "El Premier gratis tiene que durar al menos hasta que venza el código.",
+    };
+  }
 
   const supabase = await crearClienteServidor();
 
@@ -200,6 +206,7 @@ export async function crearConvenio(
     descripcion,
     vigente_desde: desde,
     vigente_hasta: hasta,
+    premier_gratis_hasta: gratisHasta,
   });
 
   if (error) {

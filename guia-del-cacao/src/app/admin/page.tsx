@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { FormularioRechazo } from "@/components/admin/formularios";
 import { aprobarSucursal } from "@/lib/admin/acciones";
 import { resumen, sucursalesEnRevision } from "@/lib/datos/admin";
-import { pesos } from "@/lib/tipos";
+import { precioDePlan } from "@/lib/tipos";
 
 export const metadata: Metadata = { title: "Administración · Guía del Cacao" };
 
@@ -48,7 +48,7 @@ export default async function Admin() {
                 <p className="font-mono text-xs tracking-wide text-cacao/70 uppercase">
                   {sucursal.marcas?.nombre_comercial}
                   {sucursal.tiers &&
-                    ` · ${sucursal.tiers.nombre} · ${pesos(sucursal.tiers.precio_mensual)}/mes`}
+                    ` · ${sucursal.tiers.nombre} · ${precioDePlan(sucursal.tiers.precio_mensual)}`}
                 </p>
                 <h3 className="mt-1 font-display text-xl">{sucursal.nombre_sucursal}</h3>
                 <p className="mt-1 font-mono text-xs text-cacao/70">/marca/{sucursal.slug}</p>

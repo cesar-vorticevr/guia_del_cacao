@@ -11,6 +11,7 @@ import {
 } from "@/lib/datos/busqueda-de-productos";
 import { perfilActual } from "@/lib/auth/sesion";
 import { tonoDeCategoria } from "@/lib/paleta";
+import { Medir } from "@/components/publico/medir";
 
 export const metadata: Metadata = { title: "Directorio · Guía del Cacao" };
 
@@ -93,6 +94,14 @@ export default async function Directorio({
 
   return (
     <>
+      {/* Qué busca la gente y por dónde filtra: de ahí salen los atajos que
+          faltan y los estados donde conviene convocar negocios. */}
+      {consulta && <Medir tipo="busqueda" detalle={consulta} />}
+      {entidad && <Medir tipo="filtro" detalle={`estado:${entidad}`} />}
+      {categoriaId ? (
+        <Medir tipo="filtro" detalle={`categoria:${categoriaId}`} />
+      ) : null}
+
       <h1 className="pt-8 font-display text-3xl">Explorar</h1>
       <p className="mt-2 text-cacao">
         {[
