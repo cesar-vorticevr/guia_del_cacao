@@ -7,6 +7,8 @@ import {
   TOPE_FOTOS,
   TOPE_SEGUNDOS_VIDEO,
 } from "@/lib/limites";
+import { useAcomodo } from "@/components/publico/ajustar-foto";
+import { FotosElegidas } from "@/components/publico/fotos-elegidas";
 
 /**
  * Elegir lo que lleva una publicación: hasta diez fotos, o un video.
@@ -21,6 +23,11 @@ import {
  * **Las tres reglas se comprueban aquí y no solo al enviar.** Un video de tres
  * minutos son veinte megas que se suben para que el servidor los rechace al
  * final; mejor decirlo con el archivo todavía en el teléfono.
+ *
+ * Y las fotos se **acomodan** antes de subirse: en cuanto se eligen se abre el
+ * encuadre, una por una. Hasta ahora aquí solo se avisaba de que lo que
+ * sobresaliera del marco se iba a perder, y la única salida era recortar la
+ * foto en otra aplicación y volver.
  */
 
 /** Lo que se le enseña a quien eligió algo que no cabe. */
@@ -54,24 +61,34 @@ function duracionDe(archivo: File): Promise<number | null> {
 }
 
 export function ElegirFotos({ tope = TOPE_FOTOS }: { tope?: number }) {
-  const [previos, setPrevios] = useState<
-    { url: string; esVideo: boolean }[]
-  >([]);
   const [reclamo, setReclamo] = useState<Reclamo>(null);
+
+  /*
+    Se desarma en piezas y no se usa como `acomodo.algo`: al pasar una de ellas
+    a `ref`, el lint de React da por contagiado el objeto entero y se queja de
+    todo lo demás que se lea al pintar.
+  */
+  const {
+    campo,
+    previos,
+    empezar,
+    limpiar,
+    quitar,
+    reordenar,
+    acomodarUna,
+    encuadre,
+  } = useAcomodo(PROPORCION_MINIMA);
 
   async function alElegir(evento: React.ChangeEvent<HTMLInputElement>) {
     const campo = evento.target;
-    const archivos = [...(campo.files ?? [])];
+    const elegidos = [...(campo.files ?? [])];
 
-    // Se liberan los anteriores: cada `createObjectURL` reserva memoria hasta
-    // que se revoca, y aquí se cambia de archivo varias veces seguidas.
-    previos.forEach((p) => URL.revokeObjectURL(p.url));
-    setPrevios([]);
+    limpiar();
     setReclamo(null);
 
-    if (archivos.length === 0) return;
+    if (elegidos.length === 0) return;
 
-    const videos = archivos.filter((a) => a.type.startsWith("video/"));
+    const videos = elegidos.filter((a) => a.type.startsWith("video/"));
 
     /*
       Vaciar el campo es parte del rechazo. Sin eso, el archivo malo sigue
@@ -87,16 +104,14 @@ export function ElegirFotos({ tope = TOPE_FOTOS }: { tope?: number }) {
       return rechazar("Solo cabe un video por publicación. Elige uno.");
     }
 
-    if (videos.length === 1 && archivos.length > 1) {
+    if (videos.length === 1 && elegidos.length > 1) {
       return rechazar(
         "El video va solo: o subes fotos, o subes un video, no las dos cosas.",
       );
     }
 
-    if (archivos.length > tope) {
-      return rechazar(
-        `Elegiste ${archivos.length}. El tope son ${tope} fotos.`,
-      );
+    if (elegidos.length > tope) {
+      return rechazar(`Elegiste ${elegidos.length}. El tope son ${tope} fotos.`);
     }
 
     const video = videos[0];
@@ -111,12 +126,7 @@ export function ElegirFotos({ tope = TOPE_FOTOS }: { tope?: number }) {
       }
     }
 
-    setPrevios(
-      archivos.map((archivo) => ({
-        url: URL.createObjectURL(archivo),
-        esVideo: archivo.type.startsWith("video/"),
-      })),
-    );
+    empezar(elegidos);
   }
 
   return (
@@ -127,6 +137,7 @@ export function ElegirFotos({ tope = TOPE_FOTOS }: { tope?: number }) {
       </span>
 
       <input
+        ref={campo}
         type="file"
         name="imagenes"
         accept={ACEPTA_MEDIO}
@@ -145,67 +156,15 @@ export function ElegirFotos({ tope = TOPE_FOTOS }: { tope?: number }) {
         </p>
       )}
 
+      {encuadre}
+
       {previos.length > 0 && (
-        <>
-          {/*
-            **Así va a quedar, no una miniatura de lo que subiste.**
-
-            Antes las previas eran cuadradas y el muro enseña 4:5, así que quien
-            subía un cartel vertical veía el cuadrado aquí y descubría el
-            recorte ya publicado. Ahora es el mismo `aspectRatio` y el mismo
-            `object-cover` que usa el carrusel, sacados los dos de
-            `PROPORCION_MINIMA`: lo que se ve aquí es literalmente lo que se va
-            a ver allá.
-
-            Se desliza igual que el carrusel, con `scroll-snap`, para poder
-            repasarlas una por una antes de publicar.
-          */}
-          <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain rounded-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {previos.map((previo, i) => (
-              <div
-                key={previo.url}
-                className="relative w-2/3 shrink-0 snap-center sm:w-1/2"
-              >
-                {previo.esVideo ? (
-                  <video
-                    src={previo.url}
-                    muted
-                    playsInline
-                    preload="metadata"
-                    style={{
-                      aspectRatio: `${PROPORCION_MINIMA}`,
-                      objectFit: "cover",
-                    }}
-                    className="w-full rounded-xl border-2 border-selva/15 bg-ink"
-                  />
-                ) : (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={previo.url}
-                    alt={`Foto ${i + 1}`}
-                    style={{
-                      aspectRatio: `${PROPORCION_MINIMA}`,
-                      objectFit: "cover",
-                    }}
-                    className="w-full rounded-xl border-2 border-selva/15 bg-crema-2"
-                  />
-                )}
-
-                {i === 0 && previos.length > 1 && (
-                  <span className="absolute bottom-2 left-2 rounded-full bg-selva px-2 py-0.5 font-mono text-[0.6rem] font-bold text-crema">
-                    Portada
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <p className="text-sm text-cacao/70">
-            Así se va a ver. Lo que sobresalga de este marco se recorta por
-            arriba y por abajo — si algo importante queda fuera, recorta la foto
-            antes de subirla.
-          </p>
-        </>
+        <FotosElegidas
+          previos={previos}
+          alAcomodar={acomodarUna}
+          alQuitar={quitar}
+          alMover={reordenar}
+        />
       )}
 
       <p className="text-sm text-cacao/70">

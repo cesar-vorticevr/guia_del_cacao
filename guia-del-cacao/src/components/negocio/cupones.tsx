@@ -1,14 +1,20 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Area, Aviso, BotonEnviar, Campo } from "@/components/formulario";
+import {
+  Area,
+  Aviso,
+  BotonEnviar,
+  Campo,
+  CampoFoto,
+} from "@/components/formulario";
 import {
   borrarCupon,
   crearCupon,
   type EstadoCupon,
 } from "@/lib/negocio/cupones";
 import type { Cupon } from "@/lib/datos/cupones";
-import { ACEPTA, MEDIDAS, PESO } from "@/lib/imagenes";
+import { MEDIDAS, PROPORCIONES } from "@/lib/imagenes";
 import { MONEDA } from "@/lib/vocabulario";
 
 const INICIAL: EstadoCupon = {};
@@ -125,19 +131,12 @@ export function NuevoCupon({
         />
       </label>
 
-      <label className="block">
-        <span className="mb-1.5 block font-bold text-selva-2">Imagen</span>
-        <input
-          type="file"
-          name="imagen"
-          accept={ACEPTA}
-          className="w-full rounded-2xl border-2 border-dashed border-selva/25 bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-selva file:px-4 file:py-2 file:font-bold file:text-crema"
-        />
-        <span className="mt-1.5 block text-sm text-cacao/70">
-          {MEDIDAS.cupon}
-        </span>
-        <span className="block text-sm text-cacao/70">{PESO}</span>
-      </label>
+      <CampoFoto
+        nombre="imagen"
+        etiqueta="Imagen"
+        proporcion={PROPORCIONES.cupon}
+        ayuda={MEDIDAS.cupon}
+      />
 
       {/*
         Se avisa antes de publicar y no después: un cupón no se puede corregir

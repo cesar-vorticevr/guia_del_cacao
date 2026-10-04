@@ -1,3 +1,5 @@
+import { PROPORCION_MINIMA } from "@/lib/limites";
+
 /** Los dos buckets: en uno escribe el negocio, en el otro el cliente. */
 export const BUCKET_MICROSITIOS = "micrositios";
 export const BUCKET_RESENAS = "resenas";
@@ -30,6 +32,27 @@ export const MEDIDAS = {
   resena: "La que tengas. Se muestra recortada a lo ancho.",
   publicacion:
     "En la lista se recorta en cuadrado; completa se ve al abrir la publicación.",
+} as const;
+
+/**
+ * Las mismas medidas, en proporción, para el marco donde se acomoda la foto.
+ *
+ * `MEDIDAS` le habla a la persona —«cuadrada, 512 × 512»— y esto le habla al
+ * encuadre, que solo necesita la forma. Son los dos lados de la misma decisión
+ * y tienen que contar lo mismo: si aquí se cambiara el fondo a 3:1 sin tocar el
+ * texto de arriba, el recorte saldría con una forma y el consejo pediría otra.
+ *
+ * `publicacion` sale de `PROPORCION_MINIMA` y no de un número escrito aquí
+ * porque ese 4:5 es el del carrusel que las pinta: son el mismo dato.
+ */
+export const PROPORCIONES = {
+  logo: 1,
+  fondo: 8 / 3,
+  galeria: 3 / 2,
+  producto: 1,
+  cupon: 1,
+  resena: 3 / 2,
+  publicacion: PROPORCION_MINIMA,
 } as const;
 
 export const PESO = `Máximo ${TOPE_MB} MB. JPG, PNG, WebP o AVIF.`;

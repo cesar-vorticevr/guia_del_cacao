@@ -8,6 +8,7 @@ import {
   type EstadoForo,
 } from "@/lib/foro/acciones";
 import { ElegirFotos } from "@/components/publico/elegir-fotos";
+import { Publicando } from "@/components/publico/publicando";
 
 const INICIAL: EstadoForo = {};
 
@@ -140,6 +141,12 @@ export function FormularioTema({
       </label>
 
       <BotonEnviar>Publicar</BotonEnviar>
+
+      {/*
+        Tiene que estar dentro del formulario: de aquí saca si el envío está en
+        curso. Se pinta solo mientras sube.
+      */}
+      <Publicando />
 
       <button
         type="button"

@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { PROPORCION_MINIMA } from "@/lib/limites";
+import { ponerEnCampo } from "@/lib/recorte";
+import { useAcomodo } from "@/components/publico/ajustar-foto";
 
 /**
  * Las fotos al editar: las que ya están, las que se quitan y las que se suman.
@@ -12,12 +15,17 @@ import { useState } from "react";
  * Las que se conservan viajan en campos ocultos, una por ruta. Así el servidor
  * recibe la lista final tal cual, sin tener que adivinar qué se quitó
  * comparando con lo que había.
+ *
+ * Las que se suman pasan por el encuadre antes de subirse, igual que al
+ * publicar: van al mismo carrusel que las otras, así que se recortan con la
+ * misma proporción.
  */
 export function EditarFotos({
   actuales,
   urlDe,
   tope = 4,
   obligatoria = true,
+  proporcion = PROPORCION_MINIMA,
 }: {
   /** Las rutas guardadas, tal como están en la base. */
   actuales: string[];
@@ -26,17 +34,35 @@ export function EditarFotos({
   tope?: number;
   /** Si hace falta al menos una. En un evento la foto es opcional. */
   obligatoria?: boolean;
+  /** La forma con la que se van a ver. La misma con la que se recortan. */
+  proporcion?: number;
 }) {
   const [conservadas, setConservadas] = useState(actuales);
-  const [nuevas, setNuevas] = useState<string[]>([]);
+
+  /*
+    En piezas, no como `acomodo.algo`: al pasar una de ellas a `ref`, el lint de
+    React da por contagiado el objeto entero y se queja de todo lo demás que se
+    lea al pintar.
+  */
+  const { campo, archivos, previos, empezar, quitar, acomodarUna, encuadre } =
+    useAcomodo(proporcion);
 
   const hueco = Math.max(0, tope - conservadas.length);
 
   function alElegir(evento: React.ChangeEvent<HTMLInputElement>) {
-    const archivos = [...(evento.target.files ?? [])].slice(0, hueco);
+    const campo = evento.target;
+    const elegidos = [...(campo.files ?? [])].slice(0, hueco);
 
-    nuevas.forEach((url) => URL.revokeObjectURL(url));
-    setNuevas(archivos.map((a) => URL.createObjectURL(a)));
+    /*
+      Si el navegador trajo más de las que caben, el campo se rellena con las
+      que sí. Antes las de más se descartaban solo de la vista previa y viajaban
+      igual en el envío: se veían tres y se guardaban cinco.
+    */
+    if (elegidos.length !== campo.files?.length) {
+      ponerEnCampo(campo, elegidos);
+    }
+
+    empezar(elegidos);
   }
 
   return (
@@ -44,9 +70,11 @@ export function EditarFotos({
       <span className="font-bold text-selva-2">
         Fotos{" "}
         <span className="font-normal text-cacao">
-          · {conservadas.length + nuevas.length} de {tope}
+          · {conservadas.length + archivos.length} de {tope}
         </span>
       </span>
+
+      {encuadre}
 
       {conservadas.length > 0 && (
         <ul className="grid grid-cols-4 gap-2">
@@ -87,15 +115,18 @@ export function EditarFotos({
         publicar sin ninguna, así que ahí sería un reproche por algo que está
         permitido.
       */}
-      {obligatoria && conservadas.length === 0 && nuevas.length === 0 && (
-        <p className="rounded-2xl border-2 border-mango/50 bg-mango/15 px-4 py-3 text-cacao">
-          Te quedaste sin fotos. Sube al menos una antes de guardar.
-        </p>
-      )}
+      {obligatoria &&
+        conservadas.length === 0 &&
+        archivos.length === 0 && (
+          <p className="rounded-2xl border-2 border-mango/50 bg-mango/15 px-4 py-3 text-cacao">
+            Te quedaste sin fotos. Sube al menos una antes de guardar.
+          </p>
+        )}
 
       {hueco > 0 ? (
         <>
           <input
+            ref={campo}
             type="file"
             name="imagenes"
             accept="image/jpeg,image/png,image/webp,image/avif"
@@ -115,16 +146,46 @@ export function EditarFotos({
         </p>
       )}
 
-      {nuevas.length > 0 && (
-        <ul className="grid grid-cols-4 gap-2">
-          {nuevas.map((url, i) => (
-            <li key={url}>
+      {previos.length > 0 && (
+        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {previos.map((previo, i) => (
+            <li key={previo.url} className="relative">
+              {/*
+                La miniatura de lo nuevo sale con la proporción con la que se
+                recortó, y no cuadrada como las guardadas: enseñar en cuadrado
+                algo que se acaba de encuadrar en 4:5 desmentiría el encuadre
+                justo después de hacerlo.
+              */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={url}
+                src={previo.url}
                 alt={`Foto nueva ${i + 1}`}
-                className="aspect-square w-full rounded-xl border-2 border-dashed border-selva/40 object-cover"
+                style={{ aspectRatio: `${proporcion}`, objectFit: "cover" }}
+                className="w-full rounded-xl border-2 border-dashed border-selva/40"
               />
+
+              <button
+                type="button"
+                onClick={() => acomodarUna(i)}
+                className="absolute right-1 bottom-1 min-h-11 rounded-full bg-ink/70 px-3 text-sm font-bold text-crema"
+              >
+                Acomodar
+              </button>
+
+              {/*
+                La × también en las nuevas, no solo en las guardadas. Arriba se
+                podía quitar una foto que ya estaba y abajo no se podía quitar
+                la que se acababa de elegir: había que vaciar el campo entero y
+                volver a escogerlas todas.
+              */}
+              <button
+                type="button"
+                onClick={() => quitar(i)}
+                aria-label={`Quitar la foto nueva ${i + 1}`}
+                className="absolute -top-2 -right-2 grid size-8 place-items-center rounded-full border-2 border-guayaba bg-white text-lg font-bold text-cacao shadow-dura-sm"
+              >
+                ×
+              </button>
             </li>
           ))}
         </ul>

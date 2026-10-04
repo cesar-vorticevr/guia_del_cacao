@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { IconoOjo, IconoOjoTachado } from "@/components/iconos";
+import { useAcomodo } from "@/components/publico/ajustar-foto";
+import { ACEPTA, PESO } from "@/lib/imagenes";
 
 type CampoProps = {
   nombre: string;
@@ -251,6 +253,177 @@ export function Selector({
         ))}
       </select>
       {ayuda && <span className="mt-1.5 block text-sm text-cacao/80">{ayuda}</span>}
+    </label>
+  );
+}
+
+/**
+ * Un campo de foto que se acomoda antes de subirse.
+ *
+ * Sustituye a los `<input type="file">` sueltos que había repartidos por los
+ * formularios —logo, fondo, galería, evento, noticia, producto, cupón,
+ * reseña—, todos con la misma clase copiada y todos con el mismo problema: la
+ * foto se subía como saliera y el servidor la recortaba centrada. Quien subía
+ * un logo con el texto abajo lo veía decapitado en el directorio y no tenía
+ * nada que hacer al respecto.
+ *
+ * `proporcion` es la forma con la que esa foto se va a ver de verdad, sacada de
+ * `PROPORCIONES`. Es el marco que se enseña al acomodar y es lo que se recorta:
+ * si aquí se pusiera un número distinto del de la pantalla que la pinta, el
+ * encuadre volvería a ser una promesa que no se cumple.
+ *
+ * `autoEnviar` es para los campos del panel que suben en cuanto se elige, sin
+ * botón. Ahí el envío espera a que el encuadre se cierre: mandar la foto sin
+ * acomodar y acomodarla después sería subirla dos veces.
+ */
+export function CampoFoto({
+  nombre,
+  etiqueta,
+  proporcion,
+  ayuda,
+  acepta = ACEPTA,
+  peso = PESO,
+  requerido = false,
+  varias = false,
+  autoEnviar = false,
+  clase = "block",
+  id,
+}: {
+  nombre: string;
+  etiqueta?: React.ReactNode;
+  /** Ancho entre alto del sitio donde se va a ver. Sale de `PROPORCIONES`. */
+  proporcion: number;
+  ayuda?: React.ReactNode;
+  /** Por si el campo acepta video, como el de las reseñas. */
+  acepta?: string;
+  /** El tope de peso que le toca decir. El del video es otro. */
+  peso?: string | null;
+  requerido?: boolean;
+  varias?: boolean;
+  /** Elegir el archivo es la orden: se sube solo, sin botón aparte. */
+  autoEnviar?: boolean;
+  id?: string;
+  /**
+   * Cómo se coloca la etiqueta entera.
+   *
+   * Casi siempre es un bloque debajo de su título, pero en la lista de
+   * publicaciones el campo va en un renglón junto a su botón, y ahí tiene que
+   * poder encogerse con los demás.
+   */
+  clase?: string;
+}) {
+  // Vive dentro del `<form>`, así que puede saber si el envío está en curso.
+  const { pending } = useFormStatus();
+
+  /*
+    En piezas, no como `acomodo.algo`: al pasar una de ellas a `ref`, el lint de
+    React da por contagiado el objeto entero y se queja de todo lo demás que se
+    lea al pintar.
+  */
+  const { campo, previos, empezar, limpiar, acomodarUna, pedirEnvio, encuadre } =
+    useAcomodo(proporcion, autoEnviar ? enviar : undefined);
+
+  function enviar() {
+    pedirEnvio();
+  }
+
+  function alElegir(evento: React.ChangeEvent<HTMLInputElement>) {
+    const elegidos = [...(evento.target.files ?? [])];
+
+    if (elegidos.length === 0) {
+      limpiar();
+      return;
+    }
+
+    /*
+      Un video no se recorta —aquí no hay nada que lo recodifique—, así que el
+      encuadre no llega a abrirse y el envío no debe quedarse esperándolo.
+    */
+    if (!empezar(elegidos) && autoEnviar) enviar();
+  }
+
+  return (
+    <label className={clase}>
+      {etiqueta && (
+        <span className="mb-1.5 block font-bold text-selva-2">{etiqueta}</span>
+      )}
+
+      <input
+        ref={campo}
+        id={id}
+        type="file"
+        name={nombre}
+        accept={acepta}
+        multiple={varias}
+        required={requerido}
+        onChange={alElegir}
+        /*
+          El campo no se deshabilita mientras sube, aunque se vea la tentación:
+          un campo deshabilitado no se serializa, y hacerlo aquí correría el
+          riesgo de mandar el formulario sin el archivo.
+        */
+        className="w-full rounded-2xl border-2 border-dashed border-selva/25 bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-selva file:px-4 file:py-2 file:font-bold file:text-crema"
+      />
+
+      {encuadre}
+
+      {/*
+        La vista previa solo donde la foto espera a un botón. En los campos que
+        suben solos, un segundo después la página ya enseña la foto de verdad,
+        ya guardada: dejar aquí la miniatura sería enseñar la misma foto dos
+        veces y que la de abajo pareciera otra.
+      */}
+      {!autoEnviar && previos.length > 0 && (
+        <span className="mt-2 flex flex-wrap gap-2">
+          {previos.map((previo, i) => (
+            <span key={previo.url} className="relative block w-40">
+              {previo.esVideo ? (
+                <video
+                  src={previo.url}
+                  muted
+                  playsInline
+                  preload="metadata"
+                  style={{ aspectRatio: `${proporcion}`, objectFit: "cover" }}
+                  className="w-full rounded-xl border-2 border-selva/15 bg-ink"
+                />
+              ) : (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={previo.url}
+                    alt={`Vista previa ${i + 1}`}
+                    style={{ aspectRatio: `${proporcion}`, objectFit: "cover" }}
+                    className="w-full rounded-xl border-2 border-selva/15 bg-crema-2"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => acomodarUna(i)}
+                    className="absolute right-1 bottom-1 min-h-11 rounded-full bg-ink/70 px-3 text-sm font-bold text-crema"
+                  >
+                    Acomodar
+                  </button>
+                </>
+              )}
+            </span>
+          ))}
+        </span>
+      )}
+
+      {autoEnviar && pending ? (
+        <span role="status" className="mt-1.5 block text-sm font-bold text-selva">
+          Subiendo…
+        </span>
+      ) : (
+        <>
+          {ayuda && (
+            <span className="mt-1.5 block text-sm text-cacao/70">{ayuda}</span>
+          )}
+          {peso && (
+            <span className="block text-sm text-cacao/70">{peso}</span>
+          )}
+        </>
+      )}
     </label>
   );
 }

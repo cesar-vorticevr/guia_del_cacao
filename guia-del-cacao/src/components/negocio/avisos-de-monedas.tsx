@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { conMonedas } from "@/lib/vocabulario";
+import { LluviaDeMazorcas } from "@/components/lluvia-de-mazorcas";
 
 /** Lo que viaja en el aviso: cuántas mazorcas y a quién se le dieron. */
 export type MonedasDadas = { puntos: number; cliente: string };
@@ -13,19 +14,6 @@ export const AVISO_CANCELA = "monedas-canceladas";
 /** Lanza el festejo desde donde se resuelve la solicitud. */
 export function festejarMonedas(dato: MonedasDadas) {
   window.dispatchEvent(new CustomEvent(AVISO_MONEDAS, { detail: dato }));
-}
-
-/**
- * El festejo de haber publicado en la comunidad.
- *
- * Va por el mismo canal que el de las mazorcas, con `puntos` en cero: no cambia
- * de manos ninguna, pero se celebra igual porque escribir algo y que la pantalla
- * se quede muda es lo que hace que nadie vuelva a escribir.
- */
-export function festejarPublicacion() {
-  window.dispatchEvent(
-    new CustomEvent(AVISO_MONEDAS, { detail: { puntos: 0, cliente: "" } }),
-  );
 }
 
 /**
@@ -51,28 +39,6 @@ export function avisarRechazo(cliente: string) {
 export function cancelarFestejo() {
   window.dispatchEvent(new Event(AVISO_CANCELA));
 }
-
-/*
-  Catorce mazorcas cayendo, colocadas a mano y no al azar: `Math.random()` durante
-  el render daría una pintada distinta en el servidor y en el navegador. Cada una
-  lleva su carril, su retraso y su tamaño para que la lluvia no se vea en fila.
-*/
-const LLUVIA = [
-  { x: 6, tarda: 0.0, tam: 34 },
-  { x: 14, tarda: 0.45, tam: 26 },
-  { x: 22, tarda: 0.15, tam: 42 },
-  { x: 30, tarda: 0.7, tam: 30 },
-  { x: 38, tarda: 0.3, tam: 38 },
-  { x: 46, tarda: 0.9, tam: 24 },
-  { x: 54, tarda: 0.05, tam: 36 },
-  { x: 62, tarda: 0.6, tam: 28 },
-  { x: 70, tarda: 0.25, tam: 44 },
-  { x: 78, tarda: 0.8, tam: 32 },
-  { x: 86, tarda: 0.4, tam: 26 },
-  { x: 94, tarda: 1.0, tam: 38 },
-  { x: 18, tarda: 1.2, tam: 30 },
-  { x: 74, tarda: 1.35, tam: 34 },
-];
 
 /** Cuánto se queda el festejo antes de irse solo. */
 const DURA = 4200;
@@ -162,28 +128,7 @@ export function AvisosDeMonedas() {
       onClick={() => setDado(null)}
       className="fixed inset-0 z-50 grid place-items-center overflow-hidden bg-ink/45 p-6"
     >
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 motion-reduce:hidden"
-      >
-        {LLUVIA.map((mazorca, i) => (
-          <span
-            key={i}
-            className="absolute top-0 animate-cae"
-            style={{
-              left: `${mazorca.x}%`,
-              animationDelay: `${mazorca.tarda}s`,
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/marca/mazorca.png"
-              alt=""
-              style={{ width: `${mazorca.tam}px` }}
-            />
-          </span>
-        ))}
-      </div>
+      <LluviaDeMazorcas />
 
       <div
         role="status"
@@ -196,16 +141,20 @@ export function AvisosDeMonedas() {
           className="mx-auto size-20 animate-late"
         />
 
+        {/*
+          Antes esta tarjeta servía para dos cosas: dar mazorcas y haber
+          publicado, con `puntos: 0` como seña para lo segundo. La publicación
+          se celebra por su cuenta desde `celebrar-publicacion`, así que aquí
+          quedan las mazorcas y nada más — y el texto puede volver a hablar de
+          una sola cosa.
+        */}
         <p className="mt-3 font-display text-3xl font-semibold text-selva-2">
-          {dado.puntos === 0
-            ? "¡Ya está publicado!"
-            : `¡${conMonedas(dado.puntos, true)} para ${dado.cliente}!`}
+          ¡{conMonedas(dado.puntos, true)} para {dado.cliente}!
         </p>
 
         <p className="mt-3 text-cacao">
-          {dado.puntos === 0
-            ? "Ya está en el muro. Cuando alguien te comente o te regale una mazorca, te avisamos aquí."
-            : "Ya están en su cuenta y le avisamos en el momento. Así es como se gana un cliente que vuelve."}
+          Ya están en su cuenta y le avisamos en el momento. Así es como se gana
+          un cliente que vuelve.
         </p>
 
         <p className="mt-5 text-sm text-cacao/70">Toca para cerrar</p>

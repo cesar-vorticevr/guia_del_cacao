@@ -1,10 +1,10 @@
 "use client";
 
 import { useActionState } from "react";
-import { Aviso, BotonEnviar } from "@/components/formulario";
+import { Aviso, BotonEnviar, CampoFoto } from "@/components/formulario";
 import { Estrellas, SelectorEstrellas } from "@/components/publico/estrellas";
 import { Medio } from "@/components/publico/medio";
-import { ACEPTA_MEDIO, PESO_MEDIO } from "@/lib/imagenes";
+import { ACEPTA_MEDIO, PESO_MEDIO, PROPORCIONES } from "@/lib/imagenes";
 import {
   publicarResena,
   responderResena,
@@ -123,19 +123,22 @@ export function FormularioResena({
         </div>
       )}
 
-      <label className="block">
-        <span className="mb-1.5 block font-bold text-selva-2">
-          Una foto o un video{" "}
-          <span className="font-normal text-cacao/70">(opcional)</span>
-        </span>
-        <input
-          type="file"
-          name="medio"
-          accept={ACEPTA_MEDIO}
-          className="w-full rounded-2xl border-2 border-dashed border-selva/25 bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-selva file:px-4 file:py-2 file:font-bold file:text-crema"
-        />
-        <span className="mt-1.5 block text-sm text-cacao/70">{PESO_MEDIO}</span>
-      </label>
+      {/*
+        El video pasa de largo: aquí no hay nada que lo recorte, así que el
+        encuadre no se abre y se sube tal cual.
+      */}
+      <CampoFoto
+        nombre="medio"
+        etiqueta={
+          <>
+            Una foto o un video{" "}
+            <span className="font-normal text-cacao/70">(opcional)</span>
+          </>
+        }
+        proporcion={PROPORCIONES.resena}
+        acepta={ACEPTA_MEDIO}
+        peso={PESO_MEDIO}
+      />
 
       <BotonEnviar>
         {yaLaTengo ? "Actualizar mi reseña" : "Publicar mi reseña"}

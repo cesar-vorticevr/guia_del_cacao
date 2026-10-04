@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { Area, Aviso, BotonEnviar, Campo } from "@/components/formulario";
+import {
+  Area,
+  Aviso,
+  BotonEnviar,
+  Campo,
+  CampoFoto,
+} from "@/components/formulario";
 import {
   agregarAlCatalogo,
   editarDelCatalogo,
@@ -12,7 +18,7 @@ import {
   type EstadoCatalogo,
 } from "@/lib/negocio/catalogo";
 import { eliminarSucursal } from "@/lib/negocio/acciones";
-import { ACEPTA, MEDIDAS, PESO } from "@/lib/imagenes";
+import { MEDIDAS, PESO, PROPORCIONES } from "@/lib/imagenes";
 import { LIMITES } from "@/lib/limites";
 import { pesos, type Producto } from "@/lib/tipos";
 
@@ -124,54 +130,53 @@ function CamposProducto({
         problema={problemaDe("precio")}
       />
 
-      <label className="block">
-        <span className="mb-1.5 block font-bold text-selva-2">
-          Foto del producto{" "}
-          <span className="font-normal text-cacao/70">(opcional)</span>
-        </span>
-        <input
-          id="imagen"
-          type="file"
-          name="imagen"
-          accept={ACEPTA}
-          className="w-full rounded-2xl border-2 border-dashed border-selva/25 bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-selva file:px-4 file:py-2 file:font-bold file:text-crema"
-        />
-        {pending ? (
-          <span role="status" className="mt-1.5 block text-sm font-bold text-selva">
-            Subiendo…
-          </span>
-        ) : (
+      <CampoFoto
+        nombre="imagen"
+        id="imagen"
+        etiqueta={
           <>
-            {/*
-              El único campo que de verdad se pierde. Un `input file` no se
-              puede rellenar desde el código —lo impide el navegador—, así que
-              se avisa en vez de dejar que el producto se guarde sin foto sin
-              que nadie lo note.
-            */}
-            {estado?.fotoPerdida && (
-              <span className="mt-1.5 block text-sm font-bold text-guayaba">
-                La foto no se guardó: vuelve a elegirla.
-              </span>
-            )}
-
-            {problemaDe("imagen") && (
-              <span className="mt-1.5 block text-sm font-bold text-guayaba">
-                {problemaDe("imagen")}
-              </span>
-            )}
-
-            <span className="mt-1.5 block text-sm text-cacao/70">
-              Cuadrada. {MEDIDAS.producto}
-            </span>
-            <span className="block text-sm text-cacao/70">{PESO}</span>
-            {producto?.imagen && (
-              <span className="block text-sm text-cacao/70">
-                Ya tiene foto: elige otra solo si quieres reemplazarla.
-              </span>
-            )}
+            Foto del producto{" "}
+            <span className="font-normal text-cacao/70">(opcional)</span>
           </>
-        )}
-      </label>
+        }
+        proporcion={PROPORCIONES.producto}
+        peso={pending ? null : PESO}
+        ayuda={
+          pending ? (
+            <span role="status" className="block font-bold text-selva">
+              Subiendo…
+            </span>
+          ) : (
+            <>
+              {/*
+                El único campo que de verdad se pierde. Un `input file` no se
+                puede rellenar desde el código —lo impide el navegador—, así que
+                se avisa en vez de dejar que el producto se guarde sin foto sin
+                que nadie lo note.
+              */}
+              {estado?.fotoPerdida && (
+                <span className="block font-bold text-guayaba">
+                  La foto no se guardó: vuelve a elegirla.
+                </span>
+              )}
+
+              {problemaDe("imagen") && (
+                <span className="block font-bold text-guayaba">
+                  {problemaDe("imagen")}
+                </span>
+              )}
+
+              <span className="block">Cuadrada. {MEDIDAS.producto}</span>
+
+              {producto?.imagen && (
+                <span className="block">
+                  Ya tiene foto: elige otra solo si quieres reemplazarla.
+                </span>
+              )}
+            </>
+          )
+        }
+      />
     </>
   );
 }
