@@ -18,6 +18,13 @@ const CUANDO = new Intl.DateTimeFormat("es-MX", {
   timeZone: "America/Mexico_City",
 });
 
+const ESTADO_DE_USO: Record<string, string> = {
+  trial: "en su periodo gratis",
+  activo: "pagando",
+  pausado_por_pago: "oculta por no pagar",
+  cancelado: "dio de baja su plan",
+};
+
 /** Las fechas de vigencia son días, no instantes: se pintan en UTC tal cual. */
 function dia(fecha: string) {
   return DIA.format(new Date(`${fecha}T00:00:00Z`));
@@ -45,10 +52,9 @@ export default async function Convenios() {
     <>
       <h1 className="font-display text-3xl">Convenios</h1>
       <p className="mt-2 text-cacao">
-        Quien escribe un código vigente al publicar tiene Premier gratis hasta
-        la fecha del convenio. Después, si no paga, baja al Básico y sigue
-        publicado. El código sirve para todos los que lo usen dentro de sus
-        fechas.
+        Quien escribe un código vigente al contratar recibe lo que ese código
+        da: el Básico gratis hasta una fecha, un descuento en Plus y Premier, o
+        los dos. Sirve para todos los que lo usen dentro de sus fechas.
       </p>
 
       {convenios.map((convenio) => {
@@ -75,9 +81,12 @@ export default async function Convenios() {
             </div>
             <p className="mt-1 text-cacao">{convenio.descripcion}</p>
             <p className="text-sm text-cacao/70">
-              Sirve para publicar del {dia(convenio.vigente_desde)} al{" "}
-              {dia(convenio.vigente_hasta)} · Premier gratis hasta el{" "}
-              {dia(convenio.premier_gratis_hasta)}
+              Sirve del {dia(convenio.vigente_desde)} al{" "}
+              {dia(convenio.vigente_hasta)}
+              {convenio.basico_gratis_hasta &&
+                ` · Básico gratis hasta el ${dia(convenio.basico_gratis_hasta)}`}
+              {convenio.descuento > 0 &&
+                ` · ${convenio.descuento}% en Plus y Premier`}
             </p>
 
             <dl className="mt-5 grid grid-cols-2 gap-3 text-center">
@@ -128,9 +137,8 @@ export default async function Convenios() {
                       )}
                       <span className="text-sm text-cacao/70">
                         desde el {CUANDO.format(new Date(uso.fecha_inicio))}
-                        {uso.estado === "trial"
-                          ? " · Premier gratis"
-                          : " · terminó su Premier gratis"}
+                        {" · "}
+                        {ESTADO_DE_USO[uso.estado] ?? uso.estado}
                       </span>
                     </li>
                   ))}

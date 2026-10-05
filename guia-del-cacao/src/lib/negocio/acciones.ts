@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { perfilActual } from "@/lib/auth/sesion";
 import { miSucursal, misSucursales } from "@/lib/datos/sucursales";
-import { generarSlug } from "@/lib/tipos";
+import { generarSlug, normalizarCodigo } from "@/lib/tipos";
+import type { Oferta } from "@/lib/precios";
 import { esPasoDelAlta } from "@/lib/negocio/pasos";
 import { esEntidad } from "@/lib/entidades";
 import { proximoCobro } from "@/lib/pagos";
@@ -239,9 +240,9 @@ export async function subirImagen(
 /**
  * Saca la sucursal al directorio con el plan elegido y quince días de prueba.
  *
- * Con código de convenio el plan es Premier gratis hasta la fecha del
- * convenio (migración 000051): aquí solo se revisa que el código exista y esté
- * vigente; el precio y la fecha los fija un trigger de la base. El trigger de `sucursales` vuelve a exigir plan y micrositio
+ * Con código de convenio cambian los precios (migración 000051): aquí solo se
+ * revisa que el código exista y esté vigente; el monto y la prueba los fija un
+ * trigger de la base. El trigger de `sucursales` vuelve a exigir plan y micrositio
  * completo, así que esto no es la única barrera.
  */
 export async function publicarSucursal(
@@ -260,29 +261,17 @@ export async function publicarSucursal(
   }
 
   const codigo = texto(datos, "codigo_convenio");
+  const periodo = datos.get("periodo")?.toString() === "anual" ? "anual" : "mensual";
   const tierId = Number(datos.get("tier_id")?.toString() ?? "");
-  if (!tierId && !codigo) return { error: "Elige un plan para esta sucursal." };
+  if (!tierId) return { error: "Elige un plan para esta sucursal." };
 
   const supabase = await crearClienteServidor();
 
-  /*
-    El convenio es del plan más alto, el que sale en el banner. Se busca por esa
-    bandera y no por `id = 3`: el número escrito a mano ya escondió una vez un
-    formulario que la base sí aceptaba.
-  */
-  const { data: tier } = codigo
-    ? await supabase
-        .from("tiers")
-        .select("id, nombre, precio_mensual")
-        .eq("en_banner_principal", true)
-        .order("precio_mensual", { ascending: false })
-        .limit(1)
-        .maybeSingle()
-    : await supabase
-        .from("tiers")
-        .select("id, nombre, precio_mensual")
-        .eq("id", tierId)
-        .maybeSingle();
+  const { data: tier } = await supabase
+    .from("tiers")
+    .select("id, nombre, precio_mensual")
+    .eq("id", tierId)
+    .maybeSingle();
 
   if (!tier) return { error: "Ese plan no existe." };
 
@@ -303,7 +292,7 @@ export async function publicarSucursal(
       };
     }
 
-    convenioId = data as string;
+    convenioId = (data as { id: string }[] | null)?.[0]?.id ?? null;
   }
 
   /*
@@ -319,10 +308,11 @@ export async function publicarSucursal(
   const { error: errorPrueba } = await supabase.from("suscripciones").insert({
     sucursal_id: id,
     tier_id: tier.id,
+    // El monto lo fija la base (`precio_de_suscripcion`, migración 000051)
+    // con el plan, el periodo y el convenio; lo que va aquí se sobrescribe.
     monto_mensual: tier.precio_mensual,
-    // El Básico es gratis (migración 000051): no hay nada que probar antes de
-    // pagar. Con convenio, el trigger fija Premier gratis y su fecha de fin.
-    estado: Number(tier.precio_mensual) === 0 ? "activo" : "trial",
+    periodo,
+    estado: "trial",
     fecha_proximo_cobro: proximoCobro().toISOString(),
     convenio_id: convenioId,
   });
@@ -1097,4 +1087,51 @@ export async function cambiarEstadoEvento(datos: FormData) {
   revalidatePath("/negocio/panel/eventos");
   revalidatePath(`/negocio/panel/eventos/${eventoId}`);
   revalidatePath("/eventos");
+}
+
+// ---------------------------------------------------------------------------
+// Consultar un código de convenio
+// ---------------------------------------------------------------------------
+
+export type RespuestaDeCodigo = { oferta?: Oferta; error?: string };
+
+/**
+ * Lo que ofrece un código, para enseñar los precios de la oferta antes de
+ * contratar. No aparta nada ni cambia nada: contratar vuelve a revisarlo.
+ */
+export async function consultarCodigo(codigo: string): Promise<RespuestaDeCodigo> {
+  await exigirNegocio();
+
+  if (!codigo.trim()) return { error: "Escribe tu código." };
+
+  const supabase = await crearClienteServidor();
+  const { data, error } = await supabase.rpc("revisar_convenio", {
+    p_codigo: codigo,
+  });
+
+  if (error) {
+    return {
+      error:
+        error.code === "P0001"
+          ? error.message
+          : "No se pudo revisar el código. Inténtalo de nuevo.",
+    };
+  }
+
+  const fila = (data as {
+    descripcion: string;
+    basico_gratis_hasta: string | null;
+    descuento: number;
+  }[] | null)?.[0];
+
+  if (!fila) return { error: "Ese código no existe. Revisa que esté bien escrito." };
+
+  return {
+    oferta: {
+      codigo: normalizarCodigo(codigo),
+      descripcion: fila.descripcion,
+      basicoGratisHasta: fila.basico_gratis_hasta,
+      descuento: Number(fila.descuento),
+    },
+  };
 }

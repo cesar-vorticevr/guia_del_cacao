@@ -187,16 +187,18 @@ export async function crearConvenio(
   const descripcion = datos.get("descripcion")?.toString().trim() ?? "";
   const desde = datos.get("vigente_desde")?.toString() ?? "";
   const hasta = datos.get("vigente_hasta")?.toString() ?? "";
-  const gratisHasta = datos.get("premier_gratis_hasta")?.toString() ?? "";
+  const gratisHasta = datos.get("basico_gratis_hasta")?.toString() || null;
+  const descuento = Number(datos.get("descuento")?.toString() || 0);
 
   if (!codigo) return { error: "Escribe el código, solo letras y números." };
   if (!descripcion) return { error: "Escribe para qué es el código." };
   if (!desde || !hasta) return { error: "Elige desde y hasta cuándo sirve." };
   if (hasta < desde) return { error: "La fecha final va después de la inicial." };
-  if (!gratisHasta || gratisHasta < hasta) {
-    return {
-      error: "El Premier gratis tiene que durar al menos hasta que venza el código.",
-    };
+  if (!Number.isInteger(descuento) || descuento < 0 || descuento > 100) {
+    return { error: "El descuento va de 0 a 100." };
+  }
+  if (!gratisHasta && descuento === 0) {
+    return { error: "Un código tiene que dar algo: Básico gratis, descuento o los dos." };
   }
 
   const supabase = await crearClienteServidor();
@@ -206,7 +208,8 @@ export async function crearConvenio(
     descripcion,
     vigente_desde: desde,
     vigente_hasta: hasta,
-    premier_gratis_hasta: gratisHasta,
+    basico_gratis_hasta: gratisHasta,
+    descuento,
   });
 
   if (error) {

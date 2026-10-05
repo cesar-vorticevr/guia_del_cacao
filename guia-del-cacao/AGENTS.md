@@ -1074,49 +1074,68 @@ pidió menos movimiento no se pierde nada.
 npm run typecheck && npm run lint && npm run build
 ```
 
-## Aparecer es gratis; se paga por destacar
+## Precios, pago anual y convenios
 
-Desde la migración **000051** el plan **Básico cuesta $0**: directorio,
-micrositio, catálogo y contacto, sin plazo. **Plus** ($199) suma reseñas y
-**Premier** ($299) eventos, noticias y el banner. El orden anterior —pagar por
-aparecer— pedía dinero por estar en una guía que todavía nadie visitaba. Cada
-negocio gratis es contenido que atrae visitantes, y eso es lo que hace que
-valga la pena pagar.
+Migración **000051**. Mensual / anual (20% menos):
 
-- **Nadie se oculta por no pagar.** Plus y Premier se prueban quince días; si la
-  prueba vence sin pago, `vencer_pruebas()` (pg_cron, cada noche a las 00:15 del
-  centro) cancela la suscripción y abre una de Básico. La sucursal sigue
-  publicada; solo se apaga lo de pago.
-- El Básico se publica **activo**, sin prueba: no hay nada que probar.
-- En pantalla el precio de un plan pasa por `precioDePlan()`: «Gratis», no «$0».
+| Plan | Mensual | Anual |
+|---|---|---|
+| Básico | $99 | $950 |
+| Plus | $199 | $1,910 |
+| Premier | $299 | $2,870 |
 
-### Convenio del Festival del Chocolate
+- **El precio lo calcula la base** (`precio_de_suscripcion`, trigger de
+  insert) con el plan, el periodo y el convenio; lo que mande la aplicación se
+  sobrescribe. Antes `monto_mensual` lo ponía el formulario y se podía abrir una
+  suscripción con el monto que fuera. Después de abierta, plan, periodo, precio
+  y convenio no se editan (`proteger_precio_de_suscripcion`): cambiar es
+  cancelar y abrir otra, como hace `contratarPlan`.
+- `lib/precios.ts` repite la cuenta **solo para enseñarla** antes de contratar.
+  Si cambia una regla, cambia en los dos lados; manda la base.
+- `monto_por_cobro` es lo que se cobra cada periodo (el mes o el año);
+  `monto_mensual` es lo que equivale al mes.
+- **Todos estrenan quince días de prueba.** Una prueba de pago nunca pasa de
+  quince días, aunque venga de un periodo gratis más largo: sin ese tope, quien
+  tenía el Básico gratis hasta noviembre se pasaba a Premier y lo tenía gratis
+  igual.
+- **Quien no paga se oculta, no se borra.** `vencer_pruebas()` (pg_cron, 00:15
+  del centro cada noche) pasa la suscripción a `pausado_por_pago` y la sucursal
+  a `pausado`. El negocio no puede reactivarla sin pagar:
+  `proteger_estado_sucursal` pide un plan en `trial` o `activo`. Al contratar de
+  nuevo, `contratarPlan` la deja `activo` y la vuelve a publicar.
 
-Con la Secretaría de Turismo: quien publique con el código
-**`FESTIVALCHOCOLATE`** del 1 de octubre al 30 de noviembre de 2026 tiene
-**Premier gratis hasta el 31 de diciembre**, para tenerlo durante el Festival.
-El 1 de enero, sin pago, baja al Básico como cualquier prueba.
+### Convenios: un código al contratar
+
+Al publicar (y al cambiar de plan, con el que ya tenga) se pregunta **«¿Tienes
+un código?»**. Se aplica con su propio botón y los planes enseñan ya el precio de
+la oferta, antes de confirmar (`consultarCodigo` → `revisar_convenio`). Contratar
+lo vuelve a revisar en la base.
+
+Un convenio puede dar **Básico gratis hasta una fecha** y/o **un % de descuento
+en Plus y Premier** mientras se siga pagando. **No se suma al anual**: se queda
+el descuento mayor.
+
+El primero es el de la Secretaría de Turismo, **`FESTIVALCHOCOLATE`**: sirve para
+contratar en octubre y noviembre de 2026, da Básico gratis hasta el 30 de
+noviembre y 20% en Plus y Premier. El 1 de diciembre, quien no haya pagado su
+Básico se oculta.
 
 - **Un solo código para todos, acotado por fecha.** Se probó uno por negocio y
   se descartó: repartirlos era lo difícil, y uno que vence deja de circular
-  solo. Vencido, quien ya lo usó conserva lo prometido.
+  solo. Vencido, quien ya lo tenía conserva su descuento al cambiar de plan.
 - Se compara **sin espacios, guiones ni minúsculas** (`normalizar_codigo` en la
   base, `normalizarCodigo` en `lib/tipos.ts`): se dicta en voz alta en un taller.
-- **Plan, precio y fecha los pone la base** (`aplicar_precio_de_convenio`):
-  exige el código vigente al abrir la suscripción y fija Premier, $0, `trial` y
-  `fecha_fin_trial` = el día siguiente a `premier_gratis_hasta`. Mandarlos
-  desde fuera dejaría elegir cuánto pagar y hasta cuándo.
-- **El plan no se cambia mientras dure.** `contratarPlan` se salta esas
-  suscripciones y el trigger rechaza cambiarles el `tier_id`.
-- `/admin/convenios`: quién lo usó (por `suscripciones.convenio_id`, contando
-  también las ya vencidas), descarga en CSV y alta de códigos para otros eventos.
+- `convenios` solo la lee el administrador. El negocio ve el suyo por
+  `convenio_de_sucursal`.
+- `/admin/convenios`: quién lo usó y en qué situación está, descarga en CSV y
+  alta de códigos para otros eventos.
 
 ## Lo que se mide, y lo que no
 
 `public.actividad` (migración **000052**) cuenta visitas a páginas, a
 micrositios y a eventos, búsquedas, filtros y cada botón de contacto: WhatsApp,
 teléfono, correo, mapa, redes, compartir y catálogo en PDF. Es el argumento para
-que un negocio pase a un plan de pago y el reporte para la Secretaría.
+que un negocio contrate o suba de plan, y el reporte para la Secretaría.
 
 - **Solo conteos.** Ni usuario, ni IP, ni identificador del navegador, ni
   cookies. El aviso de privacidad lo dice así; si la tabla gana una columna que

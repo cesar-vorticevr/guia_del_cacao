@@ -1,7 +1,7 @@
 "use client";
 
 import { EditarFotos } from "@/components/publico/editar-fotos";
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import {
   Area,
@@ -23,9 +23,18 @@ import {
   guardarMicrositio,
   publicarSucursal,
   subirImagen,
+  consultarCodigo,
   type EstadoAccion,
 } from "@/lib/negocio/acciones";
-import { precioDePlan, type Sucursal, type Tier } from "@/lib/tipos";
+import { type Sucursal, type Tier } from "@/lib/tipos";
+import {
+  DESCUENTO_ANUAL,
+  fechaDeOferta,
+  precioDe,
+  textoDePrecio,
+  type Oferta,
+  type Periodo,
+} from "@/lib/precios";
 import { cancelarPlan, contratarPlan } from "@/lib/negocio/plan";
 import { ENTIDADES } from "@/lib/entidades";
 import { FUNCIONES } from "@/lib/funciones";
@@ -271,40 +280,178 @@ export function FormularioPublicar({
   tiers: Tier[];
 }) {
   const [estado, accion] = useActionState(publicarSucursal, INICIAL);
+  const [oferta, setOferta] = useState<Oferta | null>(null);
+  const [periodo, setPeriodo] = useState<Periodo>("mensual");
 
   return (
     <form action={accion} className="grid gap-4">
       <input type="hidden" name="sucursal_id" value={sucursalId} />
+      <input type="hidden" name="codigo_convenio" value={oferta?.codigo ?? ""} />
       <Resultado estado={estado} />
 
-      {/* `Planes` ya trae dentro el radio `tier_id`, que es lo que viaja. */}
-      <Planes tiers={tiers} />
+      {/*
+        El código va arriba: cambia los precios de abajo, y quien lo trae llega
+        buscándolo. Al aplicarlo, los planes enseñan ya el precio de la oferta,
+        antes de contratar nada.
+      */}
+      <CodigoDeConvenio oferta={oferta} alCambiar={setOferta} />
+
+      <ElegirPeriodo periodo={periodo} alCambiar={setPeriodo} />
+
+      {/* `Planes` ya trae dentro el radio `tier_id` y el `periodo`. */}
+      <Planes tiers={tiers} periodo={periodo} oferta={oferta} />
 
       <p className="rounded-2xl bg-crema-2 px-4 py-3 text-sm text-cacao">
-        El Básico es gratis siempre. Plus y Premier los pruebas quince días sin
-        pagar y sin dejar tarjeta; si al terminar no pagas, tu micrositio baja
-        al Básico y sigue en el directorio.
+        Pruebas tu plan quince días sin pagar y sin dejar tarjeta. Si al
+        terminar no has pagado, tu micrositio sale del directorio, pero no se
+        borra nada y vuelve en cuanto pagues.
       </p>
-
-      {/*
-        Abajo y opcional: casi nadie tiene código, y quien lo tiene llega
-        buscándolo. Con código el plan elegido arriba no cuenta —es Premier—, y
-        la ayuda lo dice para que nadie crea que eligió otro.
-      */}
-      <div className="rounded-2xl border-2 border-dashed border-selva/25 p-4">
-        <Campo
-          nombre="codigo_convenio"
-          etiqueta="¿Tienes código del Festival del Chocolate?"
-          requerido={false}
-          autoComplete="off"
-          marcador="FESTIVALCHOCOLATE"
-          limite={40}
-          ayuda="Con el código, tienes Premier gratis hasta el 31 de diciembre de 2026."
-        />
-      </div>
 
       <BotonEnviar>Publicar mi micrositio</BotonEnviar>
     </form>
+  );
+}
+
+/**
+ * «¿Tienes un código?»: se escribe, se aplica y aparece la oferta.
+ *
+ * Se consulta con su propio botón y no al enviar el formulario: la gracia es
+ * ver los precios con descuento **antes** de elegir. El código que viaja al
+ * publicar es el que quedó aplicado, y la base lo vuelve a revisar.
+ */
+function CodigoDeConvenio({
+  oferta,
+  alCambiar,
+}: {
+  oferta: Oferta | null;
+  alCambiar: (oferta: Oferta | null) => void;
+}) {
+  const [codigo, setCodigo] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [revisando, iniciar] = useTransition();
+
+  function aplicar() {
+    setError(null);
+    iniciar(async () => {
+      const respuesta = await consultarCodigo(codigo);
+      if (respuesta.oferta) {
+        alCambiar(respuesta.oferta);
+      } else {
+        setError(respuesta.error ?? "No se pudo revisar el código.");
+      }
+    });
+  }
+
+  if (oferta) {
+    return (
+      <div
+        role="status"
+        className="rounded-2xl border-2 border-lima/60 bg-lima/20 px-4 py-3 text-cacao"
+      >
+        <p className="font-bold text-selva-2">
+          Código {oferta.codigo} aplicado
+        </p>
+        <p className="text-sm">{oferta.descripcion}</p>
+        <ul className="mt-2 grid gap-0.5 text-sm">
+          {oferta.basicoGratisHasta && (
+            <li>
+              ✓ Básico gratis hasta el {fechaDeOferta(oferta.basicoGratisHasta)}
+            </li>
+          )}
+          {oferta.descuento > 0 && (
+            <li>✓ {oferta.descuento}% de descuento en Plus y Premier</li>
+          )}
+        </ul>
+        <button
+          type="button"
+          onClick={() => {
+            alCambiar(null);
+            setCodigo("");
+          }}
+          className="mt-2 text-sm font-bold text-selva underline"
+        >
+          Quitar el código
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border-2 border-dashed border-selva/25 p-4">
+      <label htmlFor="codigo" className="mb-1.5 block font-bold text-selva-2">
+        ¿Tienes un código?
+      </label>
+      <div className="flex gap-2">
+        <input
+          id="codigo"
+          value={codigo}
+          onChange={(evento) => setCodigo(evento.target.value)}
+          onKeyDown={(evento) => {
+            // Enter aquí aplica el código; publicaría el formulario entero.
+            if (evento.key === "Enter") {
+              evento.preventDefault();
+              aplicar();
+            }
+          }}
+          autoComplete="off"
+          maxLength={40}
+          placeholder="FESTIVALCHOCOLATE"
+          aria-invalid={error ? true : undefined}
+          className={`min-w-0 flex-1 rounded-2xl border-2 bg-white px-4 py-3 font-mono text-base uppercase text-ink ${error ? "border-guayaba focus:border-guayaba" : "border-selva/20 focus:border-selva"}`}
+        />
+        <button
+          type="button"
+          onClick={aplicar}
+          disabled={revisando || !codigo.trim()}
+          className="min-h-12 shrink-0 rounded-full bg-selva px-5 font-bold text-crema disabled:opacity-50"
+        >
+          {revisando ? "Revisando…" : "Aplicar"}
+        </button>
+      </div>
+      <p className={`mt-1.5 text-sm ${error ? "font-bold text-guayaba" : "text-cacao/70"}`}>
+        {error ?? "Si vienes por un convenio, como el del Festival del Chocolate, escríbelo aquí para ver tus precios."}
+      </p>
+    </div>
+  );
+}
+
+/** Mensual o anual. El anual va con su descuento a la vista. */
+function ElegirPeriodo({
+  periodo,
+  alCambiar,
+}: {
+  periodo: Periodo;
+  alCambiar: (periodo: Periodo) => void;
+}) {
+  const opciones: { valor: Periodo; texto: string }[] = [
+    { valor: "mensual", texto: "Pago mensual" },
+    { valor: "anual", texto: `Pago anual · ${DESCUENTO_ANUAL}% menos` },
+  ];
+
+  return (
+    <fieldset className="flex flex-wrap gap-2">
+      <legend className="sr-only">Cómo quieres pagar</legend>
+      {opciones.map((opcion) => (
+        <label
+          key={opcion.valor}
+          className={`flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-full border-2 px-4 text-center text-sm font-bold ${
+            periodo === opcion.valor
+              ? "border-selva bg-selva text-crema"
+              : "border-selva/20 bg-white text-selva-2"
+          }`}
+        >
+          <input
+            type="radio"
+            name="periodo_vista"
+            value={opcion.valor}
+            checked={periodo === opcion.valor}
+            onChange={() => alCambiar(opcion.valor)}
+            className="sr-only"
+          />
+          {opcion.texto}
+        </label>
+      ))}
+    </fieldset>
   );
 }
 
@@ -566,16 +713,23 @@ function Planes({
   tiers,
   actual,
   inicial,
+  periodo = "mensual",
+  oferta = null,
 }: {
   tiers: Tier[];
   actual?: number;
   /** Cuál viene abierto. Sin él, el que ya se tiene. */
   inicial?: number;
+  periodo?: Periodo;
+  /** El convenio aplicado, si hay: cambia los precios que se enseñan. */
+  oferta?: Oferta | null;
 }) {
   const [elegido, setElegido] = useState(inicial ?? actual ?? tiers[0]?.id);
   const tier = tiers.find((t) => t.id === elegido) ?? tiers[0];
 
   if (!tier) return null;
+
+  const precio = precioDe(tier, tiers, periodo, oferta);
 
   /*
     Ya no se anuncia un tope de sucursales: desde la spec v2 el cobro es por
@@ -614,6 +768,7 @@ function Planes({
   return (
     <fieldset className="grid gap-4">
       <legend className="sr-only">Elige un plan</legend>
+      <input type="hidden" name="periodo" value={periodo} />
 
       {/*
         El radio va oculto pero sigue ahi: es lo que viaja en el formulario y lo
@@ -621,33 +776,37 @@ function Planes({
         botones es su etiqueta, no un sustituto.
       */}
       <div className="flex flex-wrap gap-2">
-        {tiers.map((opcion) => (
-          <label
-            key={opcion.id}
-            className={`flex min-h-12 flex-1 cursor-pointer flex-col justify-center rounded-2xl border-2 px-4 py-2 text-center transition-colors ${
-              opcion.id === elegido
-                ? "border-selva bg-selva text-crema"
-                : "border-selva/20 bg-white text-selva-2 hover:border-selva/50"
-            }`}
-          >
-            <input
-              type="radio"
-              name="tier_id"
-              value={opcion.id}
-              checked={opcion.id === elegido}
-              onChange={() => setElegido(opcion.id)}
-              className="sr-only"
-            />
-            <span className="font-display font-semibold">{opcion.nombre}</span>
-            <span
-              className={`font-mono text-xs ${
-                opcion.id === elegido ? "text-crema/80" : "text-cacao/70"
+        {tiers.map((opcion) => {
+          const suyo = precioDe(opcion, tiers, periodo, oferta);
+
+          return (
+            <label
+              key={opcion.id}
+              className={`flex min-h-12 flex-1 cursor-pointer flex-col justify-center rounded-2xl border-2 px-4 py-2 text-center transition-colors ${
+                opcion.id === elegido
+                  ? "border-selva bg-selva text-crema"
+                  : "border-selva/20 bg-white text-selva-2 hover:border-selva/50"
               }`}
             >
-              {precioDePlan(opcion.precio_mensual)}
-            </span>
-          </label>
-        ))}
+              <input
+                type="radio"
+                name="tier_id"
+                value={opcion.id}
+                checked={opcion.id === elegido}
+                onChange={() => setElegido(opcion.id)}
+                className="sr-only"
+              />
+              <span className="font-display font-semibold">{opcion.nombre}</span>
+              <span
+                className={`font-mono text-xs ${
+                  opcion.id === elegido ? "text-crema/80" : "text-cacao/70"
+                }`}
+              >
+                {textoDePrecio(suyo.cobro, suyo.periodo)}
+              </span>
+            </label>
+          );
+        })}
       </div>
 
       <div className="rounded-3xl border-2 border-ink/10 bg-white p-5">
@@ -660,10 +819,28 @@ function Planes({
               </span>
             )}
           </p>
-          <p className="font-mono text-lg font-bold text-selva">
-            {precioDePlan(tier.precio_mensual)}
+          <p className="text-right font-mono text-lg font-bold text-selva">
+            {precio.antes !== null && (
+              <span className="mr-2 text-sm font-normal text-cacao/60 line-through">
+                {textoDePrecio(precio.antes, precio.periodo)}
+              </span>
+            )}
+            {textoDePrecio(precio.cobro, precio.periodo)}
           </p>
         </div>
+
+        {/* Lo que el precio solo no dice: hasta cuándo, o cuánto es al mes. */}
+        {precio.gratisHasta ? (
+          <p className="mt-1 text-sm text-cacao/80">
+            Gratis hasta el {fechaDeOferta(precio.gratisHasta)}. Después, $99 al
+            mes para seguir en el directorio.
+          </p>
+        ) : precio.periodo === "anual" && precio.cobro > 0 ? (
+          <p className="mt-1 text-sm text-cacao/80">
+            Equivale a {textoDePrecio(Math.round(precio.cobro / 12), "mensual")}, en
+            un solo pago al año.
+          </p>
+        ) : null}
 
         <ul className="mt-3 grid gap-1 text-cacao">
           {ventajas.map((ventaja) => (
@@ -684,6 +861,7 @@ export function FormularioCambiarPlan({
   tiers,
   tierActual,
   preseleccion,
+  oferta = null,
 }: {
   tiers: Tier[];
   tierActual?: number;
@@ -693,14 +871,25 @@ export function FormularioCambiarPlan({
    * pedirle la misma decisión dos veces.
    */
   preseleccion?: number;
+  /** El convenio con el que entró, para enseñar sus precios. */
+  oferta?: Oferta | null;
 }) {
   const [estado, accion] = useActionState(contratarPlan, INICIAL);
+  const [periodo, setPeriodo] = useState<Periodo>("mensual");
 
   return (
     <form action={accion} className="grid gap-4">
       <Resultado estado={estado} />
 
-      <Planes tiers={tiers} actual={tierActual} inicial={preseleccion} />
+      <ElegirPeriodo periodo={periodo} alCambiar={setPeriodo} />
+
+      <Planes
+        tiers={tiers}
+        actual={tierActual}
+        inicial={preseleccion}
+        periodo={periodo}
+        oferta={oferta}
+      />
 
       <BotonEnviar>Cambiar de plan</BotonEnviar>
     </form>

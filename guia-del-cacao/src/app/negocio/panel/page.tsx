@@ -135,7 +135,7 @@ export default async function PanelNegocio({
       {sucursales.length === 0 ? (
         <PrimerosPasos
           titulo="Pongamos tu negocio en la guía"
-          entrada="Son cuatro pasos y puedes dejarlo a medias: lo que armes se guarda, y publicar en el plan Básico es gratis."
+          entrada="Son cuatro pasos y puedes dejarlo a medias: lo que armes se guarda, y solo se cobra cuando decidas publicarlo."
           pasos={[
             {
               titulo: "Confirma tu correo",

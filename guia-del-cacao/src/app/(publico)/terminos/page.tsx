@@ -228,7 +228,7 @@ export default function Terminos() {
       </p>
       <ul className="mt-3 grid gap-2 text-cacao">
         <li>
-          <strong className="text-selva-2">Básico, gratis</strong> — la ficha
+          <strong className="text-selva-2">Básico, $99 al mes</strong> — la ficha
           en el directorio y el micrositio con catálogo y contacto.
         </li>
         <li>
@@ -242,12 +242,22 @@ export default function Terminos() {
         </li>
       </ul>
       <p className="mt-3 text-cacao">
-        Plus y Premier se estrenan con{" "}
+        Cada sucursal estrena{" "}
         <strong className="text-selva-2">quince días de prueba</strong>, con
-        todas las funciones del plan. El conteo empieza el día que publicas.
-        Si al terminar la prueba no has pagado, tu sucursal{" "}
-        <strong className="text-selva-2">baja al plan Básico</strong>: sigue
-        publicada con todo su contenido, solo sin las funciones de pago.
+        todas las funciones de su plan. El conteo empieza el día que publicas.
+        Si pagas el año completo, el plan lleva{" "}
+        <strong className="text-selva-2">20% de descuento</strong>.
+      </p>
+      <p className="mt-3 text-cacao">
+        Un <strong className="text-selva-2">código de convenio</strong>, como el
+        del Festival del Chocolate con la Secretaría de Turismo, puede dar el
+        Básico gratis hasta una fecha y descuento en Plus y Premier. Los
+        descuentos no se suman: si tienes convenio y pagas el año, se aplica uno.
+      </p>
+      <p className="mt-3 text-cacao">
+        Si al terminar la prueba o el periodo gratis no has pagado, tu sucursal{" "}
+        <strong className="text-selva-2">sale del directorio</strong>. No se
+        borra nada: vuelve a publicarse en cuanto pagues.
       </p>
 
       <h3 className="mt-6 font-display text-xl">

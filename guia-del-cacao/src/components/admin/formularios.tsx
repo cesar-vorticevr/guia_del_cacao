@@ -132,15 +132,30 @@ export function FormularioConvenio() {
         </label>
       </div>
 
-      <label className="block">
-        <span className="mb-1.5 block font-bold text-selva-2">
-          Premier gratis hasta
-        </span>
-        <input name="premier_gratis_hasta" type="date" required className={clase} />
-        <span className="mt-1.5 block text-sm text-cacao/70">
-          Al día siguiente, quien no haya pagado baja al Básico.
-        </span>
-      </label>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-1.5 block font-bold text-selva-2">
+            Básico gratis hasta
+          </span>
+          <input name="basico_gratis_hasta" type="date" className={clase} />
+          <span className="mt-1.5 block text-sm text-cacao/70">
+            Opcional. Al día siguiente, sin pago, se oculta.
+          </span>
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block font-bold text-selva-2">
+            Descuento en Plus y Premier (%)
+          </span>
+          <input
+            name="descuento"
+            type="number"
+            min={0}
+            max={100}
+            defaultValue={20}
+            className={clase}
+          />
+        </label>
+      </div>
 
       <BotonEnviar variante="secundario">Crear código</BotonEnviar>
     </form>

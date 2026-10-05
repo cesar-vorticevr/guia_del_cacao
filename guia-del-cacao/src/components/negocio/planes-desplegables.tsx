@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { FormularioCambiarPlan } from "@/components/negocio/formularios";
+import type { Oferta } from "@/lib/precios";
 import type { Tier } from "@/lib/tipos";
 
 /**
@@ -21,10 +22,13 @@ export function PlanesDesplegables({
   tiers,
   tierActual,
   siguiente,
+  oferta = null,
   children,
 }: {
   tiers: Tier[];
   tierActual?: number;
+  /** El convenio con el que entró, para enseñar sus precios. */
+  oferta?: Oferta | null;
   /** El plan de arriba. Sin él no hay anuncio: no hay a dónde subir. */
   siguiente?: { id: number; nombre: string; ventajas: string; precio: string };
   /** La opción de cancelar, que va debajo de la lista. */
@@ -87,6 +91,7 @@ export function PlanesDesplegables({
               tiers={tiers}
               tierActual={tierActual}
               preseleccion={preseleccion}
+              oferta={oferta}
             />
 
             {children}

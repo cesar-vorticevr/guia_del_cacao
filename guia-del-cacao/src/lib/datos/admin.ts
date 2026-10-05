@@ -172,7 +172,8 @@ export type ConvenioAdmin = {
   descripcion: string;
   vigente_desde: string;
   vigente_hasta: string;
-  premier_gratis_hasta: string;
+  basico_gratis_hasta: string | null;
+  descuento: number;
   suscripciones: UsoDeConvenio[];
 };
 
@@ -180,9 +181,9 @@ export type ConvenioAdmin = {
  * Los códigos de convenio con los negocios que publicaron con cada uno.
  *
  * «Quién del Festival ya está en la guía» es el número que se le reporta a la
- * Secretaría, y sale de aquí. Se cuentan también las suscripciones ya
- * terminadas: al vencer el Premier gratis la sucursal baja a Básico con una
- * suscripción nueva, sin convenio, y no por eso dejó de haberlo usado.
+ * Secretaría, y sale de aquí. Una sucursal que cambió de plan deja detrás una
+ * suscripción cancelada con el mismo convenio: se cuenta una vez, por la
+ * más reciente.
  */
 export async function todosLosConvenios() {
   const supabase = await crearClienteServidor();
@@ -190,14 +191,17 @@ export async function todosLosConvenios() {
   const { data } = await supabase
     .from("convenios")
     .select(
-      "id, codigo, descripcion, vigente_desde, vigente_hasta, premier_gratis_hasta, suscripciones(estado, fecha_inicio, fecha_fin_trial, sucursales(nombre_sucursal, slug, estado, marcas(nombre_comercial)))",
+      "id, codigo, descripcion, vigente_desde, vigente_hasta, basico_gratis_hasta, descuento, suscripciones(estado, fecha_inicio, fecha_fin_trial, sucursales(nombre_sucursal, slug, estado, marcas(nombre_comercial)))",
     )
     .order("vigente_desde", { ascending: false });
 
   return ((data ?? []) as unknown as ConvenioAdmin[]).map((convenio) => ({
     ...convenio,
-    suscripciones: [...convenio.suscripciones].sort((a, b) =>
-      b.fecha_inicio.localeCompare(a.fecha_inicio),
-    ),
+    suscripciones: [...convenio.suscripciones]
+      .sort((a, b) => b.fecha_inicio.localeCompare(a.fecha_inicio))
+      .filter(
+        (uso, i, todas) =>
+          todas.findIndex((otro) => otro.sucursales?.slug === uso.sucursales?.slug) === i,
+      ),
   }));
 }

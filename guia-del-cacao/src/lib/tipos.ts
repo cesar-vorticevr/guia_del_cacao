@@ -146,10 +146,3 @@ export function normalizarCodigo(codigo: string) {
   return codigo.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
 }
 
-/**
- * El precio de un plan como se dice: «Gratis» y no «$0». Desde la migración
- * 000051 el Básico no cuesta, y un cero con signo de pesos se lee como error.
- */
-export function precioDePlan(monto: number) {
-  return Number(monto) === 0 ? "Gratis" : `${pesos(monto)}/mes`;
-}

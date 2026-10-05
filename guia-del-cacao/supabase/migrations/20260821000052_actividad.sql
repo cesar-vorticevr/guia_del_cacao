@@ -1,8 +1,7 @@
 -- Medir lo que pasa en la guia: visitas, busquedas y cada boton de contacto.
 --
--- Es lo que sostiene el modelo de la migracion 000051. Aparecer es gratis y se
--- paga por lo que el Basico no tiene; para que alguien pague hay que poder
--- decirle "en diciembre tu pagina tuvo 340 visitas y 28 personas te
+-- Es el argumento para que un negocio siga pagando o suba de plan (precios en
+-- la migracion 000051): hay que poder decirle "en diciembre tu pagina tuvo 340 visitas y 28 personas te
 -- escribieron". Y es el reporte que se le entrega a la Secretaria de Turismo.
 --
 -- **Solo conteos.** No se guarda quien hizo cada cosa: ni usuario, ni IP, ni

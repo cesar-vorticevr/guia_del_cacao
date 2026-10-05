@@ -54,7 +54,7 @@ async function suscripcionesAbiertas(marcaId: string) {
 
   const { data } = await supabase
     .from("suscripciones")
-    .select("id, sucursal_id, tier_id, monto_mensual, estado, fecha_fin_trial, convenio_id")
+    .select("id, sucursal_id, tier_id, monto_mensual, estado, fecha_fin_trial, convenio_id, periodo")
     .in("sucursal_id", ids)
     .in("estado", ["trial", "activo", "pausado_por_pago"]);
 
@@ -88,21 +88,8 @@ export async function contratarPlan(
 
   if (!tier) return { error: "Ese plan no existe." };
 
-  const todas = await suscripcionesAbiertas(marca.id);
-
-  /*
-    Las de convenio no se tocan: son Premier gratis hasta que termine el
-    convenio, y el trigger `aplicar_precio_de_convenio` rechazaría cambiarles el
-    plan. Si se cancelaran para abrir otra, el código ya gastado se perdería.
-  */
-  const abiertas = todas.filter((s) => !s.convenio_id);
-
-  if (abiertas.length === 0 && todas.length > 0) {
-    return {
-      error:
-        "Tus micrositios tienen Premier gratis por el convenio del Festival. El plan no se puede cambiar mientras dure.",
-    };
-  }
+  const periodo = datos.get("periodo")?.toString() === "anual" ? "anual" : "mensual";
+  const abiertas = await suscripcionesAbiertas(marca.id);
 
   if (abiertas.length === 0) {
     return {
@@ -111,7 +98,7 @@ export async function contratarPlan(
     };
   }
 
-  if (abiertas.every((s) => s.tier_id === tier.id)) {
+  if (abiertas.every((s) => s.tier_id === tier.id && s.periodo === periodo && s.estado !== "pausado_por_pago")) {
     return { error: "Ya estás en ese plan." };
   }
 
@@ -153,18 +140,26 @@ export async function contratarPlan(
     plan no regala días nuevos.
   */
   for (const abierta of abiertas) {
-    if (abierta.tier_id === tier.id) continue;
+    if (abierta.tier_id === tier.id && abierta.periodo === periodo && abierta.estado !== "pausado_por_pago") continue;
 
     await supabase
       .from("suscripciones")
       .update({ estado: "cancelado" })
       .eq("id", abierta.id);
 
+    /*
+      El convenio pasa a la suscripción nueva: quien entró por el Festival
+      conserva su descuento al cambiar de plan. El monto lo vuelve a calcular la
+      base (`precio_de_suscripcion`) con el plan, el periodo y el convenio.
+      Quien estaba oculto por no pagar y paga ahora, queda activo.
+    */
     const { error } = await supabase.from("suscripciones").insert({
       sucursal_id: abierta.sucursal_id,
       tier_id: tier.id,
       monto_mensual: tier.precio_mensual,
-      estado: abierta.estado,
+      periodo,
+      convenio_id: abierta.convenio_id,
+      estado: abierta.estado === "trial" ? "trial" : "activo",
       fecha_fin_trial: abierta.fecha_fin_trial,
       fecha_proximo_cobro: proximoCobro().toISOString(),
       metodo_pago_stub: referencia,
@@ -180,7 +175,12 @@ export async function contratarPlan(
   for (const abierta of abiertas) {
     await supabase
       .from("sucursales")
-      .update({ tier_id: tier.id })
+      .update(
+        // Oculta por no pagar y ya pagó: vuelve al directorio.
+        abierta.estado === "pausado_por_pago"
+          ? { tier_id: tier.id, estado: "publicado" }
+          : { tier_id: tier.id },
+      )
       .eq("id", abierta.sucursal_id);
   }
 

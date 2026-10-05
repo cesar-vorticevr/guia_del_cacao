@@ -6,7 +6,7 @@ const NUMERO = new Intl.NumberFormat("es-MX");
  * Lo que la guía le trajo al negocio en los últimos treinta días.
  *
  * Va arriba del panel y no en una pestaña aparte: es la respuesta a «¿para qué
- * estoy aquí?», y la que hace que un negocio en Básico decida pagar. Los
+ * estoy aquí?», y la que hace que un negocio decida seguir pagando o subir de plan. Los
  * contactos van primero y grandes porque son los que se traducen en ventas;
  * las visitas solas dicen que alguien miró.
  */
