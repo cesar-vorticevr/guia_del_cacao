@@ -12,8 +12,9 @@
 -- confirmar; si las dos se separan, manda esta.
 --
 -- Un **convenio** se activa con un codigo al contratar. El primero es el de la
--- Secretaria de Turismo para el Festival del Chocolate (FESTIVALCHOCOLATE):
--- quien publique en octubre o noviembre de 2026 tiene el Basico gratis hasta el
+-- Secretaria de Turismo y Desarrollo Economico del Estado de Tabasco para el
+-- Festival del Chocolate (12 al 16 de noviembre de 2026), FESTIVALCHOCOLATE:
+-- quien publique del 1 de octubre al 16 de noviembre tiene el Basico gratis hasta el
 -- 30 de noviembre, y Plus y Premier con 20% de descuento mientras siga pagando.
 -- El descuento del convenio y el del pago anual **no se suman**: se aplica uno.
 --
@@ -69,8 +70,9 @@ create policy convenios_admin on public.convenios
 insert into public.convenios
   (codigo, descripcion, vigente_desde, vigente_hasta, basico_gratis_hasta, descuento)
 values
-  ('FESTIVALCHOCOLATE', 'Festival del Chocolate 2026, con la Secretaría de Turismo',
-   '2026-10-01', '2026-11-30', '2026-11-30', 20)
+  ('FESTIVALCHOCOLATE',
+   'Festival del Chocolate 2026, en convenio con la Secretaría de Turismo y Desarrollo Económico del Estado de Tabasco',
+   '2026-10-01', '2026-11-16', '2026-11-30', 20)
 on conflict (codigo) do nothing;
 
 -- ---------------------------------------------------------------------------

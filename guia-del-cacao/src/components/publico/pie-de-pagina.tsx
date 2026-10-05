@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { perfilActual } from "@/lib/auth/sesion";
 import {
@@ -161,6 +162,18 @@ export async function PieDePagina() {
 
           <p className="mt-8 text-center text-sm text-crema/70">
             Guía del Cacao · El cacao de México, en un solo lugar
+          </p>
+
+          {/* Quién la hace. El logo es el blanco: el pie va sobre verde. */}
+          <p className="mx-auto mt-4 flex w-fit items-center gap-2 text-xs text-crema/60">
+            Desarrollada por
+            <Image
+              src="/marca/vortice-vr-blanco.png"
+              alt="Vórtice VR"
+              width={110}
+              height={25}
+              className="h-auto w-[110px]"
+            />
           </p>
         </div>
       </div>

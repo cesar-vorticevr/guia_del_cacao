@@ -1118,10 +1118,12 @@ Un convenio puede dar **Básico gratis hasta una fecha** y/o **un % de descuento
 en Plus y Premier** mientras se siga pagando. **No se suma al anual**: se queda
 el descuento mayor.
 
-El primero es el de la Secretaría de Turismo, **`FESTIVALCHOCOLATE`**: sirve para
-contratar en octubre y noviembre de 2026, da Básico gratis hasta el 30 de
-noviembre y 20% en Plus y Premier. El 1 de diciembre, quien no haya pagado su
-Básico se oculta.
+El primero es el del convenio entre **Vórtice VR** (quien desarrolla la
+plataforma) y la **Secretaría de Turismo y Desarrollo Económico del Estado de
+Tabasco**, para el Festival del Chocolate del 12 al 16 de noviembre de 2026:
+**`FESTIVALCHOCOLATE`** sirve para contratar del 1 de octubre al 16 de
+noviembre, da Básico gratis hasta el 30 de noviembre y 20% en Plus y Premier.
+El nombre de la Secretaría va **completo** siempre que aparezca.
 
 - **Un solo código para todos, acotado por fecha.** Se probó uno por negocio y
   se descartó: repartirlos era lo difícil, y uno que vence deja de circular

@@ -250,7 +250,8 @@ export default function Terminos() {
       </p>
       <p className="mt-3 text-cacao">
         Un <strong className="text-selva-2">código de convenio</strong>, como el
-        del Festival del Chocolate con la Secretaría de Turismo, puede dar el
+        del Festival del Chocolate con la Secretaría de Turismo y Desarrollo
+        Económico del Estado de Tabasco, puede dar el
         Básico gratis hasta una fecha y descuento en Plus y Premier. Los
         descuentos no se suman: si tienes convenio y pagas el año, se aplica uno.
       </p>
