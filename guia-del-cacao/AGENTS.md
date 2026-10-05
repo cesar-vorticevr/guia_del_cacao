@@ -1098,11 +1098,14 @@ Migración **000051**. Mensual / anual (20% menos):
   quince días, aunque venga de un periodo gratis más largo: sin ese tope, quien
   tenía el Básico gratis hasta noviembre se pasaba a Premier y lo tenía gratis
   igual.
-- **Quien no paga se oculta, no se borra.** `vencer_pruebas()` (pg_cron, 00:15
-  del centro cada noche) pasa la suscripción a `pausado_por_pago` y la sucursal
+- **Quien no paga se oculta, no se borra.** `vencer_pruebas()` pasa la suscripción a `pausado_por_pago` y la sucursal
   a `pausado`. El negocio no puede reactivarla sin pagar:
   `proteger_estado_sucursal` pide un plan en `trial` o `activo`. Al contratar de
   nuevo, `contratarPlan` la deja `activo` y la vuelve a publicar.
+- **`vencer_pruebas()` todavía no está programada.** Sin pasarela nadie puede
+  pagar, y correrla sacaría del directorio a todos a los quince días. Se
+  programa en pg_cron (00:15 del centro) con una migración nueva el día que el
+  cobro funcione; el comando está al final de la migración 000051.
 
 ### Convenios: un código al contratar
 

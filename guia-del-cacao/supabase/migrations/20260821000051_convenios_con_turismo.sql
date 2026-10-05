@@ -308,12 +308,16 @@ $$;
 revoke all on function public.vencer_pruebas() from public, anon, authenticated;
 
 comment on function public.vencer_pruebas() is
-  'Oculta las sucursales cuya prueba vencio sin pago. La corre pg_cron cada noche.';
+  'Oculta las sucursales cuya prueba vencio sin pago. Se programara en pg_cron cuando haya pasarela de pago.';
 
--- Cada noche a las 00:15 del centro de Mexico (06:15 UTC).
-create extension if not exists pg_cron with schema pg_catalog;
-
-select cron.schedule('vencer-pruebas', '15 6 * * *', $$select public.vencer_pruebas()$$);
+-- **Todavia no se programa.** Mientras no haya pasarela de pago nadie puede
+-- pagar, y ocultar a quien no pago seria sacar del directorio a todos a los
+-- quince dias. El dia que el cobro funcione, una migracion nueva la programa:
+--
+--   create extension if not exists pg_cron with schema pg_catalog;
+--   select cron.schedule('vencer-pruebas', '15 6 * * *', $select public.vencer_pruebas()$);
+--
+-- (00:15 del centro de Mexico, 06:15 UTC.)
 
 -- ---------------------------------------------------------------------------
 -- El convenio de una sucursal, para su duena
