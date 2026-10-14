@@ -255,6 +255,24 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# Los correos de la Guía, en español. En producción se pegan las mismas en el
+# dashboard (Authentication > Emails > Templates): este archivo no se sube solo.
+[auth.email.template.confirmation]
+subject = "Confirma tu correo · Guía del Cacao"
+content_path = "./supabase/templates/confirmar-cuenta.html"
+
+[auth.email.template.recovery]
+subject = "Cambia tu contraseña · Guía del Cacao"
+content_path = "./supabase/templates/recuperar-contrasena.html"
+
+[auth.email.template.magic_link]
+subject = "Verifica tu correo · Guía del Cacao"
+content_path = "./supabase/templates/verificar-correo.html"
+
+[auth.email.template.email_change]
+subject = "Confirma tu correo nuevo · Guía del Cacao"
+content_path = "./supabase/templates/cambiar-correo.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"
