@@ -50,8 +50,12 @@ export function ofertaDeFila(codigo: string, fila: FilaDeConvenio): Oferta {
   };
 }
 
-/** El descuento del pago anual. No se suma al de un convenio: queda el mayor. */
-export const DESCUENTO_ANUAL = 20;
+/**
+ * El pago anual regala dos meses: cuesta diez mensualidades. La base lo tiene
+ * en `public.meses_pagados_al_anio()` (migración 000055). No se suma al
+ * descuento de un convenio: queda el más barato.
+ */
+export const MESES_PAGADOS_AL_ANIO = 10;
 
 /** Lo que dura el plan Gratis. La base lo tiene en `public.dias_gratis()`. */
 export const DIAS_GRATIS = 30;
@@ -118,7 +122,7 @@ export function precioDe(
     return { ...vacio, cobro: 0, gratisHasta: hasta, periodo };
   }
 
-  const anual = Math.round(base * 12 * (1 - DESCUENTO_ANUAL / 100));
+  const anual = base * MESES_PAGADOS_AL_ANIO;
   const normal = periodo === "anual" ? anual : base;
 
   if (oferta && promocionPara(tier, oferta)) {
@@ -133,14 +137,14 @@ export function precioDe(
   }
 
   // El descuento de una promoción es solo de su primer pago.
-  let descuento = oferta && oferta.planId === null ? oferta.descuento : 0;
+  const descuento = oferta && oferta.planId === null ? oferta.descuento : 0;
 
   if (periodo === "anual") {
-    descuento = Math.max(descuento, DESCUENTO_ANUAL);
+    // Dos meses gratis, o el convenio si descuenta más: el más barato.
     const lleno = base * 12;
     return {
       ...vacio,
-      cobro: Math.round(lleno * (1 - descuento / 100)),
+      cobro: Math.min(anual, Math.round(lleno * (1 - descuento / 100))),
       antes: lleno,
       periodo,
     };

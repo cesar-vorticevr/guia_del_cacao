@@ -2,11 +2,11 @@
 \set QUIET on
 set client_min_messages to notice;
 
--- Precios, pago anual y convenios (migraciones 000051 y 000053).
+-- Precios, pago anual y convenios (migraciones 000051, 000053 y 000055).
 --
 -- Los planes son Gratis (id 1, $0), Basico (id 2, $199) y Pro (id 3, $299).
 -- El precio lo calcula la base al abrir la suscripcion; un convenio da Gratis
--- hasta una fecha y descuento en Basico y Pro; el anual descuenta 20%
+-- hasta una fecha y descuento en Basico y Pro; el anual cuesta diez meses
 -- y no se suma al convenio; quien no paga se oculta sin borrarse.
 --
 -- Dentro de una transaccion que se deshace: corre tambien contra una base con
@@ -124,14 +124,14 @@ values ('c3000000-0000-0000-0000-000000000003', 1, 99, 'trial', now() + interval
 insert into public.suscripciones (sucursal_id, tier_id, monto_mensual, estado, fecha_proximo_cobro, convenio_id)
 values ('c3000000-0000-0000-0000-000000000004', 3, 1, 'trial', now() + interval '1 month',
         'c4000000-0000-0000-0000-000000000001');
--- 5: convenio, Pro anual: los descuentos no se suman.
+-- 5: convenio del 20%, Pro anual: no se suman, queda el mas barato (2870 < 2990).
 insert into public.suscripciones (sucursal_id, tier_id, monto_mensual, periodo, estado, fecha_proximo_cobro, convenio_id)
 values ('c3000000-0000-0000-0000-000000000005', 3, 1, 'anual', 'trial', now() + interval '1 month',
         'c4000000-0000-0000-0000-000000000001');
 
 \echo '--- el precio lo pone la base ---'
 select pg_temp.cobro('c3000000-0000-0000-0000-000000000001') = 299  as pro_mensual_299,
-       pg_temp.cobro('c3000000-0000-0000-0000-000000000002') = 2870 as pro_anual_2870,
+       pg_temp.cobro('c3000000-0000-0000-0000-000000000002') = 2990 as pro_anual_diez_meses,
        pg_temp.cobro('c3000000-0000-0000-0000-000000000003') = 0    as convenio_gratis,
        pg_temp.cobro('c3000000-0000-0000-0000-000000000004') = 239  as convenio_pro_239,
        pg_temp.cobro('c3000000-0000-0000-0000-000000000005') = 2870 as no_se_suman;

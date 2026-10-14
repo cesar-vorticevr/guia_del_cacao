@@ -1076,13 +1076,13 @@ npm run typecheck && npm run lint && npm run build
 
 ## Precios, pago anual y convenios
 
-Migraciones **000051** y **000053**. Mensual / anual (20% menos):
+Migraciones **000051**, **000053** y **000055**. Mensual / anual (dos meses gratis: el año cuesta diez mensualidades):
 
 | Plan (id) | Mensual | Anual |
 |---|---|---|
 | Gratis (1) | $0, treinta días | — |
-| Básico (2) | $199 | $1,910 |
-| Pro (3) | $299 | $2,870 |
+| Básico (2) | $199 | $1,990 |
+| Pro (3) | $299 | $2,990 |
 
 Hasta el 13 de octubre de 2026 se llamaban Básico ($99), Plus y Premier. Se
 recorrieron un lugar sin cambiar ids ni lo que trae cada uno. La columna

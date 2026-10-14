@@ -247,8 +247,9 @@ export default function Terminos() {
         estrena{" "}
         <strong className="text-selva-2">quince días de prueba</strong>, con
         todas las funciones de su plan. El conteo empieza el día que publicas.
-        Si pagas el año completo, el plan lleva{" "}
-        <strong className="text-selva-2">20% de descuento</strong>.
+        Si pagas el año completo,{" "}
+        <strong className="text-selva-2">dos meses son gratis</strong>: pagas
+        diez.
       </p>
       <p className="mt-3 text-cacao">
         Un <strong className="text-selva-2">código de promoción</strong> puede

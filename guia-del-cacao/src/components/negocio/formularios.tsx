@@ -28,7 +28,6 @@ import {
 } from "@/lib/negocio/acciones";
 import { pesos, type Sucursal, type Tier } from "@/lib/tipos";
 import {
-  DESCUENTO_ANUAL,
   DIAS_GRATIS,
   esPlanGratis,
   fechaDeOferta,
@@ -480,7 +479,7 @@ function ElegirPeriodo({
 }) {
   const opciones: { valor: Periodo; texto: string; extra?: string }[] = [
     { valor: "mensual", texto: "Mensual" },
-    { valor: "anual", texto: "Anual", extra: `${DESCUENTO_ANUAL}% menos` },
+    { valor: "anual", texto: "Anual", extra: "2 meses gratis" },
   ];
 
   return (
