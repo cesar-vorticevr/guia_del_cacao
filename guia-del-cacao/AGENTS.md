@@ -1193,3 +1193,40 @@ que un negocio contrate o suba de plan, y el reporte para la Secretaría.
 - `/admin/metricas` es el tablero, con CSV por negocio; cada negocio ve lo suyo
   arriba de su panel («Lo que te trajo la guía», `TusNumeros`).
 
+
+## El panel de administración: listas paginadas y reseñas reportadas
+
+- **No hay cola de aprobación.** «Por revisar» y «Micrositios en revisión» se
+  quitaron: desde la migración 000012 un negocio sale directo al directorio, y
+  esa cola estaba siempre vacía. La portada (`/admin`) es un resumen y lo que
+  pide atención: las reseñas reportadas.
+- **Micrositios, Personas y Moderación van de 20 en 20** (`POR_PAGINA` en
+  `lib/datos/admin.ts`), con buscador en las dos primeras y filtro por rol en
+  Personas. Todo en la URL (`?q=`, `?pagina=`, `?rol=`, `?ver=`). Las piezas
+  comunes están en `components/admin/listas.tsx`. Lo que se escribe en el
+  buscador pasa por `limpiarBusqueda` antes de entrar a un filtro `or` de
+  PostgREST: comas, paréntesis y puntos ahí arman condiciones.
+- La búsqueda por marca va en dos pasos —ids de las marcas que coinciden, luego
+  `marca_id.in.(…)` en el mismo `or`—, porque un `or` no cruza a otra tabla.
+- `todasLasSucursales` sigue sin paginar **solo para las métricas**, que suman
+  por negocio.
+- Moderación lee la comunidad de **`publicaciones`**. Leía `noticias`, en
+  desuso desde la 000029, y lo publicado de verdad no aparecía.
+
+### Reportar una reseña (migración 000054)
+
+Cualquiera con sesión pulsa «Reportar» bajo una reseña (en el micrositio, y el
+negocio también en su panel), elige motivo —ofensiva, falsa, spam, otro— y
+opcionalmente cuenta más. Va a `reportes_resena`: uno por persona y reseña,
+nunca la propia (`no_reportar_lo_propio`). Lo ve quien lo hizo y el
+administrador; el autor de la reseña no sabe quién la reportó.
+
+En Moderación, **Reportadas** es la primera pestaña: «Eliminar reseña» (se
+lleva sus reportes en cascada) o «Está bien, dejarla» (borra los reportes; si la
+vuelven a reportar, vuelve). Los motivos están en el `check` de la tabla y en
+`MOTIVOS_DE_REPORTE` (`lib/reportes.ts`): si se agrega uno, va en los dos.
+
+**`reportes_resena.usuario_id` apunta a `auth.users`, no a `perfiles`.** Con
+una llave a perfiles habría un segundo camino de `resenas` a
+`perfiles_publicos` y cada `perfiles_publicos(nombre)` de las reseñas daría
+PGRST201: las listas saldrían vacías. Es el cuarto caso del mismo tropiezo.

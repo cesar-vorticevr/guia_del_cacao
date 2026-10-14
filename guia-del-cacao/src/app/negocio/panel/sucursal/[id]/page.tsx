@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { InsigniaEstado } from "@/components/insignia-estado";
 import { Promedio, SinCalificar } from "@/components/publico/estrellas";
 import { calificacionDe } from "@/lib/datos/publico";
-import { estrellasPorUsuario, resenasDe } from "@/lib/datos/publico";
+import { estrellasPorUsuario, misReportes, resenasDe } from "@/lib/datos/publico";
 import { ListaResenas } from "@/components/publico/lista-resenas";
 import { BUCKET_RESENAS } from "@/lib/imagenes";
 import { BarraDePasos } from "@/components/negocio/barra-de-pasos";
@@ -141,6 +141,12 @@ export default async function EditorMicrositio({
         estrellasPorUsuario(sucursal.id),
       ])
     : [[], new Map<string, number>()];
+
+  // Las que el negocio ya reportó, para no ofrecérselo dos veces.
+  const reportadas = await misReportes(
+    perfil.id,
+    resenas.map((r) => r.id),
+  );
 
   return (
     <div className="mx-auto grid max-w-2xl gap-8">
@@ -488,6 +494,8 @@ export default async function EditorMicrositio({
               }))}
               esDuenio
               slug={sucursal.slug}
+              puedeReportar
+              reportadas={reportadas}
             />
           )}
         </section>

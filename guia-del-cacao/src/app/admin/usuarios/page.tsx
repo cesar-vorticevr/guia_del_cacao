@@ -1,6 +1,8 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { BotonesRol } from "@/components/admin/formularios";
-import { todosLosPerfiles } from "@/lib/datos/admin";
+import { Buscador, enlaceDeLista, numeroDePagina, Paginacion } from "@/components/admin/listas";
+import { perfilesPagina } from "@/lib/datos/admin";
 
 export const metadata: Metadata = { title: "Personas · Guía del Cacao" };
 
@@ -10,8 +12,20 @@ const CUANDO = new Intl.DateTimeFormat("es-MX", {
   year: "numeric",
 });
 
-export default async function Usuarios() {
-  const perfiles = await todosLosPerfiles();
+const ROLES = [
+  { valor: undefined, texto: "Todas" },
+  { valor: "cliente", texto: "Clientes" },
+  { valor: "negocio", texto: "Negocios" },
+  { valor: "admin", texto: "Administradores" },
+];
+
+export default async function Usuarios({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; rol?: string; pagina?: string }>;
+}) {
+  const { q = "", rol, pagina } = await searchParams;
+  const resultado = await perfilesPagina(numeroDePagina(pagina), q, rol);
 
   return (
     <>
@@ -21,23 +35,68 @@ export default async function Usuarios() {
         nunca acepta ese rol, venga de donde venga.
       </p>
 
-      <ul className="mt-6 grid gap-4">
-        {perfiles.map((perfil) => (
-          <li key={perfil.id} className="grid gap-3 rounded-3xl bg-crema-2 p-6">
-            <div>
-              <p className="font-display text-xl font-semibold text-selva-2">
-                {perfil.nombre}
-              </p>
-              <p className="font-mono text-xs text-cacao/70">{perfil.correo}</p>
-              <p className="mt-1 text-sm text-cacao/70">
-                Desde {CUANDO.format(new Date(perfil.fecha_registro))}
-              </p>
-            </div>
+      <div className="mt-6 grid gap-3">
+        <Buscador
+          base="/admin/usuarios"
+          busqueda={q}
+          ayuda="Nombre o correo"
+          ocultos={{ rol }}
+        />
 
-            <BotonesRol perfilId={perfil.id} rolActual={perfil.rol} />
-          </li>
-        ))}
-      </ul>
+        <ul className="flex flex-wrap gap-2" aria-label="Filtrar por tipo de cuenta">
+          {ROLES.map((opcion) => {
+            const activo = (rol ?? undefined) === opcion.valor;
+            return (
+              <li key={opcion.texto}>
+                <Link
+                  href={enlaceDeLista("/admin/usuarios", { q, rol: opcion.valor })}
+                  aria-current={activo ? "page" : undefined}
+                  className={`flex min-h-10 items-center rounded-full border-2 px-4 text-sm font-bold ${
+                    activo
+                      ? "border-selva bg-selva text-crema"
+                      : "border-selva/20 bg-white text-selva-2"
+                  }`}
+                >
+                  {opcion.texto}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      {resultado.filas.length === 0 ? (
+        <p className="mt-6 rounded-3xl bg-crema-2 p-6 text-cacao">
+          {q ? `Nadie coincide con «${q}».` : "No hay nadie con ese tipo de cuenta."}
+        </p>
+      ) : (
+        <ul className="mt-6 grid gap-4">
+          {resultado.filas.map((perfil) => (
+            <li key={perfil.id} className="grid gap-3 rounded-3xl bg-crema-2 p-6">
+              <div>
+                <p className="font-display text-xl font-semibold text-selva-2">
+                  {perfil.nombre}
+                </p>
+                <p className="font-mono text-xs text-cacao/70">{perfil.correo}</p>
+                <p className="mt-1 text-sm text-cacao/70">
+                  Desde {CUANDO.format(new Date(perfil.fecha_registro))}
+                </p>
+              </div>
+
+              <BotonesRol perfilId={perfil.id} rolActual={perfil.rol} />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <Paginacion
+        base="/admin/usuarios"
+        pagina={resultado.pagina}
+        paginas={resultado.paginas}
+        total={resultado.total}
+        parametros={{ q, rol }}
+        nombre={resultado.total === 1 ? "persona" : "personas"}
+      />
     </>
   );
 }

@@ -17,53 +17,6 @@ async function exigirAdmin() {
   return perfil;
 }
 
-/**
- * Aprueba un micrositio y lo saca al directorio.
- *
- * Turismo no participa en esta decisión (spec §3.3): es exclusiva del
- * administrador. Quien lo garantiza es el trigger proteger_estado_sucursal, no
- * esta función.
- */
-export async function aprobarSucursal(datos: FormData) {
-  await exigirAdmin();
-
-  const id = datos.get("sucursal_id")?.toString() ?? "";
-  const supabase = await crearClienteServidor();
-
-  await supabase
-    .from("sucursales")
-    .update({ estado: "publicado", motivo_rechazo: null })
-    .eq("id", id);
-
-  revalidatePath("/admin");
-}
-
-export async function rechazarSucursal(
-  _previo: EstadoAccion,
-  datos: FormData,
-): Promise<EstadoAccion> {
-  await exigirAdmin();
-
-  const id = datos.get("sucursal_id")?.toString() ?? "";
-  const motivo = (datos.get("motivo")?.toString() ?? "").trim();
-
-  if (!motivo) {
-    return { error: "Escribe el motivo: el negocio necesita saber qué corregir." };
-  }
-
-  const supabase = await crearClienteServidor();
-
-  const { error } = await supabase
-    .from("sucursales")
-    .update({ estado: "rechazado", motivo_rechazo: motivo })
-    .eq("id", id);
-
-  if (error) return { error: "No se pudo rechazar." };
-
-  revalidatePath("/admin");
-  return { ok: "Micrositio rechazado." };
-}
-
 // ---------------------------------------------------------------------------
 // Moderacion
 // ---------------------------------------------------------------------------
@@ -114,6 +67,23 @@ export async function eliminarResena(datos: FormData) {
 
   await supabase.from("resenas").delete().eq("id", id);
 
+  revalidatePath("/admin");
+  revalidatePath("/admin/moderacion");
+}
+
+/**
+ * Descarta los reportes de una reseña y la deja publicada: se revisó y no
+ * amerita borrarse. Si la vuelven a reportar, vuelve a la cola.
+ */
+export async function descartarReportes(datos: FormData) {
+  await exigirAdmin();
+
+  const id = datos.get("resena_id")?.toString() ?? "";
+  const supabase = await crearClienteServidor();
+
+  await supabase.from("reportes_resena").delete().eq("resena_id", id);
+
+  revalidatePath("/admin");
   revalidatePath("/admin/moderacion");
 }
 
@@ -123,13 +93,15 @@ export async function eliminarPublicacion(datos: FormData) {
   const id = datos.get("publicacion_id")?.toString() ?? "";
   const tipo = datos.get("tipo")?.toString();
 
-  if (tipo !== "eventos" && tipo !== "noticias") return;
+  // `noticias` quedó en desuso con la migración 000029: lo de la comunidad
+  // vive en `publicaciones`.
+  if (tipo !== "eventos" && tipo !== "publicaciones") return;
 
   const supabase = await crearClienteServidor();
   await supabase.from(tipo).delete().eq("id", id);
 
   revalidatePath("/admin/moderacion");
-  revalidatePath(`/${tipo}`);
+  revalidatePath(tipo === "eventos" ? "/eventos" : "/comunidad");
 }
 
 /**

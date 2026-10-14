@@ -4,12 +4,19 @@ import { InsigniaEstado } from "@/components/insignia-estado";
 import { Promedio, SinCalificar } from "@/components/publico/estrellas";
 import { calificacionesDe } from "@/lib/datos/publico";
 import { pausarSucursal, reactivarSucursal } from "@/lib/admin/acciones";
-import { todasLasSucursales } from "@/lib/datos/admin";
+import { sucursalesPagina } from "@/lib/datos/admin";
+import { Buscador, numeroDePagina, Paginacion } from "@/components/admin/listas";
 
 export const metadata: Metadata = { title: "Micrositios · Guía del Cacao" };
 
-export default async function Micrositios() {
-  const sucursales = await todasLasSucursales();
+export default async function Micrositios({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; pagina?: string }>;
+}) {
+  const { q = "", pagina } = await searchParams;
+  const resultado = await sucursalesPagina(numeroDePagina(pagina), q);
+  const sucursales = resultado.filas;
   const promedios = await calificacionesDe(sucursales.map((s) => s.id));
 
   return (
@@ -20,9 +27,17 @@ export default async function Micrositios() {
         de moderación, el negocio no puede reactivarlo por su cuenta.
       </p>
 
+      <div className="mt-6">
+        <Buscador
+          base="/admin/micrositios"
+          busqueda={q}
+          ayuda="Nombre del negocio o de la sucursal"
+        />
+      </div>
+
       {sucursales.length === 0 ? (
         <p className="mt-6 rounded-3xl bg-crema-2 p-6 text-cacao">
-          Todavía no hay micrositios.
+          {q ? `Ningún micrositio coincide con «${q}».` : "Todavía no hay micrositios."}
         </p>
       ) : (
         <ul className="mt-6 grid gap-4">
@@ -32,7 +47,7 @@ export default async function Micrositios() {
                 <div>
                   <p className="font-mono text-xs tracking-wide text-cacao/70 uppercase">
                     {sucursal.marcas?.nombre_comercial}
-                    {sucursal.tier_id && ` · Tier ${sucursal.tier_id}`}
+                    {sucursal.tiers && ` · ${sucursal.tiers.nombre}`}
                   </p>
                   <p className="mt-1 font-display text-xl font-semibold text-selva-2">
                     {sucursal.nombre_sucursal}
@@ -99,6 +114,15 @@ export default async function Micrositios() {
           ))}
         </ul>
       )}
+
+      <Paginacion
+        base="/admin/micrositios"
+        pagina={resultado.pagina}
+        paginas={resultado.paginas}
+        total={resultado.total}
+        parametros={{ q }}
+        nombre={resultado.total === 1 ? "micrositio" : "micrositios"}
+      />
     </>
   );
 }

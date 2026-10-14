@@ -1,79 +1,66 @@
+import Link from "next/link";
 import type { Metadata } from "next";
-import { FormularioRechazo } from "@/components/admin/formularios";
-import { aprobarSucursal } from "@/lib/admin/acciones";
-import { resumen, sucursalesEnRevision } from "@/lib/datos/admin";
-import { textoDePrecio } from "@/lib/precios";
+import { resumen } from "@/lib/datos/admin";
 
 export const metadata: Metadata = { title: "Administración · Guía del Cacao" };
 
 /**
- * Cola de aprobación. Turismo no participa en esta decisión (spec §3.3): es
- * exclusiva del administrador.
+ * La portada del panel: los números de un vistazo y lo que pide atención.
+ *
+ * Fue la cola de aprobación («Micrositios en revisión»). Desde la migración
+ * 000012 nadie revisa antes de publicar —un negocio con micrositio completo y
+ * plan sale directo—, así que esa cola estaba siempre vacía y se quitó. Lo que
+ * sí llega solo y pide una mirada son las reseñas reportadas.
  */
 export default async function Admin() {
-  const [pendientes, numeros] = await Promise.all([sucursalesEnRevision(), resumen()]);
+  const numeros = await resumen();
 
   const tarjetas = [
-    { texto: "Por revisar", valor: numeros.enRevision, tono: "text-guayaba" },
-    { texto: "Publicados", valor: numeros.publicadas, tono: "text-selva" },
-    { texto: "Pausados", valor: numeros.pausadas, tono: "text-cacao" },
-    { texto: "Marcas", valor: numeros.marcas, tono: "text-selva" },
-    { texto: "Personas", valor: numeros.perfiles, tono: "text-selva" },
+    { texto: "Publicados", valor: numeros.publicadas, href: "/admin/micrositios" },
+    { texto: "Pausados", valor: numeros.pausadas, href: "/admin/micrositios" },
+    { texto: "Marcas", valor: numeros.marcas, href: "/admin/micrositios" },
+    { texto: "Personas", valor: numeros.perfiles, href: "/admin/usuarios" },
   ];
 
   return (
     <>
       <h1 className="font-display text-3xl">Administración</h1>
 
-      <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {tarjetas.map((tarjeta) => (
-          <li key={tarjeta.texto} className="rounded-2xl bg-crema-2 p-4">
-            <p className={`font-mono text-3xl font-bold ${tarjeta.tono}`}>{tarjeta.valor}</p>
-            <p className="mt-1 text-sm text-cacao">{tarjeta.texto}</p>
+          <li key={tarjeta.texto}>
+            <Link
+              href={tarjeta.href}
+              className="block rounded-2xl bg-crema-2 p-4 transition-transform hover:-translate-y-0.5"
+            >
+              <p className="font-mono text-3xl font-bold text-selva">{tarjeta.valor}</p>
+              <p className="mt-1 text-sm text-cacao">{tarjeta.texto}</p>
+            </Link>
           </li>
         ))}
       </ul>
 
-      <h2 className="mt-10 font-display text-2xl">Micrositios en revisión</h2>
+      <h2 className="mt-10 font-display text-2xl">Para atender</h2>
 
-      {pendientes.length === 0 ? (
-        <p className="mt-4 rounded-3xl bg-crema-2 p-6 text-cacao">
-          No hay nada pendiente por ahora.
-        </p>
+      {numeros.reportadas > 0 ? (
+        <Link
+          href="/admin/moderacion"
+          className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-3xl border-2 border-guayaba/40 bg-guayaba/10 p-6 transition-transform hover:-translate-y-0.5"
+        >
+          <span className="text-cacao">
+            <strong className="block font-display text-xl text-selva-2">
+              {numeros.reportadas === 1
+                ? "1 reseña reportada"
+                : `${numeros.reportadas} reseñas reportadas`}
+            </strong>
+            Alguien pidió que la revises. Decide si se borra o se queda.
+          </span>
+          <span className="font-bold text-selva-2">Revisar →</span>
+        </Link>
       ) : (
-        <ul className="mt-5 grid gap-5">
-          {pendientes.map((sucursal) => (
-            <li key={sucursal.id} className="grid gap-4 rounded-3xl bg-crema-2 p-6">
-              <div>
-                <p className="font-mono text-xs tracking-wide text-cacao/70 uppercase">
-                  {sucursal.marcas?.nombre_comercial}
-                  {sucursal.tiers &&
-                    ` · ${sucursal.tiers.nombre} · ${textoDePrecio(sucursal.tiers.precio_mensual, "mensual")}`}
-                </p>
-                <h3 className="mt-1 font-display text-xl">{sucursal.nombre_sucursal}</h3>
-                <p className="mt-1 font-mono text-xs text-cacao/70">/marca/{sucursal.slug}</p>
-              </div>
-
-              {sucursal.acerca_de && (
-                <p className="rounded-2xl bg-white p-4 text-cacao">{sucursal.acerca_de}</p>
-              )}
-
-              <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
-                <form action={aprobarSucursal}>
-                  <input type="hidden" name="sucursal_id" value={sucursal.id} />
-                  <button
-                    type="submit"
-                    className="min-h-14 w-full rounded-full bg-selva px-6 font-display text-lg font-semibold text-crema"
-                  >
-                    Aprobar y publicar
-                  </button>
-                </form>
-
-                <FormularioRechazo sucursalId={sucursal.id} />
-              </div>
-            </li>
-          ))}
-        </ul>
+        <p className="mt-4 rounded-3xl bg-crema-2 p-6 text-cacao">
+          Nada pendiente: nadie ha reportado ninguna reseña.
+        </p>
       )}
     </>
   );

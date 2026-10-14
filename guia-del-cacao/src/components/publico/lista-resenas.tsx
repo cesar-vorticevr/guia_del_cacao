@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Estrella, Estrellas } from "@/components/publico/estrellas";
-import { FormularioRespuesta } from "@/components/publico/resenas";
+import { FormularioRespuesta, ReportarResena } from "@/components/publico/resenas";
 import { Medio } from "@/components/publico/medio";
 
 export type ResenaEnLista = {
@@ -18,6 +18,8 @@ export type ResenaEnLista = {
   /** Las estrellas que esa persona le dio al negocio, si votó. */
   estrellas: number | null;
   respuesta: string | null;
+  /** La escribió quien está mirando: esa no se reporta, se edita. */
+  propia?: boolean;
 };
 
 const FILTROS = [5, 4, 3, 2, 1] as const;
@@ -41,10 +43,16 @@ export function ListaResenas({
   resenas,
   esDuenio,
   slug,
+  puedeReportar = false,
+  reportadas = [],
 }: {
   resenas: ResenaEnLista[];
   esDuenio: boolean;
   slug: string;
+  /** Hay sesión: cualquiera con cuenta puede reportar una reseña. */
+  puedeReportar?: boolean;
+  /** Las que quien mira ya reportó. */
+  reportadas?: string[];
 }) {
   const [filtro, setFiltro] = useState<number | null>(null);
 
@@ -148,6 +156,13 @@ export function ListaResenas({
                 </p>
               ) : (
                 esDuenio && <FormularioRespuesta resenaId={resena.id} slug={slug} />
+              )}
+
+              {puedeReportar && !resena.propia && (
+                <ReportarResena
+                  resenaId={resena.id}
+                  yaReportada={reportadas.includes(resena.id)}
+                />
               )}
             </li>
           ))}

@@ -29,12 +29,23 @@ export type ResenaAdmin = {
   sucursales: { nombre_sucursal: string; slug: string } | null;
 };
 
+/** Una reseña con sus reportes, para la cola de Moderación. */
+export type ResenaReportada = ResenaAdmin & {
+  reportes: number;
+  motivos: string[];
+  detalles: string[];
+  ultimo: string;
+};
+
 export type PublicacionAdmin = {
   id: string;
-  titulo: string;
+  titulo: string | null;
   contenido: string;
-  fecha_publicacion: string;
-  sucursales: { nombre_sucursal: string; slug: string } | null;
+  fecha: string;
+  /** Dónde verla: la página del evento o la publicación de la comunidad. */
+  enlace: string | null;
+  /** Quién la publicó: la sucursal de un evento, la persona en la comunidad. */
+  autor: string | null;
 };
 
 export type PerfilAdmin = {
@@ -45,23 +56,46 @@ export type PerfilAdmin = {
   fecha_registro: string;
 };
 
-export async function sucursalesEnRevision() {
-  const supabase = await crearClienteServidor();
+/** Cuántos renglones va cada página de las listas del panel. */
+export const POR_PAGINA = 20;
 
-  const { data } = await supabase
-    .from("sucursales")
-    .select(
-      "id, nombre_sucursal, slug, estado, pausado_por_admin, tier_id, fecha_publicacion, acerca_de, marcas(nombre_comercial), tiers(nombre, precio_mensual)",
-    )
-    .eq("estado", "pendiente_aprobacion")
-    .order("fecha_creacion");
+/** Una página de resultados y cuántos hay en total, para la paginación. */
+export type Pagina<T> = { filas: T[]; total: number; pagina: number; paginas: number };
 
-  return (data ?? []) as unknown as (SucursalAdmin & {
-    acerca_de: string | null;
-    tiers: { nombre: string; precio_mensual: number } | null;
-  })[];
+function pagina<T>(filas: T[] | null, total: number | null, numero: number): Pagina<T> {
+  const cuantos = total ?? 0;
+  return {
+    filas: filas ?? [],
+    total: cuantos,
+    pagina: numero,
+    paginas: Math.max(1, Math.ceil(cuantos / POR_PAGINA)),
+  };
 }
 
+/** El rango de renglones de una página, empezando en la 1. */
+function rango(numero: number) {
+  const desde = (Math.max(1, numero) - 1) * POR_PAGINA;
+  return [desde, desde + POR_PAGINA - 1] as const;
+}
+
+/**
+ * Lo que se escribió en el buscador, listo para un filtro `or` de PostgREST.
+ *
+ * Comas, paréntesis, puntos y comodines significan algo dentro de ese filtro:
+ * dejarlos pasar permitiría a quien busca armar condiciones nuevas. Se quitan.
+ */
+export function limpiarBusqueda(texto: string | undefined) {
+  return (texto ?? "")
+    .replace(/[,()%*\\.:"']/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 60);
+}
+
+/**
+ * Todos los micrositios, sin paginar. Lo usan las métricas, que suman por
+ * negocio; la lista del panel va por `sucursalesPagina`.
+ */
 export async function todasLasSucursales() {
   const supabase = await crearClienteServidor();
 
@@ -75,51 +109,207 @@ export async function todasLasSucursales() {
   return (data ?? []) as unknown as SucursalAdmin[];
 }
 
-export async function resenasRecientes() {
+/** Los micrositios, de 20 en 20, buscando por sucursal o por marca. */
+export async function sucursalesPagina(numero: number, busqueda: string) {
   const supabase = await crearClienteServidor();
+  const q = limpiarBusqueda(busqueda);
+
+  let consulta = supabase
+    .from("sucursales")
+    .select(
+      "id, nombre_sucursal, slug, estado, pausado_por_admin, tier_id, fecha_publicacion, marcas(nombre_comercial), tiers(nombre)",
+      { count: "exact" },
+    )
+    .order("fecha_creacion", { ascending: false });
+
+  if (q) {
+    // La marca vive en otra tabla: primero se buscan sus ids y luego entran
+    // en el mismo `or` que el nombre de la sucursal.
+    const { data: marcas } = await supabase
+      .from("marcas")
+      .select("id")
+      .ilike("nombre_comercial", `%${q}%`)
+      .limit(200);
+
+    const ids = (marcas ?? []).map((m) => m.id as string);
+    consulta = consulta.or(
+      [
+        `nombre_sucursal.ilike.%${q}%`,
+        `slug.ilike.%${q}%`,
+        ...(ids.length ? [`marca_id.in.(${ids.join(",")})`] : []),
+      ].join(","),
+    );
+  }
+
+  const [desde, hasta] = rango(numero);
+  const { data, count } = await consulta.range(desde, hasta);
+
+  return pagina(
+    data as unknown as (SucursalAdmin & { tiers: { nombre: string } | null })[] | null,
+    count,
+    numero,
+  );
+}
+
+/** Las personas, de 20 en 20, buscando por nombre o correo y filtrando por rol. */
+export async function perfilesPagina(
+  numero: number,
+  busqueda: string,
+  rol: string | undefined,
+) {
+  const supabase = await crearClienteServidor();
+  const q = limpiarBusqueda(busqueda);
+
+  let consulta = supabase
+    .from("perfiles")
+    .select("id, nombre, correo, rol, fecha_registro", { count: "exact" })
+    .order("fecha_registro", { ascending: false });
+
+  if (q) consulta = consulta.or(`nombre.ilike.%${q}%,correo.ilike.%${q}%`);
+  if (rol === "cliente" || rol === "negocio" || rol === "admin") {
+    consulta = consulta.eq("rol", rol);
+  }
+
+  const [desde, hasta] = rango(numero);
+  const { data, count } = await consulta.range(desde, hasta);
+
+  return pagina(data as PerfilAdmin[] | null, count, numero);
+}
+
+const CAMPOS_RESENA =
+  "id, texto, fecha, respuesta_marca, perfiles_publicos(nombre), sucursales(nombre_sucursal, slug)";
+
+/** Todas las reseñas, de la más nueva a la más vieja, de 20 en 20. */
+export async function resenasPagina(numero: number) {
+  const supabase = await crearClienteServidor();
+  const [desde, hasta] = rango(numero);
+
+  const { data, count } = await supabase
+    .from("resenas")
+    .select(CAMPOS_RESENA, { count: "exact" })
+    .order("fecha", { ascending: false })
+    .range(desde, hasta);
+
+  return pagina(data as unknown as ResenaAdmin[] | null, count, numero);
+}
+
+/** Las reseñas que alguien reportó, la del reporte más reciente primero. */
+export async function resenasReportadas(): Promise<ResenaReportada[]> {
+  const supabase = await crearClienteServidor();
+
+  const { data: reportes } = await supabase.rpc("resenas_reportadas");
+  const filas = (reportes ?? []) as {
+    resena_id: string;
+    reportes: number;
+    motivos: string[];
+    detalles: string[];
+    ultimo: string;
+  }[];
+
+  if (filas.length === 0) return [];
 
   const { data } = await supabase
     .from("resenas")
+    .select(CAMPOS_RESENA)
+    .in(
+      "id",
+      filas.map((f) => f.resena_id),
+    );
+
+  const porId = new Map(
+    ((data ?? []) as unknown as ResenaAdmin[]).map((r) => [r.id, r]),
+  );
+
+  return filas.flatMap((fila) => {
+    const resena = porId.get(fila.resena_id);
+    return resena
+      ? [
+          {
+            ...resena,
+            reportes: fila.reportes,
+            motivos: fila.motivos,
+            detalles: fila.detalles,
+            ultimo: fila.ultimo,
+          },
+        ]
+      : [];
+  });
+}
+
+/** Los eventos, del más nuevo al más viejo, de 20 en 20. */
+export async function eventosPagina(numero: number) {
+  const supabase = await crearClienteServidor();
+  const [desde, hasta] = rango(numero);
+
+  const { data, count } = await supabase
+    .from("eventos")
+    .select("id, titulo, contenido, fecha_publicacion, sucursales(nombre_sucursal, slug)", {
+      count: "exact",
+    })
+    .order("fecha_publicacion", { ascending: false })
+    .range(desde, hasta);
+
+  const filas = (
+    (data ?? []) as unknown as {
+      id: string;
+      titulo: string;
+      contenido: string;
+      fecha_publicacion: string;
+      sucursales: { nombre_sucursal: string; slug: string } | null;
+    }[]
+  ).map(
+    (evento): PublicacionAdmin => ({
+      id: evento.id,
+      titulo: evento.titulo,
+      contenido: evento.contenido,
+      fecha: evento.fecha_publicacion,
+      enlace: `/eventos/${evento.id}`,
+      autor: evento.sucursales?.nombre_sucursal ?? null,
+    }),
+  );
+
+  return pagina(filas, count, numero);
+}
+
+/**
+ * Lo publicado en la comunidad, de 20 en 20.
+ *
+ * Es la tabla `publicaciones` (migración 000029). Moderación leía `noticias`,
+ * que quedó en desuso entonces: lo que se publicaba de verdad no aparecía aquí.
+ */
+export async function comunidadPagina(numero: number) {
+  const supabase = await crearClienteServidor();
+  const [desde, hasta] = rango(numero);
+
+  const { data, count } = await supabase
+    .from("publicaciones")
     .select(
-      "id, texto, fecha, respuesta_marca, perfiles_publicos(nombre), sucursales(nombre_sucursal, slug)",
+      "id, titulo, contenido, fecha, perfiles_publicos!publicaciones_autor_id_fkey(nombre)",
+      { count: "exact" },
     )
     .order("fecha", { ascending: false })
-    .limit(40);
+    .range(desde, hasta);
 
-  return (data ?? []) as unknown as ResenaAdmin[];
-}
+  const filas = (
+    (data ?? []) as unknown as {
+      id: string;
+      titulo: string | null;
+      contenido: string;
+      fecha: string;
+      perfiles_publicos: { nombre: string } | null;
+    }[]
+  ).map(
+    (publicacion): PublicacionAdmin => ({
+      id: publicacion.id,
+      titulo: publicacion.titulo,
+      contenido: publicacion.contenido,
+      fecha: publicacion.fecha,
+      enlace: `/comunidad/tema/${publicacion.id}`,
+      autor: publicacion.perfiles_publicos?.nombre ?? null,
+    }),
+  );
 
-export async function publicacionesRecientes() {
-  const supabase = await crearClienteServidor();
-
-  const [eventos, noticias] = await Promise.all([
-    supabase
-      .from("eventos")
-      .select("id, titulo, contenido, fecha_publicacion, sucursales(nombre_sucursal, slug)")
-      .order("fecha_publicacion", { ascending: false })
-      .limit(20),
-    supabase
-      .from("noticias")
-      .select("id, titulo, contenido, fecha_publicacion, sucursales(nombre_sucursal, slug)")
-      .order("fecha_publicacion", { ascending: false })
-      .limit(20),
-  ]);
-
-  return {
-    eventos: (eventos.data ?? []) as unknown as PublicacionAdmin[],
-    noticias: (noticias.data ?? []) as unknown as PublicacionAdmin[],
-  };
-}
-
-export async function todosLosPerfiles() {
-  const supabase = await crearClienteServidor();
-
-  const { data } = await supabase
-    .from("perfiles")
-    .select("id, nombre, correo, rol, fecha_registro")
-    .order("fecha_registro", { ascending: false });
-
-  return (data ?? []) as PerfilAdmin[];
+  return pagina(filas, count, numero);
 }
 
 /** Números de la portada del panel, para saber qué necesita atención. */
@@ -137,20 +327,20 @@ export async function resumen() {
   const total = (tabla: string) =>
     supabase.from(tabla).select("*", { count: "exact", head: true });
 
-  const [enRevision, publicadas, pausadas, marcas, perfiles] = await Promise.all([
-    porEstado("pendiente_aprobacion"),
+  const [publicadas, pausadas, marcas, perfiles, reportadas] = await Promise.all([
     porEstado("publicado"),
     porEstado("pausado"),
     total("marcas"),
     total("perfiles"),
+    supabase.rpc("resenas_reportadas"),
   ]);
 
   return {
-    enRevision: enRevision.count ?? 0,
     publicadas: publicadas.count ?? 0,
     pausadas: pausadas.count ?? 0,
     marcas: marcas.count ?? 0,
     perfiles: perfiles.count ?? 0,
+    reportadas: ((reportadas.data ?? []) as unknown[]).length,
   };
 }
 

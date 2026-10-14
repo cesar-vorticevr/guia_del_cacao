@@ -660,3 +660,21 @@ export async function miResena(
     puedeCambiarla: enTabasco(data.fecha_edicion ?? data.fecha) !== hoy,
   };
 }
+
+/**
+ * Cuáles de estas reseñas ya reportó la persona, para decirle «ya la
+ * reportaste» en vez de ofrecérselo otra vez. La política solo le deja ver los
+ * suyos, pero se filtra igual por ella: RLS autoriza, no acota.
+ */
+export async function misReportes(perfilId: string, resenaIds: string[]) {
+  if (resenaIds.length === 0) return [];
+
+  const supabase = await crearClienteServidor();
+  const { data } = await supabase
+    .from("reportes_resena")
+    .select("resena_id")
+    .eq("usuario_id", perfilId)
+    .in("resena_id", resenaIds);
+
+  return (data ?? []).map((fila) => fila.resena_id as string);
+}

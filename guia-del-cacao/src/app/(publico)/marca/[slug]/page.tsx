@@ -10,6 +10,7 @@ import {
   calificacionDe,
   miResena,
   estrellasPorUsuario,
+  misReportes,
   miCalificacion,
   micrositioPorSlug,
   resenasDe,
@@ -94,7 +95,10 @@ export default async function Micrositio({
 
   // El voto y el comentario viven en tablas distintas; esto es lo que los une
   // para poder enseñar las estrellas al lado de cada reseña y filtrar por ellas.
-  const estrellas = await estrellasPorUsuario(sucursal.id);
+  const [estrellas, reportadas] = await Promise.all([
+    estrellasPorUsuario(sucursal.id),
+    perfil ? misReportes(perfil.id, resenas.map((r) => r.id)) : Promise.resolve([]),
+  ]);
 
   // Qué le toca ver a un cliente —reseñas y mazorcas— depende de cosas que solo
   // se pueden preguntar una vez que se sabe quién es.
@@ -521,9 +525,12 @@ export default async function Micrositio({
                 editada: resena.fecha_edicion !== null,
                 estrellas: estrellas.get(resena.usuario_id) ?? null,
                 respuesta: resena.respuesta_marca,
+                propia: resena.usuario_id === perfil?.id,
               }))}
               esDuenio={esDuenio}
               slug={slug}
+              puedeReportar={Boolean(perfil)}
+              reportadas={reportadas}
             />
           )}
 

@@ -6,7 +6,7 @@ import { perfilActual } from "@/lib/auth/sesion";
 import { pestanaDePerfil } from "@/lib/auth/navegacion";
 
 const SECCIONES = [
-  { href: "/admin", texto: "Por revisar" },
+  { href: "/admin", texto: "Resumen" },
   { href: "/admin/micrositios", texto: "Micrositios" },
   { href: "/admin/metricas", texto: "Métricas" },
   { href: "/admin/convenios", texto: "Códigos" },

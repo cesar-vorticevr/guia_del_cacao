@@ -6,8 +6,47 @@ import { crearClienteServidor } from "@/lib/supabase/server";
 import { perfilActual } from "@/lib/auth/sesion";
 import { miCalificacion, miResena } from "@/lib/datos/publico";
 import { BUCKET_RESENAS, revisarMedio } from "@/lib/imagenes";
+import { esMotivoDeReporte } from "@/lib/reportes";
 
 export type EstadoResena = { error?: string; ok?: string };
+
+/**
+ * Reportar una reseña al administrador (migración 000054).
+ *
+ * Lo puede hacer cualquiera con sesión, y sobre todo el negocio: no puede
+ * borrar una reseña injusta, pero sí avisar. Un reporte por persona y reseña;
+ * repetirlo no suma nada, así que se contesta igual que si fuera el primero.
+ */
+export async function reportarResena(
+  _previo: EstadoResena,
+  datos: FormData,
+): Promise<EstadoResena> {
+  const perfil = await perfilActual();
+  if (!perfil) redirect("/login");
+
+  const resenaId = datos.get("resena_id")?.toString() ?? "";
+  const motivo = datos.get("motivo")?.toString() ?? "";
+  const detalle = (datos.get("detalle")?.toString() ?? "").trim().slice(0, 500);
+
+  if (!esMotivoDeReporte(motivo)) return { error: "Elige por qué la reportas." };
+
+  const supabase = await crearClienteServidor();
+  const { error } = await supabase.from("reportes_resena").insert({
+    resena_id: resenaId,
+    usuario_id: perfil.id,
+    motivo,
+    detalle: detalle || null,
+  });
+
+  if (error && error.code !== "23505") {
+    return {
+      error:
+        error.code === "P0001" ? error.message : "No se pudo enviar el reporte. Inténtalo de nuevo.",
+    };
+  }
+
+  return { ok: "Gracias. Lo revisamos y, si no cumple las reglas, la quitamos." };
+}
 
 /**
  * Reseñar: la calificación y el comentario, en un solo envío.
