@@ -206,7 +206,7 @@ export function TarjetaSucursal({
             píxeles más abajo que las que no.
 
             El hueco va vacío y no con un "sin calificaciones": desde que las
-            reseñas son del plan Plus, un micrositio Básico no es que no tenga
+            reseñas son de los planes de pago, un micrositio Gratis no es que no tenga
             opiniones — es que su plan no las enseña, y decir lo primero sería
             mentir sobre el negocio.
           */}

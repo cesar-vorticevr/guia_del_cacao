@@ -5,6 +5,14 @@ import { redirect } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { perfilActual } from "@/lib/auth/sesion";
 import { procesarPago, proximoCobro } from "@/lib/pagos";
+import {
+  fechaDeOferta,
+  ofertaDeFila,
+  promocionPara,
+  type FilaDeConvenio,
+  type Oferta,
+} from "@/lib/precios";
+import { normalizarCodigo } from "@/lib/tipos";
 
 export type EstadoPlan = { error?: string; ok?: string };
 
@@ -91,6 +99,38 @@ export async function contratarPlan(
   const periodo = datos.get("periodo")?.toString() === "anual" ? "anual" : "mensual";
   const abiertas = await suscripcionesAbiertas(marca.id);
 
+  /*
+    Un código nuevo se puede poner también aquí, no solo al publicar: quien ya
+    estaba en su prueba cuando salió la promoción de apertura tiene que poder
+    usarla. Sin código, cada sucursal se queda con el convenio que ya tenía.
+  */
+  const codigo = (datos.get("codigo_convenio")?.toString() ?? "").trim();
+  let convenioNuevo: string | null = null;
+  let oferta: Oferta | null = null;
+
+  if (codigo) {
+    const { data, error } = await supabase.rpc("revisar_convenio", {
+      p_codigo: codigo,
+    });
+
+    if (error) {
+      return {
+        error:
+          error.code === "P0001"
+            ? error.message
+            : "No se pudo revisar el código. Inténtalo de nuevo.",
+      };
+    }
+
+    const fila = (data as (FilaDeConvenio & { id: string })[] | null)?.[0];
+    convenioNuevo = fila?.id ?? null;
+    oferta = fila ? ofertaDeFila(normalizarCodigo(codigo), fila) : null;
+  }
+
+  // La promoción se paga ya, y deja a todas las sucursales pagadas hasta su
+  // fecha: ninguna se queda en prueba.
+  const promocion = promocionPara(tier, oferta);
+
   if (abiertas.length === 0) {
     return {
       error:
@@ -98,7 +138,10 @@ export async function contratarPlan(
     };
   }
 
-  if (abiertas.every((s) => s.tier_id === tier.id && s.periodo === periodo && s.estado !== "pausado_por_pago")) {
+  if (
+    !promocion &&
+    abiertas.every((s) => s.tier_id === tier.id && s.periodo === periodo && s.estado !== "pausado_por_pago")
+  ) {
     return { error: "Ya estás en ese plan." };
   }
 
@@ -107,8 +150,8 @@ export async function contratarPlan(
     cambiar de tier libremente sin costo" (spec v2 §3.3, paso 7). Solo se cobra
     por las que ya estaban pagando.
   */
-  const enPrueba = abiertas.filter((s) => s.estado === "trial");
-  const pagando = abiertas.filter((s) => s.estado !== "trial");
+  const enPrueba = promocion ? [] : abiertas.filter((s) => s.estado === "trial");
+  const pagando = promocion ? abiertas : abiertas.filter((s) => s.estado !== "trial");
 
   /*
     Ya no se comprueba ningún tope de sucursales. Desde la spec v2 el cobro es
@@ -120,10 +163,15 @@ export async function contratarPlan(
   let referencia: string | undefined;
 
   if (pagando.length > 0) {
+    const mensualidad =
+      promocion && oferta
+        ? Math.round(Number(tier.precio_mensual) * (1 - oferta.descuento / 100))
+        : Number(tier.precio_mensual);
+
     const cobro = await procesarPago({
       sucursalId: marca.id,
       tierId: tier.id,
-      montoMensual: tier.precio_mensual * pagando.length,
+      montoMensual: mensualidad * pagando.length,
     });
 
     if (!cobro.ok) {
@@ -140,7 +188,14 @@ export async function contratarPlan(
     plan no regala días nuevos.
   */
   for (const abierta of abiertas) {
-    if (abierta.tier_id === tier.id && abierta.periodo === periodo && abierta.estado !== "pausado_por_pago") continue;
+    if (
+      !promocion &&
+      abierta.tier_id === tier.id &&
+      abierta.periodo === periodo &&
+      abierta.estado !== "pausado_por_pago"
+    ) {
+      continue;
+    }
 
     await supabase
       .from("suscripciones")
@@ -158,8 +213,8 @@ export async function contratarPlan(
       tier_id: tier.id,
       monto_mensual: tier.precio_mensual,
       periodo,
-      convenio_id: abierta.convenio_id,
-      estado: abierta.estado === "trial" ? "trial" : "activo",
+      convenio_id: convenioNuevo ?? abierta.convenio_id,
+      estado: abierta.estado === "trial" && !promocion ? "trial" : "activo",
       fecha_fin_trial: abierta.fecha_fin_trial,
       fecha_proximo_cobro: proximoCobro().toISOString(),
       metodo_pago_stub: referencia,
@@ -186,6 +241,12 @@ export async function contratarPlan(
 
   revalidatePath("/negocio/panel");
   revalidatePath("/negocio/panel/cuenta");
+
+  if (promocion && oferta?.cubreHasta) {
+    return {
+      ok: `Listo, tus micrositios están en ${tier.nombre}, pagado hasta el ${fechaDeOferta(oferta.cubreHasta)}.`,
+    };
+  }
 
   return {
     ok:

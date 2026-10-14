@@ -26,11 +26,14 @@ import {
   consultarCodigo,
   type EstadoAccion,
 } from "@/lib/negocio/acciones";
-import { type Sucursal, type Tier } from "@/lib/tipos";
+import { pesos, type Sucursal, type Tier } from "@/lib/tipos";
 import {
   DESCUENTO_ANUAL,
+  DIAS_GRATIS,
+  esPlanGratis,
   fechaDeOferta,
   precioDe,
+  promocionPara,
   textoDePrecio,
   type Oferta,
   type Periodo,
@@ -294,17 +297,27 @@ export function FormularioPublicar({
         buscándolo. Al aplicarlo, los planes enseñan ya el precio de la oferta,
         antes de contratar nada.
       */}
-      <CodigoDeConvenio oferta={oferta} alCambiar={setOferta} />
+      <CodigoDeConvenio tiers={tiers} oferta={oferta} alCambiar={setOferta} />
 
       <ElegirPeriodo periodo={periodo} alCambiar={setPeriodo} />
 
-      {/* `Planes` ya trae dentro el radio `tier_id` y el `periodo`. */}
-      <Planes tiers={tiers} periodo={periodo} oferta={oferta} />
+      {/*
+        `Planes` ya trae dentro el radio `tier_id` y el `periodo`. La `key`
+        vuelve a elegir al aplicar un código: con la promoción, su plan.
+      */}
+      <Planes
+        key={oferta?.codigo ?? "sin-codigo"}
+        tiers={tiers}
+        periodo={periodo}
+        oferta={oferta}
+      />
 
       <p className="rounded-2xl bg-crema-2 px-4 py-3 text-sm text-cacao">
-        Pruebas tu plan quince días sin pagar y sin dejar tarjeta. Si al
-        terminar no has pagado, tu micrositio sale del directorio, pero no se
-        borra nada y vuelve en cuanto pagues.
+        {oferta?.cubreHasta
+          ? `Con la promoción pagas un mes de ${nombreDelPlan(tiers, oferta.planId)} al publicar y te cubre hasta el ${fechaDeOferta(oferta.cubreHasta)}. Con otro plan, lo pruebas sin pagar como siempre.`
+          : `El plan ${nombreDelPlan(tiers, null)} dura ${DIAS_GRATIS} días. Los de pago los pruebas quince días sin pagar y sin dejar tarjeta.`}{" "}
+        Si al terminar no has pagado, tu micrositio sale del directorio, pero no
+        se borra nada y vuelve en cuanto pagues.
       </p>
 
       <BotonEnviar>Publicar mi micrositio</BotonEnviar>
@@ -320,9 +333,11 @@ export function FormularioPublicar({
  * publicar es el que quedó aplicado, y la base lo vuelve a revisar.
  */
 function CodigoDeConvenio({
+  tiers,
   oferta,
   alCambiar,
 }: {
+  tiers: Tier[];
   oferta: Oferta | null;
   alCambiar: (oferta: Oferta | null) => void;
 }) {
@@ -353,13 +368,24 @@ function CodigoDeConvenio({
         </p>
         <p className="text-sm">{oferta.descripcion}</p>
         <ul className="mt-2 grid gap-0.5 text-sm">
-          {oferta.basicoGratisHasta && (
+          {oferta.cubreHasta ? (
             <li>
-              ✓ Básico gratis hasta el {fechaDeOferta(oferta.basicoGratisHasta)}
+              ✓ Un mes de {nombreDelPlan(tiers, oferta.planId)}
+              {oferta.descuento > 0 && ` con ${oferta.descuento}% de descuento`}, y
+              te cubre hasta el {fechaDeOferta(oferta.cubreHasta)}
             </li>
-          )}
-          {oferta.descuento > 0 && (
-            <li>✓ {oferta.descuento}% de descuento en Plus y Premier</li>
+          ) : (
+            <>
+              {oferta.basicoGratisHasta && (
+                <li>
+                  ✓ {nombreDelPlan(tiers, null)} hasta el{" "}
+                  {fechaDeOferta(oferta.basicoGratisHasta)}
+                </li>
+              )}
+              {oferta.descuento > 0 && (
+                <li>✓ {oferta.descuento}% de descuento en los planes de pago</li>
+              )}
+            </>
           )}
         </ul>
         <button
@@ -409,10 +435,19 @@ function CodigoDeConvenio({
         </button>
       </div>
       <p className={`mt-1.5 text-sm ${error ? "font-bold text-guayaba" : "text-cacao/70"}`}>
-        {error ?? "Si vienes por un convenio, como el del Festival del Chocolate, escríbelo aquí para ver tus precios."}
+        {error ?? "Si te dieron un código de promoción o de convenio, como el del Festival del Chocolate, escríbelo aquí para ver tus precios."}
       </p>
     </div>
   );
+}
+
+/** El nombre de un plan; sin id, el del plan Gratis (el más barato). */
+function nombreDelPlan(tiers: Tier[], id: number | null) {
+  const tier =
+    id === null
+      ? [...tiers].sort((a, b) => a.precio_mensual - b.precio_mensual)[0]
+      : tiers.find((t) => t.id === id);
+  return tier?.nombre ?? "el plan";
 }
 
 /** Mensual o anual. El anual va con su descuento a la vista. */
@@ -423,21 +458,21 @@ function ElegirPeriodo({
   periodo: Periodo;
   alCambiar: (periodo: Periodo) => void;
 }) {
-  const opciones: { valor: Periodo; texto: string }[] = [
-    { valor: "mensual", texto: "Pago mensual" },
-    { valor: "anual", texto: `Pago anual · ${DESCUENTO_ANUAL}% menos` },
+  const opciones: { valor: Periodo; texto: string; extra?: string }[] = [
+    { valor: "mensual", texto: "Mensual" },
+    { valor: "anual", texto: "Anual", extra: `${DESCUENTO_ANUAL}% menos` },
   ];
 
   return (
-    <fieldset className="flex flex-wrap gap-2">
+    <fieldset className="mx-auto flex w-fit gap-1 rounded-full border-2 border-selva/15 bg-white p-1 shadow-dura-sm">
       <legend className="sr-only">Cómo quieres pagar</legend>
       {opciones.map((opcion) => (
         <label
           key={opcion.valor}
-          className={`flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-full border-2 px-4 text-center text-sm font-bold ${
+          className={`flex min-h-10 cursor-pointer items-center gap-2 rounded-full px-5 text-sm font-bold transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-mango ${
             periodo === opcion.valor
-              ? "border-selva bg-selva text-crema"
-              : "border-selva/20 bg-white text-selva-2"
+              ? "bg-selva text-crema"
+              : "text-selva-2 hover:bg-selva/5"
           }`}
         >
           <input
@@ -449,6 +484,13 @@ function ElegirPeriodo({
             className="sr-only"
           />
           {opcion.texto}
+          {opcion.extra && (
+            <span
+              className={`font-mono text-[0.7rem] ${periodo === opcion.valor ? "text-mango" : "text-selva"}`}
+            >
+              {opcion.extra}
+            </span>
+          )}
         </label>
       ))}
     </fieldset>
@@ -691,23 +733,20 @@ function BotonEnviarChico({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Los planes, para elegir uno.
+ * Los planes, lado a lado, para elegir uno.
  *
  * Es el mismo listado que usa el alta y el cambio de plan: la diferencia entre
  * las dos pantallas es a qué acción apunta y qué dice el botón, no cómo se
  * pinta un plan. Duplicarlo garantizaba que un día uno enseñara una ventaja que
  * el otro no.
- */
-/**
- * Los planes, uno a la vez.
  *
- * Antes se pintaban los tres apilados con todas sus ventajas: media pantalla
- * de lista para elegir entre tres cosas, y para comparar el primero con el
- * ultimo habia que desplazarse. Ahora la fila de arriba es el menu —nombre y
- * precio, que es con lo que se decide— y debajo se ve solo el elegido.
+ * Se pintan como tarjetas que se comparan de un vistazo —nombre, precio grande
+ * y lo que trae cada uno—, con el de arriba resaltado. Fue una fila de botones
+ * con el elegido debajo; se veía ordenado pero no daba ganas de subir de plan,
+ * y para comparar había que ir tocando uno por uno.
  *
- * El plan actual viene marcado y es el que abre. Quien entra a mirar no tiene
- * que buscar en cual esta.
+ * Cada tarjeta es la etiqueta de un radio oculto: es lo que viaja en el
+ * formulario y lo que hace que las flechas del teclado recorran los planes.
  */
 function Planes({
   tiers,
@@ -718,142 +757,269 @@ function Planes({
 }: {
   tiers: Tier[];
   actual?: number;
-  /** Cuál viene abierto. Sin él, el que ya se tiene. */
+  /** Cuál viene elegido. Sin él, el que ya se tiene, o el de arriba. */
   inicial?: number;
   periodo?: Periodo;
   /** El convenio aplicado, si hay: cambia los precios que se enseñan. */
   oferta?: Oferta | null;
 }) {
-  const [elegido, setElegido] = useState(inicial ?? actual ?? tiers[0]?.id);
-  const tier = tiers.find((t) => t.id === elegido) ?? tiers[0];
+  const ordenados = [...tiers].sort((a, b) => a.precio_mensual - b.precio_mensual);
+  const masAlto = ordenados[ordenados.length - 1];
+  const conPromocion = ordenados.find((tier) => promocionPara(tier, oferta));
 
-  if (!tier) return null;
+  const [elegido, setElegido] = useState(
+    inicial ?? actual ?? conPromocion?.id ?? masAlto?.id,
+  );
 
-  const precio = precioDe(tier, tiers, periodo, oferta);
-
-  /*
-    Ya no se anuncia un tope de sucursales: desde la spec v2 el cobro es por
-    sucursal y no hay tope. "Hasta 20 sucursales" en un plan que se paga por
-    cada una prometía un permiso que no es del plan.
-  */
-  const ventajas = [
-    {
-      hay: true,
-      texto: "Tu micrositio en el directorio, con catálogo y contacto",
-    },
-    {
-      hay: tier.permite_resenas,
-      texto: "Recibe reseñas de tus clientes y respóndeles",
-    },
-    // Las mazorcas están apagadas: anunciarlas como ventaja de un plan sería
-    // cobrar por algo que nadie puede usar todavía.
-    ...(FUNCIONES.mazorcas
-      ? [
-          {
-            hay: tier.puede_dar_puntos,
-            texto: "Da mazorcas de cacao a tus clientes",
-          },
-        ]
-      : []),
-    {
-      hay: tier.puede_publicar_contenido,
-      texto: "Anuncia tus catas, talleres y ferias en la agenda",
-    },
-    {
-      hay: tier.en_banner_principal,
-      texto: "Aparece en el banner de la portada",
-    },
-  ];
+  if (ordenados.length === 0) return null;
 
   return (
     <fieldset className="grid gap-4">
       <legend className="sr-only">Elige un plan</legend>
       <input type="hidden" name="periodo" value={periodo} />
 
-      {/*
-        El radio va oculto pero sigue ahi: es lo que viaja en el formulario y lo
-        que hace que las flechas del teclado recorran los planes. La fila de
-        botones es su etiqueta, no un sustituto.
-      */}
-      <div className="flex flex-wrap gap-2">
-        {tiers.map((opcion) => {
-          const suyo = precioDe(opcion, tiers, periodo, oferta);
-
-          return (
-            <label
-              key={opcion.id}
-              className={`flex min-h-12 flex-1 cursor-pointer flex-col justify-center rounded-2xl border-2 px-4 py-2 text-center transition-colors ${
-                opcion.id === elegido
-                  ? "border-selva bg-selva text-crema"
-                  : "border-selva/20 bg-white text-selva-2 hover:border-selva/50"
-              }`}
-            >
-              <input
-                type="radio"
-                name="tier_id"
-                value={opcion.id}
-                checked={opcion.id === elegido}
-                onChange={() => setElegido(opcion.id)}
-                className="sr-only"
-              />
-              <span className="font-display font-semibold">{opcion.nombre}</span>
-              <span
-                className={`font-mono text-xs ${
-                  opcion.id === elegido ? "text-crema/80" : "text-cacao/70"
-                }`}
-              >
-                {textoDePrecio(suyo.cobro, suyo.periodo)}
-              </span>
-            </label>
-          );
-        })}
-      </div>
-
-      <div className="rounded-3xl border-2 border-ink/10 bg-white p-5">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <p className="font-display text-xl font-semibold text-selva-2">
-            {tier.nombre}
-            {tier.id === actual && (
-              <span className="ml-2 rounded-full bg-lima/40 px-2.5 py-0.5 align-middle font-mono text-xs font-bold text-selva-2">
-                Tu plan
-              </span>
-            )}
-          </p>
-          <p className="text-right font-mono text-lg font-bold text-selva">
-            {precio.antes !== null && (
-              <span className="mr-2 text-sm font-normal text-cacao/60 line-through">
-                {textoDePrecio(precio.antes, precio.periodo)}
-              </span>
-            )}
-            {textoDePrecio(precio.cobro, precio.periodo)}
-          </p>
-        </div>
-
-        {/* Lo que el precio solo no dice: hasta cuándo, o cuánto es al mes. */}
-        {precio.gratisHasta ? (
-          <p className="mt-1 text-sm text-cacao/80">
-            Gratis hasta el {fechaDeOferta(precio.gratisHasta)}. Después, $99 al
-            mes para seguir en el directorio.
-          </p>
-        ) : precio.periodo === "anual" && precio.cobro > 0 ? (
-          <p className="mt-1 text-sm text-cacao/80">
-            Equivale a {textoDePrecio(Math.round(precio.cobro / 12), "mensual")}, en
-            un solo pago al año.
-          </p>
-        ) : null}
-
-        <ul className="mt-3 grid gap-1 text-cacao">
-          {ventajas.map((ventaja) => (
-            <li
-              key={ventaja.texto}
-              className={ventaja.hay ? "" : "text-cacao/50"}
-            >
-              {ventaja.hay ? "✓" : "—"} {ventaja.texto}
-            </li>
-          ))}
-        </ul>
+      <div className="grid gap-4 pt-3 md:grid-cols-3">
+        {ordenados.map((tier, lugar) => (
+          <TarjetaDePlan
+            key={tier.id}
+            tier={tier}
+            tiers={ordenados}
+            lema={LEMAS[lugar] ?? ""}
+            periodo={periodo}
+            oferta={oferta}
+            elegido={tier.id === elegido}
+            esActual={tier.id === actual}
+            sello={
+              tier.id === conPromocion?.id
+                ? "Promoción de apertura"
+                : !conPromocion && tier.id === masAlto?.id
+                  ? "Más completo"
+                  : null
+            }
+            alElegir={() => setElegido(tier.id)}
+          />
+        ))}
       </div>
     </fieldset>
+  );
+}
+
+/** Para quién es cada plan, del más barato al más caro. */
+const LEMAS = ["Para conocer la guía", "Para tu negocio", "Para destacar en grande"];
+
+function TarjetaDePlan({
+  tier,
+  tiers,
+  lema,
+  periodo,
+  oferta,
+  elegido,
+  esActual,
+  sello,
+  alElegir,
+}: {
+  tier: Tier;
+  tiers: Tier[];
+  lema: string;
+  periodo: Periodo;
+  oferta: Oferta | null;
+  elegido: boolean;
+  esActual: boolean;
+  /** La cinta de arriba: la promoción, o el plan más completo. */
+  sello: string | null;
+  alElegir: () => void;
+}) {
+  const precio = precioDe(tier, tiers, periodo, oferta);
+  const gratis = esPlanGratis(tier, tiers);
+  const resaltado = sello !== null;
+
+  /*
+    Ya no se anuncia un tope de sucursales: desde la spec v2 el cobro es por
+    sucursal y no hay tope. "Hasta 20 sucursales" en un plan que se paga por
+    cada una prometía un permiso que no es del plan.
+  */
+  const ventajas: { hay: boolean; texto: React.ReactNode }[] = [
+    {
+      hay: true,
+      texto: (
+        <>
+          Tu <strong>micrositio</strong> en el directorio
+        </>
+      ),
+    },
+    {
+      hay: true,
+      texto: (
+        <>
+          <strong>Catálogo</strong> y botones de contacto
+        </>
+      ),
+    },
+    gratis
+      ? {
+          hay: true,
+          texto: precio.gratisHasta ? (
+            <>
+              Activo hasta el <strong>{fechaDeOferta(precio.gratisHasta)}</strong>
+            </>
+          ) : (
+            <>
+              Activo <strong>{DIAS_GRATIS} días</strong>
+            </>
+          ),
+        }
+      : { hay: true, texto: "Sin vencimiento mientras pagues" },
+    {
+      hay: tier.permite_resenas,
+      texto: (
+        <>
+          <strong>Reseñas</strong> de tus clientes, y les respondes
+        </>
+      ),
+    },
+    // Las mazorcas están apagadas: anunciarlas como ventaja de un plan sería
+    // cobrar por algo que nadie puede usar todavía.
+    ...(FUNCIONES.mazorcas
+      ? [{ hay: tier.puede_dar_puntos, texto: "Da mazorcas de cacao a tus clientes" }]
+      : []),
+    {
+      hay: tier.puede_publicar_contenido,
+      texto: (
+        <>
+          Anuncia tus <strong>catas y talleres</strong> en la agenda
+        </>
+      ),
+    },
+    {
+      hay: tier.en_banner_principal,
+      texto: (
+        <>
+          En el <strong>banner de la portada</strong> y destacado en el directorio
+        </>
+      ),
+    },
+  ];
+
+  // Lo que va debajo del precio: hasta cuándo, o qué es ese número.
+  const nota = gratis
+    ? "Sin tarjeta y sin pagar nada"
+    : precio.cubreHasta
+      ? `Un solo pago: cubre hasta el ${fechaDeOferta(precio.cubreHasta)}. Después, ${textoDePrecio(precio.despues ?? 0, precio.periodo)}.`
+      : precio.periodo === "anual"
+        ? `Equivale a ${textoDePrecio(Math.round(precio.cobro / 12), "mensual")}, en un pago al año`
+        : "Al mes, por micrositio";
+
+  return (
+    <label
+      className={`relative flex cursor-pointer flex-col rounded-[1.75rem] border-2 p-5 transition-all has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-mango ${
+        elegido
+          ? resaltado
+            ? "border-mango bg-selva-2 text-crema shadow-[0_0_0_4px_rgb(255_183_3/0.25),0_7px_0_0_rgb(12_82_54/0.25)] md:-translate-y-2"
+            : "border-selva bg-white shadow-dura-alta md:-translate-y-2"
+          : resaltado
+            ? "border-mango/70 bg-selva-2 text-crema shadow-dura hover:-translate-y-1"
+            : "border-selva/15 bg-white shadow-dura-sm hover:-translate-y-1 hover:border-selva/40"
+      }`}
+    >
+      <input
+        type="radio"
+        name="tier_id"
+        value={tier.id}
+        checked={elegido}
+        onChange={alElegir}
+        className="sr-only"
+      />
+
+      {sello && (
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-mango px-3 py-1 font-mono text-[0.7rem] font-bold uppercase tracking-wide text-ink shadow-dura-sm">
+          {sello}
+        </span>
+      )}
+
+      <span className="flex items-center justify-between gap-2">
+        <span
+          className={`font-display text-2xl font-semibold ${resaltado ? "text-crema" : "text-selva-2"}`}
+        >
+          {tier.nombre}
+        </span>
+        {esActual && (
+          <span className="rounded-full bg-lima px-2.5 py-0.5 font-mono text-xs font-bold text-selva-2">
+            Tu plan
+          </span>
+        )}
+      </span>
+      <span className={`text-sm ${resaltado ? "text-crema/75" : "text-cacao/70"}`}>
+        {lema}
+      </span>
+
+      <span className="mt-4 flex flex-wrap items-baseline gap-x-2">
+        {precio.antes !== null && (
+          <span
+            className={`font-mono text-base line-through ${resaltado ? "text-crema/50" : "text-cacao/50"}`}
+          >
+            {pesos(precio.antes)}
+          </span>
+        )}
+        <span
+          className={`font-display text-5xl font-bold leading-none ${resaltado ? "text-mango" : "text-selva"}`}
+        >
+          {pesos(precio.cobro)}
+        </span>
+        {!gratis && !precio.cubreHasta && (
+          <span className={`font-mono text-sm ${resaltado ? "text-crema/75" : "text-cacao/70"}`}>
+            /{precio.periodo === "anual" ? "año" : "mes"}
+          </span>
+        )}
+      </span>
+      <span
+        className={`mt-1.5 min-h-10 text-xs ${resaltado ? "text-crema/75" : "text-cacao/70"}`}
+      >
+        {nota}
+      </span>
+
+      <span
+        aria-hidden="true"
+        className={`mt-4 flex min-h-11 items-center justify-center rounded-full px-4 text-sm font-bold transition-colors ${
+          elegido
+            ? resaltado
+              ? "bg-mango text-ink"
+              : "bg-selva text-crema"
+            : resaltado
+              ? "border-2 border-mango/60 text-mango"
+              : "border-2 border-selva/25 text-selva-2"
+        }`}
+      >
+        {elegido ? `✓ Elegiste ${tier.nombre}` : `Elegir ${tier.nombre}`}
+      </span>
+
+      <ul
+        className={`mt-5 grid gap-2 border-t pt-4 text-sm ${resaltado ? "border-crema/15" : "border-selva/10"}`}
+      >
+        {ventajas.map((ventaja, i) => (
+          <li
+            key={i}
+            className={`flex gap-2 ${
+              ventaja.hay ? "" : resaltado ? "text-crema/35 line-through" : "text-cacao/35 line-through"
+            }`}
+          >
+            <span
+              aria-hidden="true"
+              className={`mt-0.5 grid size-4 shrink-0 place-items-center rounded-full text-[0.6rem] font-bold ${
+                ventaja.hay
+                  ? resaltado
+                    ? "bg-mango text-ink"
+                    : "bg-lima text-selva-2"
+                  : "bg-transparent"
+              }`}
+            >
+              {ventaja.hay ? "✓" : "—"}
+            </span>
+            <span className="sr-only">{ventaja.hay ? "Incluye:" : "No incluye:"}</span>
+            <span>{ventaja.texto}</span>
+          </li>
+        ))}
+      </ul>
+    </label>
   );
 }
 
@@ -866,7 +1032,7 @@ export function FormularioCambiarPlan({
   tiers: Tier[];
   tierActual?: number;
   /**
-   * Con cuál abrir. Llegando desde "cámbiate a Premier" es Premier: quien tocó
+   * Con cuál abrir. Llegando desde "cámbiate a Pro" es Pro: quien tocó
    * ese anuncio ya eligió, y hacerle elegir otra vez desde su plan actual es
    * pedirle la misma decisión dos veces.
    */
@@ -876,22 +1042,33 @@ export function FormularioCambiarPlan({
 }) {
   const [estado, accion] = useActionState(contratarPlan, INICIAL);
   const [periodo, setPeriodo] = useState<Periodo>("mensual");
+  // Un código nuevo manda sobre el convenio con el que entró.
+  const [codigoNuevo, setCodigoNuevo] = useState<Oferta | null>(null);
+  // La promoción ya usada no se repite al cambiar de plan: su precio solo se
+  // enseña con el código escrito otra vez.
+  const vigente = codigoNuevo ?? (oferta?.planId ? null : oferta);
 
   return (
     <form action={accion} className="grid gap-4">
+      <input type="hidden" name="codigo_convenio" value={codigoNuevo?.codigo ?? ""} />
       <Resultado estado={estado} />
+
+      <CodigoDeConvenio tiers={tiers} oferta={codigoNuevo} alCambiar={setCodigoNuevo} />
 
       <ElegirPeriodo periodo={periodo} alCambiar={setPeriodo} />
 
       <Planes
+        key={codigoNuevo?.codigo ?? "sin-codigo"}
         tiers={tiers}
         actual={tierActual}
-        inicial={preseleccion}
+        inicial={codigoNuevo?.cubreHasta ? (codigoNuevo.planId ?? undefined) : preseleccion}
         periodo={periodo}
-        oferta={oferta}
+        oferta={vigente}
       />
 
-      <BotonEnviar>Cambiar de plan</BotonEnviar>
+      <BotonEnviar>
+        {codigoNuevo?.cubreHasta ? "Pagar y cambiar de plan" : "Cambiar de plan"}
+      </BotonEnviar>
     </form>
   );
 }

@@ -1076,13 +1076,22 @@ npm run typecheck && npm run lint && npm run build
 
 ## Precios, pago anual y convenios
 
-Migración **000051**. Mensual / anual (20% menos):
+Migraciones **000051** y **000053**. Mensual / anual (20% menos):
 
-| Plan | Mensual | Anual |
+| Plan (id) | Mensual | Anual |
 |---|---|---|
-| Básico | $99 | $950 |
-| Plus | $199 | $1,910 |
-| Premier | $299 | $2,870 |
+| Gratis (1) | $0, treinta días | — |
+| Básico (2) | $199 | $1,910 |
+| Pro (3) | $299 | $2,870 |
+
+Hasta el 13 de octubre de 2026 se llamaban Básico ($99), Plus y Premier. Se
+recorrieron un lugar sin cambiar ids ni lo que trae cada uno. La columna
+`convenios.basico_gratis_hasta` conserva el nombre viejo: es «el plan más barato
+gratis hasta», hoy el Gratis.
+
+- **Gratis dura treinta días** (`public.dias_gratis()` y `DIAS_GRATIS` en
+  `lib/precios.ts`). Es una prueba a $0: al vencer se oculta como cualquier
+  otra. Si su convenio da una fecha más lejana, manda la fecha.
 
 - **El precio lo calcula la base** (`precio_de_suscripcion`, trigger de
   insert) con el plan, el periodo y el convenio; lo que mande la aplicación se
@@ -1094,7 +1103,7 @@ Migración **000051**. Mensual / anual (20% menos):
   Si cambia una regla, cambia en los dos lados; manda la base.
 - `monto_por_cobro` es lo que se cobra cada periodo (el mes o el año);
   `monto_mensual` es lo que equivale al mes.
-- **Todos estrenan quince días de prueba.** Una prueba de pago nunca pasa de
+- **Los planes de pago estrenan quince días de prueba.** Una prueba de pago nunca pasa de
   quince días, aunque venga de un periodo gratis más largo: sin ese tope, quien
   tenía el Básico gratis hasta noviembre se pasaba a Premier y lo tenía gratis
   igual.
@@ -1114,15 +1123,27 @@ un código?»**. Se aplica con su propio botón y los planes enseñan ya el prec
 la oferta, antes de confirmar (`consultarCodigo` → `revisar_convenio`). Contratar
 lo vuelve a revisar en la base.
 
-Un convenio puede dar **Básico gratis hasta una fecha** y/o **un % de descuento
-en Plus y Premier** mientras se siga pagando. **No se suma al anual**: se queda
-el descuento mayor.
+Un convenio puede dar **Gratis hasta una fecha** y/o **un % de descuento en
+Básico y Pro** mientras se siga pagando. **No se suma al anual**: se queda el
+descuento mayor.
 
-El primero es el del convenio entre **Vórtice VR** (quien desarrolla la
+Desde la migración **000053** un convenio también puede ser una **promoción**
+(`plan_id` + `cubre_hasta`, van juntos o ninguno): quien paga un mes de ese
+plan mientras el código sirve, con el descuento del convenio, queda `activo` y
+pagado hasta `cubre_hasta`; el siguiente cobro es al día siguiente, al precio
+normal. El descuento de una promoción **es solo del primer pago**, se guarda en
+`suscripciones.pago_de_apertura` y **se usa una vez por sucursal**. En prueba
+no hay promoción: lo que se regala es el pago. El código se pone al publicar o
+al cambiar de plan desde la cuenta, y lo da de alta el administrador en
+`/admin/convenios`. La primera fue la de apertura del Festival: Pro al 50%,
+pagado antes del 30 de octubre, que cubre noviembre y diciembre de 2026.
+
+El primer convenio es el de **Vórtice VR** (quien desarrolla la
 plataforma) y la **Secretaría de Turismo y Desarrollo Económico del Estado de
 Tabasco**, para el Festival del Chocolate del 12 al 16 de noviembre de 2026:
 **`FESTIVALCHOCOLATE`** sirve para contratar del 1 de octubre al 16 de
-noviembre, da Básico gratis hasta el 30 de noviembre y 20% en Plus y Premier.
+noviembre, da el plan más barato gratis hasta el 30 de noviembre (era el Básico,
+hoy el Gratis) y 20% en los planes de pago.
 El nombre de la Secretaría va **completo** siempre que aparezca.
 
 - **Un solo código para todos, acotado por fecha.** Se probó uno por negocio y

@@ -92,7 +92,12 @@ export function BotonesRol({
 }
 
 /** Un código nuevo, para el siguiente evento con convenio. */
-export function FormularioConvenio() {
+export function FormularioConvenio({
+  planes,
+}: {
+  /** Los planes de pago, para elegir el de una promoción. */
+  planes: { id: number; nombre: string }[];
+}) {
   const [estado, accion] = useActionState(crearConvenio, INICIAL);
   const clase =
     "w-full rounded-2xl border-2 border-selva/20 bg-white px-4 py-3 text-base text-ink focus:border-selva";
@@ -135,16 +140,16 @@ export function FormularioConvenio() {
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">
           <span className="mb-1.5 block font-bold text-selva-2">
-            Básico gratis hasta
+            Plan Gratis hasta
           </span>
           <input name="basico_gratis_hasta" type="date" className={clase} />
           <span className="mt-1.5 block text-sm text-cacao/70">
-            Opcional. Al día siguiente, sin pago, se oculta.
+            Opcional, si es más de 30 días. Al día siguiente, sin pago, se oculta.
           </span>
         </label>
         <label className="block">
           <span className="mb-1.5 block font-bold text-selva-2">
-            Descuento en Plus y Premier (%)
+            Descuento (%)
           </span>
           <input
             name="descuento"
@@ -154,8 +159,40 @@ export function FormularioConvenio() {
             defaultValue={20}
             className={clase}
           />
+          <span className="mt-1.5 block text-sm text-cacao/70">
+            En Básico y Pro mientras se pague. En una promoción, solo en su
+            primer pago.
+          </span>
         </label>
       </div>
+
+      <fieldset className="grid gap-3 rounded-2xl border-2 border-dashed border-selva/25 p-4 sm:grid-cols-2">
+        <legend className="px-1 font-bold text-selva-2">
+          Promoción (opcional)
+        </legend>
+        <p className="text-sm text-cacao/70 sm:col-span-2">
+          Quien paga un mes de este plan mientras el código sirve, con el
+          descuento de arriba, lo tiene pagado hasta la fecha que pongas. Desde
+          el día siguiente se le cobra el precio normal.
+        </p>
+        <label className="block">
+          <span className="mb-1.5 block font-bold text-selva-2">Plan</span>
+          <select name="plan_id" defaultValue="" className={clase}>
+            <option value="">Sin promoción</option>
+            {planes.map((plan) => (
+              <option key={plan.id} value={plan.id}>
+                {plan.nombre}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block font-bold text-selva-2">
+            El pago cubre hasta
+          </span>
+          <input name="cubre_hasta" type="date" className={clase} />
+        </label>
+      </fieldset>
 
       <BotonEnviar variante="secundario">Crear código</BotonEnviar>
     </form>

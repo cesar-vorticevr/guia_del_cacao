@@ -25,7 +25,7 @@ function traducir(mensaje: string) {
     return "Ya la apoyaste. Es una mazorca por persona.";
   }
   if (mensaje.includes("Tu plan no incluye")) {
-    return "Publicar como negocio viene con el plan Premier.";
+    return "Publicar como negocio viene con el plan Pro.";
   }
   if (mensaje.includes("row-level security")) {
     return "Tu cuenta no puede publicar aquí ahora mismo.";
@@ -93,7 +93,7 @@ function revisarTexto(contenido: string) {
  *
  * A una persona le cuesta una mazorca —se la cobra el trigger `cobrar_publicacion`,
  * que es quien puede hacerlo en la misma transacción— y a un negocio le pide el
- * plan Premier. Aquí solo se valida el texto y se traduce la negativa.
+ * plan Pro. Aquí solo se valida el texto y se traduce la negativa.
  */
 export async function crearTema(
   _previo: EstadoForo,

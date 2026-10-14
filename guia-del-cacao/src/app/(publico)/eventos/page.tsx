@@ -48,7 +48,7 @@ export default async function Eventos() {
     (s) => s.tiers?.puede_publicar_contenido && s.estado === "publicado",
   );
 
-  // Los ya publicados se buscan sobre todas sus sucursales, no solo las Premier:
+  // Los ya publicados se buscan sobre todas sus sucursales, no solo las Pro:
   // si la cuenta bajó de plan, sus eventos siguen ahí —ocultos— y tiene que
   // poder verlos.
   const mios = esNegocio

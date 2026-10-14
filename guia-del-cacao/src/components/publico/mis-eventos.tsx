@@ -69,8 +69,8 @@ export function MisEventos({
             <strong className="text-selva-2">
               Tus eventos están ocultos para el público.
             </strong>{" "}
-            Publicar viene con el plan Premier y tu cuenta ya no lo tiene. No se
-            borró nada: en cuanto vuelvas a Premier se ven otra vez, tal como
+            Publicar viene con el plan Pro y tu cuenta ya no lo tiene. No se
+            borró nada: en cuanto vuelvas a Pro se ven otra vez, tal como
             estaban.
           </p>
 
@@ -78,7 +78,7 @@ export function MisEventos({
             href="/negocio/panel/cuenta"
             className="mt-4 inline-block min-h-11 rounded-full bg-mango px-5 py-2.5 font-bold text-ink"
           >
-            Volver a Premier
+            Volver a Pro
           </Link>
         </div>
       )}

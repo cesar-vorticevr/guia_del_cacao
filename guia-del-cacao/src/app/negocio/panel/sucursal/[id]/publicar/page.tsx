@@ -49,7 +49,8 @@ export default async function Publicar({
   ]);
 
   return (
-    <div className="mx-auto grid max-w-xl gap-6">
+    // Ancho para que los planes quepan lado a lado; el texto, en su columna.
+    <div className="mx-auto grid max-w-5xl gap-6">
       <div>
         <Link
           href={`/negocio/panel/sucursal/${id}`}
@@ -81,10 +82,11 @@ export default async function Publicar({
         </div>
       ) : (
         <>
-          <p className="text-cacao">
+          <p className="max-w-xl text-cacao">
             Tu micrositio está completo. Elige con qué plan quieres que salga:
-            lo pruebas quince días sin pagar y sin dejar tarjeta. Si tienes un
-            código de convenio, escríbelo arriba para ver tus precios.
+            empieza con el Gratis, o prueba Básico o Pro quince días sin pagar
+            y sin dejar tarjeta. Si tienes un código de promoción o de convenio,
+            escríbelo abajo para ver tus precios.
           </p>
 
           <FormularioPublicar sucursalId={sucursal.id} tiers={tiers} />

@@ -6,10 +6,15 @@ import { crearClienteServidor } from "@/lib/supabase/server";
 import { perfilActual } from "@/lib/auth/sesion";
 import { miSucursal, misSucursales } from "@/lib/datos/sucursales";
 import { generarSlug, normalizarCodigo } from "@/lib/tipos";
-import type { Oferta } from "@/lib/precios";
+import {
+  ofertaDeFila,
+  promocionPara,
+  type FilaDeConvenio,
+  type Oferta,
+} from "@/lib/precios";
 import { esPasoDelAlta } from "@/lib/negocio/pasos";
 import { esEntidad } from "@/lib/entidades";
-import { proximoCobro } from "@/lib/pagos";
+import { procesarPago, proximoCobro } from "@/lib/pagos";
 import { revisarImagen } from "@/lib/imagenes";
 import { LIMITES, revisarLargo, TOPE_FOTOS } from "@/lib/limites";
 
@@ -276,6 +281,7 @@ export async function publicarSucursal(
   if (!tier) return { error: "Ese plan no existe." };
 
   let convenioId: string | null = null;
+  let oferta: Oferta | null = null;
 
   if (codigo) {
     const { data, error: errorConvenio } = await supabase.rpc(
@@ -292,7 +298,30 @@ export async function publicarSucursal(
       };
     }
 
-    convenioId = (data as { id: string }[] | null)?.[0]?.id ?? null;
+    const fila = (data as (FilaDeConvenio & { id: string })[] | null)?.[0];
+    convenioId = fila?.id ?? null;
+    oferta = fila ? ofertaDeFila(normalizarCodigo(codigo), fila) : null;
+  }
+
+  /*
+    La promoción de apertura no es una prueba: se paga un mes, con su
+    descuento, y queda cubierto hasta su fecha. El monto y el próximo cobro los
+    vuelve a fijar la base; aquí solo se cobra lo que ella va a guardar.
+  */
+  let pagoDeApertura: { referencia: string } | null = null;
+
+  if (oferta && promocionPara(tier, oferta)) {
+    const cobro = await procesarPago({
+      sucursalId: id,
+      tierId: tier.id,
+      montoMensual: Math.round(Number(tier.precio_mensual) * (1 - oferta.descuento / 100)),
+    });
+
+    if (!cobro.ok) {
+      return { error: `No se pudo completar el pago: ${cobro.motivo}` };
+    }
+
+    pagoDeApertura = { referencia: cobro.referencia };
   }
 
   /*
@@ -312,9 +341,10 @@ export async function publicarSucursal(
     // con el plan, el periodo y el convenio; lo que va aquí se sobrescribe.
     monto_mensual: tier.precio_mensual,
     periodo,
-    estado: "trial",
+    estado: pagoDeApertura ? "activo" : "trial",
     fecha_proximo_cobro: proximoCobro().toISOString(),
     convenio_id: convenioId,
+    metodo_pago_stub: pagoDeApertura?.referencia ?? null,
   });
 
   if (errorPrueba) {
@@ -1118,20 +1148,9 @@ export async function consultarCodigo(codigo: string): Promise<RespuestaDeCodigo
     };
   }
 
-  const fila = (data as {
-    descripcion: string;
-    basico_gratis_hasta: string | null;
-    descuento: number;
-  }[] | null)?.[0];
+  const fila = (data as FilaDeConvenio[] | null)?.[0];
 
   if (!fila) return { error: "Ese código no existe. Revisa que esté bien escrito." };
 
-  return {
-    oferta: {
-      codigo: normalizarCodigo(codigo),
-      descripcion: fila.descripcion,
-      basicoGratisHasta: fila.basico_gratis_hasta,
-      descuento: Number(fila.descuento),
-    },
-  };
+  return { oferta: ofertaDeFila(normalizarCodigo(codigo), fila) };
 }

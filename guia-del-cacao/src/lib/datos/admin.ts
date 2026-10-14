@@ -174,6 +174,8 @@ export type ConvenioAdmin = {
   vigente_hasta: string;
   basico_gratis_hasta: string | null;
   descuento: number;
+  plan_id: number | null;
+  cubre_hasta: string | null;
   suscripciones: UsoDeConvenio[];
 };
 
@@ -191,7 +193,7 @@ export async function todosLosConvenios() {
   const { data } = await supabase
     .from("convenios")
     .select(
-      "id, codigo, descripcion, vigente_desde, vigente_hasta, basico_gratis_hasta, descuento, suscripciones(estado, fecha_inicio, fecha_fin_trial, sucursales(nombre_sucursal, slug, estado, marcas(nombre_comercial)))",
+      "id, codigo, descripcion, vigente_desde, vigente_hasta, basico_gratis_hasta, descuento, plan_id, cubre_hasta, suscripciones(estado, fecha_inicio, fecha_fin_trial, sucursales(nombre_sucursal, slug, estado, marcas(nombre_comercial)))",
     )
     .order("vigente_desde", { ascending: false });
 

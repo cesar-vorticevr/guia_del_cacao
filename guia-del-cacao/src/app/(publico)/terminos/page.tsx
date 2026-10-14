@@ -228,21 +228,23 @@ export default function Terminos() {
       </p>
       <ul className="mt-3 grid gap-2 text-cacao">
         <li>
-          <strong className="text-selva-2">Básico, $99 al mes</strong> — la ficha
-          en el directorio y el micrositio con catálogo y contacto.
+          <strong className="text-selva-2">Gratis, por 30 días</strong> — la
+          ficha en el directorio y el micrositio con catálogo y contacto.
         </li>
         <li>
-          <strong className="text-selva-2">Plus, $199 al mes</strong> — lo
-          anterior y las reseñas de tus clientes en tu micrositio.
+          <strong className="text-selva-2">Básico, $199 al mes</strong> — lo
+          anterior sin vencimiento y las reseñas de tus clientes en tu
+          micrositio.
         </li>
         <li>
-          <strong className="text-selva-2">Premier, $299 al mes</strong> — lo
+          <strong className="text-selva-2">Pro, $299 al mes</strong> — lo
           anterior, anunciar tus eventos en la agenda y salir en el banner de
           la portada.
         </li>
       </ul>
       <p className="mt-3 text-cacao">
-        Cada sucursal estrena{" "}
+        El plan Gratis dura treinta días. Con un plan de pago, cada sucursal
+        estrena{" "}
         <strong className="text-selva-2">quince días de prueba</strong>, con
         todas las funciones de su plan. El conteo empieza el día que publicas.
         Si pagas el año completo, el plan lleva{" "}
@@ -252,8 +254,11 @@ export default function Terminos() {
         Un <strong className="text-selva-2">código de convenio</strong>, como el
         del Festival del Chocolate con la Secretaría de Turismo y Desarrollo
         Económico del Estado de Tabasco, puede dar el
-        Básico gratis hasta una fecha y descuento en Plus y Premier. Los
+        plan Gratis hasta una fecha y descuento en Básico y Pro. Los
         descuentos no se suman: si tienes convenio y pagas el año, se aplica uno.
+        Un <strong className="text-selva-2">código de promoción</strong> puede
+        darte un mes de un plan con descuento que te cubre hasta una fecha; al
+        terminar, se cobra el precio normal.
       </p>
       <p className="mt-3 text-cacao">
         Si al terminar la prueba o el periodo gratis no has pagado, tu sucursal{" "}

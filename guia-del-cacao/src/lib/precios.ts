@@ -4,7 +4,7 @@ import { pesos, type Tier } from "@/lib/tipos";
  * Lo que cuesta un plan, para enseñarlo antes de contratar.
  *
  * **La cuenta que vale es la de la base** (`precio_de_suscripcion`, migración
- * 000051): ella fija el monto al abrir la suscripción y lo que se mande desde
+ * 000053): ella fija el monto al abrir la suscripción y lo que se mande desde
  * aquí se sobrescribe. Esta es una copia para la pantalla; si se cambia una
  * regla, se cambia en las dos.
  */
@@ -15,12 +15,42 @@ export type Periodo = "mensual" | "anual";
 export type Oferta = {
   codigo: string;
   descripcion: string;
+  /** El plan Gratis dura hasta esta fecha, si es más que los 30 días. */
   basicoGratisHasta: string | null;
   descuento: number;
+  /**
+   * Promoción: pagar un mes de este plan, con el descuento, lo cubre hasta
+   * `cubreHasta`. Los dos van juntos o ninguno.
+   */
+  planId: number | null;
+  cubreHasta: string | null;
 };
+
+/** Una fila de `revisar_convenio` o `convenio_de_sucursal`, como `Oferta`. */
+export type FilaDeConvenio = {
+  descripcion: string;
+  basico_gratis_hasta: string | null;
+  descuento: number;
+  plan_id: number | null;
+  cubre_hasta: string | null;
+};
+
+export function ofertaDeFila(codigo: string, fila: FilaDeConvenio): Oferta {
+  return {
+    codigo,
+    descripcion: fila.descripcion,
+    basicoGratisHasta: fila.basico_gratis_hasta,
+    descuento: Number(fila.descuento),
+    planId: fila.plan_id === null ? null : Number(fila.plan_id),
+    cubreHasta: fila.cubre_hasta,
+  };
+}
 
 /** El descuento del pago anual. No se suma al de un convenio: queda el mayor. */
 export const DESCUENTO_ANUAL = 20;
+
+/** Lo que dura el plan Gratis. La base lo tiene en `public.dias_gratis()`. */
+export const DIAS_GRATIS = 30;
 
 const DIA = new Intl.DateTimeFormat("es-MX", {
   day: "numeric",
@@ -28,17 +58,42 @@ const DIA = new Intl.DateTimeFormat("es-MX", {
   timeZone: "UTC",
 });
 
+/** «30 de noviembre». */
 export function fechaDeOferta(fecha: string) {
   return DIA.format(new Date(`${fecha}T00:00:00Z`));
 }
 
+/** Hoy en el centro de México, como `aaaa-mm-dd`. */
+function hoy() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Mexico_City",
+  }).format(new Date());
+}
+
+/** El plan más barato es el Gratis. Así lo decide también la base. */
+export function esPlanGratis(tier: Tier, tiers: Tier[]) {
+  const masBarato = [...tiers].sort((a, b) => a.precio_mensual - b.precio_mensual)[0];
+  return tier.id === masBarato?.id;
+}
+
+/** La oferta trae una promoción para este plan, y todavía se puede pagar. */
+export function promocionPara(tier: Pick<Tier, "id">, oferta: Oferta | null) {
+  return Boolean(
+    oferta?.planId === tier.id && oferta.cubreHasta && hoy() <= oferta.cubreHasta,
+  );
+}
+
 export type Precio = {
-  /** Lo que se cobra cada periodo. */
+  /** Lo que se cobra ahora: cada periodo, o el pago único de la promoción. */
   cobro: number;
   /** Lo que se cobraría sin descuento, para tacharlo. Null si no hay. */
   antes: number | null;
-  /** Gratis hasta una fecha (Básico con convenio). */
+  /** Gratis hasta una fecha (plan Gratis con convenio). */
   gratisHasta: string | null;
+  /** Promoción: el pago de ahora cubre hasta esta fecha. */
+  cubreHasta: string | null;
+  /** Promoción: lo que se cobra después de `cubreHasta`, cada periodo. */
+  despues: number | null;
   periodo: Periodo;
 };
 
@@ -48,36 +103,54 @@ export function precioDe(
   periodo: Periodo,
   oferta: Oferta | null,
 ): Precio {
-  const basico = [...tiers].sort((a, b) => a.precio_mensual - b.precio_mensual)[0];
-  const esBasico = tier.id === basico?.id;
   const base = Number(tier.precio_mensual);
+  const vacio = { antes: null, gratisHasta: null, cubreHasta: null, despues: null };
 
-  if (oferta && esBasico && oferta.basicoGratisHasta) {
-    return { cobro: 0, antes: null, gratisHasta: oferta.basicoGratisHasta, periodo };
+  if (esPlanGratis(tier, tiers)) {
+    const hasta =
+      oferta?.basicoGratisHasta && hoy() <= oferta.basicoGratisHasta
+        ? oferta.basicoGratisHasta
+        : null;
+    return { ...vacio, cobro: 0, gratisHasta: hasta, periodo };
   }
 
-  let descuento = oferta && !esBasico ? oferta.descuento : 0;
+  const anual = Math.round(base * 12 * (1 - DESCUENTO_ANUAL / 100));
+  const normal = periodo === "anual" ? anual : base;
+
+  if (oferta && promocionPara(tier, oferta)) {
+    return {
+      ...vacio,
+      cobro: Math.round(base * (1 - oferta.descuento / 100)),
+      antes: base,
+      cubreHasta: oferta.cubreHasta,
+      despues: normal,
+      periodo,
+    };
+  }
+
+  // El descuento de una promoción es solo de su primer pago.
+  let descuento = oferta && oferta.planId === null ? oferta.descuento : 0;
 
   if (periodo === "anual") {
     descuento = Math.max(descuento, DESCUENTO_ANUAL);
     const lleno = base * 12;
     return {
+      ...vacio,
       cobro: Math.round(lleno * (1 - descuento / 100)),
       antes: lleno,
-      gratisHasta: null,
       periodo,
     };
   }
 
   return {
+    ...vacio,
     cobro: Math.round(base * (1 - descuento / 100)),
     antes: descuento > 0 ? base : null,
-    gratisHasta: null,
     periodo,
   };
 }
 
-/** «$159/mes», «$2,870/año» o «Gratis». */
+/** «$199/mes», «$1,910/año» o «Gratis». */
 export function textoDePrecio(cobro: number, periodo: Periodo) {
   if (Number(cobro) === 0) return "Gratis";
   return `${pesos(cobro)}/${periodo === "anual" ? "año" : "mes"}`;

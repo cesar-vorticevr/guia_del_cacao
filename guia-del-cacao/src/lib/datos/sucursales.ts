@@ -1,5 +1,5 @@
 import { crearClienteServidor } from "@/lib/supabase/server";
-import type { Oferta } from "@/lib/precios";
+import { ofertaDeFila, type FilaDeConvenio, type Oferta } from "@/lib/precios";
 import { productosDeSucursal } from "@/lib/datos/catalogo";
 import type { Producto, Sucursal, Tier } from "@/lib/tipos";
 
@@ -223,7 +223,7 @@ export async function suscripcionDeMarca(marcaId: string) {
 
   const { data } = await supabase
     .from("suscripciones")
-    .select("id, sucursal_id, tier_id, monto_mensual, estado, fecha_fin_trial, fecha_proximo_cobro, convenio_id, periodo, monto_por_cobro")
+    .select("id, sucursal_id, tier_id, monto_mensual, estado, fecha_fin_trial, fecha_proximo_cobro, convenio_id, periodo, monto_por_cobro, pago_de_apertura")
     .in("sucursal_id", ids)
     .in("estado", ["trial", "activo", "pausado_por_pago"])
     .order("fecha_inicio");
@@ -241,6 +241,11 @@ export async function suscripcionDeMarca(marcaId: string) {
      * una marca puede tener una sucursal de antes y otra con convenio.
      */
     convenio: await ofertaDe(abiertas.find((s) => s.convenio_id)?.sucursal_id),
+    /** Lo que se pagó por la promoción de apertura, si la hubo. */
+    pagoDeApertura: (() => {
+      const pago = abiertas.find((s) => s.pago_de_apertura !== null)?.pago_de_apertura;
+      return pago === undefined || pago === null ? null : Number(pago);
+    })(),
     /** Si alguno sigue en periodo de prueba. */
     enPrueba: abiertas.some((s) => s.estado === "trial"),
     /** Cuándo termina la prueba más próxima, si hay alguna corriendo. */
@@ -345,19 +350,7 @@ async function ofertaDe(sucursalId: string | undefined): Promise<Oferta | null> 
     p_sucursal: sucursalId,
   });
 
-  const fila = (data as {
-    codigo: string;
-    descripcion: string;
-    basico_gratis_hasta: string | null;
-    descuento: number;
-  }[] | null)?.[0];
+  const fila = (data as (FilaDeConvenio & { codigo: string })[] | null)?.[0];
 
-  return fila
-    ? {
-        codigo: fila.codigo,
-        descripcion: fila.descripcion,
-        basicoGratisHasta: fila.basico_gratis_hasta,
-        descuento: Number(fila.descuento),
-      }
-    : null;
+  return fila ? ofertaDeFila(fila.codigo, fila) : null;
 }

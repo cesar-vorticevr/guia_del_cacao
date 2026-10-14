@@ -2,10 +2,11 @@
 \set QUIET on
 set client_min_messages to notice;
 
--- Precios, pago anual y convenios (migracion 000051).
+-- Precios, pago anual y convenios (migraciones 000051 y 000053).
 --
--- El precio lo calcula la base al abrir la suscripcion; un convenio da Basico
--- gratis hasta una fecha y descuento en Plus y Premier; el anual descuenta 20%
+-- Los planes son Gratis (id 1, $0), Basico (id 2, $199) y Pro (id 3, $299).
+-- El precio lo calcula la base al abrir la suscripcion; un convenio da Gratis
+-- hasta una fecha y descuento en Basico y Pro; el anual descuenta 20%
 -- y no se suma al convenio; quien no paga se oculta sin borrarse.
 --
 -- Dentro de una transaccion que se deshace: corre tambien contra una base con
@@ -73,7 +74,7 @@ select p.id, s.id
 
 insert into public.convenios (id, codigo, descripcion, vigente_desde, vigente_hasta, basico_gratis_hasta, descuento)
 values ('c4000000-0000-0000-0000-000000000001', 'PRUEBAVIGENTE', 'Vigente',
-        current_date - 10, current_date + 10, current_date + 10, 20),
+        current_date - 10, current_date + 10, current_date + 40, 20),
        ('c4000000-0000-0000-0000-000000000002', 'PRUEBAVENCIDO', 'Vencido',
         current_date - 60, current_date - 30, current_date - 30, 20),
        ('c4000000-0000-0000-0000-000000000003', 'PRUEBAFUTURO', 'Futuro',
@@ -101,7 +102,7 @@ select pg_temp.debe_fallar('un codigo que no empieza todavia no sirve',
   $q$ select * from public.revisar_convenio('PRUEBA-FUTURO') $q$);
 
 \echo '--- el vigente dice que ofrece ---'
-select descuento = 20 as veinte, basico_gratis_hasta = current_date + 10 as basico_gratis
+select descuento = 20 as veinte, basico_gratis_hasta = current_date + 40 as gratis_hasta
   from public.revisar_convenio(' prueba vigente ');
 
 select pg_temp.debe_fallar('no se cuela un convenio vencido por la puerta de atras',
@@ -109,36 +110,36 @@ select pg_temp.debe_fallar('no se cuela un convenio vencido por la puerta de atr
       values ('c3000000-0000-0000-0000-000000000006', 3, 1, 'trial', now() + interval '1 month',
               'c4000000-0000-0000-0000-000000000002') $q$);
 
--- 1: sin convenio, Premier mensual, mandando un monto inventado.
+-- 1: sin convenio, Pro mensual, mandando un monto inventado.
 insert into public.suscripciones (sucursal_id, tier_id, monto_mensual, estado, fecha_proximo_cobro)
 values ('c3000000-0000-0000-0000-000000000001', 3, 1, 'trial', now() + interval '1 month');
--- 2: sin convenio, Premier anual.
+-- 2: sin convenio, Pro anual.
 insert into public.suscripciones (sucursal_id, tier_id, monto_mensual, periodo, estado, fecha_proximo_cobro)
 values ('c3000000-0000-0000-0000-000000000002', 3, 1, 'anual', 'trial', now() + interval '1 month');
--- 3: convenio, Basico.
+-- 3: convenio, Gratis.
 insert into public.suscripciones (sucursal_id, tier_id, monto_mensual, estado, fecha_proximo_cobro, convenio_id)
 values ('c3000000-0000-0000-0000-000000000003', 1, 99, 'trial', now() + interval '1 month',
         'c4000000-0000-0000-0000-000000000001');
--- 4: convenio, Premier mensual.
+-- 4: convenio, Pro mensual.
 insert into public.suscripciones (sucursal_id, tier_id, monto_mensual, estado, fecha_proximo_cobro, convenio_id)
 values ('c3000000-0000-0000-0000-000000000004', 3, 1, 'trial', now() + interval '1 month',
         'c4000000-0000-0000-0000-000000000001');
--- 5: convenio, Premier anual: los descuentos no se suman.
+-- 5: convenio, Pro anual: los descuentos no se suman.
 insert into public.suscripciones (sucursal_id, tier_id, monto_mensual, periodo, estado, fecha_proximo_cobro, convenio_id)
 values ('c3000000-0000-0000-0000-000000000005', 3, 1, 'anual', 'trial', now() + interval '1 month',
         'c4000000-0000-0000-0000-000000000001');
 
 \echo '--- el precio lo pone la base ---'
-select pg_temp.cobro('c3000000-0000-0000-0000-000000000001') = 299  as premier_mensual_299,
-       pg_temp.cobro('c3000000-0000-0000-0000-000000000002') = 2870 as premier_anual_2870,
-       pg_temp.cobro('c3000000-0000-0000-0000-000000000003') = 0    as convenio_basico_gratis,
-       pg_temp.cobro('c3000000-0000-0000-0000-000000000004') = 239  as convenio_premier_239,
+select pg_temp.cobro('c3000000-0000-0000-0000-000000000001') = 299  as pro_mensual_299,
+       pg_temp.cobro('c3000000-0000-0000-0000-000000000002') = 2870 as pro_anual_2870,
+       pg_temp.cobro('c3000000-0000-0000-0000-000000000003') = 0    as convenio_gratis,
+       pg_temp.cobro('c3000000-0000-0000-0000-000000000004') = 239  as convenio_pro_239,
        pg_temp.cobro('c3000000-0000-0000-0000-000000000005') = 2870 as no_se_suman;
 
-\echo '--- el Basico gratis dura hasta el dia siguiente a su fecha; una prueba de pago, 15 dias ---'
-select (fecha_fin_trial at time zone 'America/Mexico_City')::date = current_date + 11 as basico_hasta_su_fecha
+\echo '--- con convenio, Gratis dura hasta el dia siguiente a su fecha; una prueba de pago, 15 dias ---'
+select (fecha_fin_trial at time zone 'America/Mexico_City')::date = current_date + 41 as gratis_hasta_su_fecha
   from public.suscripciones where sucursal_id = 'c3000000-0000-0000-0000-000000000003';
-select fecha_fin_trial <= now() + interval '15 days' as premier_maximo_15_dias
+select fecha_fin_trial <= now() + interval '15 days' as pro_maximo_15_dias
   from public.suscripciones where sucursal_id = 'c3000000-0000-0000-0000-000000000004';
 
 select pg_temp.debe_fallar('el precio no se cambia editando la suscripcion',
@@ -157,7 +158,7 @@ select codigo = 'PRUEBAVIGENTE' as ve_su_convenio
 
 reset role;
 
--- La 3 publica, y su Basico gratis se acaba.
+-- La 3 publica, y su Gratis se acaba.
 update public.sucursales set estado = 'publicado', tier_id = 1
  where id = 'c3000000-0000-0000-0000-000000000003';
 update public.suscripciones set fecha_fin_trial = now() - interval '1 minute'
@@ -197,8 +198,8 @@ select pg_temp.debe_pasar('con el codigo vencido, quien ya lo tenia conserva el 
       values ('c3000000-0000-0000-0000-000000000003', 2, 1, 'activo', now() + interval '1 month',
               'c4000000-0000-0000-0000-000000000001') $q$);
 
-\echo '--- Plus con convenio: 199 menos 20% ---'
-select pg_temp.cobro('c3000000-0000-0000-0000-000000000003') = 159 as plus_159;
+\echo '--- Basico con convenio: 199 menos 20% ---'
+select pg_temp.cobro('c3000000-0000-0000-0000-000000000003') = 159 as basico_159;
 
 select pg_temp.debe_fallar('con el codigo vencido, una sucursal nueva ya no lo usa',
   $q$ insert into public.suscripciones (sucursal_id, tier_id, monto_mensual, estado, fecha_proximo_cobro, convenio_id)

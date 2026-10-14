@@ -108,7 +108,7 @@ export default function Acerca() {
         Cualquier negocio del cacao en México puede tener su ficha aquí:
         productoras y fincas, comercializadoras, chocolaterías, museos,
         talleres y artesanías. Se arma sin pagar, se publica cuando esté lista,
-        y se prueba quince días antes de que se cobre nada.{" "}
+        y el plan Gratis dura treinta días sin que se cobre nada.{" "}
         <Link
           href="/registro/negocio"
           className="font-bold text-selva underline"

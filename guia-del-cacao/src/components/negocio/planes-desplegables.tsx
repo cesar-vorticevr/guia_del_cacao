@@ -9,7 +9,7 @@ import type { Tier } from "@/lib/tipos";
  * El anuncio de subir de plan y la lista que abre.
  *
  * Van juntos porque comparten dos cosas: **si la lista está abierta** y **con
- * qué plan abre**. Llegando desde "cámbiate a Premier" abre en Premier — quien
+ * qué plan abre**. Llegando desde "cámbiate a Pro" abre en Pro — quien
  * tocó ese anuncio ya eligió, y devolverlo a su plan actual sería pedirle la
  * misma decisión dos veces. Entrando por "ver los planes" abre en el suyo,
  * porque ahí todavía no ha elegido nada.
@@ -83,7 +83,7 @@ export function PlanesDesplegables({
             {/*
               La `key` vuelve a montar el formulario cuando cambia con qué plan
               se abre. Sin ella, abrir por "ver los planes" después de haber
-              tocado el anuncio conservaría Premier marcado: el estado interno
+              tocado el anuncio conservaría Pro marcado: el estado interno
               sobrevive y la preselección nueva se ignoraría.
             */}
             <FormularioCambiarPlan

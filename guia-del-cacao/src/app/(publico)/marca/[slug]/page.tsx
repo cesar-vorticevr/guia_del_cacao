@@ -482,7 +482,7 @@ export default async function Micrositio({
       )}
 
       {/*
-        Las reseñas son la función del plan Plus. En un Básico la sección no
+        Las reseñas son la función de los planes de pago. En el Gratis la sección no
         existe: ni el listado ni el formulario ni el promedio (spec v2 §5.4).
         No es solo esconder el formulario —la base también rechaza el insert—,
         pero enseñar "Todavía nadie ha dejado una reseña" en un micrositio donde

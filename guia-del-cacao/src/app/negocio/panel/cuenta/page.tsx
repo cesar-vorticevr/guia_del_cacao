@@ -15,6 +15,7 @@ import {
   suscripcionDeMarca,
 } from "@/lib/datos/sucursales";
 import { PAGO_SIMULADO } from "@/lib/pagos";
+import { pesos } from "@/lib/tipos";
 import { textoDePrecio, fechaDeOferta, type Periodo } from "@/lib/precios";
 
 export const metadata: Metadata = { title: "Mi cuenta · Guía del Cacao" };
@@ -87,7 +88,9 @@ export default async function CuentaNegocio({
     ver === "datos" ? "datos" : ver === "sesion" ? "sesion" : "plan";
 
   return (
-    <div className="grid max-w-2xl gap-6">
+    // Ancho para que los planes quepan lado a lado; el texto se queda en su
+    // columna con max-w-2xl.
+    <div className="grid max-w-5xl gap-6">
       <div>
         <Link href="/negocio/panel" className="font-bold text-selva underline">
           ← Panel
@@ -108,7 +111,7 @@ export default async function CuentaNegocio({
       {seccion === "plan" && (
         <div className="grid gap-8">
           {PAGO_SIMULADO && (
-            <p className="rounded-3xl border-2 border-mango/50 bg-mango/15 p-5 text-cacao">
+            <p className="max-w-2xl rounded-3xl border-2 border-mango/50 bg-mango/15 p-5 text-cacao">
               <strong>Cobro simulado.</strong> Todavía no hay pasarela
               conectada, así que ni se cobra ni se devuelve dinero de verdad. El
               resto del flujo sí es el definitivo.
@@ -116,7 +119,7 @@ export default async function CuentaNegocio({
           )}
 
           {suscripcion ? (
-            <div className="rounded-3xl bg-crema-2 p-6">
+            <div className="max-w-2xl rounded-3xl bg-crema-2 p-6">
               <div className="flex flex-wrap items-baseline justify-between gap-3">
                 <p className="font-display text-2xl text-selva-2">
                   {plan?.nombre}
@@ -144,12 +147,23 @@ export default async function CuentaNegocio({
               {suscripcion.convenio && (
                 <p className="mt-3 rounded-2xl border-2 border-lima/60 bg-lima/20 px-4 py-3 text-cacao">
                   <strong className="block text-selva-2">
-                    Convenio {suscripcion.convenio.codigo}
+                    {suscripcion.convenio.cubreHasta ? "Promoción" : "Convenio"}{" "}
+                    {suscripcion.convenio.codigo}
                   </strong>
-                  {suscripcion.convenio.basicoGratisHasta &&
-                    `Básico gratis hasta el ${fechaDeOferta(suscripcion.convenio.basicoGratisHasta)}. `}
-                  {suscripcion.convenio.descuento > 0 &&
-                    `${suscripcion.convenio.descuento}% de descuento en Plus y Premier mientras sigas pagando.`}
+                  {suscripcion.convenio.cubreHasta ? (
+                    suscripcion.pagoDeApertura !== null ? (
+                      `Pagaste ${pesos(suscripcion.pagoDeApertura)} y tu plan está cubierto hasta el ${fechaDeOferta(suscripcion.convenio.cubreHasta)}.`
+                    ) : (
+                      suscripcion.convenio.descripcion
+                    )
+                  ) : (
+                    <>
+                      {suscripcion.convenio.basicoGratisHasta &&
+                        `Plan Gratis hasta el ${fechaDeOferta(suscripcion.convenio.basicoGratisHasta)}. `}
+                      {suscripcion.convenio.descuento > 0 &&
+                        `${suscripcion.convenio.descuento}% de descuento en Básico y Pro mientras sigas pagando.`}
+                    </>
+                  )}
                 </p>
               )}
 
@@ -191,10 +205,10 @@ export default async function CuentaNegocio({
               )}
             </div>
           ) : (
-            <p className="rounded-3xl bg-crema-2 p-6 text-cacao">
+            <p className="max-w-2xl rounded-3xl bg-crema-2 p-6 text-cacao">
               Todavía no tienes ningún micrositio publicado. El plan se elige al
-              publicar cada uno, desde su ficha, y arranca con quince días de
-              prueba sin dejar tarjeta.
+              publicar cada uno, desde su ficha: el Gratis dura treinta días, y
+              los de pago se prueban quince días sin dejar tarjeta.
             </p>
           )}
 
@@ -269,7 +283,7 @@ export default async function CuentaNegocio({
       )}
 
       {seccion === "datos" && (
-        <div className="grid gap-10">
+        <div className="grid max-w-2xl gap-10">
           <section className="grid gap-4">
             <h2 className="font-display text-xl">Tus datos</h2>
             <FormularioDatosPersonales
@@ -300,7 +314,7 @@ export default async function CuentaNegocio({
       )}
 
       {seccion === "sesion" && (
-        <section className="grid gap-4">
+        <section className="grid max-w-2xl gap-4">
           <h2 className="font-display text-xl">Tu sesión</h2>
 
           <div className="rounded-3xl bg-crema-2 p-6">

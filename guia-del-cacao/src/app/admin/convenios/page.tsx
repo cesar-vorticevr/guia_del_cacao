@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { FormularioConvenio } from "@/components/admin/formularios";
 import { todosLosConvenios } from "@/lib/datos/admin";
+import { listarTiers } from "@/lib/datos/sucursales";
 
 export const metadata: Metadata = { title: "Convenios · Guía del Cacao" };
 
@@ -46,15 +47,17 @@ function vigente(desde: string, hasta: string) {
  * cuántos negocios lo usaron y cuántos siguen publicados.
  */
 export default async function Convenios() {
-  const convenios = await todosLosConvenios();
+  const [convenios, tiers] = await Promise.all([todosLosConvenios(), listarTiers()]);
+  const nombreDe = (id: number | null) => tiers.find((t) => t.id === id)?.nombre ?? "un plan";
 
   return (
     <>
       <h1 className="font-display text-3xl">Convenios</h1>
       <p className="mt-2 text-cacao">
         Quien escribe un código vigente al contratar recibe lo que ese código
-        da: el Básico gratis hasta una fecha, un descuento en Plus y Premier, o
-        los dos. Sirve para todos los que lo usen dentro de sus fechas.
+        da: el plan Gratis hasta una fecha, un descuento en Básico y Pro, o
+        una promoción —un mes de un plan con descuento que cubre hasta una
+        fecha—. Sirve para todos los que lo usen dentro de sus fechas.
       </p>
 
       {convenios.map((convenio) => {
@@ -84,9 +87,10 @@ export default async function Convenios() {
               Sirve del {dia(convenio.vigente_desde)} al{" "}
               {dia(convenio.vigente_hasta)}
               {convenio.basico_gratis_hasta &&
-                ` · Básico gratis hasta el ${dia(convenio.basico_gratis_hasta)}`}
-              {convenio.descuento > 0 &&
-                ` · ${convenio.descuento}% en Plus y Premier`}
+                ` · Gratis hasta el ${dia(convenio.basico_gratis_hasta)}`}
+              {convenio.plan_id !== null && convenio.cubre_hasta
+                ? ` · Promoción: un mes de ${nombreDe(convenio.plan_id)}${convenio.descuento > 0 ? ` con ${convenio.descuento}%` : ""}, cubre hasta el ${dia(convenio.cubre_hasta)}`
+                : convenio.descuento > 0 && ` · ${convenio.descuento}% en Básico y Pro`}
             </p>
 
             <dl className="mt-5 grid grid-cols-2 gap-3 text-center">
@@ -154,7 +158,9 @@ export default async function Convenios() {
           Otro código, para otro evento
         </h2>
         <div className="mt-4">
-          <FormularioConvenio />
+          <FormularioConvenio
+            planes={tiers.filter((t) => Number(t.precio_mensual) > 0)}
+          />
         </div>
       </section>
     </>

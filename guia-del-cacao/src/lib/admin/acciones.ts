@@ -189,6 +189,8 @@ export async function crearConvenio(
   const hasta = datos.get("vigente_hasta")?.toString() ?? "";
   const gratisHasta = datos.get("basico_gratis_hasta")?.toString() || null;
   const descuento = Number(datos.get("descuento")?.toString() || 0);
+  const planId = Number(datos.get("plan_id")?.toString() || 0) || null;
+  const cubreHasta = datos.get("cubre_hasta")?.toString() || null;
 
   if (!codigo) return { error: "Escribe el código, solo letras y números." };
   if (!descripcion) return { error: "Escribe para qué es el código." };
@@ -197,8 +199,14 @@ export async function crearConvenio(
   if (!Number.isInteger(descuento) || descuento < 0 || descuento > 100) {
     return { error: "El descuento va de 0 a 100." };
   }
-  if (!gratisHasta && descuento === 0) {
-    return { error: "Un código tiene que dar algo: Básico gratis, descuento o los dos." };
+  if ((planId === null) !== (cubreHasta === null)) {
+    return { error: "Una promoción lleva las dos cosas: el plan y hasta cuándo cubre el pago." };
+  }
+  if (cubreHasta && cubreHasta < hasta) {
+    return { error: "El pago tiene que cubrir al menos hasta el último día en que sirve el código." };
+  }
+  if (!gratisHasta && descuento === 0 && !planId) {
+    return { error: "Un código tiene que dar algo: Gratis más tiempo, descuento o una promoción." };
   }
 
   const supabase = await crearClienteServidor();
@@ -210,6 +218,8 @@ export async function crearConvenio(
     vigente_hasta: hasta,
     basico_gratis_hasta: gratisHasta,
     descuento,
+    plan_id: planId,
+    cubre_hasta: cubreHasta,
   });
 
   if (error) {
