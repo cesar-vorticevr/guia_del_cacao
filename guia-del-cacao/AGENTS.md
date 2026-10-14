@@ -1111,10 +1111,8 @@ gratis hasta», hoy el Gratis.
   a `pausado`. El negocio no puede reactivarla sin pagar:
   `proteger_estado_sucursal` pide un plan en `trial` o `activo`. Al contratar de
   nuevo, `contratarPlan` la deja `activo` y la vuelve a publicar.
-- **`vencer_pruebas()` todavía no está programada.** Sin pasarela nadie puede
-  pagar, y correrla sacaría del directorio a todos a los quince días. Se
-  programa en pg_cron (00:15 del centro) con una migración nueva el día que el
-  cobro funcione; el comando está al final de la migración 000051.
+- **`vencer_pruebas()` corre cada noche** desde la migración 000058 (ver
+  «Cobro con Stripe»).
 
 ### Convenios: un código al contratar
 
@@ -1264,5 +1262,11 @@ Variables (en Vercel, **sin** `NEXT_PUBLIC_`): `STRIPE_SECRET_KEY`,
   que crea la Guía lleva `metadata.app = "guia-del-cacao"` (`APP`) y el webhook
   ignora lo demás. El de la web de Vórtice debe ignorar lo que traiga esa
   etiqueta.
-- `vencer_pruebas()` sigue **sin programar**: hacerlo es el último paso al pasar
-  a cobro real, cuando ya se pueda pagar.
+- **`vencer_pruebas()` corre cada noche** (pg_cron, 00:15 del centro) desde la
+  migración 000058, cuando se pasó a cobro real el 13 de octubre de 2026.
+  Oculta las pruebas vencidas y lo que cubría una promoción al 100% sin tarjeta.
+  Ese día, lo que estaba `activo` del cobro simulado pasó a quince días de
+  prueba para que pagara con tarjeta.
+- Al pasar de las llaves de prueba a las reales hay que **borrar
+  `tiers.stripe_product_id` y los `marcas.stripe_customer_id` de prueba**: son
+  de otro entorno y en el real dan «No such product».

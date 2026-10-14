@@ -164,6 +164,18 @@ select pg_temp.debe_fallar('un codigo agotado no se canjea por la puerta de atra
 
 reset role;
 
+\echo '--- al vencer lo que cubria una promo al 100%, sin tarjeta, se oculta ---'
+update public.sucursales set estado = 'publicado', tier_id = 2
+ where id = 'a3600000-0000-0000-0000-000000000006';
+update public.suscripciones set fecha_proximo_cobro = now() - interval '1 minute'
+ where sucursal_id = 'a3600000-0000-0000-0000-000000000006' and estado = 'activo';
+select public.vencer_pruebas() >= 1 as vencio;
+select (select estado from public.suscripciones
+         where sucursal_id = 'a3600000-0000-0000-0000-000000000006'
+         order by fecha_inicio desc limit 1) = 'pausado_por_pago' as por_pagar,
+       (select estado from public.sucursales
+         where id = 'a3600000-0000-0000-0000-000000000006') = 'pausado' as oculta;
+
 -- Vencido el codigo, una sucursal nueva ya no tiene promocion.
 update public.convenios set vigente_desde = (now() at time zone 'America/Mexico_City')::date - 20,
        vigente_hasta = (now() at time zone 'America/Mexico_City')::date - 1
