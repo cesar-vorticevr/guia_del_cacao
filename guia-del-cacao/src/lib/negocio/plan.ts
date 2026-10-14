@@ -22,6 +22,7 @@ import {
   cambiarPrecio,
   cancelarEnStripe,
   crearPago,
+  explicarErrorDeStripe,
   stripe,
 } from "@/lib/stripe";
 
@@ -396,7 +397,9 @@ async function contratarConStripe({
       .maybeSingle();
     const origen = await origenDelSitio();
 
-    const url = await crearPago({
+    let url: string;
+    try {
+      url = await crearPago({
       marcaId,
       clienteStripe: (marca?.stripe_customer_id as string | null) ?? null,
       correo: perfil!.correo,
@@ -411,6 +414,10 @@ async function contratarConStripe({
     });
 
     // `redirect` lanza: va fuera de cualquier try.
+    } catch (error) {
+      return { error: explicarErrorDeStripe(error) };
+    }
+
     redirect(url);
   }
 

@@ -37,6 +37,28 @@ export function stripe() {
   return cliente;
 }
 
+/**
+ * Lo mínimo que Stripe cobra en pesos. Un cargo menor lo rechaza («amount
+ * too small»): por eso un código de promoción no puede dejar el pago entre
+ * $0 y $10. Al 100% sí, porque entonces no pasa por Stripe.
+ */
+export const MINIMO_DE_STRIPE = 10;
+
+/**
+ * Un error de Stripe, dicho para el negocio. El detalle técnico va al log del
+ * servidor; en pantalla, lo que puede hacer.
+ */
+export function explicarErrorDeStripe(error: unknown) {
+  console.error("Stripe:", error);
+  const codigo = (error as { code?: string }).code;
+
+  if (codigo === "amount_too_small") {
+    return `Stripe no acepta cobros menores a $${MINIMO_DE_STRIPE}. Avísanos para revisar el código de promoción.`;
+  }
+  // El código de Stripe va al final, para poder buscarlo si alguien lo reporta.
+  return `No se pudo abrir la página de pago de Stripe. Inténtalo de nuevo en un momento; no se te cobró nada.${codigo ? ` (${codigo})` : ""}`;
+}
+
 /** Pesos a centavos, que es como cuenta Stripe. */
 function centavos(pesos: number) {
   return Math.round(pesos * 100);

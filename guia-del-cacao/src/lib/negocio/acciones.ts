@@ -15,7 +15,7 @@ import {
 import { esPasoDelAlta } from "@/lib/negocio/pasos";
 import { esEntidad } from "@/lib/entidades";
 import { procesarPago, proximoCobro } from "@/lib/pagos";
-import { crearPago, stripe } from "@/lib/stripe";
+import { crearPago, explicarErrorDeStripe, stripe } from "@/lib/stripe";
 import { crearClienteDeServicio } from "@/lib/supabase/servicio";
 import { origenDelSitio } from "@/lib/auth/sesion";
 import { revisarImagen } from "@/lib/imagenes";
@@ -410,8 +410,11 @@ export async function publicarSucursal(
       .eq("id", sucursal.marca_id)
       .maybeSingle();
 
-    redirect(
-      await crearPago({
+    // El micrositio ya está publicado con su prueba: si Stripe falla, se dice
+    // en la cuenta, donde se puede volver a pagar, en vez de tumbar la página.
+    let url: string;
+    try {
+      url = await crearPago({
         marcaId: sucursal.marca_id,
         clienteStripe: (marca?.stripe_customer_id as string | null) ?? null,
         correo: perfil.correo,
@@ -423,8 +426,12 @@ export async function publicarSucursal(
         convenioId,
         exito: `${origen}/negocio/panel/sucursal/${id}?publicado=1&pago=listo`,
         cancelado: `${origen}/negocio/panel/sucursal/${id}?publicado=1&pago=cancelado`,
-      }),
-    );
+      });
+    } catch (error) {
+      const motivo = encodeURIComponent(explicarErrorDeStripe(error));
+      redirect(`/negocio/panel/cuenta?pago=error&motivo=${motivo}`);
+    }
+    redirect(url);
   }
 
   redirect(`/negocio/panel/sucursal/${id}?publicado=1`);

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { perfilActual } from "@/lib/auth/sesion";
 import { normalizarCodigo } from "@/lib/tipos";
+import { MINIMO_DE_STRIPE } from "@/lib/stripe";
 
 export type EstadoAccion = { error?: string; ok?: string };
 
@@ -177,6 +178,23 @@ export async function crearConvenio(
     return { error: "El descuento va de 1 a 100 (100 es gratis)." };
   }
   if (!cubreHasta) return { error: "Elige hasta cuándo dura la promoción." };
+
+  // Stripe no cobra menos de $10: un descuento que deje el pago entre $0 y $10
+  // haría fallar la página de pago. Al 100% no se cobra, así que sí vale.
+  if (descuento < 100) {
+    const supabaseTier = await crearClienteServidor();
+    const { data: plan } = await supabaseTier
+      .from("tiers")
+      .select("nombre, precio_mensual")
+      .eq("id", planId)
+      .maybeSingle();
+    const pago = Math.round(Number(plan?.precio_mensual ?? 0) * (1 - descuento / 100));
+    if (plan && pago < MINIMO_DE_STRIPE) {
+      return {
+        error: `Con ${descuento}% el pago de ${plan.nombre} queda en $${pago}, y Stripe no cobra menos de $${MINIMO_DE_STRIPE}. Baja el descuento o usa 100% para que sea gratis.`,
+      };
+    }
+  }
   if (cubreHasta < hasta) {
     return {
       error:

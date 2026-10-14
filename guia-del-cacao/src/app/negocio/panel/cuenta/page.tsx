@@ -51,9 +51,9 @@ function diasDePrueba(fin: string) {
 export default async function CuentaNegocio({
   searchParams,
 }: {
-  searchParams: Promise<{ ver?: string; pago?: string }>;
+  searchParams: Promise<{ ver?: string; pago?: string; motivo?: string }>;
 }) {
-  const { ver, pago } = await searchParams;
+  const { ver, pago, motivo } = await searchParams;
   const perfil = await perfilActual();
 
   if (!perfil) redirect("/login");
@@ -121,6 +121,13 @@ export default async function CuentaNegocio({
               <strong className="block text-selva-2">¡Gracias, recibimos tu pago!</strong>
               Tu plan se actualiza aquí en un momento. Si todavía no lo ves,
               recarga la página. Stripe te mandó el recibo por correo.
+            </p>
+          )}
+          {pago === "error" && (
+            <p className="max-w-2xl rounded-3xl border-2 border-guayaba/40 bg-guayaba/10 p-5 text-cacao">
+              <strong className="block text-selva-2">No se abrió el pago</strong>
+              {(motivo ?? "No se pudo abrir la página de pago.").slice(0, 300)} Tu
+              micrositio sigue publicado con su prueba.
             </p>
           )}
           {pago === "cancelado" && (
