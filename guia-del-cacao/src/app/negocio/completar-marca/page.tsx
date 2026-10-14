@@ -31,6 +31,27 @@ export default async function CompletarMarca() {
 
   if (marcas && marcas.length > 0) redirect("/negocio/panel");
 
+  /*
+    Si los escribió al registrarse, ya están en su cuenta: cuando había que
+    confirmar el correo no se podían guardar todavía, y pedirlos otra vez al
+    volver era hacerle llenar lo mismo dos veces. Se crea la marca con ellos.
+    Si algo falla (una categoría que ya no existe), cae al formulario de abajo.
+  */
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const nombreComercial = String(user?.user_metadata?.nombre_comercial ?? "").trim();
+  const categoriaId = Number(user?.user_metadata?.categoria_id);
+
+  if (user && nombreComercial && Number.isInteger(categoriaId) && categoriaId > 0) {
+    const { error } = await supabase.from("marcas").insert({
+      perfil_id: user.id,
+      nombre_comercial: nombreComercial.slice(0, 120),
+      categoria_id: categoriaId,
+    });
+    if (!error) redirect("/negocio/panel");
+  }
+
   const categorias = await listarCategorias();
 
   return (

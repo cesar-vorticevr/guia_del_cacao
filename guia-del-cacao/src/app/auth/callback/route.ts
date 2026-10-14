@@ -40,6 +40,16 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=enlace`);
   }
 
+  /*
+    Quien llega por un enlace que se le mandó al correo —confirmar la cuenta,
+    entrar sin contraseña, recuperar la contraseña— acaba de probar que ese
+    correo es suyo. Se anota de una vez, para no pedirle verificarlo otra vez
+    antes de su primera sucursal. La base comprueba por su cuenta que la
+    sesión venga del correo (`marcar_correo_verificado`); con Google o con
+    contraseña lo rechaza, y ese rechazo aquí no importa.
+  */
+  await supabase.rpc("marcar_correo_verificado");
+
   if (siguiente) return NextResponse.redirect(`${origin}${siguiente}`);
 
   // perfilActual() filtra por id. Un `.single()` suelto sobre perfiles falla

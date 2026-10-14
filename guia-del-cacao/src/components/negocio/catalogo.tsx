@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import {
   Area,
@@ -392,6 +392,11 @@ export function BotonEliminarProducto({
  * "Seleccionar todos" no es un adorno: lo normal al abrir una sucursal nueva es
  * que venda casi lo mismo que las demás, así que marcar todo y quitar dos es
  * menos trabajo que marcar quince.
+ *
+ * **Se guarda sola, en cada casilla.** Había un botón «Guardar los productos»
+ * debajo de la lista y era fácil marcar la casilla, saltarse el botón e ir a
+ * «Publicar», que contestaba «falta elegir al menos un producto» con el
+ * producto ahí, marcado. Se vio en la primera prueba del cobro con Stripe.
  */
 export function SeleccionDeProductos({
   sucursalId,
@@ -404,13 +409,23 @@ export function SeleccionDeProductos({
 }) {
   const [estado, accion] = useActionState(guardarSeleccion, INICIAL);
   const [marcados, setMarcados] = useState<string[]>(elegidos);
+  const [guardando, iniciar] = useTransition();
 
   const todos = marcados.length === catalogo.length;
 
+  // Cada cambio se manda en el acto, con la lista entera: la acción reemplaza
+  // la selección de la sucursal, así que el último envío es el que vale.
+  function cambiar(nuevos: string[]) {
+    setMarcados(nuevos);
+    const datos = new FormData();
+    datos.set("sucursal_id", sucursalId);
+    for (const id of nuevos) datos.append("producto", id);
+    iniciar(() => accion(datos));
+  }
+
   return (
-    <form action={accion} className="grid gap-4">
-      <input type="hidden" name="sucursal_id" value={sucursalId} />
-      <Resultado estado={estado} />
+    <div className="grid gap-4">
+      {estado.error && <Resultado estado={estado} />}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="font-bold text-selva-2">
@@ -419,7 +434,7 @@ export function SeleccionDeProductos({
 
         <button
           type="button"
-          onClick={() => setMarcados(todos ? [] : catalogo.map((p) => p.id))}
+          onClick={() => cambiar(todos ? [] : catalogo.map((p) => p.id))}
           className="min-h-10 rounded-full border-2 border-selva/25 bg-white px-4 text-sm font-bold text-selva-2"
         >
           {todos ? "Quitar todos" : "Seleccionar todos"}
@@ -436,10 +451,10 @@ export function SeleccionDeProductos({
                 value={producto.id}
                 checked={marcados.includes(producto.id)}
                 onChange={(evento) =>
-                  setMarcados((antes) =>
+                  cambiar(
                     evento.target.checked
-                      ? [...antes, producto.id]
-                      : antes.filter((id) => id !== producto.id),
+                      ? [...marcados, producto.id]
+                      : marcados.filter((id) => id !== producto.id),
                   )
                 }
                 className="size-5 shrink-0 accent-selva"
@@ -464,8 +479,14 @@ export function SeleccionDeProductos({
         ))}
       </ul>
 
-      <BotonEnviar variante="secundario">Guardar los productos de esta sucursal</BotonEnviar>
-    </form>
+      <p role="status" className="text-sm text-cacao/70">
+        {guardando
+          ? "Guardando…"
+          : marcados.length === 0
+            ? "Marca al menos un producto: sin uno, esta sucursal no se puede publicar."
+            : "Se guarda solo al marcar o quitar."}
+      </p>
+    </div>
   );
 }
 

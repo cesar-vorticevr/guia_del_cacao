@@ -94,10 +94,15 @@ export async function registrarCliente(
 
   const supabase = await crearClienteServidor();
 
+  const origen = await origenDelSitio();
+
   const { data, error } = await supabase.auth.signUp({
     email: correo,
     password: contrasena,
-    options: { data: { nombre, rol: "cliente" } },
+    // El enlace de confirmación vuelve a /auth/callback, que abre la sesión y
+    // da el correo por verificado. Sin esto caía en la portada con un código
+    // que nadie canjeaba, y había que entrar otra vez a mano.
+    options: { data: { nombre, rol: "cliente" }, emailRedirectTo: `${origen}/auth/callback` },
   });
 
   if (error) return { error: traducirError(error.message) };
@@ -135,10 +140,18 @@ export async function registrarNegocio(
 
   const supabase = await crearClienteServidor();
 
+  const origen = await origenDelSitio();
+
   const { data, error } = await supabase.auth.signUp({
     email: correo,
     password: contrasena,
-    options: { data: { nombre, rol: "negocio" } },
+    options: {
+      // El nombre comercial y la categoría viajan con la cuenta: si hay que
+      // confirmar el correo, la marca se crea sola al volver
+      // (/negocio/completar-marca) en vez de pedirlos otra vez.
+      data: { nombre, rol: "negocio", nombre_comercial: nombreComercial, categoria_id: categoria },
+      emailRedirectTo: `${origen}/auth/callback`,
+    },
   });
 
   if (error) return { error: traducirError(error.message) };
