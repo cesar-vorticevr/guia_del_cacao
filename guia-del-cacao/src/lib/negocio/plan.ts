@@ -162,7 +162,10 @@ export async function contratarPlan(
 
   let referencia: string | undefined;
 
-  if (pagando.length > 0) {
+  if (pagando.length > 0 && promocion && oferta && oferta.descuento >= 100) {
+    // Al 100% no hay nada que cobrar: el código lo regala.
+    referencia = `promocion-${oferta.codigo}`;
+  } else if (pagando.length > 0) {
     const mensualidad =
       promocion && oferta
         ? Math.round(Number(tier.precio_mensual) * (1 - oferta.descuento / 100))

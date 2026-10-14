@@ -13,12 +13,15 @@
 -- Basico o Pro sale del directorio (`vencer_pruebas`, todavia sin programar).
 -- Si su convenio da el plan gratis hasta una fecha mas lejana, manda la fecha.
 --
--- **La promocion de apertura** es un convenio con `plan_id` y `cubre_hasta`:
--- quien paga un mes de ese plan mientras el codigo esta vigente, con el
--- descuento del convenio, lo tiene pagado hasta `cubre_hasta`. El codigo lo da
--- el administrador; la idea es Pro al 50%, pagado antes del 30 de octubre, que
--- cubre noviembre y diciembre. Desde enero se cobra el precio normal: en estos
--- convenios el descuento es del primer pago, no de por vida.
+-- **Los codigos de promocion** los crea el administrador en /admin/convenios:
+-- son convenios con `plan_id` y `cubre_hasta`. Quien paga un mes de ese plan
+-- mientras el codigo esta vigente, con el descuento del codigo (100% = gratis),
+-- lo tiene pagado hasta `cubre_hasta`; despues se cobra el precio normal. El
+-- descuento es del primer pago, no de por vida. Cada codigo trae cuantas veces
+-- se puede canjear (`usos_maximos`, una por sucursal) y se va gastando.
+--
+-- Tambien deja a lad.cesargarcia@gmail.com como administrador: la cuenta que
+-- crea los codigos.
 --
 -- Esta migracion reemplaza a la de «todo gratis en 2026», que no llego a
 -- aplicarse.
@@ -47,7 +50,8 @@ $$;
 
 alter table public.convenios
   add column if not exists plan_id smallint references public.tiers (id),
-  add column if not exists cubre_hasta date;
+  add column if not exists cubre_hasta date,
+  add column if not exists usos_maximos integer check (usos_maximos > 0);
 
 alter table public.convenios drop constraint if exists convenios_promocion_completa;
 alter table public.convenios add constraint convenios_promocion_completa
@@ -63,12 +67,31 @@ comment on column public.convenios.plan_id is
   'Promocion: el plan que se paga por adelantado. Va junto con cubre_hasta.';
 comment on column public.convenios.cubre_hasta is
   'Promocion: ultimo dia que cubre el primer pago. El siguiente cobro es al dia siguiente, al precio normal.';
+comment on column public.convenios.usos_maximos is
+  'Cuantas sucursales pueden canjear la promocion. Null: sin limite.';
 
 alter table public.suscripciones
   add column if not exists pago_de_apertura numeric(10,2);
 
 comment on column public.suscripciones.pago_de_apertura is
   'Lo que se pago al abrirla por una promocion (convenios.plan_id). Null si no hubo.';
+
+-- Cuantas sucursales ya canjearon la promocion de un codigo.
+create or replace function public.usos_de_convenio(p_convenio uuid)
+returns integer
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select count(distinct sucursal_id)::integer
+    from public.suscripciones
+   where convenio_id = p_convenio
+     and pago_de_apertura is not null;
+$$;
+
+revoke all on function public.usos_de_convenio(uuid) from public, anon;
+grant execute on function public.usos_de_convenio(uuid) to authenticated;
 
 -- Lo que ofrece un codigo vigente. Cambia de forma: hay que soltarla primero.
 drop function if exists public.revisar_convenio(text);
@@ -80,7 +103,8 @@ returns table (
   basico_gratis_hasta date,
   descuento smallint,
   plan_id smallint,
-  cubre_hasta date
+  cubre_hasta date,
+  quedan integer
 )
 language plpgsql
 stable
@@ -88,6 +112,7 @@ security definer
 set search_path = ''
 as $$
 declare
+  v_quedan integer;
   v_convenio public.convenios%rowtype;
   v_hoy date := (now() at time zone 'America/Mexico_City')::date;
 begin
@@ -109,10 +134,17 @@ begin
       to_char(v_convenio.vigente_hasta, 'DD/MM/YYYY');
   end if;
 
+  if v_convenio.usos_maximos is not null then
+    v_quedan := v_convenio.usos_maximos - public.usos_de_convenio(v_convenio.id);
+    if v_quedan <= 0 then
+      raise exception 'Ese código ya se agotó.';
+    end if;
+  end if;
+
   return query
     select v_convenio.id, v_convenio.descripcion,
            v_convenio.basico_gratis_hasta, v_convenio.descuento,
-           v_convenio.plan_id, v_convenio.cubre_hasta;
+           v_convenio.plan_id, v_convenio.cubre_hasta, v_quedan;
 end;
 $$;
 
@@ -229,6 +261,12 @@ begin
           and s.convenio_id = new.convenio_id
           and s.pago_de_apertura is not null
      ) then
+    -- Se va gastando: una por sucursal, hasta el tope del codigo.
+    if v_convenio.usos_maximos is not null
+       and public.usos_de_convenio(new.convenio_id) >= v_convenio.usos_maximos then
+      raise exception 'Ese código ya se agotó.';
+    end if;
+
     new.pago_de_apertura := round(v_precio * (1 - v_convenio.descuento / 100.0));
     new.fecha_fin_trial := null;
     new.fecha_proximo_cobro :=
@@ -310,3 +348,14 @@ update public.suscripciones
    and estado in ('trial', 'activo', 'pausado_por_pago');
 
 alter table public.suscripciones enable trigger al_editar_proteger_precio;
+
+-- ---------------------------------------------------------------------------
+-- Quien crea los codigos
+-- ---------------------------------------------------------------------------
+--
+-- El rol admin no es autoregistrable: lo asigna una migracion. Si la cuenta
+-- todavia no existe, esto no hace nada y hay que repetirlo cuando se registre.
+
+update public.perfiles
+   set rol = 'admin'
+ where correo = 'lad.cesargarcia@gmail.com';

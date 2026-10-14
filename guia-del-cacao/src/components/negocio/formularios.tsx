@@ -314,7 +314,9 @@ export function FormularioPublicar({
 
       <p className="rounded-2xl bg-crema-2 px-4 py-3 text-sm text-cacao">
         {oferta?.cubreHasta
-          ? `Con la promoción pagas un mes de ${nombreDelPlan(tiers, oferta.planId)} al publicar y te cubre hasta el ${fechaDeOferta(oferta.cubreHasta)}. Con otro plan, lo pruebas sin pagar como siempre.`
+          ? oferta.descuento >= 100
+            ? `Con la promoción tienes ${nombreDelPlan(tiers, oferta.planId)} gratis hasta el ${fechaDeOferta(oferta.cubreHasta)}. Con otro plan, lo pruebas sin pagar como siempre.`
+            : `Con la promoción pagas un mes de ${nombreDelPlan(tiers, oferta.planId)} al publicar y te cubre hasta el ${fechaDeOferta(oferta.cubreHasta)}. Con otro plan, lo pruebas sin pagar como siempre.`
           : `El plan ${nombreDelPlan(tiers, null)} dura ${DIAS_GRATIS} días. Los de pago los pruebas quince días sin pagar y sin dejar tarjeta.`}{" "}
         Si al terminar no has pagado, tu micrositio sale del directorio, pero no
         se borra nada y vuelve en cuanto pagues.
@@ -369,11 +371,29 @@ function CodigoDeConvenio({
         <p className="text-sm">{oferta.descripcion}</p>
         <ul className="mt-2 grid gap-0.5 text-sm">
           {oferta.cubreHasta ? (
-            <li>
-              ✓ Un mes de {nombreDelPlan(tiers, oferta.planId)}
-              {oferta.descuento > 0 && ` con ${oferta.descuento}% de descuento`}, y
-              te cubre hasta el {fechaDeOferta(oferta.cubreHasta)}
-            </li>
+            <>
+              <li>
+                {oferta.descuento >= 100 ? (
+                  <>
+                    ✓ {nombreDelPlan(tiers, oferta.planId)} gratis hasta el{" "}
+                    {fechaDeOferta(oferta.cubreHasta)}
+                  </>
+                ) : (
+                  <>
+                    ✓ Un mes de {nombreDelPlan(tiers, oferta.planId)}
+                    {oferta.descuento > 0 && ` con ${oferta.descuento}% de descuento`}, y
+                    te cubre hasta el {fechaDeOferta(oferta.cubreHasta)}
+                  </>
+                )}
+              </li>
+              {oferta.quedan !== null && (
+                <li className="font-bold">
+                  {oferta.quedan === 1
+                    ? "¡Queda 1 lugar con este código!"
+                    : `Quedan ${oferta.quedan} lugares con este código`}
+                </li>
+              )}
+            </>
           ) : (
             <>
               {oferta.basicoGratisHasta && (
@@ -421,7 +441,7 @@ function CodigoDeConvenio({
           }}
           autoComplete="off"
           maxLength={40}
-          placeholder="FESTIVALCHOCOLATE"
+          placeholder="TUCODIGO"
           aria-invalid={error ? true : undefined}
           className={`min-w-0 flex-1 rounded-2xl border-2 bg-white px-4 py-3 font-mono text-base uppercase text-ink ${error ? "border-guayaba focus:border-guayaba" : "border-selva/20 focus:border-selva"}`}
         />
@@ -435,7 +455,7 @@ function CodigoDeConvenio({
         </button>
       </div>
       <p className={`mt-1.5 text-sm ${error ? "font-bold text-guayaba" : "text-cacao/70"}`}>
-        {error ?? "Si te dieron un código de promoción o de convenio, como el del Festival del Chocolate, escríbelo aquí para ver tus precios."}
+        {error ?? "Si te dieron un código de promoción, escríbelo aquí para ver tus precios."}
       </p>
     </div>
   );
@@ -904,7 +924,9 @@ function TarjetaDePlan({
   const nota = gratis
     ? "Sin tarjeta y sin pagar nada"
     : precio.cubreHasta
-      ? `Un solo pago: cubre hasta el ${fechaDeOferta(precio.cubreHasta)}. Después, ${textoDePrecio(precio.despues ?? 0, precio.periodo)}.`
+      ? precio.cobro === 0
+        ? `Gratis hasta el ${fechaDeOferta(precio.cubreHasta)}. Después, ${textoDePrecio(precio.despues ?? 0, precio.periodo)}.`
+        : `Un solo pago: cubre hasta el ${fechaDeOferta(precio.cubreHasta)}. Después, ${textoDePrecio(precio.despues ?? 0, precio.periodo)}.`
       : precio.periodo === "anual"
         ? `Equivale a ${textoDePrecio(Math.round(precio.cobro / 12), "mensual")}, en un pago al año`
         : "Al mes, por micrositio";
@@ -1067,7 +1089,9 @@ export function FormularioCambiarPlan({
       />
 
       <BotonEnviar>
-        {codigoNuevo?.cubreHasta ? "Pagar y cambiar de plan" : "Cambiar de plan"}
+        {codigoNuevo?.cubreHasta && codigoNuevo.descuento < 100
+          ? "Pagar y cambiar de plan"
+          : "Cambiar de plan"}
       </BotonEnviar>
     </form>
   );

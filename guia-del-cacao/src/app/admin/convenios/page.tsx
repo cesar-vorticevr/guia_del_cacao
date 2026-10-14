@@ -4,7 +4,7 @@ import { FormularioConvenio } from "@/components/admin/formularios";
 import { todosLosConvenios } from "@/lib/datos/admin";
 import { listarTiers } from "@/lib/datos/sucursales";
 
-export const metadata: Metadata = { title: "Convenios · Guía del Cacao" };
+export const metadata: Metadata = { title: "Códigos de promoción · Guía del Cacao" };
 
 const DIA = new Intl.DateTimeFormat("es-MX", {
   day: "numeric",
@@ -52,12 +52,11 @@ export default async function Convenios() {
 
   return (
     <>
-      <h1 className="font-display text-3xl">Convenios</h1>
+      <h1 className="font-display text-3xl">Códigos de promoción</h1>
       <p className="mt-2 text-cacao">
-        Quien escribe un código vigente al contratar recibe lo que ese código
-        da: el plan Gratis hasta una fecha, un descuento en Básico y Pro, o
-        una promoción —un mes de un plan con descuento que cubre hasta una
-        fecha—. Sirve para todos los que lo usen dentro de sus fechas.
+        Quien escribe un código vigente al publicar o al cambiar de plan recibe
+        lo que ese código da: un plan con descuento, o gratis, hasta una fecha.
+        Cada código se puede usar las veces que digas, una por sucursal.
       </p>
 
       {convenios.map((convenio) => {
@@ -89,12 +88,22 @@ export default async function Convenios() {
               {convenio.basico_gratis_hasta &&
                 ` · Gratis hasta el ${dia(convenio.basico_gratis_hasta)}`}
               {convenio.plan_id !== null && convenio.cubre_hasta
-                ? ` · Promoción: un mes de ${nombreDe(convenio.plan_id)}${convenio.descuento > 0 ? ` con ${convenio.descuento}%` : ""}, cubre hasta el ${dia(convenio.cubre_hasta)}`
+                ? convenio.descuento >= 100
+                  ? ` · ${nombreDe(convenio.plan_id)} gratis hasta el ${dia(convenio.cubre_hasta)}`
+                  : ` · Un mes de ${nombreDe(convenio.plan_id)} con ${convenio.descuento}%, cubre hasta el ${dia(convenio.cubre_hasta)}`
                 : convenio.descuento > 0 && ` · ${convenio.descuento}% en Básico y Pro`}
             </p>
 
-            <dl className="mt-5 grid grid-cols-2 gap-3 text-center">
+            <dl className="mt-5 grid grid-cols-2 gap-3 text-center sm:grid-cols-3">
               {[
+                ...(convenio.usos_maximos !== null
+                  ? [
+                      {
+                        cifra: `${convenio.canjeados} / ${convenio.usos_maximos}`,
+                        texto: "códigos usados",
+                      },
+                    ]
+                  : []),
                 { cifra: convenio.suscripciones.length, texto: "lo usaron" },
                 { cifra: publicados.length, texto: "siguen publicados" },
               ].map((dato) => (
@@ -155,7 +164,7 @@ export default async function Convenios() {
 
       <section className="mt-10 rounded-3xl border-2 border-dashed border-selva/25 p-6">
         <h2 className="font-display text-xl font-semibold text-selva-2">
-          Otro código, para otro evento
+          Crear un código
         </h2>
         <div className="mt-4">
           <FormularioConvenio

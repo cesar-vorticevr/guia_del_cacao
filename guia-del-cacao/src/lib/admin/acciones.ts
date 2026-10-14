@@ -172,7 +172,8 @@ export async function cambiarRol(
 }
 
 /**
- * Da de alta un código de convenio para otro evento.
+ * Da de alta un código de promoción: qué plan da, con cuánto descuento (100 =
+ * gratis), hasta cuándo dura y cuántas veces se puede usar.
  *
  * El código se guarda sin espacios ni guiones y en mayúsculas, igual que como
  * lo compara la base: «Festival Chocolate» y «festival-chocolate» son el mismo.
@@ -187,26 +188,28 @@ export async function crearConvenio(
   const descripcion = datos.get("descripcion")?.toString().trim() ?? "";
   const desde = datos.get("vigente_desde")?.toString() ?? "";
   const hasta = datos.get("vigente_hasta")?.toString() ?? "";
-  const gratisHasta = datos.get("basico_gratis_hasta")?.toString() || null;
   const descuento = Number(datos.get("descuento")?.toString() || 0);
   const planId = Number(datos.get("plan_id")?.toString() || 0) || null;
   const cubreHasta = datos.get("cubre_hasta")?.toString() || null;
+  const usos = Number(datos.get("usos_maximos")?.toString() || 0);
 
   if (!codigo) return { error: "Escribe el código, solo letras y números." };
   if (!descripcion) return { error: "Escribe para qué es el código." };
   if (!desde || !hasta) return { error: "Elige desde y hasta cuándo sirve." };
   if (hasta < desde) return { error: "La fecha final va después de la inicial." };
-  if (!Number.isInteger(descuento) || descuento < 0 || descuento > 100) {
-    return { error: "El descuento va de 0 a 100." };
+  if (!Number.isInteger(usos) || usos < 1) {
+    return { error: "Di cuántos negocios pueden usar el código: 1 o más." };
   }
-  if ((planId === null) !== (cubreHasta === null)) {
-    return { error: "Una promoción lleva las dos cosas: el plan y hasta cuándo cubre el pago." };
+  if (!planId) return { error: "Elige qué plan da el código." };
+  if (!Number.isInteger(descuento) || descuento < 1 || descuento > 100) {
+    return { error: "El descuento va de 1 a 100 (100 es gratis)." };
   }
-  if (cubreHasta && cubreHasta < hasta) {
-    return { error: "El pago tiene que cubrir al menos hasta el último día en que sirve el código." };
-  }
-  if (!gratisHasta && descuento === 0 && !planId) {
-    return { error: "Un código tiene que dar algo: Gratis más tiempo, descuento o una promoción." };
+  if (!cubreHasta) return { error: "Elige hasta cuándo dura la promoción." };
+  if (cubreHasta < hasta) {
+    return {
+      error:
+        "La promoción tiene que durar al menos hasta el último día en que se puede usar el código.",
+    };
   }
 
   const supabase = await crearClienteServidor();
@@ -216,10 +219,10 @@ export async function crearConvenio(
     descripcion,
     vigente_desde: desde,
     vigente_hasta: hasta,
-    basico_gratis_hasta: gratisHasta,
     descuento,
     plan_id: planId,
     cubre_hasta: cubreHasta,
+    usos_maximos: usos,
   });
 
   if (error) {
@@ -232,5 +235,5 @@ export async function crearConvenio(
   }
 
   revalidatePath("/admin/convenios");
-  return { ok: `Listo, el código ${codigo} ya funciona en sus fechas.` };
+  return { ok: `Listo: ${codigo} ya funciona en sus fechas, para ${usos} negocios.` };
 }

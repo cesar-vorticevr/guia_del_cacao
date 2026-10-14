@@ -251,14 +251,11 @@ export default function Terminos() {
         <strong className="text-selva-2">20% de descuento</strong>.
       </p>
       <p className="mt-3 text-cacao">
-        Un <strong className="text-selva-2">código de convenio</strong>, como el
-        del Festival del Chocolate con la Secretaría de Turismo y Desarrollo
-        Económico del Estado de Tabasco, puede dar el
-        plan Gratis hasta una fecha y descuento en Básico y Pro. Los
-        descuentos no se suman: si tienes convenio y pagas el año, se aplica uno.
         Un <strong className="text-selva-2">código de promoción</strong> puede
-        darte un mes de un plan con descuento que te cubre hasta una fecha; al
-        terminar, se cobra el precio normal.
+        darte un mes de un plan con descuento, o gratis, que te cubre hasta una
+        fecha; al terminar, se cobra el precio normal. Cada código tiene fechas
+        y un número limitado de usos. Los descuentos no se suman: si tienes un
+        código y pagas el año, se aplica uno.
       </p>
       <p className="mt-3 text-cacao">
         Si al terminar la prueba o el periodo gratis no has pagado, tu sucursal{" "}

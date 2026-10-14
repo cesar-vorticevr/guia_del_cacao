@@ -1135,16 +1135,21 @@ normal. El descuento de una promoción **es solo del primer pago**, se guarda en
 `suscripciones.pago_de_apertura` y **se usa una vez por sucursal**. En prueba
 no hay promoción: lo que se regala es el pago. El código se pone al publicar o
 al cambiar de plan desde la cuenta, y lo da de alta el administrador en
-`/admin/convenios`. La primera fue la de apertura del Festival: Pro al 50%,
-pagado antes del 30 de octubre, que cubre noviembre y diciembre de 2026.
+`/admin/convenios` (pestaña «Códigos»). Al 100% es gratis: no se cobra nada y
+`pago_de_apertura` queda en 0. Cada código trae **cuántas veces se puede usar**
+(`usos_maximos`, una por sucursal que canjea, contadas por
+`usos_de_convenio`): agotado, `revisar_convenio` y el trigger lo rechazan.
 
-El primer convenio es el de **Vórtice VR** (quien desarrolla la
-plataforma) y la **Secretaría de Turismo y Desarrollo Económico del Estado de
-Tabasco**, para el Festival del Chocolate del 12 al 16 de noviembre de 2026:
-**`FESTIVALCHOCOLATE`** sirve para contratar del 1 de octubre al 16 de
-noviembre, da el plan más barato gratis hasta el 30 de noviembre (era el Básico,
-hoy el Gratis) y 20% en los planes de pago.
-El nombre de la Secretaría va **completo** siempre que aparezca.
+**Hoy el administrador solo crea promociones** (plan, descuento, hasta cuándo,
+cuántas). Las columnas `basico_gratis_hasta` y el descuento «mientras se pague»
+siguen en la base para los convenios de antes, pero el formulario ya no los
+ofrece. El administrador es `lad.cesargarcia@gmail.com` (migración 000053).
+
+**El convenio con la Secretaría de Turismo está en pausa** desde el 13 de
+octubre de 2026: el código `FESTIVALCHOCOLATE` que iba a crear la migración
+000051 se quitó antes de aplicarse, y no existe en ninguna base. Si se retoma,
+el nombre de la Secretaría va **completo** siempre que aparezca: Secretaría de
+Turismo y Desarrollo Económico del Estado de Tabasco.
 
 - **Un solo código para todos, acotado por fecha.** Se probó uno por negocio y
   se descartó: repartirlos era lo difícil, y uno que vence deja de circular

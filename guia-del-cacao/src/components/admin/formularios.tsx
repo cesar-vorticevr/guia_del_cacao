@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Aviso, BotonEnviar } from "@/components/formulario";
 import {
   cambiarRol,
@@ -91,19 +91,26 @@ export function BotonesRol({
   );
 }
 
-/** Un código nuevo, para el siguiente evento con convenio. */
+/**
+ * Un código de promoción nuevo.
+ *
+ * Dice las cuatro cosas que definen un código: hasta cuándo se puede usar,
+ * cuántas veces, qué plan da y con cuánto descuento (100% = gratis), y hasta
+ * cuándo dura lo que da.
+ */
 export function FormularioConvenio({
   planes,
 }: {
-  /** Los planes de pago, para elegir el de una promoción. */
+  /** Los planes de pago, para elegir el que da el código. */
   planes: { id: number; nombre: string }[];
 }) {
   const [estado, accion] = useActionState(crearConvenio, INICIAL);
+  const [gratis, setGratis] = useState(false);
   const clase =
     "w-full rounded-2xl border-2 border-selva/20 bg-white px-4 py-3 text-base text-ink focus:border-selva";
 
   return (
-    <form action={accion} className="grid gap-3">
+    <form action={accion} className="grid gap-4">
       {estado.error && <Aviso>{estado.error}</Aviso>}
       {estado.ok && (
         <p role="status" className="font-bold text-selva">
@@ -111,87 +118,143 @@ export function FormularioConvenio({
         </p>
       )}
 
-      <label className="block">
-        <span className="mb-1.5 block font-bold text-selva-2">Código</span>
-        <input name="codigo" required className={`${clase} font-mono uppercase`} />
-      </label>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-1.5 block font-bold text-selva-2">Código</span>
+          <input
+            name="codigo"
+            required
+            placeholder="APERTURA"
+            className={`${clase} font-mono uppercase`}
+          />
+          <span className="mt-1.5 block text-sm text-cacao/70">
+            Solo letras y números. Es lo que el negocio escribe.
+          </span>
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block font-bold text-selva-2">
+            ¿Cuántos códigos?
+          </span>
+          <input
+            name="usos_maximos"
+            type="number"
+            min={1}
+            required
+            defaultValue={50}
+            className={clase}
+          />
+          <span className="mt-1.5 block text-sm text-cacao/70">
+            Cuántos negocios lo pueden usar. Se va gastando: uno por sucursal.
+          </span>
+        </label>
+      </div>
 
       <label className="block">
         <span className="mb-1.5 block font-bold text-selva-2">Para qué es</span>
         <input
           name="descripcion"
           required
-          placeholder="Feria del Cacao 2027, con la Secretaría de Turismo"
+          placeholder="Apertura del Festival del Chocolate: Pro a mitad de precio"
           className={clase}
         />
+        <span className="mt-1.5 block text-sm text-cacao/70">
+          Lo lee el negocio al aplicar el código.
+        </span>
       </label>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <fieldset className="grid gap-3 sm:grid-cols-2">
+        <legend className="mb-1.5 font-bold text-selva-2">
+          Se puede usar
+        </legend>
         <label className="block">
-          <span className="mb-1.5 block font-bold text-selva-2">Sirve desde</span>
+          <span className="mb-1.5 block text-sm text-cacao/70">Desde</span>
           <input name="vigente_desde" type="date" required className={clase} />
         </label>
         <label className="block">
-          <span className="mb-1.5 block font-bold text-selva-2">Hasta</span>
+          <span className="mb-1.5 block text-sm text-cacao/70">
+            Hasta (último día para pagar)
+          </span>
           <input name="vigente_hasta" type="date" required className={clase} />
         </label>
-      </div>
+      </fieldset>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block">
-          <span className="mb-1.5 block font-bold text-selva-2">
-            Plan Gratis hasta
-          </span>
-          <input name="basico_gratis_hasta" type="date" className={clase} />
-          <span className="mt-1.5 block text-sm text-cacao/70">
-            Opcional, si es más de 30 días. Al día siguiente, sin pago, se oculta.
-          </span>
-        </label>
-        <label className="block">
-          <span className="mb-1.5 block font-bold text-selva-2">
-            Descuento (%)
-          </span>
-          <input
-            name="descuento"
-            type="number"
-            min={0}
-            max={100}
-            defaultValue={20}
-            className={clase}
-          />
-          <span className="mt-1.5 block text-sm text-cacao/70">
-            En Básico y Pro mientras se pague. En una promoción, solo en su
-            primer pago.
-          </span>
-        </label>
-      </div>
+      <fieldset className="grid gap-3 rounded-2xl bg-white p-4">
+        <legend className="px-1 font-bold text-selva-2">Qué da el código</legend>
 
-      <fieldset className="grid gap-3 rounded-2xl border-2 border-dashed border-selva/25 p-4 sm:grid-cols-2">
-        <legend className="px-1 font-bold text-selva-2">
-          Promoción (opcional)
-        </legend>
-        <p className="text-sm text-cacao/70 sm:col-span-2">
-          Quien paga un mes de este plan mientras el código sirve, con el
-          descuento de arriba, lo tiene pagado hasta la fecha que pongas. Desde
-          el día siguiente se le cobra el precio normal.
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-1.5 block text-sm text-cacao/70">Plan</span>
+            <select name="plan_id" required defaultValue={planes.at(-1)?.id} className={clase}>
+              {planes.map((plan) => (
+                <option key={plan.id} value={plan.id}>
+                  {plan.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div>
+            <span className="mb-1.5 block text-sm text-cacao/70">Beneficio</span>
+            <div className="flex gap-2">
+              {[
+                { valor: false, texto: "Descuento" },
+                { valor: true, texto: "Gratis" },
+              ].map((opcion) => (
+                <label
+                  key={opcion.texto}
+                  className={`flex min-h-12 flex-1 cursor-pointer items-center justify-center rounded-2xl border-2 px-3 font-bold ${
+                    gratis === opcion.valor
+                      ? "border-selva bg-selva text-crema"
+                      : "border-selva/20 text-selva-2"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="beneficio"
+                    checked={gratis === opcion.valor}
+                    onChange={() => setGratis(opcion.valor)}
+                    className="sr-only"
+                  />
+                  {opcion.texto}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          {gratis ? (
+            <input type="hidden" name="descuento" value={100} />
+          ) : (
+            <label className="block">
+              <span className="mb-1.5 block text-sm text-cacao/70">
+                Descuento (%)
+              </span>
+              <input
+                name="descuento"
+                type="number"
+                min={1}
+                max={99}
+                required
+                defaultValue={50}
+                className={clase}
+              />
+            </label>
+          )}
+          <label className="block">
+            <span className="mb-1.5 block text-sm text-cacao/70">
+              La promoción dura hasta
+            </span>
+            <input name="cubre_hasta" type="date" required className={clase} />
+          </label>
+        </div>
+
+        <p className="text-sm text-cacao/70">
+          {gratis
+            ? "El negocio tiene el plan sin pagar nada hasta esa fecha."
+            : "El negocio paga un mes del plan con el descuento y queda cubierto hasta esa fecha."}{" "}
+          Al día siguiente se le cobra el precio normal.
         </p>
-        <label className="block">
-          <span className="mb-1.5 block font-bold text-selva-2">Plan</span>
-          <select name="plan_id" defaultValue="" className={clase}>
-            <option value="">Sin promoción</option>
-            {planes.map((plan) => (
-              <option key={plan.id} value={plan.id}>
-                {plan.nombre}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block">
-          <span className="mb-1.5 block font-bold text-selva-2">
-            El pago cubre hasta
-          </span>
-          <input name="cubre_hasta" type="date" className={clase} />
-        </label>
       </fieldset>
 
       <BotonEnviar variante="secundario">Crear código</BotonEnviar>

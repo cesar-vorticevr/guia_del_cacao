@@ -311,17 +311,24 @@ export async function publicarSucursal(
   let pagoDeApertura: { referencia: string } | null = null;
 
   if (oferta && promocionPara(tier, oferta)) {
-    const cobro = await procesarPago({
-      sucursalId: id,
-      tierId: tier.id,
-      montoMensual: Math.round(Number(tier.precio_mensual) * (1 - oferta.descuento / 100)),
-    });
+    const monto = Math.round(Number(tier.precio_mensual) * (1 - oferta.descuento / 100));
 
-    if (!cobro.ok) {
-      return { error: `No se pudo completar el pago: ${cobro.motivo}` };
+    // Al 100% no hay nada que cobrar: el código lo regala.
+    if (monto === 0) {
+      pagoDeApertura = { referencia: `promocion-${oferta.codigo}` };
+    } else {
+      const cobro = await procesarPago({
+        sucursalId: id,
+        tierId: tier.id,
+        montoMensual: monto,
+      });
+
+      if (!cobro.ok) {
+        return { error: `No se pudo completar el pago: ${cobro.motivo}` };
+      }
+
+      pagoDeApertura = { referencia: cobro.referencia };
     }
-
-    pagoDeApertura = { referencia: cobro.referencia };
   }
 
   /*

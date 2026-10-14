@@ -52,7 +52,7 @@ insert into public.sucursales (id, marca_id, nombre_sucursal, slug, entidad, est
 select ('a3600000-0000-0000-0000-00000000000' || n)::uuid,
        'a2600000-0000-0000-0000-000000000001',
        'Local ' || n, 'apertura-prueba-' || n, 'Tabasco', 'borrador', 'Cacao', 'logo.png'
-  from generate_series(1, 5) n;
+  from generate_series(1, 7) n;
 
 insert into public.productos_sucursal (producto_id, sucursal_id)
 select p.id, s.id
@@ -64,6 +64,11 @@ select p.id, s.id
 insert into public.convenios (id, codigo, descripcion, vigente_desde, vigente_hasta, descuento, plan_id, cubre_hasta)
 values ('a4600000-0000-0000-0000-000000000001', 'PRUEBAAPERTURA', 'Apertura',
         current_date - 1, current_date + 10, 50, 3, current_date + 60);
+
+-- Otra: Basico gratis, un solo uso.
+insert into public.convenios (id, codigo, descripcion, vigente_desde, vigente_hasta, descuento, plan_id, cubre_hasta, usos_maximos)
+values ('a4600000-0000-0000-0000-000000000002', 'PRUEBAUNAVEZ', 'Una vez',
+        current_date - 1, current_date + 10, 100, 2, current_date + 30, 1);
 
 \echo '--- los planes ---'
 select string_agg(nombre || '=' || precio_mensual::int, ' ' order by id) = 'Gratis=0 Básico=199 Pro=299' as tres_planes
@@ -141,6 +146,21 @@ values ('a3600000-0000-0000-0000-000000000003', 1, 0, 'trial', now() + interval 
         now() + interval '5 days');
 select s.fecha_fin_trial <= now() + interval '5 days' as conserva_su_fecha
   from pg_temp.vigente('a3600000-0000-0000-0000-000000000003') s;
+
+\echo '--- al 100%: gratis hasta su fecha, y el codigo se gasta ---'
+select quedan = 1 as queda_uno from public.revisar_convenio('PRUEBAUNAVEZ');
+insert into public.suscripciones (sucursal_id, tier_id, monto_mensual, estado, fecha_proximo_cobro, convenio_id)
+values ('a3600000-0000-0000-0000-000000000006', 2, 1, 'activo', now() + interval '1 month',
+        'a4600000-0000-0000-0000-000000000002');
+select s.pago_de_apertura = 0 as pago_cero, s.monto_por_cobro = 199 as despues_199
+  from pg_temp.vigente('a3600000-0000-0000-0000-000000000006') s;
+
+select pg_temp.debe_fallar('un codigo agotado ya no se revisa como vigente',
+  $q$ select * from public.revisar_convenio('PRUEBAUNAVEZ') $q$);
+select pg_temp.debe_fallar('un codigo agotado no se canjea por la puerta de atras',
+  $q$ insert into public.suscripciones (sucursal_id, tier_id, monto_mensual, estado, fecha_proximo_cobro, convenio_id)
+      values ('a3600000-0000-0000-0000-000000000007', 2, 1, 'activo', now() + interval '1 month',
+              'a4600000-0000-0000-0000-000000000002') $q$);
 
 reset role;
 

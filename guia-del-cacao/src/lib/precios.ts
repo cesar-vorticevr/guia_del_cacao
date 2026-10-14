@@ -24,6 +24,8 @@ export type Oferta = {
    */
   planId: number | null;
   cubreHasta: string | null;
+  /** Cuántas veces más se puede canjear. Null: sin límite o no se sabe. */
+  quedan: number | null;
 };
 
 /** Una fila de `revisar_convenio` o `convenio_de_sucursal`, como `Oferta`. */
@@ -33,6 +35,7 @@ export type FilaDeConvenio = {
   descuento: number;
   plan_id: number | null;
   cubre_hasta: string | null;
+  quedan?: number | null;
 };
 
 export function ofertaDeFila(codigo: string, fila: FilaDeConvenio): Oferta {
@@ -43,6 +46,7 @@ export function ofertaDeFila(codigo: string, fila: FilaDeConvenio): Oferta {
     descuento: Number(fila.descuento),
     planId: fila.plan_id === null ? null : Number(fila.plan_id),
     cubreHasta: fila.cubre_hasta,
+    quedan: fila.quedan ?? null,
   };
 }
 

@@ -158,6 +158,7 @@ export type UsoDeConvenio = {
   estado: string;
   fecha_inicio: string;
   fecha_fin_trial: string | null;
+  pago_de_apertura: number | null;
   sucursales: {
     nombre_sucursal: string;
     slug: string;
@@ -176,6 +177,7 @@ export type ConvenioAdmin = {
   descuento: number;
   plan_id: number | null;
   cubre_hasta: string | null;
+  usos_maximos: number | null;
   suscripciones: UsoDeConvenio[];
 };
 
@@ -193,12 +195,22 @@ export async function todosLosConvenios() {
   const { data } = await supabase
     .from("convenios")
     .select(
-      "id, codigo, descripcion, vigente_desde, vigente_hasta, basico_gratis_hasta, descuento, plan_id, cubre_hasta, suscripciones(estado, fecha_inicio, fecha_fin_trial, sucursales(nombre_sucursal, slug, estado, marcas(nombre_comercial)))",
+      "id, codigo, descripcion, vigente_desde, vigente_hasta, basico_gratis_hasta, descuento, plan_id, cubre_hasta, usos_maximos, suscripciones(estado, fecha_inicio, pago_de_apertura, fecha_fin_trial, sucursales(nombre_sucursal, slug, estado, marcas(nombre_comercial)))",
     )
     .order("vigente_desde", { ascending: false });
 
   return ((data ?? []) as unknown as ConvenioAdmin[]).map((convenio) => ({
     ...convenio,
+    /**
+     * Cuántos ya se gastaron: sucursales que canjearon la promoción. Se cuenta
+     * antes de quedarse con la suscripción más reciente de cada una, que puede
+     * ser un cambio de plan posterior sin el canje.
+     */
+    canjeados: new Set(
+      convenio.suscripciones
+        .filter((uso) => uso.pago_de_apertura !== null)
+        .map((uso) => uso.sucursales?.slug ?? ""),
+    ).size,
     suscripciones: [...convenio.suscripciones]
       .sort((a, b) => b.fecha_inicio.localeCompare(a.fecha_inicio))
       .filter(
