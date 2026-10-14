@@ -19,7 +19,18 @@ const SECCIONES = [
  * estar a un dedo de distancia en todas las pantallas. Vive en «Mi cuenta»,
  * junto a lo demás que se hace una vez.
  */
-export function BarraSesion({ nombre }: { nombre: string }) {
+export function BarraSesion({
+  nombre,
+  cuenta = "/negocio/panel/cuenta",
+}: {
+  nombre: string;
+  /**
+   * A dónde lleva el botón con su nombre: la cuenta del negocio, o la del
+   * administrador. Apuntaba siempre a la del negocio y el administrador se
+   * quedaba sin dónde cerrar sesión.
+   */
+  cuenta?: string;
+}) {
   return (
     <EncabezadoQueVuelve>
       <header className="bg-selva py-3.5 text-crema">
@@ -39,7 +50,7 @@ export function BarraSesion({ nombre }: { nombre: string }) {
         </nav>
 
         <Link
-          href="/negocio/panel/cuenta"
+          href={cuenta}
           className="min-h-10 rounded-full border-2 border-crema/30 px-4 py-2 text-sm font-bold transition-colors hover:border-crema"
         >
           {nombre}

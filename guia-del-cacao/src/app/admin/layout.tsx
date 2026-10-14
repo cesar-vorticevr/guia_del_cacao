@@ -29,7 +29,7 @@ export default async function LayoutAdmin({ children }: LayoutProps<"/admin">) {
 
   return (
     <>
-      <BarraSesion nombre={perfil.nombre} />
+      <BarraSesion nombre={perfil.nombre} cuenta="/admin/cuenta" />
 
       <nav aria-label="Administración" className="border-b-2 border-selva/10 bg-crema-2">
         <ul className="mx-auto flex w-[92vw] max-w-3xl gap-1 overflow-x-auto">
