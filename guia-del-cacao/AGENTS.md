@@ -1230,3 +1230,39 @@ vuelven a reportar, vuelve). Los motivos están en el `check` de la tabla y en
 una llave a perfiles habría un segundo camino de `resenas` a
 `perfiles_publicos` y cada `perfiles_publicos(nombre)` de las reseñas daría
 PGRST201: las listas saldrían vacías. Es el cuarto caso del mismo tropiezo.
+
+## Cobro con Stripe (migración 000056)
+
+El cobro real es **Stripe Checkout**: el negocio paga en la página de Stripe y la
+tarjeta nunca pasa por la Guía. Sin `STRIPE_SECRET_KEY` todo sigue en el cobro
+simulado de siempre (`PAGO_SIMULADO` en `lib/pagos.ts` sale de esa variable), y
+las condiciones y el aviso de privacidad cambian su texto con la misma bandera.
+
+Variables (en Vercel, **sin** `NEXT_PUBLIC_`): `STRIPE_SECRET_KEY`,
+`STRIPE_WEBHOOK_SECRET` y `SUPABASE_SERVICE_ROLE_KEY`.
+
+- `lib/stripe.ts` habla con Stripe: `crearPago` (Checkout), `cambiarPrecio`,
+  `cancelarEnStripe`, `abrirPortalDeStripe`. **El precio no vive en Stripe**: se
+  manda en cada cobro (`price_data`) desde `precioDe`. Cada plan tiene su
+  producto (`tiers.stripe_product_id`), creado al primer cobro.
+- Una suscripción de Stripe cubre todas las sucursales que se pagan juntas (una
+  unidad por sucursal), así que varias filas comparten `stripe_subscription_id`.
+- **Quien abre las filas pagadas es el webhook** (`/api/stripe/webhook`,
+  `lib/cobros.ts`), con la llave de servicio (`lib/supabase/servicio.ts`):
+  volver de la página de pago no prueba nada. Comprueba la firma antes de leer,
+  y cada función es idempotente porque Stripe repite avisos.
+- Eventos: `checkout.session.completed` abre las suscripciones pagadas;
+  `invoice.paid` renueva y vuelve a publicar; `customer.subscription.updated`
+  (`unpaid`/`canceled`) y `.deleted` ocultan. Un `past_due` **no** oculta:
+  Stripe reintenta unos días.
+- La promoción con pago va como cargo único más `trial_end` en la medianoche
+  del día siguiente a `cubre_hasta`; al 100% no pasa por Stripe.
+- Un negocio no puede escribir `stripe_subscription_id` ni
+  `marcas.stripe_customer_id` (triggers de la 000056): solo el webhook, que
+  llega sin usuario.
+- **La cuenta de Stripe es la de Vórtice VR y la comparte con su web.** Todo lo
+  que crea la Guía lleva `metadata.app = "guia-del-cacao"` (`APP`) y el webhook
+  ignora lo demás. El de la web de Vórtice debe ignorar lo que traiga esa
+  etiqueta.
+- `vencer_pruebas()` sigue **sin programar**: hacerlo es el último paso al pasar
+  a cobro real, cuando ya se pueda pagar.

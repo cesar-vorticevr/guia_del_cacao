@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { perfilActual } from "@/lib/auth/sesion";
-import { miSucursal, misSucursales } from "@/lib/datos/sucursales";
+import { listarTiers, miSucursal, misSucursales } from "@/lib/datos/sucursales";
 import { generarSlug, normalizarCodigo } from "@/lib/tipos";
 import {
   ofertaDeFila,
@@ -15,6 +15,9 @@ import {
 import { esPasoDelAlta } from "@/lib/negocio/pasos";
 import { esEntidad } from "@/lib/entidades";
 import { procesarPago, proximoCobro } from "@/lib/pagos";
+import { crearPago, stripe } from "@/lib/stripe";
+import { crearClienteDeServicio } from "@/lib/supabase/servicio";
+import { origenDelSitio } from "@/lib/auth/sesion";
 import { revisarImagen } from "@/lib/imagenes";
 import { LIMITES, revisarLargo, TOPE_FOTOS } from "@/lib/limites";
 
@@ -309,6 +312,8 @@ export async function publicarSucursal(
     vuelve a fijar la base; aquí solo se cobra lo que ella va a guardar.
   */
   let pagoDeApertura: { referencia: string } | null = null;
+  // Con Stripe, la promoción se paga en su página después de publicar.
+  let cobrarEnStripe = false;
 
   if (oferta && promocionPara(tier, oferta)) {
     const monto = Math.round(Number(tier.precio_mensual) * (1 - oferta.descuento / 100));
@@ -316,6 +321,8 @@ export async function publicarSucursal(
     // Al 100% no hay nada que cobrar: el código lo regala.
     if (monto === 0) {
       pagoDeApertura = { referencia: `promocion-${oferta.codigo}` };
+    } else if (stripe()) {
+      cobrarEnStripe = true;
     } else {
       const cobro = await procesarPago({
         sucursalId: id,
@@ -388,6 +395,38 @@ export async function publicarSucursal(
   }
 
   revalidatePath("/negocio/panel");
+
+  /*
+    Con promoción y Stripe: el micrositio ya salió con su prueba normal, y
+    ahora se paga la promoción en la página de Stripe. Si se arrepiente ahí, se
+    queda con la prueba; si paga, el webhook la cambia por el plan pagado.
+  */
+  if (cobrarEnStripe && oferta) {
+    const [tiers, origen] = await Promise.all([listarTiers(), origenDelSitio()]);
+    const tierCompleto = tiers.find((t) => t.id === tier.id)!;
+    const { data: marca } = await crearClienteDeServicio()
+      .from("marcas")
+      .select("stripe_customer_id")
+      .eq("id", sucursal.marca_id)
+      .maybeSingle();
+
+    redirect(
+      await crearPago({
+        marcaId: sucursal.marca_id,
+        clienteStripe: (marca?.stripe_customer_id as string | null) ?? null,
+        correo: perfil.correo,
+        sucursalIds: [id],
+        tier: tierCompleto,
+        tiers,
+        periodo,
+        oferta,
+        convenioId,
+        exito: `${origen}/negocio/panel/sucursal/${id}?publicado=1&pago=listo`,
+        cancelado: `${origen}/negocio/panel/sucursal/${id}?publicado=1&pago=cancelado`,
+      }),
+    );
+  }
+
   redirect(`/negocio/panel/sucursal/${id}?publicado=1`);
 }
 

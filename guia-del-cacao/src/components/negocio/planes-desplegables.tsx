@@ -20,12 +20,18 @@ import type { Tier } from "@/lib/tipos";
  */
 export function PlanesDesplegables({
   tiers,
+  cobroReal = false,
+  porPagar = false,
   tierActual,
   siguiente,
   oferta = null,
   children,
 }: {
   tiers: Tier[];
+  /** Hay Stripe: el botón «Pagar ahora» cobra de verdad. */
+  cobroReal?: boolean;
+  /** Alguna sucursal todavía no paga con tarjeta. */
+  porPagar?: boolean;
   tierActual?: number;
   /** El convenio con el que entró, para enseñar sus precios. */
   oferta?: Oferta | null;
@@ -89,6 +95,8 @@ export function PlanesDesplegables({
             <FormularioCambiarPlan
               key={preseleccion ?? "actual"}
               tiers={tiers}
+              cobroReal={cobroReal}
+              porPagar={porPagar}
               tierActual={tierActual}
               preseleccion={preseleccion}
               oferta={oferta}

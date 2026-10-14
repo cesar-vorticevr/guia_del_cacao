@@ -1046,11 +1046,17 @@ function TarjetaDePlan({
 
 export function FormularioCambiarPlan({
   tiers,
+  cobroReal = false,
+  porPagar = false,
   tierActual,
   preseleccion,
   oferta = null,
 }: {
   tiers: Tier[];
+  /** Hay Stripe: «Pagar ahora» lleva a su página de pago. */
+  cobroReal?: boolean;
+  /** Alguna sucursal todavía no paga con tarjeta: se le ofrece pagar ya. */
+  porPagar?: boolean;
   tierActual?: number;
   /**
    * Con cuál abrir. Llegando desde "cámbiate a Pro" es Pro: quien tocó
@@ -1065,6 +1071,8 @@ export function FormularioCambiarPlan({
   const [periodo, setPeriodo] = useState<Periodo>("mensual");
   // Un código nuevo manda sobre el convenio con el que entró.
   const [codigoNuevo, setCodigoNuevo] = useState<Oferta | null>(null);
+  // Cuál de los dos botones se pulsó: «Cambiar de plan» o «Pagar ahora».
+  const [pagar, setPagar] = useState(false);
   // La promoción ya usada no se repite al cambiar de plan: su precio solo se
   // enseña con el código escrito otra vez.
   const vigente = codigoNuevo ?? (oferta?.planId ? null : oferta);
@@ -1072,6 +1080,7 @@ export function FormularioCambiarPlan({
   return (
     <form action={accion} className="grid gap-4">
       <input type="hidden" name="codigo_convenio" value={codigoNuevo?.codigo ?? ""} />
+      <input type="hidden" name="pagar" value={pagar ? "si" : ""} />
       <Resultado estado={estado} />
 
       <CodigoDeConvenio tiers={tiers} oferta={codigoNuevo} alCambiar={setCodigoNuevo} />
@@ -1087,11 +1096,37 @@ export function FormularioCambiarPlan({
         oferta={vigente}
       />
 
-      <BotonEnviar>
-        {codigoNuevo?.cubreHasta && codigoNuevo.descuento < 100
-          ? "Pagar y cambiar de plan"
-          : "Cambiar de plan"}
-      </BotonEnviar>
+      {cobroReal && porPagar && !(codigoNuevo?.cubreHasta) ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <button
+            type="submit"
+            onClick={() => setPagar(true)}
+            className="min-h-14 rounded-full bg-selva px-6 font-display text-lg font-semibold text-crema"
+          >
+            Pagar ahora con tarjeta
+          </button>
+          <button
+            type="submit"
+            onClick={() => setPagar(false)}
+            className="min-h-14 rounded-full border-2 border-selva/25 bg-white px-6 font-bold text-selva-2"
+          >
+            Solo cambiar de plan
+          </button>
+          <p className="text-sm text-cacao/70 sm:col-span-2">
+            El pago se hace en la página segura de Stripe; tu tarjeta no pasa
+            por la Guía. Mientras estés en prueba, cambiar de plan no cobra
+            nada.
+          </p>
+        </div>
+      ) : (
+        <BotonEnviar>
+          {codigoNuevo?.cubreHasta && codigoNuevo.descuento < 100
+            ? cobroReal
+              ? "Ir a pagar con tarjeta"
+              : "Pagar y cambiar de plan"
+            : "Cambiar de plan"}
+        </BotonEnviar>
+      )}
     </form>
   );
 }

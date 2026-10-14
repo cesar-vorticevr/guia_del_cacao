@@ -285,12 +285,22 @@ export default function Terminos() {
           </p>
         </>
       ) : (
-        <p className="mt-3 text-cacao">
-          El plan se cobra por mes y por sucursal, y se renueva solo hasta que lo
-          canceles. Puedes cancelar cuando quieras desde tu panel: el micrositio
-          sigue publicado hasta el final del periodo ya pagado, y no se devuelven
-          los días no usados del mes en curso.
-        </p>
+        <>
+          <p className="mt-3 text-cacao">
+            El plan se cobra por adelantado, por sucursal, cada mes o cada año
+            según elijas, y se renueva solo hasta que lo canceles. Se paga con
+            tarjeta a través de{" "}
+            <strong className="text-selva-2">Stripe</strong>: la tarjeta la
+            captura y la guarda Stripe, nunca la Guía del Cacao.
+          </p>
+          <p className="mt-3 text-cacao">
+            Puedes cancelar cuando quieras desde tu cuenta: en ese momento tu
+            micrositio deja de aparecer en el directorio y no se te vuelve a
+            cobrar. No se devuelve lo ya pagado. Si un cobro no pasa, Stripe lo
+            reintenta unos días; si no se logra, tu micrositio sale del
+            directorio hasta que pagues, sin que se borre nada.
+          </p>
+        </>
       )}
 
       <h3 className="mt-6 font-display text-xl">Si bajas o cancelas el plan</h3>

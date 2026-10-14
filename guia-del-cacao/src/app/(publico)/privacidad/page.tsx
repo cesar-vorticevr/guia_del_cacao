@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { CORREO_DE_CONTACTO } from "@/components/publico/pie-de-pagina";
 import { ACTUALIZADO, DOMICILIO, RESPONSABLE } from "@/lib/legal";
+import { PAGO_SIMULADO } from "@/lib/pagos";
 
 export const metadata: Metadata = {
   title: "Aviso de Privacidad · Guía del Cacao",
@@ -19,8 +20,9 @@ export const metadata: Metadata = {
  * Tres cosas que se dicen porque son ciertas y se pueden comprobar en el código,
  * y que hay que **corregir aquí el día que dejen de serlo**:
  *
- * - No hay pasarela de pago, así que no se tratan datos bancarios. Se verificó
- *   que no existe Stripe, Conekta ni ninguna otra en el repositorio.
+ * - Los datos bancarios no pasan por la Guía: sin llaves de Stripe no hay pago
+ *   en línea, y con ellas la tarjeta la captura Stripe Checkout en su página.
+ *   El texto se pinta desde `PAGO_SIMULADO`, igual que en las condiciones.
  * - La única medición es la propia (migración 000052, `lib/actividad.ts`):
  *   conteos sin nada que diga quién, sin cookies y sin terceros. No hay Google
  *   Analytics ni Vercel Analytics. Si `actividad` gana una columna que
@@ -115,9 +117,10 @@ export default function Privacidad() {
       </h2>
       <ul className="mt-3 grid gap-3 text-cacao">
         <li>
-          <strong className="text-selva-2">Datos bancarios: ninguno.</strong> No
-          hay pago en línea en la plataforma, así que aquí no se captura ni se
-          guarda ningún número de tarjeta ni de cuenta.
+          <strong className="text-selva-2">Datos bancarios: ninguno.</strong>{" "}
+          {PAGO_SIMULADO
+            ? "No hay pago en línea en la plataforma, así que aquí no se captura ni se guarda ningún número de tarjeta ni de cuenta."
+            : "Los negocios que pagan un plan lo hacen en la página de Stripe: la tarjeta la captura y la guarda Stripe, y la Guía del Cacao solo recibe la confirmación del pago, nunca el número de tarjeta."}
         </li>
         <li>
           <strong className="text-selva-2">
@@ -193,7 +196,7 @@ export default function Privacidad() {
       </h2>
       <p className="mt-3 text-cacao">
         No compartimos tus datos con nadie que no haga falta para operar el
-        sitio. Los que sí hacen falta son tres proveedores de infraestructura,
+        sitio. Los que sí hacen falta son {PAGO_SIMULADO ? "tres" : "cuatro"} proveedores de infraestructura,
         que los tratan por encargo nuestro y no para sus propios fines:
       </p>
       <ul className="mt-3 grid gap-3 text-cacao">
@@ -209,6 +212,13 @@ export default function Privacidad() {
           <strong className="text-selva-2">Google</strong> — solo si eliges
           entrar con tu cuenta de Google, y solo para identificarte.
         </li>
+        {!PAGO_SIMULADO && (
+          <li>
+            <strong className="text-selva-2">Stripe</strong> — cobra los planes
+            de los negocios con tarjeta. Recibe el correo de la cuenta y los
+            datos de la tarjeta directamente de quien paga.
+          </li>
+        )}
       </ul>
       <p className="mt-3 text-cacao">
         <strong className="text-selva-2">

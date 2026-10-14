@@ -15,6 +15,7 @@ import {
   suscripcionDeMarca,
 } from "@/lib/datos/sucursales";
 import { PAGO_SIMULADO } from "@/lib/pagos";
+import { abrirPortalDePago } from "@/lib/negocio/plan";
 import { pesos } from "@/lib/tipos";
 import { textoDePrecio, fechaDeOferta, type Periodo } from "@/lib/precios";
 
@@ -50,9 +51,9 @@ function diasDePrueba(fin: string) {
 export default async function CuentaNegocio({
   searchParams,
 }: {
-  searchParams: Promise<{ ver?: string }>;
+  searchParams: Promise<{ ver?: string; pago?: string }>;
 }) {
-  const { ver } = await searchParams;
+  const { ver, pago } = await searchParams;
   const perfil = await perfilActual();
 
   if (!perfil) redirect("/login");
@@ -61,7 +62,7 @@ export default async function CuentaNegocio({
   const supabase = await crearClienteServidor();
   const { data: marca } = await supabase
     .from("marcas")
-    .select("id, nombre_comercial")
+    .select("id, nombre_comercial, stripe_customer_id")
     .eq("perfil_id", perfil.id)
     .limit(1)
     .maybeSingle();
@@ -110,6 +111,24 @@ export default async function CuentaNegocio({
 
       {seccion === "plan" && (
         <div className="grid gap-8">
+          {/* De vuelta de la página de Stripe. Lo que cambia el plan es el
+              webhook, que llega unos segundos después: por eso «en un momento». */}
+          {pago === "listo" && (
+            <p
+              role="status"
+              className="max-w-2xl rounded-3xl border-2 border-lima/60 bg-lima/20 p-5 text-cacao"
+            >
+              <strong className="block text-selva-2">¡Gracias, recibimos tu pago!</strong>
+              Tu plan se actualiza aquí en un momento. Si todavía no lo ves,
+              recarga la página. Stripe te mandó el recibo por correo.
+            </p>
+          )}
+          {pago === "cancelado" && (
+            <p className="max-w-2xl rounded-3xl border-2 border-mango/50 bg-mango/15 p-5 text-cacao">
+              No se hizo ningún cargo. Tu plan sigue como estaba.
+            </p>
+          )}
+
           {PAGO_SIMULADO && (
             <p className="max-w-2xl rounded-3xl border-2 border-mango/50 bg-mango/15 p-5 text-cacao">
               <strong>Cobro simulado.</strong> Todavía no hay pasarela
@@ -212,8 +231,21 @@ export default async function CuentaNegocio({
             </p>
           )}
 
+          {marca.stripe_customer_id && !PAGO_SIMULADO && (
+            <form action={abrirPortalDePago} className="max-w-2xl">
+              <button
+                type="submit"
+                className="min-h-11 rounded-full border-2 border-selva/25 bg-white px-5 font-bold text-selva-2"
+              >
+                Cambiar mi tarjeta o ver mis recibos
+              </button>
+            </form>
+          )}
+
           <PlanesDesplegables
             tiers={tiers}
+            cobroReal={!PAGO_SIMULADO}
+            porPagar={suscripcion?.porPagar ?? false}
             tierActual={suscripcion?.tier_id}
             oferta={suscripcion?.convenio ?? null}
             siguiente={

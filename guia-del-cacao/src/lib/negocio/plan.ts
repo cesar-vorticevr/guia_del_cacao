@@ -13,6 +13,17 @@ import {
   type Oferta,
 } from "@/lib/precios";
 import { normalizarCodigo } from "@/lib/tipos";
+import { origenDelSitio } from "@/lib/auth/sesion";
+import { listarTiers } from "@/lib/datos/sucursales";
+import { crearClienteDeServicio } from "@/lib/supabase/servicio";
+import { esPlanGratis } from "@/lib/precios";
+import {
+  abrirPortalDeStripe,
+  cambiarPrecio,
+  cancelarEnStripe,
+  crearPago,
+  stripe,
+} from "@/lib/stripe";
 
 export type EstadoPlan = { error?: string; ok?: string };
 
@@ -62,7 +73,7 @@ async function suscripcionesAbiertas(marcaId: string) {
 
   const { data } = await supabase
     .from("suscripciones")
-    .select("id, sucursal_id, tier_id, monto_mensual, estado, fecha_fin_trial, convenio_id, periodo")
+    .select("id, sucursal_id, tier_id, monto_mensual, estado, fecha_fin_trial, convenio_id, periodo, stripe_subscription_id, fecha_proximo_cobro")
     .in("sucursal_id", ids)
     .in("estado", ["trial", "activo", "pausado_por_pago"]);
 
@@ -138,11 +149,29 @@ export async function contratarPlan(
     };
   }
 
+  // «Pagar ahora» con el mismo plan de la prueba no es «ya estás en ese plan».
+  const pagar = datos.get("pagar")?.toString() === "si";
+
   if (
     !promocion &&
+    !pagar &&
     abiertas.every((s) => s.tier_id === tier.id && s.periodo === periodo && s.estado !== "pausado_por_pago")
   ) {
     return { error: "Ya estás en ese plan." };
+  }
+
+  // Con Stripe conectado, el cobro es de verdad y va por su propio camino. Lo
+  // de abajo es el cobro simulado, para cuando no hay llaves (local, pruebas).
+  if (stripe() && !(promocion && oferta && oferta.descuento >= 100)) {
+    return contratarConStripe({
+      marcaId: marca.id,
+      tierId: tier.id,
+      periodo,
+      abiertas,
+      oferta: promocion ? oferta : null,
+      convenioNuevo,
+      pagar,
+    });
   }
 
   /*
@@ -259,6 +288,163 @@ export async function contratarPlan(
   };
 }
 
+type Abierta = Awaited<ReturnType<typeof suscripcionesAbiertas>>[number];
+
+/**
+ * Contratar o cambiar de plan con Stripe.
+ *
+ * Tres caminos, según dónde está cada sucursal:
+ *
+ * - **Pasarse a Gratis**: se da de baja en Stripe y queda en Gratis, con sus
+ *   treinta días.
+ * - **Las que ya pagan con tarjeta**: se les cambia el precio en Stripe, que
+ *   prorratea la diferencia. No hay que volver a pagar.
+ * - **Las que no pagan con tarjeta** (en prueba, ocultas por falta de pago o
+ *   pagadas a mano antes de Stripe): si toca cobrarles —eligió «Pagar ahora»,
+ *   trae promoción o ya no están en prueba— van a la página de pago de Stripe.
+ *   Si solo cambian de plan durante la prueba, se cambia y no se cobra nada.
+ *
+ * Abrir y cerrar filas con `stripe_subscription_id` lo hace el cliente de
+ * servicio: el negocio no puede escribir esa columna (migración 000056).
+ */
+async function contratarConStripe({
+  marcaId,
+  tierId,
+  periodo,
+  abiertas,
+  oferta,
+  convenioNuevo,
+  pagar,
+}: {
+  marcaId: string;
+  tierId: number;
+  periodo: "mensual" | "anual";
+  abiertas: Abierta[];
+  oferta: Oferta | null;
+  convenioNuevo: string | null;
+  pagar: boolean;
+}): Promise<EstadoPlan> {
+  const tiers = await listarTiers();
+  const tier = tiers.find((t) => t.id === tierId);
+  if (!tier) return { error: "Ese plan no existe." };
+
+  const servicio = crearClienteDeServicio();
+  const conTarjeta = abiertas.filter((s) => s.stripe_subscription_id);
+  const sinTarjeta = abiertas.filter((s) => !s.stripe_subscription_id);
+
+  // Cierra unas filas y abre otras en su lugar, como siempre: el historial
+  // guarda qué se pagó y hasta cuándo.
+  async function reabrir(filas: Abierta[], cambios: (fila: Abierta) => Record<string, unknown>) {
+    if (filas.length === 0) return;
+    await servicio.from("suscripciones").update({ estado: "cancelado" }).in("id", filas.map((f) => f.id));
+    await servicio.from("suscripciones").insert(
+      filas.map((fila) => ({
+        sucursal_id: fila.sucursal_id,
+        tier_id: tier!.id,
+        monto_mensual: 0,
+        periodo,
+        convenio_id: convenioNuevo ?? fila.convenio_id,
+        fecha_proximo_cobro: proximoCobro().toISOString(),
+        ...cambios(fila),
+      })),
+    );
+    await servicio.from("sucursales").update({ tier_id: tier!.id }).in("id", filas.map((f) => f.sucursal_id));
+  }
+
+  // 1. A Gratis: se deja de cobrar.
+  if (esPlanGratis(tier, tiers)) {
+    await cancelarEnStripe(conTarjeta.map((s) => s.stripe_subscription_id!));
+    await reabrir(abiertas, (fila) => ({
+      estado: "trial",
+      fecha_fin_trial: fila.estado === "trial" ? fila.fecha_fin_trial : null,
+    }));
+    revalidatePath("/negocio/panel/cuenta");
+    return { ok: `Listo, tus micrositios están en ${tier.nombre}. Ya no se te cobrará.` };
+  }
+
+  if (oferta && conTarjeta.length > 0) {
+    return {
+      error:
+        "La promoción es para quien todavía no paga con tarjeta. Tu plan actual sigue igual.",
+    };
+  }
+
+  // 2. Las que ya pagan: Stripe cambia el precio y prorratea.
+  for (const id of new Set(conTarjeta.map((s) => s.stripe_subscription_id!))) {
+    await cambiarPrecio(id, tier, tiers, periodo, null);
+  }
+  await reabrir(conTarjeta, (fila) => ({
+    estado: "activo",
+    // El siguiente cobro lo marca Stripe y no cambia por cambiar de plan.
+    fecha_proximo_cobro: fila.fecha_proximo_cobro,
+    stripe_subscription_id: fila.stripe_subscription_id,
+    metodo_pago_stub: fila.stripe_subscription_id,
+  }));
+
+  // 3. Las que no pagan con tarjeta.
+  const porCobrar = sinTarjeta.filter((s) => pagar || oferta || s.estado !== "trial");
+  const soloCambian = sinTarjeta.filter((s) => !porCobrar.includes(s));
+
+  await reabrir(soloCambian, (fila) => ({ estado: "trial", fecha_fin_trial: fila.fecha_fin_trial }));
+
+  if (porCobrar.length > 0) {
+    const perfil = await perfilActual();
+    const { data: marca } = await servicio
+      .from("marcas")
+      .select("stripe_customer_id")
+      .eq("id", marcaId)
+      .maybeSingle();
+    const origen = await origenDelSitio();
+
+    const url = await crearPago({
+      marcaId,
+      clienteStripe: (marca?.stripe_customer_id as string | null) ?? null,
+      correo: perfil!.correo,
+      sucursalIds: porCobrar.map((s) => s.sucursal_id),
+      tier,
+      tiers,
+      periodo,
+      oferta,
+      convenioId: convenioNuevo,
+      exito: `${origen}/negocio/panel/cuenta?pago=listo`,
+      cancelado: `${origen}/negocio/panel/cuenta?pago=cancelado`,
+    });
+
+    // `redirect` lanza: va fuera de cualquier try.
+    redirect(url);
+  }
+
+  revalidatePath("/negocio/panel");
+  revalidatePath("/negocio/panel/cuenta");
+
+  return {
+    ok:
+      conTarjeta.length > 0
+        ? `Listo, tus micrositios están en ${tier.nombre}. La diferencia se ajusta en tu siguiente cobro.`
+        : `Listo, tu prueba sigue en el plan ${tier.nombre}. No se te cobró nada.`,
+  };
+}
+
+/**
+ * El portal de Stripe: cambiar la tarjeta, ver recibos. Solo para quien ya
+ * pagó alguna vez con tarjeta.
+ */
+export async function abrirPortalDePago() {
+  const marca = await miMarca();
+  const servicio = crearClienteDeServicio();
+
+  const { data } = await servicio
+    .from("marcas")
+    .select("stripe_customer_id")
+    .eq("id", marca.id)
+    .maybeSingle();
+
+  if (!data?.stripe_customer_id || !stripe()) redirect("/negocio/panel/cuenta");
+
+  const origen = await origenDelSitio();
+  redirect(await abrirPortalDeStripe(data.stripe_customer_id as string, `${origen}/negocio/panel/cuenta`));
+}
+
 /**
  * Da de baja el plan.
  *
@@ -279,6 +465,11 @@ export async function cancelarPlan(
   const supabase = await crearClienteServidor();
 
   const abiertas = await suscripcionesAbiertas(marca.id);
+
+  // Primero Stripe: lo que importa es que no se vuelva a cobrar.
+  await cancelarEnStripe(
+    abiertas.flatMap((s) => (s.stripe_subscription_id ? [s.stripe_subscription_id] : [])),
+  );
 
   const { error } = await supabase
     .from("suscripciones")

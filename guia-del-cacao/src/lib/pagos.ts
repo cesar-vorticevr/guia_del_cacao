@@ -1,6 +1,6 @@
 /**
  * ─────────────────────────────────────────────────────────────────────────────
- *  PENDIENTE DE CONECTAR — cobro simulado
+ *  Cobro simulado — solo cuando no hay llaves de Stripe
  * ─────────────────────────────────────────────────────────────────────────────
  *
  * Todavía no hay cuenta de pasarela (spec §4). Este archivo es el único punto
@@ -43,5 +43,11 @@ export async function procesarPago(datos: DatosCobro): Promise<ResultadoPago> {
   };
 }
 
-/** true mientras el cobro sea de mentiras, para poder avisarlo en pantalla. */
-export const PAGO_SIMULADO = true;
+/**
+ * true mientras el cobro sea de mentiras, para poder avisarlo en pantalla.
+ *
+ * Desde la migración 000056 el cobro de verdad es Stripe (`lib/stripe.ts`):
+ * con `STRIPE_SECRET_KEY` puesta, esto es false y lo de arriba ya no se usa
+ * salvo en una promoción al 100%, que no cobra nada.
+ */
+export const PAGO_SIMULADO = !process.env.STRIPE_SECRET_KEY;

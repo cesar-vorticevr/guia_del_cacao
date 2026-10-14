@@ -223,7 +223,7 @@ export async function suscripcionDeMarca(marcaId: string) {
 
   const { data } = await supabase
     .from("suscripciones")
-    .select("id, sucursal_id, tier_id, monto_mensual, estado, fecha_fin_trial, fecha_proximo_cobro, convenio_id, periodo, monto_por_cobro, pago_de_apertura")
+    .select("id, sucursal_id, tier_id, monto_mensual, estado, fecha_fin_trial, fecha_proximo_cobro, convenio_id, periodo, monto_por_cobro, pago_de_apertura, stripe_subscription_id")
     .in("sucursal_id", ids)
     .in("estado", ["trial", "activo", "pausado_por_pago"])
     .order("fecha_inicio");
@@ -246,6 +246,8 @@ export async function suscripcionDeMarca(marcaId: string) {
       const pago = abiertas.find((s) => s.pago_de_apertura !== null)?.pago_de_apertura;
       return pago === undefined || pago === null ? null : Number(pago);
     })(),
+    /** Alguna sucursal todavía no paga con tarjeta: se le ofrece pagar. */
+    porPagar: abiertas.some((s) => !s.stripe_subscription_id),
     /** Si alguno sigue en periodo de prueba. */
     enPrueba: abiertas.some((s) => s.estado === "trial"),
     /** Cuándo termina la prueba más próxima, si hay alguna corriendo. */
