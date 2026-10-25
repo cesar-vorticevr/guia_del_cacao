@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { FormularioTema } from "@/components/publico/foro";
 import { MuroComunidad } from "@/components/publico/muro-comunidad";
 import { MiPublicacion } from "@/components/publico/mi-publicacion";
-import { origenDelSitio, perfilActual } from "@/lib/auth/sesion";
+import { perfilActual } from "@/lib/auth/sesion";
 import { muroDeComunidad } from "@/lib/datos/comunidad";
 import { misSucursales } from "@/lib/datos/sucursales";
 import { FUNCIONES } from "@/lib/funciones";
@@ -25,7 +25,7 @@ export const metadata: Metadata = { title: "Comunidad · Guía del Cacao" };
 export default async function Comunidad() {
   if (!FUNCIONES.comunidad) redirect("/directorio");
 
-  const [perfil, origen] = await Promise.all([perfilActual(), origenDelSitio()]);
+  const perfil = await perfilActual();
 
   // Solo el primer tramo. Los siguientes los pide el muro al ir bajando.
   const primerTramo = await muroDeComunidad(perfil?.id);
@@ -80,19 +80,20 @@ export default async function Comunidad() {
       */}
 
       {/*
-        Todo el muro vive en una columna angosta y centrada, no a los 1180 px
-        del contenedor. Un renglón de texto a lo ancho de una pantalla de
-        escritorio se pierde al saltar de línea, y una publicación estirada a
-        1180 px deja de parecer una publicación. 40rem es la medida de una
-        columna de lectura cómoda, y es la misma que usa cualquier muro.
+        La comunidad usa el mismo ancho que Explorar y Eventos, con el título
+        igual y el muro en tarjetas. Vivió en una columna de lectura de 40rem, y
+        entre dos secciones a 1180 px se leía como una página encogida.
+
+        Lo que se escribe sí se queda acotado (`max-w-2xl`): un formulario a
+        1180 px es un renglón que no se termina de leer.
       */}
-      <div className="mx-auto w-full max-w-[40rem]">
-        <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 pt-7 pb-4">
-          <h1 className="font-display text-2xl">Comunidad</h1>
-          <p className="text-sm text-cacao/80">
-            Publica lo tuyo y comenta lo de los demás.
-          </p>
-        </header>
+      <div>
+        <h1 className="pt-8 font-display text-3xl">Comunidad</h1>
+        <p className="mt-2 mb-5 max-w-prose text-cacao">
+          Publica lo tuyo y comenta lo de los demás.
+        </p>
+
+        <div className="max-w-2xl">
 
         {!perfil ? (
           <p className="rounded-2xl border-2 border-ink/10 bg-white p-4 text-sm text-cacao shadow-dura-sm">
@@ -138,13 +139,13 @@ export default async function Comunidad() {
             <MiPublicacion entrada={deHoy} />
           </section>
         )}
+        </div>
 
         <section className="pt-5">
           <MuroComunidad
             iniciales={primerTramo.entradas}
             cursorInicial={primerTramo.siguiente}
             haySesion={Boolean(perfil)}
-            origen={origen}
           />
         </section>
       </div>
