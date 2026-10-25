@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PortadaPublicacion } from "@/components/publico/portada-publicacion";
+import { FotosDeTarjeta } from "@/components/publico/fotos-de-tarjeta";
 import { MeGusta } from "@/components/publico/me-gusta";
 import type { Entrada } from "@/lib/datos/comunidad";
 
@@ -23,20 +23,22 @@ export function TarjetaEntrada({
 }) {
   return (
     <li className="tarjeta-magica group flex h-full flex-col overflow-hidden rounded-3xl border-2 border-ink/10 bg-white shadow-dura">
+      {/*
+        La foto en 4:3 y fuera del flujo, como en el directorio y el catálogo:
+        con `h-full` en el flujo, una foto alta estira su caja y las tarjetas
+        de la fila dejan de alinearse. Va fuera del enlace del texto porque
+        lleva sus propias flechas para pasar de una foto a otra.
+      */}
+      <FotosDeTarjeta
+        id={entrada.id}
+        href={entrada.href}
+        titulo={entrada.titulo}
+        fotos={entrada.rutas.flatMap((ruta) =>
+          entrada.urlDeFoto[ruta] ? [{ ruta, url: entrada.urlDeFoto[ruta] }] : [],
+        )}
+      />
+
       <Link href={entrada.href} className="flex flex-1 flex-col">
-        {/*
-          La foto en 4:3 y fuera del flujo, como en el directorio y el catálogo:
-          con `h-full` en el flujo, una foto alta estira su caja y las tarjetas
-          de la fila dejan de alinearse.
-        */}
-        <span className="relative block aspect-[4/3] w-full shrink-0 overflow-hidden bg-crema-2">
-          <PortadaPublicacion
-            id={entrada.id}
-            foto={entrada.imagen}
-            titulo={entrada.titulo}
-            className="absolute inset-0 size-full"
-          />
-        </span>
 
         <div className="flex flex-1 flex-col gap-1 p-4">
           {/*
