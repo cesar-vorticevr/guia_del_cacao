@@ -1018,6 +1018,35 @@ quince dias de prueba que arrancan al aprobarla. Cada regla tiene detras un
 trigger o una politica; si alguna cambia en la base, estos textos se quedan
 mintiendo.
 
+## La identidad visual: selva de noche
+
+Desde octubre de 2026 el sitio público (`app/(publico)`) y el acceso
+(`app/(auth)`) van de noche: una selva de cuento con luciérnagas, hojas que
+caen y oro. El panel del negocio y el del administrador **siguen en crema** a
+propósito: son pantallas de trabajo.
+
+- **Tipografía:** *Fraunces* para títulos (serif suave, de libro ilustrado; la
+  palabra clave va en itálica dorada con `texto-oro`) y *Plus Jakarta Sans*
+  para el texto. Sustituyeron a Fredoka y Nunito, que hacían que la guía se
+  leyera infantil.
+- **`.noche` traduce los colores, los componentes no cambian.** Los
+  componentes siguen escritos en crema (`bg-white`, `text-cacao`,
+  `border-ink/10`) y las reglas de `.noche` en `globals.css` —fuera de capa,
+  para ganarle a Tailwind— los pasan a cristal oscuro, crema y oro. Por eso
+  el mismo componente sale de noche en el sitio y de día en el panel. Los
+  campos de texto se quedan blancos a propósito. Un componente nuevo no
+  necesita nada especial; si algo sale ilegible de noche, se ajusta ahí.
+- **`CieloMagico`** es el fondo: va en el `main` del layout público y en el
+  de acceso. Su lienzo es `sticky` del alto de la pantalla, así que acompaña
+  todo el scroll sin pintar una página entera. La caja recorta con
+  `overflow-clip` y no `hidden`: `hidden` rompe el `sticky`.
+- **Todo lo que se mueve es lento** y se apaga con «reducir movimiento»: el
+  cielo, el polvo de hada al hacer clic (`polvo-de-hada.tsx`, en el layout
+  raíz) y la aparición de las tarjetas (`magia-al-aparecer.tsx`). Una
+  tarjeta aparece con magia con solo llevar la clase `tarjeta-magica`.
+- **`marco-brillo`** es el borde de luz que gira en los buscadores; el
+  `::before` de `tarjeta-magica` es el mismo anillo al pasar el cursor.
+
 ## El fondo de cacao
 
 Ramas, hojas y mazorcas que se desplazan a distinta velocidad al hacer scroll.
@@ -1026,10 +1055,10 @@ Viven en `components/publico/fondo-cacao.tsx` (mira qué PNG existen en
 ilustraciones está en la raíz del repo: `guia-de-estilo-ilustraciones.pdf` y
 `prompts-imagenes-parallax.md`.
 
-**Ya no acompaña a todo el sitio.** Estuvo detrás de cada página pública y se
-quitó del layout: competía con lo que se venía a leer, y la portada se apoya en
-el aire. Hoy se pide donde hace falta, y eso es **una sola franja** — la sección
-"En el directorio" de la portada.
+**Hoy no se usa en ninguna página.** La última franja que lo pedía, "En el
+directorio" de la portada, pasó a la selva de noche (ver arriba), donde las
+hojas las pinta `CieloMagico`. El componente se conserva por si se vuelve a
+querer una franja con las ilustraciones.
 
 De ahí la prop `variante`:
 

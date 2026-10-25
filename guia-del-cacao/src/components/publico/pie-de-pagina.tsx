@@ -84,15 +84,16 @@ export async function PieDePagina() {
     : null;
 
   return (
-    <footer className="relative z-10 mt-16">
+    <footer className="pie-noche relative z-10 pt-16">
       {invitacion && (
         <div className="mx-auto w-[92vw] max-w-[1180px]">
-          <section className="rounded-[2rem] border-2 border-ink/10 bg-mango px-6 py-9 text-center shadow-dura sm:px-10 sm:py-11">
-            <h2 className="font-display text-2xl text-ink sm:text-3xl">
+          <section className="relative overflow-hidden rounded-[2rem] border border-mango/30 bg-white/5 px-6 py-10 text-center shadow-[0_0_60px_rgb(255_183_3/0.12)] backdrop-blur-md sm:px-10 sm:py-14">
+            <p className="antetitulo">La guía es de todos</p>
+            <h2 className="mt-3 font-display text-3xl font-medium tracking-tight text-crema sm:text-4xl">
               {invitacion.titulo}
             </h2>
 
-            <p className="mx-auto mt-3 max-w-xl text-pretty text-cacao">
+            <p className="mx-auto mt-3 max-w-xl text-pretty text-crema/70">
               {invitacion.texto}
             </p>
 
@@ -101,10 +102,10 @@ export async function PieDePagina() {
                 <Link
                   key={boton.href}
                   href={boton.href}
-                  className={`inline-flex min-h-12 items-center rounded-full px-6 py-3 font-bold shadow-dura-sm transition-transform active:translate-y-0.5 ${
+                  className={`inline-flex min-h-12 items-center rounded-full px-6 py-3 font-bold transition-colors ${
                     boton.principal
-                      ? "bg-selva text-crema"
-                      : "border-2 border-ink/15 bg-crema text-selva-2"
+                      ? "boton-oro brillo text-ink"
+                      : "border border-mango/40 text-crema hover:border-mango hover:text-mango"
                   }`}
                 >
                   {boton.texto}
@@ -116,15 +117,16 @@ export async function PieDePagina() {
       )}
 
       {/*
-        La franja de información es lo último de la página y por eso va a ancho
-        completo y en verde: cierra el sitio con el color del encabezado, de modo
-        que el contenido queda entre los dos.
+        La franja de información es lo último de la página: va sobre la misma
+        noche que el resto del pie, separada solo por una línea dorada, y cierra
+        el sitio con el tono de la barra de arriba, de modo que el contenido
+        queda entre los dos.
 
         El respiro de abajo en celular esquiva la barra fija del pulgar, que si
         no tapa la última línea.
       */}
       <div
-        className={`bg-selva-2 py-10 text-crema ${invitacion ? "mt-12" : ""}`}
+        className={`border-t border-mango/15 py-10 text-crema ${invitacion ? "mt-14" : ""}`}
       >
         <div className="mx-auto w-[92vw] max-w-[1180px] pb-24 sm:pb-0">
           <nav aria-label="Información del sitio">
@@ -133,7 +135,7 @@ export async function PieDePagina() {
                 <li key={enlace.href}>
                   <Link
                     href={enlace.href}
-                    className="underline-offset-4 hover:underline"
+                    className="underline-offset-4 transition-colors hover:text-mango hover:underline"
                   >
                     {enlace.texto}
                   </Link>
@@ -164,7 +166,7 @@ export async function PieDePagina() {
             Guía del Cacao · El cacao de México, en un solo lugar
           </p>
 
-          {/* Quién la hace. El logo es el blanco: el pie va sobre verde. */}
+          {/* Quién la hace. El logo es el blanco: el pie va sobre la noche. */}
           <p className="mx-auto mt-4 flex w-fit items-center gap-2 text-xs text-crema/60">
             Desarrollada por
             <Image

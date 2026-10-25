@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logotipo } from "@/components/marca";
+import { CieloMagico } from "@/components/publico/cielo-magico";
 import { BarraInferior } from "@/components/publico/barra-inferior";
 import { EncabezadoQueVuelve } from "@/components/publico/encabezado-que-vuelve";
 import { MedirSitio } from "@/components/publico/medir";
@@ -43,7 +44,7 @@ export default async function LayoutPublico({
   return (
     <>
       <EncabezadoQueVuelve>
-      <header className="bg-selva py-3.5 text-crema">
+      <header className="barra-cristal flex h-16 items-center text-crema">
         <div className="mx-auto flex w-[92vw] max-w-[1180px] items-center justify-between gap-4">
           <Logotipo />
 
@@ -52,7 +53,7 @@ export default async function LayoutPublico({
               <Link
                 key={seccion.href}
                 href={seccion.href}
-                className="rounded-full px-3 py-2 font-bold transition-colors hover:bg-selva-2"
+                className="rounded-full px-3 py-2 font-bold transition-colors hover:bg-white/10 hover:text-mango"
               >
                 {seccion.texto}
               </Link>
@@ -64,18 +65,18 @@ export default async function LayoutPublico({
           ) : perfil ? (
             <Link
               href={destinoSegunRol(perfil)}
-              className="min-h-10 rounded-full bg-mango px-4 py-2 text-sm font-bold text-ink"
+              className="boton-oro brillo min-h-10 whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold text-ink"
             >
               Mi cuenta
             </Link>
           ) : (
             <div className="flex items-center gap-2">
-              <Link href="/login" className="px-2 py-2 text-sm font-bold">
+              <Link href="/login" className="hidden whitespace-nowrap px-2 py-2 text-sm font-bold transition-colors hover:text-mango sm:inline">
                 Entrar
               </Link>
               <Link
                 href="/registro"
-                className="min-h-10 rounded-full bg-mango px-4 py-2 text-sm font-bold text-ink"
+                className="boton-oro brillo min-h-10 whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold text-ink"
               >
                 Crear cuenta
               </Link>
@@ -94,7 +95,14 @@ export default async function LayoutPublico({
         El respiro de abajo lo pone ahora el pie, que es quien toca la barra fija
         del pulgar. Aquí solo queda la separación normal del contenido.
       */}
-      <main className="relative z-10 mx-auto w-[92vw] max-w-[1180px] pb-10">
+      <main className="noche relative z-10 mx-auto w-[92vw] max-w-[1180px] pb-24">
+        {/*
+          La selva de noche va detrás de todo el sitio público, no solo de la
+          portada: pasar de la portada al directorio o a un micrositio no debe
+          ser cambiar de mundo. Los colores de crema que traen los componentes
+          los traduce `.noche` en globals.css.
+        */}
+        <CieloMagico />
         {children}
       </main>
 

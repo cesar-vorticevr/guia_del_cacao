@@ -56,7 +56,7 @@ export default async function CompletarMarca() {
 
   return (
     <>
-      <header className="bg-selva py-3.5">
+      <header className="barra-cristal flex h-16 items-center">
         <div className="mx-auto w-[92vw] max-w-[1180px]">
           <Logotipo />
         </div>

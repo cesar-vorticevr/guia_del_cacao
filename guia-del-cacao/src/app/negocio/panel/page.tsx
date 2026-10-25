@@ -243,7 +243,7 @@ export default async function PanelNegocio({
                 return (
                   <li
                     key={sucursal.id}
-                    className="flex h-full flex-col overflow-hidden rounded-3xl border-2 border-ink/10 bg-white shadow-dura"
+                    className="tarjeta-magica flex h-full flex-col overflow-hidden rounded-3xl border-2 border-ink/10 bg-white shadow-dura"
                   >
                     {/*
                       La portada va absoluta dentro de la caja 4:3, no en el

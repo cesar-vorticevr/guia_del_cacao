@@ -33,7 +33,7 @@ export function BarraSesion({
 }) {
   return (
     <EncabezadoQueVuelve>
-      <header className="bg-selva py-3.5 text-crema">
+      <header className="barra-cristal flex h-16 items-center text-crema">
       <div className="mx-auto flex w-[92vw] max-w-[1180px] items-center justify-between gap-4">
         <Logotipo />
 
@@ -42,7 +42,7 @@ export function BarraSesion({
             <Link
               key={seccion.href}
               href={seccion.href}
-              className="rounded-full px-3 py-2 font-bold transition-colors hover:bg-selva-2"
+              className="rounded-full px-3 py-2 font-bold transition-colors hover:bg-white/10 hover:text-mango"
             >
               {seccion.texto}
             </Link>
@@ -51,7 +51,7 @@ export function BarraSesion({
 
         <Link
           href={cuenta}
-          className="min-h-10 rounded-full border-2 border-crema/30 px-4 py-2 text-sm font-bold transition-colors hover:border-crema"
+          className="min-h-10 max-w-40 truncate rounded-full border-2 border-mango/40 px-4 py-2 text-sm font-bold transition-colors hover:border-mango hover:text-mango"
         >
           {nombre}
         </Link>

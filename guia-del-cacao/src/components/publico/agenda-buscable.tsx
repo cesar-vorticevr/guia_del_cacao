@@ -63,7 +63,7 @@ export function AgendaBuscable({
           onChange={(evento) => setConsulta(evento.target.value)}
           placeholder="Buscar una cata, un taller, un negocio…"
           aria-label="Buscar en la agenda"
-          className="min-h-12 flex-1 rounded-full border-2 border-selva/20 bg-white px-5 text-ink"
+          className="marco-brillo min-h-12 flex-1 rounded-full border-4 bg-white px-5 text-ink outline-none"
         />
         <button
           type="submit"

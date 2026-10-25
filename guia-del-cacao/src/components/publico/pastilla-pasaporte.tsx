@@ -24,7 +24,7 @@ export function PastillaPasaporte({
     <Link
       href="/cuenta"
       aria-label={`Tu pasaporte: ${conMonedas(puntos)}, rango ${actual.nombre}`}
-      className="flex min-h-10 items-center gap-2 rounded-full bg-selva-2 py-1.5 pl-1.5 pr-3.5 transition-colors hover:bg-cacao"
+      className="flex min-h-10 items-center gap-2 rounded-full bg-white/10 py-1.5 pl-1.5 pr-3.5 transition-colors hover:bg-white/20"
     >
       <span
         aria-hidden="true"

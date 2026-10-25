@@ -54,7 +54,7 @@ export function Logotipo({ href = "/" }: { href?: string }) {
   return (
     <Link
       href={href}
-      className="flex items-center gap-2 font-display text-xl font-bold text-crema"
+      className="flex items-center gap-2 whitespace-nowrap font-display text-lg font-bold text-crema sm:text-xl"
     >
       <Mazorca />
       Guía del Cacao

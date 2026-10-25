@@ -51,7 +51,7 @@ export function CatalogoPublico({
         {productos.map((producto) => (
           <li
             key={producto.id}
-            className="flex flex-col overflow-hidden rounded-2xl border-2 border-ink/10 bg-white shadow-dura"
+            className="tarjeta-magica flex flex-col overflow-hidden rounded-2xl border-2 border-ink/10 bg-white shadow-dura"
           >
             {/*
               La foto va absoluta dentro de una caja cuadrada, no en el flujo:

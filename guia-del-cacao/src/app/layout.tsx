@@ -1,16 +1,27 @@
 import type { Metadata } from "next";
-import { Fredoka, Nunito, Space_Mono } from "next/font/google";
+import { Fraunces, Plus_Jakarta_Sans, Space_Mono } from "next/font/google";
+import { MagiaAlAparecer } from "@/components/magia-al-aparecer";
+import { PolvoDeHada } from "@/components/polvo-de-hada";
 import { IMAGEN_DE_RESPALDO } from "@/lib/compartir";
 import "./globals.css";
 
-const fredoka = Fredoka({
-  variable: "--font-fredoka",
+/*
+  Fraunces para los títulos: una serif suave, de cuento ilustrado, con itálicas
+  que se usan para la palabra que importa («el *cacao* de México»). Sustituyó
+  a Fredoka, que con sus letras redondas hacía que la guía se leyera infantil.
+  Los ejes SOFT y WONK son los que le dan ese aire de libro de cuentos.
+
+  Plus Jakarta Sans para el texto: moderna y clara, sin el redondeo de Nunito.
+*/
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  style: ["normal", "italic"],
+  axes: ["SOFT", "WONK", "opsz"],
 });
 
-const nunito = Nunito({
-  variable: "--font-nunito",
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
 });
 
@@ -57,9 +68,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="es"
-      className={`${fredoka.variable} ${nunito.variable} ${spaceMono.variable} h-full antialiased`}
+      className={`${fraunces.variable} ${jakarta.variable} ${spaceMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        {children}
+        <PolvoDeHada />
+        <MagiaAlAparecer />
+      </body>
     </html>
   );
 }

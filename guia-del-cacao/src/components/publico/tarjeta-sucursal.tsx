@@ -66,7 +66,7 @@ export function TarjetaSucursal({
       del `Link` —hermano, no hijo— porque un botón dentro de un enlace es HTML
       inválido y los lectores de pantalla lo anuncian mal.
     */
-    <li className="relative">
+    <li className="tarjeta-magica rounded-3xl">
       {conCorazon && (
         <BotonFavorito
           sucursalId={sucursal.id}
@@ -80,7 +80,7 @@ export function TarjetaSucursal({
 
       <Link
         href={`/marca/${sucursal.slug}`}
-        className={`flex h-full flex-col overflow-hidden rounded-3xl border-2 bg-white shadow-dura transition-all hover:-translate-y-0.5 hover:shadow-dura-alta ${
+        className={`flex h-full flex-col overflow-hidden rounded-3xl border-2 bg-white shadow-dura ${
           destacada ? "border-mango" : "border-ink/10"
         }`}
       >

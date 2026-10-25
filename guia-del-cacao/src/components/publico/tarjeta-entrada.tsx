@@ -22,7 +22,7 @@ export function TarjetaEntrada({
   haySesion: boolean;
 }) {
   return (
-    <li className="group flex h-full flex-col overflow-hidden rounded-3xl border-2 border-ink/10 bg-white shadow-dura transition-all hover:-translate-y-0.5 hover:shadow-dura-alta">
+    <li className="tarjeta-magica group flex h-full flex-col overflow-hidden rounded-3xl border-2 border-ink/10 bg-white shadow-dura">
       <Link href={entrada.href} className="flex flex-1 flex-col">
         {/*
           La foto en 4:3 y fuera del flujo, como en el directorio y el catálogo:

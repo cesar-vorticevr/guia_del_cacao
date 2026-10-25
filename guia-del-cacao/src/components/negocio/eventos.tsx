@@ -65,7 +65,7 @@ export function TarjetaEvento({
       ese tamaño el cartel de una cata no se lee — que es justo lo que el negocio
       necesita comprobar antes de que lo vea su público.
     */
-    <li className="flex h-full flex-col overflow-hidden rounded-3xl border-2 border-ink/10 bg-white shadow-dura">
+    <li className="tarjeta-magica flex h-full flex-col overflow-hidden rounded-3xl border-2 border-ink/10 bg-white shadow-dura">
       {/*
         La foto va absoluta dentro de la caja, no en el flujo: con `h-full` en el
         flujo una foto alta estira su caja y las tarjetas de la fila dejan de

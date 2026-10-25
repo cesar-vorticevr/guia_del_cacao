@@ -116,7 +116,7 @@ export function BuscadorDirectorio({
             onChange={(evento) => setConsulta(evento.target.value)}
             placeholder="Un negocio, un museo, un molinillo…"
             autoComplete="off"
-            className="min-h-14 w-full rounded-full border-2 border-selva/20 bg-white px-5 text-base text-ink placeholder:text-cacao/40 focus:border-selva"
+            className="marco-brillo min-h-14 w-full rounded-full border-4 bg-white px-5 text-base text-ink outline-none placeholder:text-cacao/40"
           />
         </label>
 

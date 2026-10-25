@@ -2,7 +2,8 @@ import Link from "next/link";
 import { EscudoDeMarca } from "@/components/marca";
 import { BannerRotativo } from "@/components/publico/banner-rotativo";
 import { BuscadorPortada } from "@/components/publico/buscador-portada";
-import { FondoDeCacao } from "@/components/publico/fondo-cacao";
+import { EscenarioDePortada } from "@/components/publico/escenario-portada";
+import { Marcador } from "@/components/publico/marcador";
 import { TarjetaPublicacion } from "@/components/publico/tarjeta-publicacion";
 import { TarjetaEntrada } from "@/components/publico/tarjeta-entrada";
 import { TarjetaSucursal } from "@/components/publico/tarjeta-sucursal";
@@ -11,6 +12,7 @@ import {
   calificacionesDe,
   listarDirectorio,
   listarEventos,
+  nombrarNegocio,
 } from "@/lib/datos/publico";
 import { listarCategorias } from "@/lib/datos/categorias";
 import { muroDeComunidad } from "@/lib/datos/comunidad";
@@ -71,184 +73,215 @@ export default async function Home() {
     categorias.map((c) => [c.id, c.nombre]),
   );
 
+  const entidades = new Set(sucursales.map((s) => s.entidad).filter(Boolean)).size;
+
+  // La cinta lleva los negocios y, entre ellos, las categorías: así no se
+  // queda corta cuando el directorio todavía tiene pocos.
+  const cinta = [
+    ...sucursales.slice(0, 12).map((s) => {
+      const nombres = nombrarNegocio(s);
+      return nombres.marca ?? s.nombre_sucursal;
+    }),
+    ...categorias.map((c) => c.nombre),
+  ];
+
   return (
-    <>
+    <div className="pb-4">
       {/*
-        El encabezado va sobre el crema, sin caja de color. Enmarcarlo en un
-        rectángulo de mango lo convertía en un cartel, y un cartel se salta con
-        la vista; suelto sobre el fondo, lo primero que se ve es la pregunta y
-        el sitio se lee más limpio. El color de la marca no se pierde: lo ponen
-        las píldoras de categoría, que además son navegación y no adorno.
+        La portada abre con el escenario: una banda oscura de orilla a orilla
+        con el vórtice de destellos, los focos de marquesina y las mazorcas
+        flotando (ver `escenario-portada.tsx`). Lo de dentro es lo de siempre
+        —escudo, pregunta, buscador y categorías—, ahora encendido.
       */}
-      <section className="relative px-2 pb-4 pt-8 text-center sm:pt-14">
+      <EscenarioDePortada>
+        <EscudoDeMarca className="mx-auto size-28 animate-flota drop-shadow-[0_0_30px_rgba(255,183,3,0.55)] sm:size-36" />
+
+        <h1 className="mx-auto mt-4 max-w-4xl text-balance font-display text-5xl font-medium leading-[1.05] tracking-tight text-crema sm:text-7xl">
+          El <em className="texto-oro pr-1">cacao</em> de México, en un solo
+          lugar
+        </h1>
+
+        <p className="mx-auto mt-4 max-w-2xl text-pretty text-lg text-crema/80">
+          Productoras, chocolaterías, museos y talleres. Encuentra a quién
+          visitar y qué está pasando cerca de ti.
+        </p>
+
         {/*
-          Las ilustraciones de cacao vivían solo en la franja del directorio, al
-          final de la página. Arriba —lo único que ve quien llega— no había ni
-          una mazorca: en un directorio de chocolate, la primera pantalla era
-          texto sobre crema. Aquí no hacen falta archivos nuevos, son las
-          mismas ocho de `public/parallax`.
-
-          La sección lleva `relative` pero **no** `overflow-hidden`: la capa se
-          recorta sola, y recortar aquí se comería el desplegable de
-          sugerencias del buscador, que cuelga por debajo de su caja.
-        */}
-        <FondoDeCacao variante="franja" soloOrillas />
-
-        <div className="relative z-10">
-          {/*
-            El escudo abre la portada. Sin él, la primera pantalla era texto
-            verde sobre crema y la marca solo aparecía en 28 px arriba, dentro
-            de la barra: aquí es lo que dice de qué va esto antes de leer nada.
-          */}
-          <EscudoDeMarca className="mx-auto size-28 sm:size-36" />
-
-          <h1 className="mx-auto mt-3 max-w-3xl text-balance font-display text-4xl leading-tight text-selva-2 sm:text-6xl">
-            El cacao de México, en un solo lugar
-          </h1>
-
-          <p className="mx-auto mt-4 max-w-2xl text-pretty text-lg text-cacao">
-            Productoras, chocolaterías, museos y talleres. Encuentra a quién
-            visitar y qué está pasando cerca de ti.
-          </p>
-
-          {/*
           El buscador sugiere sobre este mismo directorio, el que ya se trajo
           para las tarjetas de abajo. Por eso las sugerencias no cuestan una
           consulta por letra: los datos ya estaban en la página.
         */}
-          <BuscadorPortada
-            sucursales={sucursales}
-            categorias={nombresDeCategoria}
-            catalogo={catalogo}
-          />
+        <BuscadorPortada
+          sucursales={sucursales}
+          categorias={nombresDeCategoria}
+          catalogo={catalogo}
+        />
 
-          {/*
-          Las categorías van pegadas al buscador, como el "Try asking" de las
-          guías de viaje: son el atajo de quien todavía no sabe qué escribir.
-          Envuelven en varios renglones en vez de irse a un carril horizontal —
-          en celular lo que no se ve, no existe.
+        {/*
+          Las categorías van pegadas al buscador: son el atajo de quien todavía
+          no sabe qué escribir. Aquí son fichas de casino, cada una con su
+          color, y envuelven en varios renglones en vez de irse a un carril
+          horizontal: en celular lo que no se ve, no existe.
         */}
-          <nav aria-label="Categorías" className="mt-6">
-            <ul className="flex flex-wrap justify-center gap-2.5">
-              {categorias.map((categoria) => (
-                <li key={categoria.id}>
-                  <Link
-                    href={`/directorio?categoria=${categoria.id}`}
-                    className={`block rounded-full border-2 border-ink/10 px-4 py-2 text-sm font-bold shadow-dura-sm transition-transform active:translate-y-0.5 ${
-                      tonoDeCategoria(categoria.id).solido
-                    }`}
-                  >
-                    {categoria.nombre}
-                  </Link>
-                </li>
+        <nav aria-label="Categorías" className="mt-7">
+          <ul className="flex flex-wrap justify-center gap-3">
+            {categorias.map((categoria) => (
+              <li key={categoria.id}>
+                <Link
+                  href={`/directorio?categoria=${categoria.id}`}
+                  className={`ficha block rounded-full px-5 py-2.5 text-sm font-bold ${
+                    tonoDeCategoria(categoria.id).solido
+                  }`}
+                >
+                  {categoria.nombre}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        {/*
+          El marcador: cuánto hay ya en la guía, corriendo desde cero al entrar
+          en pantalla. Un número que se mueve invita a mirar qué hay, y además
+          es verdad: sale de lo mismo que se pinta abajo. Los que están en cero
+          no salen: un «0 eventos» en la entrada se lee como sitio vacío.
+        */}
+        <dl className="mx-auto mt-10 flex max-w-xl justify-center gap-3">
+          {[
+            { valor: sucursales.length, texto: "negocios" },
+            { valor: eventos.proximos.length, texto: "eventos próximos" },
+            { valor: entidades, texto: entidades === 1 ? "estado" : "estados" },
+          ]
+            .filter((dato) => dato.valor > 0)
+            .map((dato) => (
+            <div
+              key={dato.texto}
+              className="flex flex-1 flex-col-reverse rounded-2xl border border-mango/30 bg-white/5 px-2 py-3 backdrop-blur-sm"
+            >
+              <dt className="text-xs font-bold uppercase tracking-wider text-crema/70">
+                {dato.texto}
+              </dt>
+              <dd className="font-display text-3xl font-bold text-mango drop-shadow-[0_0_12px_rgba(255,183,3,0.6)] sm:text-4xl">
+                <Marcador valor={dato.valor} />
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </EscenarioDePortada>
+
+      {/*
+        La cinta: negocios y categorías corriendo de lado, en itálica dorada
+        sobre una franja de cristal. Va duplicada para que la vuelta no se note
+        —la animación recorre la mitad y empieza otra vez—. Es decoración: los
+        mismos nombres están en las tarjetas de abajo.
+      */}
+      <div
+        aria-hidden
+        className="relative left-1/2 w-[104vw] -translate-x-1/2 overflow-hidden border-y border-mango/20 bg-black/20 py-4 backdrop-blur-sm"
+      >
+        <div className="cinta flex w-max whitespace-nowrap font-display text-2xl italic text-crema/85">
+          {[...cinta, ...cinta].map((texto, i) => (
+            <span key={i} className="flex items-center gap-8 pr-8">
+              {texto}
+              <span className="not-italic text-mango drop-shadow-[0_0_8px_rgba(255,183,3,0.8)]">
+                ✦
+              </span>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/*
+        Destacados, de orilla a orilla: la foto ocupa la pantalla entera y el
+        texto va encima, sobre un velo oscuro. Es el escaparate de los planes
+        altos, así que se le da el ancho completo, como a la portada de una
+        película.
+      */}
+      {diapositivas.length > 0 && (
+        <section className="pt-20">
+          <Encabezado
+            antetitulo="Destacados"
+            titulo={
+              <>
+                Lugares que <em className="texto-oro">hay que</em> conocer
+              </>
+            }
+          />
+          <div className="relative left-1/2 mt-8 w-[104vw] -translate-x-1/2">
+            <BannerRotativo diapositivas={diapositivas} />
+          </div>
+        </section>
+      )}
+
+      <section className="pt-24">
+        <Encabezado
+          antetitulo="El directorio"
+          titulo={
+            <>
+              Negocios que te <em className="texto-oro">esperan</em>
+            </>
+          }
+          texto="Fincas, chocolaterías, museos y talleres de todo México."
+        />
+
+        {sucursales.length === 0 ? (
+          <p className="caja-vacia mx-auto mt-8 max-w-xl rounded-3xl p-6 text-center">
+            Todavía no hay micrositios publicados. Si tienes un negocio de cacao,{" "}
+            <Link href="/registro/negocio" className="font-bold underline">
+              este es buen momento para ser el primero
+            </Link>
+            .
+          </p>
+        ) : (
+          <>
+            <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {sucursales.slice(0, 6).map((sucursal) => (
+                <TarjetaSucursal
+                  key={sucursal.id}
+                  sucursal={sucursal}
+                  favorito={favoritos.has(sucursal.id)}
+                  puedeGuardar={esCliente}
+                  haySesion={Boolean(perfil)}
+                />
               ))}
             </ul>
-          </nav>
-        </div>
+
+            {/*
+              "Ver todo" va después de las tarjetas, no junto al título: es lo
+              que se hace al terminar de mirar.
+            */}
+            <BotonDeOro href="/directorio">Ver todo el directorio</BotonDeOro>
+          </>
+        )}
       </section>
 
       {/*
-        Antes esto empezaba a los 713 px con la pantalla en 698: el primer
-        negocio caía justo por debajo del pliegue, así que la primera pantalla
-        entera era encabezado y filtros, sin un solo negocio a la vista. Con el
-        aire de arriba recortado, asoma el borde de la primera tarjeta, que es
-        lo que le dice a alguien que hay algo más abajo.
+        Los eventos van después del directorio porque responden a otra pregunta
+        —qué hacer este fin de semana, no a quién visitar— y solo los próximos:
+        lo que ya pasó vive en `/eventos`.
       */}
-      <section className="pt-8">
-        <h2 className="mb-4 font-display text-2xl">Destacados</h2>
-        <BannerRotativo diapositivas={diapositivas} />
-      </section>
-
-      {/*
-        La franja del directorio, de orilla a orilla.
-
-        Era una caja redondeada dentro de la columna de contenido, y su
-        `overflow-hidden` —que hace falta para recortar el fondo— volvía a
-        encerrar las piezas en 1180 px: el fondo se paraba donde acababa la
-        caja, no donde acaba la pantalla.
-
-        Ahora la sección misma se sale de la columna con sangrado completo
-        —`left-1/2`, `w-screen`, `-translate-x-1/2`— y el recorte pasa a ser en
-        el borde de la pantalla, que es donde tiene que estar. Las esquinas
-        redondeadas se van con eso: una banda que toca las dos orillas no tiene
-        esquinas que redondear.
-
-        El contenido sigue en la columna, con su propia caja centrada dentro.
-
-        El ancho es `104vw` y no `100vw` a proposito: `100vw` cuenta la barra de
-        scroll vertical y el area de contenido no, asi que una banda centrada de
-        exactamente `100vw` se queda unos pixeles corta de un lado y deja una
-        rendija de crema distinto en la orilla. Con holgura tapa de sobra, y el
-        `overflow-x: clip` del armazon recorta lo que sale sin abrir barra
-        horizontal.
-      */}
-      <section className="relative left-1/2 mt-14 w-[104vw] -translate-x-1/2 overflow-hidden bg-crema-2/60 py-10">
-        <FondoDeCacao variante="franja" />
-
-        <div className="relative z-10 mx-auto w-[92vw] max-w-[1180px]">
-          <h2 className="font-display text-2xl">En el directorio</h2>
-
-          {sucursales.length === 0 ? (
-            <p className="mt-4 rounded-3xl bg-crema p-6 text-cacao">
-              Todavía no hay micrositios publicados. Si tienes un negocio de
-              cacao,{" "}
-              <Link
-                href="/registro/negocio"
-                className="font-bold text-selva underline"
-              >
-                este es buen momento para ser el primero
-              </Link>
-              .
-            </p>
-          ) : (
+      <section className="pt-24">
+        <Encabezado
+          antetitulo="La agenda"
+          titulo={
             <>
-              <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {sucursales.slice(0, 6).map((sucursal) => (
-                  <TarjetaSucursal
-                    key={sucursal.id}
-                    sucursal={sucursal}
-                    favorito={favoritos.has(sucursal.id)}
-                    puedeGuardar={esCliente}
-                    haySesion={Boolean(perfil)}
-                  />
-                ))}
-              </ul>
-
-              {/*
-                "Ver todo" va después de las tarjetas, no junto al título: es lo
-                que se hace al terminar de mirar, y arriba competía con el
-                encabezado de la sección antes de que hubiera nada que ampliar.
-              */}
-              <Link
-                href="/directorio"
-                className="mt-6 inline-flex min-h-12 items-center rounded-full bg-selva px-6 py-3 font-bold text-crema shadow-dura-sm transition-transform active:translate-y-0.5"
-              >
-                Ver todo el directorio
-              </Link>
+              Lo que <em className="texto-oro">viene</em>
             </>
-          )}
-        </div>
-      </section>
-
-      {/*
-        Los eventos cierran la portada. Van después del directorio porque
-        responden a otra pregunta —qué hacer este fin de semana, no a quién
-        visitar— y solo los próximos: lo que ya pasó vive en `/eventos`.
-      */}
-      <section className="pt-14">
-        <h2 className="font-display text-2xl">Próximos eventos</h2>
+          }
+          texto="Catas, talleres y festivales para apartar en el calendario."
+        />
 
         {eventos.proximos.length === 0 ? (
-          <p className="mt-4 rounded-3xl bg-crema-2 p-6 text-cacao">
+          <p className="caja-vacia mx-auto mt-8 max-w-xl rounded-3xl p-6 text-center">
             No hay eventos programados por ahora.{" "}
-            <Link href="/eventos" className="font-bold text-selva underline">
+            <Link href="/eventos" className="font-bold underline">
               Mira los que ya pasaron
             </Link>
             .
           </p>
         ) : (
           <>
-            <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {eventos.proximos.slice(0, 4).map((evento) => (
                 <TarjetaPublicacion
                   key={evento.id}
@@ -259,59 +292,81 @@ export default async function Home() {
               ))}
             </ul>
 
-            <Link
-              href="/eventos"
-              className="mt-6 inline-flex min-h-12 items-center rounded-full bg-selva px-6 py-3 font-bold text-crema shadow-dura-sm transition-transform active:translate-y-0.5"
-            >
-              Ver todos los eventos
-            </Link>
+            <BotonDeOro href="/eventos">Ver todos los eventos</BotonDeOro>
           </>
         )}
       </section>
 
       {/*
-        Y la comunidad cierra, en su propia franja de orilla a orilla con el
-        fondo de cacao detras — la segunda de la portada, igual que la del
-        directorio. Las dos bandas reparten la pagina en tres tramos y dejan los
-        eventos respirando en medio, sobre el crema limpio.
-
-        El `104vw` y el `overflow-hidden` no son de adorno: `100vw` cuenta la
-        barra de scroll y el area de contenido no, asi que una banda de
-        exactamente `100vw` deja una rendija de crema distinto en la orilla.
-
-        Se pinta solo si hay algo publicado. Un titulo sobre una caja que dice
-        'todavia no hay nada' es peor que no tener la seccion: la portada es lo
-        primero que ve alguien, y ahi un hueco se lee como sitio abandonado.
+        La comunidad cierra, y se pinta solo si hay algo publicado. Un título
+        sobre una caja que dice «todavía no hay nada» es peor que no tener la
+        sección: en la portada un hueco se lee como sitio abandonado.
       */}
       {FUNCIONES.comunidad && muro.entradas.length > 0 && (
-        <section className="relative left-1/2 mt-14 w-[104vw] -translate-x-1/2 overflow-hidden bg-crema-2/60 py-10">
-          <FondoDeCacao variante="franja" />
+        <section className="pt-24">
+          <Encabezado
+            antetitulo="La comunidad"
+            titulo={
+              <>
+                Lo que se <em className="texto-oro">cuenta</em>
+              </>
+            }
+            texto="Lo que cuentan los negocios y quienes los visitan."
+          />
 
-          <div className="relative z-10 mx-auto w-[92vw] max-w-[1180px]">
-            <h2 className="font-display text-2xl">En la comunidad</h2>
-            <p className="mt-1 text-cacao">
-              Lo que cuentan los negocios y quienes los visitan.
-            </p>
+          <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {muro.entradas.slice(0, 4).map((entrada) => (
+              <TarjetaEntrada
+                key={entrada.id}
+                entrada={entrada}
+                haySesion={Boolean(perfil)}
+              />
+            ))}
+          </ul>
 
-            <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {muro.entradas.slice(0, 4).map((entrada) => (
-                <TarjetaEntrada
-                  key={entrada.id}
-                  entrada={entrada}
-                  haySesion={Boolean(perfil)}
-                />
-              ))}
-            </ul>
-
-            <Link
-              href="/comunidad"
-              className="mt-6 inline-flex min-h-12 items-center rounded-full bg-selva px-6 py-3 font-bold text-crema shadow-dura-sm transition-transform active:translate-y-0.5"
-            >
-              Ver la comunidad
-            </Link>
-          </div>
+          <BotonDeOro href="/comunidad">Ver la comunidad</BotonDeOro>
         </section>
       )}
-    </>
+    </div>
+  );
+}
+
+/**
+ * El encabezado de cada sección de la portada: la etiqueta dorada encima, el
+ * título en Fraunces con su palabra en itálica de oro, y una línea que invita.
+ * Centrado, como el título de un capítulo.
+ */
+function Encabezado({
+  antetitulo,
+  titulo,
+  texto,
+}: {
+  antetitulo: string;
+  titulo: React.ReactNode;
+  texto?: string;
+}) {
+  return (
+    <header className="mx-auto max-w-2xl text-center">
+      <p className="antetitulo">{antetitulo}</p>
+      <h2 className="mt-3 text-balance font-display text-4xl font-medium leading-tight tracking-tight sm:text-5xl">
+        {titulo}
+      </h2>
+      {texto && <p className="mt-3 text-pretty text-lg text-crema/70">{texto}</p>}
+    </header>
+  );
+}
+
+/** El botón que cierra cada sección, centrado y en oro. */
+function BotonDeOro({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <div className="mt-10 text-center">
+      <Link
+        href={href}
+        className="boton-oro brillo inline-flex min-h-12 items-center gap-2 rounded-full px-7 py-3 font-bold text-ink"
+      >
+        {children}
+        <span aria-hidden>→</span>
+      </Link>
+    </div>
   );
 }

@@ -107,7 +107,7 @@ export function BarraInferior({
         href={item.href}
         aria-current={activa ? "page" : undefined}
         className={`flex min-h-14 flex-col items-center justify-center gap-1 text-[0.68rem] font-bold transition-colors ${
-          activa ? "text-selva-2" : "text-cacao/55"
+          activa ? "text-mango" : "text-crema/60"
         }`}
       >
         <item.Icono className="size-6" />
@@ -121,7 +121,7 @@ export function BarraInferior({
   return (
     <nav
       aria-label="Navegación principal"
-      className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-selva/10 bg-crema/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden"
+      className="barra-cristal fixed inset-x-0 bottom-0 z-40 border-t border-mango/20 pb-[env(safe-area-inset-bottom)] sm:hidden"
     >
       <div className={`mx-auto grid max-w-md ${COLUMNAS} items-end`}>
         {IZQUIERDA.map(pestana)}
@@ -129,11 +129,11 @@ export function BarraInferior({
         <Link
           href={EXPLORAR.href}
           aria-current={estaEn(ruta, EXPLORAR) ? "page" : undefined}
-          className="flex flex-col items-center gap-1 pb-2 text-[0.68rem] font-bold text-selva-2"
+          className="flex flex-col items-center gap-1 pb-2 text-[0.68rem] font-bold text-crema"
         >
           <span
-            className={`-mt-6 grid size-14 place-items-center rounded-full border-4 border-crema shadow-[0_4px_0_0_var(--color-selva-2)] transition-transform active:translate-y-0.5 active:shadow-[0_2px_0_0_var(--color-selva-2)] ${
-              estaEn(ruta, EXPLORAR) ? "bg-mango text-ink" : "bg-selva text-crema"
+            className={`-mt-6 grid size-14 place-items-center rounded-full border-4 border-[#1c1236] shadow-[0_0_20px_rgb(255_183_3/0.45)] transition-transform active:scale-95 ${
+              estaEn(ruta, EXPLORAR) ? "boton-oro text-ink" : "bg-selva text-crema"
             }`}
           >
             <EXPLORAR.Icono className="size-7" />
@@ -147,7 +147,7 @@ export function BarraInferior({
           href={destinoPerfil}
           aria-current={enPerfil ? "page" : undefined}
           className={`flex min-h-14 flex-col items-center justify-center gap-1 text-[0.68rem] font-bold transition-colors ${
-            enPerfil ? "text-selva-2" : "text-cacao/55"
+            enPerfil ? "text-mango" : "text-crema/60"
           }`}
         >
           {marcador === null ? (

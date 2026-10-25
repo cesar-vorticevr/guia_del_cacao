@@ -125,7 +125,7 @@ export function ListaResenas({
           }
         >
           {visibles.map((resena) => (
-            <li key={resena.id} className="rounded-3xl bg-white p-5 shadow-dura">
+            <li key={resena.id} className="tarjeta-magica rounded-3xl bg-white p-5 shadow-dura">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <p className="font-bold text-selva-2">{resena.nombre}</p>
                 <p className="font-mono text-xs text-cacao/70">{resena.fechaTexto}{resena.editada && " · editada"}</p>

@@ -121,7 +121,7 @@ export function BuscadorPortada({
           evento.preventDefault();
           verTodo();
         }}
-        className="flex items-center gap-2 rounded-full border-2 border-ink/10 bg-white p-2 shadow-dura sm:gap-3 sm:p-2.5"
+        className="marco-brillo flex items-center gap-2 rounded-full border-4 bg-white p-2 sm:gap-3 sm:p-2.5"
       >
         <IconoLupa className="ml-2 size-5 shrink-0 text-cacao/50 sm:ml-3 sm:size-6" />
 
