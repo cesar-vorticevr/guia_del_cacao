@@ -26,6 +26,11 @@ export type Oferta = {
   cubreHasta: string | null;
   /** Cuántas veces más se puede canjear. Null: sin límite o no se sabe. */
   quedan: number | null;
+  /**
+   * Código de un Embajador del Cacao: su nombre. El descuento es solo del
+   * primer pago (migración 000059), no de cada mes como el de un convenio.
+   */
+  embajador: string | null;
 };
 
 /** Una fila de `revisar_convenio` o `convenio_de_sucursal`, como `Oferta`. */
@@ -47,6 +52,21 @@ export function ofertaDeFila(codigo: string, fila: FilaDeConvenio): Oferta {
     planId: fila.plan_id === null ? null : Number(fila.plan_id),
     cubreHasta: fila.cubre_hasta,
     quedan: fila.quedan ?? null,
+    embajador: null,
+  };
+}
+
+/** El código de un embajador, como `Oferta`: 20% en el primer pago. */
+export function ofertaDeEmbajador(codigo: string, nombre: string): Oferta {
+  return {
+    codigo,
+    descripcion: `Código de ${nombre}, Embajador del Cacao: ${DESCUENTO_DE_EMBAJADOR}% de descuento en tu primer pago.`,
+    basicoGratisHasta: null,
+    descuento: DESCUENTO_DE_EMBAJADOR,
+    planId: null,
+    cubreHasta: null,
+    quedan: null,
+    embajador: nombre,
   };
 }
 
@@ -58,7 +78,15 @@ export function ofertaDeFila(codigo: string, fila: FilaDeConvenio): Oferta {
 export const MESES_PAGADOS_AL_ANIO = 10;
 
 /** Lo que dura el plan Gratis. La base lo tiene en `public.dias_gratis()`. */
-export const DIAS_GRATIS = 30;
+export const DIAS_GRATIS = 15;
+
+/**
+ * El 20% de los Embajadores del Cacao: lo que se descuenta el negocio en su
+ * primer pago y lo que gana el embajador de lo que ese negocio pagó. La base
+ * los tiene en `descuento_de_embajador()` y `comision_de_embajador()`.
+ */
+export const DESCUENTO_DE_EMBAJADOR = 20;
+export const COMISION_DE_EMBAJADOR = 20;
 
 const DIA = new Intl.DateTimeFormat("es-MX", {
   day: "numeric",
@@ -102,6 +130,8 @@ export type Precio = {
   cubreHasta: string | null;
   /** Promoción: lo que se cobra después de `cubreHasta`, cada periodo. */
   despues: number | null;
+  /** El descuento es solo de este cobro (código de embajador); `despues` es el normal. */
+  soloPrimerPago: boolean;
   periodo: Periodo;
 };
 
@@ -112,7 +142,13 @@ export function precioDe(
   oferta: Oferta | null,
 ): Precio {
   const base = Number(tier.precio_mensual);
-  const vacio = { antes: null, gratisHasta: null, cubreHasta: null, despues: null };
+  const vacio = {
+    antes: null,
+    gratisHasta: null,
+    cubreHasta: null,
+    despues: null,
+    soloPrimerPago: false,
+  };
 
   if (esPlanGratis(tier, tiers)) {
     const hasta =
@@ -132,6 +168,19 @@ export function precioDe(
       antes: base,
       cubreHasta: oferta.cubreHasta,
       despues: normal,
+      periodo,
+    };
+  }
+
+  // El de un embajador también, pero sin fecha: el primer cobro, sea del mes o
+  // del año, va con descuento y los siguientes al precio normal.
+  if (oferta?.embajador) {
+    return {
+      ...vacio,
+      cobro: Math.round(normal * (1 - oferta.descuento / 100) * 100) / 100,
+      antes: normal,
+      despues: normal,
+      soloPrimerPago: true,
       periodo,
     };
   }

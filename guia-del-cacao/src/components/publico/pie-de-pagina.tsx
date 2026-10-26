@@ -36,6 +36,7 @@ const ENLACES = [
   // Pasa por el aviso: a un cliente le explica que su negocio va en otra cuenta,
   // y a quien no ha entrado lo manda derecho al alta sin estorbarle.
   { href: "/soy-negocio", texto: "Agregar mi negocio" },
+  { href: "/embajador", texto: "Embajadores del Cacao" },
   { href: "/terminos", texto: "Condiciones del Servicio" },
   { href: "/privacidad", texto: "Aviso de Privacidad" },
 ];

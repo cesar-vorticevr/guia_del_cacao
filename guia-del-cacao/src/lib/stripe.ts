@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import { crearClienteDeServicio } from "@/lib/supabase/servicio";
-import { precioDe, type Oferta, type Periodo } from "@/lib/precios";
+import { DESCUENTO_DE_EMBAJADOR, precioDe, type Oferta, type Periodo } from "@/lib/precios";
 import type { Tier } from "@/lib/tipos";
 
 /**
@@ -97,6 +97,28 @@ async function productoDelPlan(tier: Tier) {
   return producto.id;
 }
 
+/**
+ * El cupón de los Embajadores del Cacao: 20% en un solo cobro. Stripe lo
+ * descuenta del primer pago y los siguientes van completos, que es justo el
+ * trato. Se crea la primera vez con un id fijo y después se reutiliza.
+ */
+async function cuponDeEmbajador() {
+  const id = "guia-embajador-20";
+  const s = stripe()!;
+  try {
+    return (await s.coupons.retrieve(id)).id;
+  } catch {
+    const cupon = await s.coupons.create({
+      id,
+      name: `Embajador del Cacao · ${DESCUENTO_DE_EMBAJADOR}% en tu primer pago`,
+      percent_off: DESCUENTO_DE_EMBAJADOR,
+      duration: "once",
+      metadata: { app: APP },
+    });
+    return cupon.id;
+  }
+}
+
 /** Lo que se cobra cada periodo, como `price_data` de una suscripción. */
 async function precioRecurrente(tier: Tier, tiers: Tier[], periodo: Periodo, oferta: Oferta | null) {
   const precio = precioDe(tier, tiers, periodo, oferta);
@@ -122,6 +144,11 @@ export type DatosDelPago = {
   periodo: Periodo;
   oferta: Oferta | null;
   convenioId: string | null;
+  /**
+   * El embajador cuyo código estrena esta marca: el cobro lleva su 20% de
+   * descuento, solo esta vez, y el webhook le anota la comisión.
+   */
+  embajadorId: string | null;
   /** A dónde vuelve al pagar y al arrepentirse. */
   exito: string;
   cancelado: string;
@@ -150,6 +177,7 @@ export async function crearPago(datos: DatosDelPago) {
     tier_id: String(datos.tier.id),
     periodo: datos.periodo,
     convenio_id: datos.convenioId ?? "",
+    embajador_id: datos.embajadorId ?? "",
   };
 
   const lineas: Stripe.Checkout.SessionCreateParams.LineItem[] = [
@@ -178,6 +206,7 @@ export async function crearPago(datos: DatosDelPago) {
       : { customer_email: datos.correo }),
     client_reference_id: datos.marcaId,
     line_items: lineas,
+    ...(datos.embajadorId ? { discounts: [{ coupon: await cuponDeEmbajador() }] } : {}),
     metadata,
     subscription_data: {
       metadata,

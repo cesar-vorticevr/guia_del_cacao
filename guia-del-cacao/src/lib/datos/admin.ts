@@ -327,13 +327,28 @@ export async function resumen() {
   const total = (tabla: string) =>
     supabase.from(tabla).select("*", { count: "exact", head: true });
 
-  const [publicadas, pausadas, marcas, perfiles, reportadas] = await Promise.all([
-    porEstado("publicado"),
-    porEstado("pausado"),
-    total("marcas"),
-    total("perfiles"),
-    supabase.rpc("resenas_reportadas"),
-  ]);
+  const [publicadas, pausadas, marcas, perfiles, reportadas, abiertas, referidos, solicitudes] =
+    await Promise.all([
+      porEstado("publicado"),
+      porEstado("pausado"),
+      total("marcas"),
+      total("perfiles"),
+      supabase.rpc("resenas_reportadas"),
+      // El dinero: lo que pagan hoy los negocios y lo que se debe a embajadores.
+      supabase
+        .from("suscripciones")
+        .select("estado, monto_mensual, tier_id")
+        .in("estado", ["trial", "activo", "pausado_por_pago"]),
+      supabase.from("referidos").select("comision, pago_id, pagado_en"),
+      supabase
+        .from("embajadores")
+        .select("*", { count: "exact", head: true })
+        .eq("estado", "solicitado"),
+    ]);
+
+  const suscripciones = (abiertas.data ?? []) as { estado: string; monto_mensual: number; tier_id: number }[];
+  const pagando = suscripciones.filter((s) => s.estado === "activo" && Number(s.monto_mensual) > 0);
+  const comisiones = (referidos.data ?? []) as { comision: number | null; pago_id: string | null }[];
 
   return {
     publicadas: publicadas.count ?? 0,
@@ -341,6 +356,18 @@ export async function resumen() {
     marcas: marcas.count ?? 0,
     perfiles: perfiles.count ?? 0,
     reportadas: ((reportadas.data ?? []) as unknown[]).length,
+    /** Lo que entra cada mes: la suma de lo que equivale al mes de cada plan pagado. */
+    ingresoMensual: Math.round(pagando.reduce((suma, s) => suma + Number(s.monto_mensual), 0) * 100) / 100,
+    pagando: pagando.length,
+    enPrueba: suscripciones.filter((s) => s.estado === "trial").length,
+    sinPagar: suscripciones.filter((s) => s.estado === "pausado_por_pago").length,
+    porPagarAEmbajadores:
+      Math.round(
+        comisiones
+          .filter((c) => c.comision !== null && !c.pago_id)
+          .reduce((suma, c) => suma + Number(c.comision), 0) * 100,
+      ) / 100,
+    solicitudesDeEmbajador: solicitudes.count ?? 0,
   };
 }
 

@@ -14,6 +14,14 @@ set client_min_messages to notice;
 
 begin;
 
+-- Esta prueba es de las reglas de precio, y las cuentas estan hechas con los
+-- tres planes de entonces: Gratis $0, Basico $199 y Pro $299, los tres a la
+-- venta. Desde la migracion 000059 hay un solo plan de pago ($499) y el
+-- Basico ya no se ofrece; los precios de hoy los revisa 20-embajadores.sql.
+-- Aqui se ponen los de entonces, dentro de la transaccion que se deshace.
+update public.tiers set se_ofrece = true where id = 2;
+update public.tiers set precio_mensual = 299 where id = 3;
+
 create or replace function pg_temp.debe_fallar(etiqueta text, sentencia text)
 returns void language plpgsql as $$
 begin

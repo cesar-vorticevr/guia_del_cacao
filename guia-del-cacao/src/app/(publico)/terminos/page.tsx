@@ -221,29 +221,26 @@ export default function Terminos() {
 
       <h3 className="mt-6 font-display text-xl">Los planes</h3>
       <p className="mt-3 text-cacao">
-        Son tres, y{" "}
+        Son dos, y{" "}
         <strong className="text-selva-2">el plan es de cada sucursal</strong>, no
         de la cuenta: un negocio con tres locales paga tres, y puede tener uno
         publicado y otro en borrador.
       </p>
       <ul className="mt-3 grid gap-2 text-cacao">
         <li>
-          <strong className="text-selva-2">Gratis, por 30 días</strong> — la
+          <strong className="text-selva-2">Gratis, por 15 días</strong> — la
           ficha en el directorio y el micrositio con catálogo y contacto.
         </li>
         <li>
-          <strong className="text-selva-2">Básico, $199 al mes</strong> — lo
-          anterior sin vencimiento y las reseñas de tus clientes en tu
-          micrositio.
-        </li>
-        <li>
-          <strong className="text-selva-2">Pro, $299 al mes</strong> — lo
-          anterior, anunciar tus eventos en la agenda y salir en el banner de
-          la portada.
+          <strong className="text-selva-2">Pro, $499 al mes o $4,990 al año</strong>{" "}
+          — lo anterior sin vencimiento, las reseñas de tus clientes, anunciar
+          tus eventos en la agenda y salir en el banner de la portada.
         </li>
       </ul>
       <p className="mt-3 text-cacao">
-        El plan Gratis dura treinta días. Con un plan de pago, cada sucursal
+        Quien ya pagaba el plan Básico ($199 al mes) lo conserva con su precio
+        mientras no lo cambie. El plan Gratis dura quince días. Con el plan de
+        pago, cada sucursal
         estrena{" "}
         <strong className="text-selva-2">quince días de prueba</strong>, con
         todas las funciones de su plan. El conteo empieza el día que publicas.
@@ -257,6 +254,14 @@ export default function Terminos() {
         fecha; al terminar, se cobra el precio normal. Cada código tiene fechas
         y un número limitado de usos. Los descuentos no se suman: si tienes un
         código y pagas el año, se aplica uno.
+      </p>
+      <p className="mt-3 text-cacao">
+        Un <strong className="text-selva-2">código de Embajador del Cacao</strong>{" "}
+        te da 20% de descuento en tu primer pago, sea del mes o del año; los
+        siguientes van al precio normal. Se usa una sola vez por negocio, antes
+        de su primer pago, y no se suma a una promoción. Quien te compartió el
+        código recibe de la Guía una comisión por ese pago; a ti no te cuesta
+        nada extra.
       </p>
       <p className="mt-3 text-cacao">
         Si al terminar la prueba o el periodo gratis no has pagado, tu sucursal{" "}

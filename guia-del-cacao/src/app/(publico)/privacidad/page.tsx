@@ -20,8 +20,9 @@ export const metadata: Metadata = {
  * Tres cosas que se dicen porque son ciertas y se pueden comprobar en el código,
  * y que hay que **corregir aquí el día que dejen de serlo**:
  *
- * - Los datos bancarios no pasan por la Guía: sin llaves de Stripe no hay pago
- *   en línea, y con ellas la tarjeta la captura Stripe Checkout en su página.
+ * - Las tarjetas no pasan por la Guía: sin llaves de Stripe no hay pago en
+ *   línea, y con ellas la tarjeta la captura Stripe Checkout en su página. La
+ *   única cuenta bancaria guardada es la CLABE de los embajadores (000059).
  *   El texto se pinta desde `PAGO_SIMULADO`, igual que en las condiciones.
  * - La única medición es la propia (migración 000052, `lib/actividad.ts`):
  *   conteos sin nada que diga quién, sin cookies y sin terceros. No hay Google
@@ -117,10 +118,14 @@ export default function Privacidad() {
       </h2>
       <ul className="mt-3 grid gap-3 text-cacao">
         <li>
-          <strong className="text-selva-2">Datos bancarios: ninguno.</strong>{" "}
+          <strong className="text-selva-2">Ningún número de tarjeta.</strong>{" "}
           {PAGO_SIMULADO
-            ? "No hay pago en línea en la plataforma, así que aquí no se captura ni se guarda ningún número de tarjeta ni de cuenta."
-            : "Los negocios que pagan un plan lo hacen en la página de Stripe: la tarjeta la captura y la guarda Stripe, y la Guía del Cacao solo recibe la confirmación del pago, nunca el número de tarjeta."}
+            ? "No hay pago en línea en la plataforma, así que aquí no se captura ni se guarda ningún número de tarjeta."
+            : "Los negocios que pagan un plan lo hacen en la página de Stripe: la tarjeta la captura y la guarda Stripe, y la Guía del Cacao solo recibe la confirmación del pago, nunca el número de tarjeta."}{" "}
+          La única cuenta bancaria que guardamos es la{" "}
+          <strong className="text-selva-2">CLABE de los Embajadores del Cacao</strong>,
+          con el nombre del titular y el banco, que ellos mismos nos dan para
+          transferirles sus comisiones. Solo la ven ellos y el administrador.
         </li>
         <li>
           <strong className="text-selva-2">
@@ -160,6 +165,12 @@ export default function Privacidad() {
         </li>
         <li>
           Atender lo que nos escribas y responder a un reporte de contenido.
+        </li>
+        <li>
+          Si eres Embajador del Cacao: llevar la cuenta de los negocios que
+          llegaron con tu código y de tus comisiones, y transferírtelas a la
+          CLABE que nos diste. Al embajador solo le enseñamos el nombre de esos
+          negocios y lo que pagaron; nunca su correo ni sus datos de pago.
         </li>
       </ul>
       <p className="mt-3 text-cacao">

@@ -4,6 +4,7 @@ import { perfilActual } from "@/lib/auth/sesion";
 import { cerrarSesion } from "@/lib/auth/acciones";
 import { FormularioContrasenaNueva } from "@/components/formularios-auth";
 import { Pestanas } from "@/components/negocio/pestanas";
+import { InvitacionAEmbajador } from "@/components/embajador/invitacion";
 
 export const metadata: Metadata = { title: "Mi cuenta · Guía del Cacao" };
 
@@ -42,6 +43,8 @@ export default async function Cuenta({
   return (
     <div className="mx-auto grid max-w-3xl gap-6 py-8">
       <h1 className="font-display text-3xl">Hola, {perfil.nombre}</h1>
+
+      <InvitacionAEmbajador />
 
       <Pestanas
         base="/cuenta"

@@ -21,6 +21,11 @@ export type Tier = {
    * Se queda en 999 en la base para que nada tropiece con un límite.
    */
   max_sucursales: number;
+  /**
+   * Si se puede contratar hoy (migración 000059). El Básico dejó de ofrecerse:
+   * quien ya lo paga lo conserva, pero no aparece entre los planes a elegir.
+   */
+  se_ofrece: boolean;
 };
 
 export type Producto = {
@@ -134,7 +139,8 @@ export function pesos(monto: number) {
   return new Intl.NumberFormat("es-MX", {
     style: "currency",
     currency: "MXN",
-    minimumFractionDigits: 0,
+    // Con centavos solo si los hay: $499, pero $399.20 y no $399.2.
+    minimumFractionDigits: Number.isInteger(Number(monto)) ? 0 : 2,
   }).format(monto);
 }
 

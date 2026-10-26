@@ -17,6 +17,7 @@ import { origenDelSitio } from "@/lib/auth/sesion";
 import { listarTiers } from "@/lib/datos/sucursales";
 import { crearClienteDeServicio } from "@/lib/supabase/servicio";
 import { esPlanGratis } from "@/lib/precios";
+import { embajadorPendienteDe, vincularEmbajador } from "@/lib/embajadores";
 import {
   abrirPortalDeStripe,
   cambiarPrecio,
@@ -120,7 +121,12 @@ export async function contratarPlan(
   let convenioNuevo: string | null = null;
   let oferta: Oferta | null = null;
 
-  if (codigo) {
+  // Un código de embajador se queda en la marca y espera su primer pago con
+  // tarjeta; no cambia el plan ni las fechas de hoy (migración 000059).
+  const vinculo = codigo ? await vincularEmbajador(marca.id, codigo) : null;
+  if (vinculo?.error) return { error: vinculo.error };
+
+  if (codigo && !vinculo?.nombre) {
     const { data, error } = await supabase.rpc("revisar_convenio", {
       p_codigo: codigo,
     });
@@ -397,10 +403,15 @@ async function contratarConStripe({
       .maybeSingle();
     const origen = await origenDelSitio();
 
+    // El primer pago con tarjeta lleva el descuento del embajador, si la marca
+    // tiene uno puesto. Con una promoción no: un solo descuento por pago.
+    const embajador = oferta ? null : await embajadorPendienteDe(marcaId);
+
     let url: string;
     try {
       url = await crearPago({
       marcaId,
+      embajadorId: embajador?.embajador_id ?? null,
       clienteStripe: (marca?.stripe_customer_id as string | null) ?? null,
       correo: perfil!.correo,
       sucursalIds: porCobrar.map((s) => s.sucursal_id),

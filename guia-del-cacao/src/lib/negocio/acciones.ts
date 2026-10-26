@@ -7,12 +7,14 @@ import { perfilActual } from "@/lib/auth/sesion";
 import { listarTiers, miSucursal, misSucursales } from "@/lib/datos/sucursales";
 import { generarSlug, normalizarCodigo } from "@/lib/tipos";
 import {
+  ofertaDeEmbajador,
   ofertaDeFila,
   promocionPara,
   type FilaDeConvenio,
   type Oferta,
 } from "@/lib/precios";
 import { esPasoDelAlta } from "@/lib/negocio/pasos";
+import { vincularEmbajador } from "@/lib/embajadores";
 import { esEntidad } from "@/lib/entidades";
 import { procesarPago, proximoCobro } from "@/lib/pagos";
 import { crearPago, explicarErrorDeStripe, stripe } from "@/lib/stripe";
@@ -286,7 +288,15 @@ export async function publicarSucursal(
   let convenioId: string | null = null;
   let oferta: Oferta | null = null;
 
-  if (codigo) {
+  /*
+    Un código de Embajador del Cacao no cambia nada al publicar: se abre la
+    prueba de siempre y la marca queda vinculada a su embajador, para que su
+    primer pago lleve el descuento (migración 000059).
+  */
+  const vinculo = codigo ? await vincularEmbajador(sucursal.marca_id, codigo) : null;
+  if (vinculo?.error) return { error: vinculo.error };
+
+  if (codigo && !vinculo?.nombre) {
     const { data, error: errorConvenio } = await supabase.rpc(
       "revisar_convenio",
       { p_codigo: codigo },
@@ -424,6 +434,7 @@ export async function publicarSucursal(
         periodo,
         oferta,
         convenioId,
+        embajadorId: null,
         exito: `${origen}/negocio/panel/sucursal/${id}?publicado=1&pago=listo`,
         cancelado: `${origen}/negocio/panel/sucursal/${id}?publicado=1&pago=cancelado`,
       });
@@ -1178,6 +1189,7 @@ export async function cambiarEstadoEvento(datos: FormData) {
 
 export type RespuestaDeCodigo = { oferta?: Oferta; error?: string };
 
+
 /**
  * Lo que ofrece un código, para enseñar los precios de la oferta antes de
  * contratar. No aparta nada ni cambia nada: contratar vuelve a revisarlo.
@@ -1188,6 +1200,16 @@ export async function consultarCodigo(codigo: string): Promise<RespuestaDeCodigo
   if (!codigo.trim()) return { error: "Escribe tu código." };
 
   const supabase = await crearClienteServidor();
+
+  // Primero, ¿es de un Embajador del Cacao? Solo se consulta: vincularlo a la
+  // marca pasa al publicar o al contratar, que lo revisan otra vez.
+  const { data: embajador } = await supabase.rpc("embajador_del_codigo", {
+    p_codigo: codigo,
+  });
+  if (embajador) {
+    return { oferta: ofertaDeEmbajador(normalizarCodigo(codigo), embajador as string) };
+  }
+
   const { data, error } = await supabase.rpc("revisar_convenio", {
     p_codigo: codigo,
   });

@@ -61,7 +61,7 @@ export async function listarTiers() {
 
   const { data } = await supabase
     .from("tiers")
-    .select("id, nombre, precio_mensual, puede_dar_puntos, permite_resenas, puede_publicar_contenido, en_banner_principal, max_sucursales")
+    .select("id, nombre, precio_mensual, puede_dar_puntos, permite_resenas, puede_publicar_contenido, en_banner_principal, max_sucursales, se_ofrece")
     .order("id");
 
   return (data ?? []) as Tier[];

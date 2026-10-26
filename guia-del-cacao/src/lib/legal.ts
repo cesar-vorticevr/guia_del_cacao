@@ -17,4 +17,4 @@ export const RESPONSABLE = "Vórtice VR";
 export const DOMICILIO = "Villahermosa, Tabasco, México";
 
 /** Última vez que estos textos cambiaron de fondo. */
-export const ACTUALIZADO = "4 de octubre de 2026";
+export const ACTUALIZADO = "25 de octubre de 2026";

@@ -1004,7 +1004,9 @@ lo que aceptaste sigue vigente.
 Tres afirmaciones se comprobaron en el repositorio antes de escribirlas, y **hay
 que corregir la pagina el dia que dejen de ser ciertas**:
 
-- **No hay datos bancarios.** No existe Stripe, Conekta ni ninguna pasarela.
+- **No hay datos de tarjeta.** Las cobra Stripe en su página. La única cuenta
+  bancaria guardada es la **CLABE de los embajadores** (000059), y el aviso lo
+  dice.
 - **No hay analitica ni cookies de publicidad.** Tampoco Vercel Analytics.
 - **El cobro es simulado.** `src/lib/pagos.ts` siempre aprueba y no hace ningun
   cargo. Por eso el apartado de cobro de las condiciones **se pinta desde
@@ -1020,10 +1022,11 @@ mintiendo.
 
 ## La identidad visual: selva de noche
 
-Desde octubre de 2026 el sitio público (`app/(publico)`) y el acceso
-(`app/(auth)`) van de noche: una selva de cuento con luciérnagas, hojas que
-caen y oro. El panel del negocio y el del administrador **siguen en crema** a
-propósito: son pantallas de trabajo.
+Desde octubre de 2026 **todo** va de noche: el sitio público
+(`app/(publico)`), el acceso (`app/(auth)`), el panel del negocio
+(`app/negocio`) y el del administrador (`app/admin`). Una selva de cuento con
+luciérnagas, hojas que caen y oro. Los paneles estuvieron en crema un tiempo
+por ser pantallas de trabajo; se pasaron porque se sentían otra plataforma.
 
 - **Tipografía:** *Fraunces* para títulos (serif suave, de libro ilustrado; la
   palabra clave va en itálica dorada con `texto-oro`) y *Plus Jakarta Sans*
@@ -1032,12 +1035,12 @@ propósito: son pantallas de trabajo.
 - **`.noche` traduce los colores, los componentes no cambian.** Los
   componentes siguen escritos en crema (`bg-white`, `text-cacao`,
   `border-ink/10`) y las reglas de `.noche` en `globals.css` —fuera de capa,
-  para ganarle a Tailwind— los pasan a cristal oscuro, crema y oro. Por eso
-  el mismo componente sale de noche en el sitio y de día en el panel. Los
+  para ganarle a Tailwind— los pasan a cristal oscuro, crema y oro. Los
   campos de texto se quedan blancos a propósito. Un componente nuevo no
   necesita nada especial; si algo sale ilegible de noche, se ajusta ahí.
-- **`CieloMagico`** es el fondo: va en el `main` del layout público y en el
-  de acceso. Su lienzo es `sticky` del alto de la pantalla, así que acompaña
+- **`CieloMagico`** es el fondo: va en el `main` del layout público y en los
+  de acceso, negocio y admin (estos tres con `isolate`, para que el cielo
+  quede detrás del contenido y no detrás del fondo del `body`). Su lienzo es `sticky` del alto de la pantalla, así que acompaña
   todo el scroll sin pintar una página entera. La caja recorta con
   `overflow-clip` y no `hidden`: `hidden` rompe el `sticky`.
 - **Todo lo que se mueve es lento** y se apaga con «reducir movimiento»: el
@@ -1107,18 +1110,26 @@ npm run typecheck && npm run lint && npm run build
 
 Migraciones **000051**, **000053** y **000055**. Mensual / anual (dos meses gratis: el año cuesta diez mensualidades):
 
+Desde la migración **000059** hay **un solo plan de pago**:
+
 | Plan (id) | Mensual | Anual |
 |---|---|---|
-| Gratis (1) | $0, treinta días | — |
-| Básico (2) | $199 | $1,990 |
-| Pro (3) | $299 | $2,990 |
+| Gratis (1) | $0, quince días | — |
+| Pro (3) | $499 | $4,990 |
+| Básico (2) | $199, **ya no se ofrece** | — |
+
+El Básico se queda en `tiers` con `se_ofrece = false`: quien ya lo paga lo
+conserva con su precio, pero no sale entre los planes a elegir y
+`exigir_plan_ofrecido` no deja abrir una suscripción nueva en él (salvo la que
+reabre la misma sucursal al cambiar de periodo). Las pruebas de precio viejas
+(14, 16, 18) ponen los tres planes de entonces dentro de su transacción.
 
 Hasta el 13 de octubre de 2026 se llamaban Básico ($99), Plus y Premier. Se
 recorrieron un lugar sin cambiar ids ni lo que trae cada uno. La columna
 `convenios.basico_gratis_hasta` conserva el nombre viejo: es «el plan más barato
 gratis hasta», hoy el Gratis.
 
-- **Gratis dura treinta días** (`public.dias_gratis()` y `DIAS_GRATIS` en
+- **Gratis dura quince días** (`public.dias_gratis()` y `DIAS_GRATIS` en
   `lib/precios.ts`). Es una prueba a $0: al vencer se oculta como cualquier
   otra. Si su convenio da una fecha más lejana, manda la fecha.
 
@@ -1299,3 +1310,46 @@ Variables (en Vercel, **sin** `NEXT_PUBLIC_`): `STRIPE_SECRET_KEY`,
 - Al pasar de las llaves de prueba a las reales hay que **borrar
   `tiers.stripe_product_id` y los `marcas.stripe_customer_id` de prueba**: son
   de otro entorno y en el real dan «No such product».
+
+## Embajadores del Cacao (migración 000059)
+
+Cualquier cuenta pide ser embajadora en `/embajador`; el administrador la
+aprueba en `/admin/embajadores` y entonces nace su código (`LUCIA-7K2P`: el
+primer nombre y cuatro caracteres sin los que se confunden al dictarlos). Un
+negocio que pone ese código en «¿Tienes un código?» recibe **20% de descuento en
+su primer pago** —del mes o del año— y el embajador gana **20% de lo que ese
+negocio pagó de verdad**. A fin de mes el administrador le transfiere lo
+acumulado a su CLABE y lo registra.
+
+- **El dinero se enseña como dinero**, en pesos, no disfrazado de mazorcas: es
+  lo que se le transfiere a alguien, y el trato tiene que leerse claro.
+- Tres tablas: `embajadores` (solicitud, código, CLABE), `referidos` (una fila
+  **por marca y para siempre**: nace al poner el código, sin monto, y el monto
+  y la comisión se llenan al primer pago) y `pagos_a_embajadores`.
+- **Nada se escribe desde la aplicación** más allá de pedir ser embajador y
+  anotar la CLABE. Vincular (`vincular_embajador`), anotar la comisión
+  (`registrar_comision`, solo `service_role`), aprobar
+  (`decidir_embajador`) y pagar (`registrar_pago_a_embajador`) son funciones
+  `security definer`. No hay políticas de escritura en `referidos` ni en
+  `pagos_a_embajadores`: la ausencia es la regla.
+- Reglas que comprueba la base: nadie usa su propio código; una marca que ya
+  pagó (cliente de Stripe o suscripción activa) no estrena descuento; una marca
+  tiene un solo embajador; un aviso repetido de Stripe no anota la comisión dos
+  veces; el monto de un pago lo suma la base, no el formulario.
+- **El descuento lo aplica Stripe**, con el cupón `guia-embajador-20`
+  (`duration: once`) que `crearPago` crea la primera vez. Los cobros
+  siguientes van completos solos. Con una promoción de convenio no se aplica:
+  un descuento por pago. El webhook (`pagoCompletado`) anota la comisión sobre
+  `amount_total`, que ya trae el descuento.
+- **En el cobro simulado no se anotan comisiones**: hace falta la llave de
+  servicio, y sin pasarela no hay dinero que repartir.
+- Los porcentajes están dos veces: `descuento_de_embajador()` /
+  `comision_de_embajador()` en la base y `DESCUENTO_DE_EMBAJADOR` /
+  `COMISION_DE_EMBAJADOR` en `lib/precios.ts`. Si cambian, en los dos.
+- **El embed de pagos nombra su llave**
+  (`embajadores!pagos_a_embajadores_embajador_id_fkey`): `referidos` apunta a
+  las dos tablas y abre un segundo camino. Es el quinto caso del tropiezo.
+- El embajador ve el nombre de sus referidos por `mis_referidos()`, aunque la
+  marca esté en pausa y su nombre ya no sea público.
+- El administrador ve el dinero en `/admin`: ingreso mensual, micrositios en
+  prueba y sin pagar, y lo que se debe a embajadores.

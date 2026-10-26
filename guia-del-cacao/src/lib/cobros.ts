@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import { crearClienteDeServicio } from "@/lib/supabase/servicio";
 import { APP } from "@/lib/stripe";
+import { registrarComision } from "@/lib/embajadores";
 
 /**
  * Lo que hace la Guía cuando Stripe avisa de un cobro (`/api/stripe/webhook`).
@@ -108,6 +109,12 @@ export async function pagoCompletado(sesion: Stripe.Checkout.Session, suscripcio
 
   await servicio.from("sucursales").update({ tier_id: tierId }).in("id", sucursalIds);
   await republicar(servicio, ocultasPorPago);
+
+  // Llegó con código de embajador: su comisión es el 20% de lo que Stripe
+  // cobró de verdad, ya con el descuento. La base no la anota dos veces.
+  if (meta.embajador_id && meta.marca_id) {
+    await registrarComision(meta.marca_id, (sesion.amount_total ?? 0) / 100, suscripcion.id);
+  }
 }
 
 /** Entró un cobro (la renovación de cada mes o año): sigue pagado. */

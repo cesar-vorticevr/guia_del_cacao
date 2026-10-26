@@ -369,7 +369,12 @@ function CodigoDeConvenio({
         </p>
         <p className="text-sm">{oferta.descripcion}</p>
         <ul className="mt-2 grid gap-0.5 text-sm">
-          {oferta.cubreHasta ? (
+          {oferta.embajador ? (
+          <li>
+            ✓ {oferta.descuento}% de descuento en tu primer pago. Los siguientes van
+            al precio normal.
+          </li>
+        ) : oferta.cubreHasta ? (
             <>
               <li>
                 {oferta.descuento >= 100 ? (
@@ -454,7 +459,7 @@ function CodigoDeConvenio({
         </button>
       </div>
       <p className={`mt-1.5 text-sm ${error ? "font-bold text-guayaba" : "text-cacao/70"}`}>
-        {error ?? "Si te dieron un código de promoción, escríbelo aquí para ver tus precios."}
+        {error ?? "Si te dieron un código de promoción o de un Embajador del Cacao, escríbelo aquí para ver tus precios."}
       </p>
     </div>
   );
@@ -782,7 +787,10 @@ function Planes({
   /** El convenio aplicado, si hay: cambia los precios que se enseñan. */
   oferta?: Oferta | null;
 }) {
-  const ordenados = [...tiers].sort((a, b) => a.precio_mensual - b.precio_mensual);
+  // Los que ya no se ofrecen solo salen para quien todavía los paga.
+  const ordenados = [...tiers]
+    .filter((tier) => tier.se_ofrece || tier.id === actual)
+    .sort((a, b) => a.precio_mensual - b.precio_mensual);
   const masAlto = ordenados[ordenados.length - 1];
   const conPromocion = ordenados.find((tier) => promocionPara(tier, oferta));
 
@@ -797,13 +805,21 @@ function Planes({
       <legend className="sr-only">Elige un plan</legend>
       <input type="hidden" name="periodo" value={periodo} />
 
-      <div className="grid gap-4 pt-3 md:grid-cols-3">
+      <div
+        className={`grid gap-4 pt-3 ${ordenados.length === 2 ? "mx-auto w-full max-w-3xl md:grid-cols-2" : "md:grid-cols-3"}`}
+      >
         {ordenados.map((tier, lugar) => (
           <TarjetaDePlan
             key={tier.id}
             tier={tier}
             tiers={ordenados}
-            lema={LEMAS[lugar] ?? ""}
+            lema={
+              lugar === 0
+                ? LEMAS[0]
+                : lugar === ordenados.length - 1
+                  ? LEMAS[LEMAS.length - 1]
+                  : (LEMAS[lugar] ?? "")
+            }
             periodo={periodo}
             oferta={oferta}
             elegido={tier.id === elegido}
@@ -812,7 +828,7 @@ function Planes({
               tier.id === conPromocion?.id
                 ? "Promoción de apertura"
                 : !conPromocion && tier.id === masAlto?.id
-                  ? "Más completo"
+                  ? "Todo incluido"
                   : null
             }
             alElegir={() => setElegido(tier.id)}
@@ -824,7 +840,7 @@ function Planes({
 }
 
 /** Para quién es cada plan, del más barato al más caro. */
-const LEMAS = ["Para conocer la guía", "Para tu negocio", "Para destacar en grande"];
+const LEMAS = ["Para conocer la guía", "Para tu negocio", "Todo para tu negocio"];
 
 function TarjetaDePlan({
   tier,
@@ -922,7 +938,9 @@ function TarjetaDePlan({
   // Lo que va debajo del precio: hasta cuándo, o qué es ese número.
   const nota = gratis
     ? "Sin tarjeta y sin pagar nada"
-    : precio.cubreHasta
+    : precio.soloPrimerPago
+      ? `Tu primer pago, con el código de ${oferta?.embajador}. Después, ${textoDePrecio(precio.despues ?? 0, precio.periodo)}.`
+      : precio.cubreHasta
       ? precio.cobro === 0
         ? `Gratis hasta el ${fechaDeOferta(precio.cubreHasta)}. Después, ${textoDePrecio(precio.despues ?? 0, precio.periodo)}.`
         : `Un solo pago: cubre hasta el ${fechaDeOferta(precio.cubreHasta)}. Después, ${textoDePrecio(precio.despues ?? 0, precio.periodo)}.`

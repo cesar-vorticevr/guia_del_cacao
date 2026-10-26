@@ -4,7 +4,7 @@ set client_min_messages to notice;
 
 -- Planes Gratis, Basico y Pro, y la promocion de apertura (migracion 000053).
 --
--- Gratis dura treinta dias a $0. La promocion: pagar un mes de Pro con 50%
+-- Gratis dura quince dias a $0 (treinta hasta la migracion 000059). La promocion: pagar un mes de Pro con 50%
 -- mientras el codigo sirve lo deja pagado hasta su fecha, y despues se cobra el
 -- precio normal. En prueba no hay promocion, y se usa una vez por sucursal.
 --
@@ -12,6 +12,14 @@ set client_min_messages to notice;
 -- datos.
 
 begin;
+
+-- Esta prueba es de las reglas de precio, y las cuentas estan hechas con los
+-- tres planes de entonces: Gratis $0, Basico $199 y Pro $299, los tres a la
+-- venta. Desde la migracion 000059 hay un solo plan de pago ($499) y el
+-- Basico ya no se ofrece; los precios de hoy los revisa 20-embajadores.sql.
+-- Aqui se ponen los de entonces, dentro de la transaccion que se deshace.
+update public.tiers set se_ofrece = true where id = 2;
+update public.tiers set precio_mensual = 299 where id = 3;
 
 create or replace function pg_temp.debe_fallar(etiqueta text, sentencia text)
 returns void language plpgsql as $$
@@ -102,10 +110,10 @@ insert into public.suscripciones (sucursal_id, tier_id, monto_mensual, estado, f
 values ('a3600000-0000-0000-0000-000000000004', 2, 1, 'activo', now() + interval '1 month',
         'a4600000-0000-0000-0000-000000000001');
 
-\echo '--- Gratis: $0, en prueba, treinta dias ---'
+\echo '--- Gratis: $0, en prueba, quince dias (eran treinta hasta la 000059) ---'
 select s.monto_por_cobro = 0 as cero,
        s.estado = 'trial' as en_prueba,
-       s.fecha_fin_trial between now() + interval '29 days' and now() + interval '31 days' as treinta_dias
+       s.fecha_fin_trial between now() + interval '14 days' and now() + interval '16 days' as quince_dias
   from pg_temp.vigente('a3600000-0000-0000-0000-000000000001') s;
 
 \echo '--- promocion: paga 150 y queda cubierto hasta su fecha; despues, 299 ---'

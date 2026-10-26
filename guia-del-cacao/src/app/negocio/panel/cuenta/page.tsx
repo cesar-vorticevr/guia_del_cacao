@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { InvitacionAEmbajador } from "@/components/embajador/invitacion";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { FormularioCancelarSuscripcion } from "@/components/negocio/formularios";
@@ -98,6 +99,8 @@ export default async function CuentaNegocio({
         </Link>
         <h1 className="mt-3 font-display text-3xl">Mi cuenta</h1>
       </div>
+
+      <InvitacionAEmbajador />
 
       <Pestanas
         base="/negocio/panel/cuenta"
@@ -233,8 +236,8 @@ export default async function CuentaNegocio({
           ) : (
             <p className="max-w-2xl rounded-3xl bg-crema-2 p-6 text-cacao">
               Todavía no tienes ningún micrositio publicado. El plan se elige al
-              publicar cada uno, desde su ficha: el Gratis dura treinta días, y
-              los de pago se prueban quince días sin dejar tarjeta.
+              publicar cada uno, desde su ficha: el Gratis dura quince días, y
+              el Pro también se prueba quince días sin dejar tarjeta.
             </p>
           )}
 
