@@ -474,14 +474,14 @@ language sql
 stable
 security definer
 set search_path = ''
-as $
+as $$
   select m.nombre_comercial, r.vinculado_en, r.monto_pagado, r.comision, r.pagado_en,
          r.pago_id is not null
     from public.referidos r
     join public.marcas m on m.id = r.marca_id
    where r.embajador_id = (select auth.uid())
    order by r.vinculado_en desc;
-$;
+$$;
 
 revoke all on function public.mis_referidos() from public, anon;
 grant execute on function public.mis_referidos() to authenticated;
