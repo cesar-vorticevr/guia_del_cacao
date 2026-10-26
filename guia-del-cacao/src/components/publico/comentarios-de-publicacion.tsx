@@ -40,7 +40,9 @@ export async function ComentariosDePublicacion({
   ]);
 
   const mios = cuantosSon(comentarios, perfil?.id);
-  const esCliente = perfil?.rol === "cliente" && perfil.rol_confirmado;
+  // Clientes y negocios comentan (migración 000063).
+  const esCliente =
+    (perfil?.rol === "cliente" || perfil?.rol === "negocio") && perfil.rol_confirmado;
   const leQueda = mios < TOPE_COMENTARIOS[contexto];
 
   const motivo = !perfil ? (
@@ -51,7 +53,7 @@ export async function ComentariosDePublicacion({
       para dejar tu comentario.
     </>
   ) : !esCliente ? (
-    "Los comentarios son de las cuentas de cliente."
+    "Termina de crear tu cuenta para comentar."
   ) : !leQueda ? (
     "Ya comentaste esto. Puedes editar lo que escribiste arriba."
   ) : null;

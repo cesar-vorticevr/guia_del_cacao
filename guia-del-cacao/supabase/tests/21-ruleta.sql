@@ -97,11 +97,11 @@ insert into public.premios_ruleta (sucursal_id, orden, texto, probabilidad) valu
   ('f2300000-0000-0000-0000-000000000001', 2, 'Bebida gratis', 30),
   ('f2300000-0000-0000-0000-000000000001', 3, 'Caja de trufas', 10);
 
-select pg_temp.debe_fallar('no hay un cuarto premio',
+select pg_temp.debe_fallar('no hay un septimo gajo (000062: son seis)',
   $q$ insert into public.premios_ruleta (sucursal_id, orden, texto, probabilidad)
-      values ('f2300000-0000-0000-0000-000000000001', 4, 'Otro', 10) $q$);
+      values ('f2300000-0000-0000-0000-000000000001', 7, 'Otro', 10) $q$);
 
-select pg_temp.debe_fallar('el negocio no gira su propia ruleta',
+select pg_temp.debe_fallar('el negocio no gira su propia ruleta (aunque ya giran los negocios)',
   $q$ select * from public.girar_ruleta('f2300000-0000-0000-0000-000000000001') $q$);
 
 reset role;

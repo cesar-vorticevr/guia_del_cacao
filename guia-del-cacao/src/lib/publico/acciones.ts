@@ -67,8 +67,10 @@ export async function publicarResena(
   const slug = datos.get("slug")?.toString() ?? "";
 
   if (!perfil) redirect(`/login?volver=/marca/${slug}`);
-  if (perfil.rol !== "cliente") {
-    return { error: "Solo las cuentas de cliente pueden reseñar." };
+  // Clientes y negocios reseñan (migración 000063); el administrador no. Que
+  // un negocio no se reseñe a sí mismo lo frena la base (`no_en_lo_propio`).
+  if (perfil.rol !== "cliente" && perfil.rol !== "negocio") {
+    return { error: "Las cuentas de administración no reseñan." };
   }
 
   const sucursalId = datos.get("sucursal_id")?.toString() ?? "";

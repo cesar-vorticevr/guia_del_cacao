@@ -1402,3 +1402,27 @@ ignorados por git: **nunca en `CUENTAS-DE-PRUEBA.md`**, que sí se sube.
 `supabase/seed-demo.sql` está **desactualizado** (no pone `entidad`, crea
 sucursales antes del catálogo, escribe en `temas_foro`): la demo de hoy es la
 del script.
+
+## Seis gajos y todos participan (migraciones 000062 y 000063)
+
+**La ruleta tiene seis gajos.** El negocio llena hasta seis, cada uno con su
+probabilidad, y cualquiera puede ser «Suerte para la próxima» (`es_premio =
+false`). Los vacíos se llenan según `ruletas.relleno`: con suerte (que se
+reparte lo que falte para 100) o repitiendo los premios (cada premio reparte
+su chance entre sus copias). **`gajos_de_ruleta()` es la única fuente**: la
+pinta el micrositio y con ella tira `girar_ruleta`, que devuelve el gajo
+donde paró. La suerte cuenta como giro para «una vez» y «una al día», pero no
+deja código ni sale en «Mis premios».
+
+La rueda usa los seis colores de la guía, parte el texto en dos renglones a lo
+largo del radio (volteado en la mitad izquierda) y suena con Web Audio
+(`components/ruleta/sonidos.ts`): un tic por gajo que pasa la flecha, que
+rebota, fanfarria al ganar y dos notas de «casi». Todo se silencia con la
+bocina y nada se mueve con «reducir movimiento».
+
+**Todos participan.** `es_cliente()` —la puerta de reseñas, calificaciones,
+favoritos, fotos de reseña y comentarios de eventos— ahora acepta cliente **o
+negocio** con su rol elegido; el nombre se conservó para no tocar cada
+política. `no_en_lo_propio()` frena que un negocio se reseñe, se califique o
+se guarde a sí mismo, y `girar_ruleta` que gire la suya. Los negocios ven sus
+premios en su cuenta (`/negocio/panel/cuenta?ver=premios`).

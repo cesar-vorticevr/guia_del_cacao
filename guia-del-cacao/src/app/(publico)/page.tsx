@@ -57,7 +57,9 @@ export default async function Home() {
 
   // Solo un cliente guarda favoritos. A un negocio o a un administrador el
   // corazón les prometería algo que su cuenta no hace.
-  const esCliente = perfil?.rol === "cliente" && perfil.rol_confirmado;
+  // Clientes y negocios guardan favoritos (migración 000063).
+  const esCliente =
+    (perfil?.rol === "cliente" || perfil?.rol === "negocio") && Boolean(perfil?.rol_confirmado);
   const [favoritos, catalogo] = await Promise.all([
     misFavoritosEntre(esCliente ? perfil.id : undefined, sucursales.map((s) => s.id)),
     // El catálogo viaja a la página para que el buscador sugiera por producto

@@ -13,7 +13,15 @@ import { crearClienteServidor } from "@/lib/supabase/server";
  */
 
 export type ResultadoDeGiro =
-  | { orden: number; premio: string; codigo: string; venceEn: string }
+  | {
+      /** El gajo donde paró: la rueda se anima hasta él. */
+      gajo: number;
+      premio: string;
+      /** «Suerte para la próxima» no trae código. */
+      esPremio: boolean;
+      codigo: string | null;
+      venceEn: string | null;
+    }
   | { error: string; entrar?: boolean };
 
 /** Girar. El premio lo decide `girar_ruleta`; el navegador solo lo anima. */
@@ -30,11 +38,19 @@ export async function girarRuleta(sucursalId: string): Promise<ResultadoDeGiro> 
     };
   }
 
-  const fila = (data as { orden: number; premio: string; codigo: string; vence_en: string }[])[0];
+  const fila = (data as {
+    gajo: number;
+    premio: string;
+    es_premio: boolean;
+    codigo: string | null;
+    vence_en: string | null;
+  }[])[0];
   revalidatePath("/cuenta");
+  revalidatePath("/negocio/panel/cuenta");
   return {
-    orden: Number(fila.orden),
+    gajo: Number(fila.gajo),
     premio: fila.premio,
+    esPremio: fila.es_premio,
     codigo: fila.codigo,
     venceEn: fila.vence_en,
   };
@@ -49,10 +65,18 @@ async function exigirNegocio() {
   return perfil;
 }
 
+/** Lo que se lee en un gajo de «suerte». La base pone el mismo en el relleno. */
+const SUERTE = "Suerte para la próxima";
+
 /**
  * Guardar la ruleta de una sucursal: si está encendida, cada cuánto se gira,
- * cuántos días vale lo que se gana y sus premios. Las probabilidades suman
- * cien para que se lean como porcentajes, que es como las entiende cualquiera.
+ * cuántos días vale lo ganado, hasta seis gajos y cómo se llenan los vacíos
+ * (migración 000062). Las probabilidades se leen como porcentajes:
+ *
+ * - Repitiendo premios, los puestos suman 100: la rueda solo los repite.
+ * - Rellenando con suerte, lo que falte para 100 es el chance de la suerte, así
+ *   que tiene que faltar algo: un gajo de suerte que nunca sale engaña.
+ * - Con los seis puestos llenos no hay relleno y suman 100.
  */
 export async function guardarRuleta(
   _previo: EstadoRuleta,
@@ -73,21 +97,35 @@ export async function guardarRuleta(
     return { error: "Los premios valen entre 1 y 365 días." };
   }
 
-  const premios = [1, 2, 3]
-    .map((orden) => ({
-      orden,
-      texto: (datos.get(`premio_${orden}`)?.toString() ?? "").trim().slice(0, 60),
-      probabilidad: Number(datos.get(`probabilidad_${orden}`) ?? 0),
-    }))
+  const relleno = datos.get("relleno")?.toString() === "repetir" ? "repetir" : "suerte";
+
+  const puestos = [1, 2, 3, 4, 5, 6]
+    .map((n) => {
+      const esSuerte = datos.get(`suerte_${n}`) === "si";
+      return {
+        texto: esSuerte ? SUERTE : (datos.get(`premio_${n}`)?.toString() ?? "").trim().slice(0, 40),
+        probabilidad: Number(datos.get(`probabilidad_${n}`) ?? 0),
+        es_premio: !esSuerte,
+      };
+    })
     .filter((p) => p.texto);
 
-  if (premios.length === 0) return { error: "Escribe al menos un premio." };
-  if (premios.some((p) => !Number.isInteger(p.probabilidad) || p.probabilidad < 1)) {
-    return { error: "Cada premio necesita una probabilidad de al menos 1%." };
+  const premios = puestos.map((p, i) => ({ ...p, orden: i + 1 }));
+
+  if (!premios.some((p) => p.es_premio)) return { error: "Escribe al menos un premio." };
+  if (premios.some((p) => !(p.probabilidad > 0) || p.probabilidad > 100)) {
+    return { error: "Cada gajo necesita una probabilidad mayor que 0%." };
   }
-  const suma = premios.reduce((total, p) => total + p.probabilidad, 0);
-  if (suma !== 100) {
+  const suma = Math.round(premios.reduce((total, p) => total + p.probabilidad, 0) * 100) / 100;
+  const vacios = 6 - premios.length;
+
+  if ((vacios === 0 || relleno === "repetir") && suma !== 100) {
     return { error: `Las probabilidades tienen que sumar 100%. Ahora suman ${suma}%.` };
+  }
+  if (vacios > 0 && relleno === "suerte" && suma >= 100) {
+    return {
+      error: `Suman ${suma}%: no le queda chance a la «Suerte para la próxima» de los ${vacios} gajos vacíos. Baja algún porcentaje o elige repetir premios.`,
+    };
   }
 
   const activa = datos.get("activa") === "si";
@@ -98,6 +136,7 @@ export async function guardarRuleta(
     activa,
     frecuencia,
     vigencia_dias: vigencia,
+    relleno,
   });
   if (error) {
     return { error: error.code === "P0001" ? error.message : "No se pudo guardar la ruleta." };

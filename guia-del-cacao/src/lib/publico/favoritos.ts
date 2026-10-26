@@ -24,10 +24,12 @@ export async function marcarFavorito(
     return { guardado: false, error: "Entra a tu cuenta para guardar negocios." };
   }
 
-  if (perfil.rol !== "cliente") {
+  // Clientes y negocios guardan favoritos (000063); el propio, no: lo frena
+  // la base.
+  if (perfil.rol !== "cliente" && perfil.rol !== "negocio") {
     return {
       guardado: false,
-      error: "Los favoritos son de las cuentas de visitante.",
+      error: "Las cuentas de administración no guardan favoritos.",
     };
   }
 

@@ -3,153 +3,223 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { LluviaDeMazorcas } from "@/components/lluvia-de-mazorcas";
+import { casi, fanfarria, preparar, tic } from "@/components/ruleta/sonidos";
 import { girarRuleta } from "@/lib/ruleta/acciones";
-import type { PremioDeRuleta } from "@/lib/datos/ruleta";
 
-/** Un color por premio, de la paleta de la guía. */
+export type Gajo = { gajo: number; texto: string; probabilidad: number; esPremio: boolean };
+
+/**
+ * Los seis colores de la guía, uno por gajo, con la letra que se lee encima.
+ * Si cambia la paleta en `globals.css`, cambia aquí.
+ */
 const COLORES = [
-  { gajo: "#ffb703", letra: "#22150e" },
-  { gajo: "#ff5d73", letra: "#22150e" },
-  { gajo: "#12b8ac", letra: "#08150f" },
+  { fondo: "#ffb703", letra: "#22150e" }, // mango
+  { fondo: "#ff5d73", letra: "#22150e" }, // guayaba
+  { fondo: "#12b8ac", letra: "#08150f" }, // turquesa
+  { fondo: "#a8d94a", letra: "#0c5236" }, // lima
+  { fondo: "#106b46", letra: "#fff7e8" }, // selva
+  { fondo: "#4a2c1d", letra: "#fff7e8" }, // cacao
 ];
-/** Los gajos alternan con este, más oscuro, para que se distingan girando. */
-const GAJO_OSCURO = "#1c1236";
+
+const PASO = 60;
+/** Lo que cabe en un renglón del gajo, en caracteres. */
+const RENGLON = 13;
+
+const FECHA = new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "long", timeZone: "UTC" });
 
 /**
  * Las coordenadas con tres decimales. Sin redondear, el servidor y el navegador
- * escriben el mismo número con distinta cola (…946 contra …94596) y React
- * avisa de un desajuste al hidratar.
+ * escriben el mismo número con distinta cola y React avisa al hidratar.
  */
 const r3 = (n: number) => Math.round(n * 1000) / 1000;
 
-/**
- * Azar para la animación, no para el premio: en qué gajo de los que tocan cae
- * la flecha y dónde dentro de él. Va fuera del componente porque solo se usa
- * al pulsar, nunca al pintar.
- */
+/** Azar de la animación (no del premio): dónde cae la flecha dentro del gajo. */
 const azar = () => Math.random();
 
-/** Seis gajos siempre: con tres premios cada uno sale dos veces. */
-const GAJOS = 6;
+/** Parte el texto en dos renglones que quepan en el gajo, por palabras. */
+function renglones(texto: string): string[] {
+  const palabras = texto.split(/\s+/);
+  const lineas = [""];
+  for (const palabra of palabras) {
+    const actual = lineas[lineas.length - 1];
+    if (!actual) lineas[lineas.length - 1] = palabra;
+    else if (`${actual} ${palabra}`.length <= RENGLON) lineas[lineas.length - 1] = `${actual} ${palabra}`;
+    else if (lineas.length < 2) lineas.push(palabra);
+    else {
+      lineas[1] = `${lineas[1]} ${palabra}`;
+    }
+  }
+  return lineas.map((l) => (l.length > RENGLON + 2 ? `${l.slice(0, RENGLON)}…` : l));
+}
 
-const FECHA = new Intl.DateTimeFormat("es-MX", {
-  day: "numeric",
-  month: "long",
-  timeZone: "UTC",
-});
-
-type Ganado = { premio: string; codigo: string; venceEn: string };
+type Resultado = { premio: string; esPremio: boolean; codigo: string | null; venceEn: string | null };
 
 /**
- * La Ruleta Mágica del micrositio (migración 000060).
+ * La Ruleta Mágica del micrositio (migraciones 000060 y 000062).
  *
  * **El premio no lo decide el navegador.** Al girar se le pregunta a la base
- * (`girar_ruleta`), que tira, guarda el premio con su código y contesta cuál
- * salió; aquí solo se anima la rueda para que la flecha caiga en ese gajo.
- * Así nadie gana lo que quiera tocando el código de la página.
+ * (`girar_ruleta`), que tira sobre los seis gajos, guarda el premio y contesta
+ * en qué gajo cayó; aquí solo se anima la rueda hasta él.
  *
- * El giro dura cinco segundos y frena como una rueda de verdad. Con «reducir
- * movimiento» no hay vueltas: el premio aparece directo.
- *
- * Las probabilidades se enseñan debajo. Una promoción con premios tiene que
- * decir cuánto chance hay de cada uno, y además es lo que da confianza.
+ * Para que sea divertida: suena un «tic» cada vez que un gajo pasa por la
+ * flecha —que rebota con cada uno—, las luces del aro corren mientras gira,
+ * y al parar hay fanfarria y lluvia de mazorcas, o dos notas de «casi». Todo
+ * el sonido se apaga con el botón de la bocina.
  */
 export function RuletaMagica({
   sucursalId,
-  premios,
+  gajos,
   reglas,
   puedeGirar,
   motivo,
   volver,
+  frecuenciaDiaria,
+  enlacePremios,
 }: {
   sucursalId: string;
-  premios: PremioDeRuleta[];
-  /** «Una vez al día · el premio vale 30 días». */
+  gajos: Gajo[];
   reglas: string;
-  /** Solo un cliente con sesión gira. */
   puedeGirar: boolean;
-  /** Por qué no puede girar: sin sesión, o con una cuenta que no es de cliente. */
-  motivo: "sin-sesion" | "no-es-cliente" | null;
-  /** A dónde vuelve al iniciar sesión. */
+  /** Por qué no puede girar quien mira. */
+  motivo: "sin-sesion" | "sin-rol" | "propia" | null;
   volver: string;
+  /** Para decir «vuelve mañana» cuando sale suerte. */
+  frecuenciaDiaria: boolean;
+  /** Dónde ve sus premios quien gira: la cuenta de cliente o la del negocio. */
+  enlacePremios: string;
 }) {
   const [angulo, setAngulo] = useState(0);
   const [girando, setGirando] = useState(false);
-  const [ganado, setGanado] = useState<Ganado | null>(null);
+  const [resultado, setResultado] = useState<Resultado | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sonido, setSonido] = useState(true);
+
   const rueda = useRef<SVGGElement>(null);
-  const pendiente = useRef<Ganado | null>(null);
+  const flecha = useRef<SVGSVGElement>(null);
+  const pendiente = useRef<Resultado | null>(null);
+  const sonidoRef = useRef(true);
+  const cuadro = useRef(0);
 
-  // Los gajos: los premios repetidos hasta llenar seis, en orden.
-  const gajos = Array.from({ length: GAJOS }, (_, i) => premios[i % premios.length]);
-  const paso = 360 / GAJOS;
+  // Las probabilidades, sumadas por premio: un premio repetido en dos gajos
+  // se enseña una vez, con su chance completo.
+  const chances = new Map<string, number>();
+  for (const g of gajos) chances.set(g.texto, (chances.get(g.texto) ?? 0) + Number(g.probabilidad));
 
-  async function girar() {
-    if (girando) return;
-    setError(null);
-    setGanado(null);
-    setGirando(true);
-
-    const resultado = await girarRuleta(sucursalId);
-
-    if ("error" in resultado) {
-      setGirando(false);
-      setError(resultado.error);
-      return;
-    }
-
-    const ganado = { premio: resultado.premio, codigo: resultado.codigo, venceEn: resultado.venceEn };
-
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setGirando(false);
-      setGanado(ganado);
-      return;
-    }
-
-    // Uno de los gajos de ese premio, al azar, para que no caiga siempre igual.
-    const posibles = gajos.flatMap((g, i) => (g.orden === resultado.orden ? [i] : []));
-    const gajo = posibles[Math.floor(azar() * posibles.length)];
-    // El centro del gajo, contado desde arriba en el sentido del reloj, y un
-    // pequeño desvío dentro del gajo para que no pare siempre en el centro.
-    const centro = gajo * paso + paso / 2 + (azar() - 0.5) * paso * 0.6;
-    const actual = ((angulo % 360) + 360) % 360;
-    const falta = (360 - centro - actual + 720) % 360;
-    pendiente.current = ganado;
-    setAngulo(angulo + 6 * 360 + falta);
-    // Respaldo: si la pestaña se fue al fondo mientras giraba, el navegador
-    // no anima ni avisa del final, y el premio se quedaría sin enseñarse.
-    window.setTimeout(terminar, 5400);
+  /** Sigue la rueda mientras gira: un «tic» y un rebote por gajo que pasa. */
+  function seguir() {
+    const nodo = rueda.current;
+    if (!nodo) return;
+    let ultimo = -1;
+    let previo = 0;
+    const paso = () => {
+      const m = getComputedStyle(nodo).transform;
+      const partes = m.startsWith("matrix") ? m.slice(7, -1).split(",").map(Number) : [1, 0];
+      const grados = ((Math.atan2(partes[1], partes[0]) * 180) / Math.PI + 360) % 360;
+      const bajoLaFlecha = Math.floor(((360 - grados) % 360) / PASO);
+      if (bajoLaFlecha !== ultimo) {
+        if (ultimo !== -1) {
+          const velocidad = Math.min(Math.abs(grados - previo) / 20, 1);
+          if (sonidoRef.current) tic(velocidad);
+          const f = flecha.current;
+          if (f) {
+            f.classList.remove("flechazo");
+            void f.getBoundingClientRect();
+            f.classList.add("flechazo");
+          }
+        }
+        ultimo = bajoLaFlecha;
+      }
+      previo = grados;
+      cuadro.current = requestAnimationFrame(paso);
+    };
+    cuadro.current = requestAnimationFrame(paso);
   }
 
   function terminar() {
-    if (!pendiente.current) return;
-    setGanado(pendiente.current);
+    const final = pendiente.current;
+    if (!final) return;
     pendiente.current = null;
+    cancelAnimationFrame(cuadro.current);
     setGirando(false);
+    setResultado(final);
+    if (sonidoRef.current) (final.esPremio ? fanfarria : casi)();
   }
 
-  // Al terminar de girar, el premio.
+  async function girar() {
+    if (girando) return;
+    preparar();
+    setError(null);
+    setResultado(null);
+    setGirando(true);
+
+    const respuesta = await girarRuleta(sucursalId);
+
+    if ("error" in respuesta) {
+      setGirando(false);
+      setError(respuesta.error);
+      return;
+    }
+
+    pendiente.current = {
+      premio: respuesta.premio,
+      esPremio: respuesta.esPremio,
+      codigo: respuesta.codigo,
+      venceEn: respuesta.venceEn,
+    };
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      terminar();
+      return;
+    }
+
+    // El centro del gajo que salió, contado desde arriba en el sentido del
+    // reloj, con un pequeño desvío para que no pare siempre al centro.
+    const centro = (respuesta.gajo - 1) * PASO + PASO / 2 + (azar() - 0.5) * PASO * 0.6;
+    const actual = ((angulo % 360) + 360) % 360;
+    const falta = (360 - centro - actual + 720) % 360;
+    setAngulo(angulo + 7 * 360 + falta);
+    seguir();
+    // Respaldo: si la pestaña se fue al fondo, el navegador no avisa del final.
+    window.setTimeout(terminar, 6400);
+  }
+
   useEffect(() => {
     const nodo = rueda.current;
     if (!nodo) return;
     const alTerminar = () => terminar();
     nodo.addEventListener("transitionend", alTerminar);
-    return () => nodo.removeEventListener("transitionend", alTerminar);
+    return () => {
+      nodo.removeEventListener("transitionend", alTerminar);
+      cancelAnimationFrame(cuadro.current);
+    };
   }, []);
 
   return (
     <div className="relative flex flex-col items-center gap-6">
-      <div className="relative w-full max-w-[22rem]">
-        {/* La flecha, arriba, apuntando hacia adentro. */}
+      <button
+        type="button"
+        onClick={() => {
+          sonidoRef.current = !sonido;
+          setSonido(!sonido);
+        }}
+        aria-label={sonido ? "Silenciar la ruleta" : "Activar el sonido de la ruleta"}
+        className="absolute right-0 top-0 z-20 grid size-10 place-items-center rounded-full border border-mango/40 text-lg"
+      >
+        {sonido ? "🔊" : "🔇"}
+      </button>
+
+      <div className={`relative w-full max-w-[24rem] ${girando ? "ruleta-girando" : ""}`}>
+        {/* La flecha, arriba, que rebota con cada gajo que pasa. */}
         <svg
+          ref={flecha}
           viewBox="0 0 40 46"
           aria-hidden
-          className="absolute left-1/2 top-[-0.6rem] z-10 w-10 -translate-x-1/2 drop-shadow-[0_0_10px_rgba(255,209,102,0.9)]"
+          className="absolute left-1/2 top-[-0.7rem] z-10 w-11 -translate-x-1/2 origin-top drop-shadow-[0_0_10px_rgba(255,209,102,0.9)]"
         >
           <path d="M20 44 L4 6 Q20 -2 36 6 Z" fill="#ffd166" stroke="#fff3c4" strokeWidth="2" />
         </svg>
 
-        <svg viewBox="0 0 200 200" className="w-full drop-shadow-[0_0_40px_rgba(255,183,3,0.35)]">
+        <svg viewBox="0 0 200 200" className="ruleta-rueda w-full">
           <defs>
             <radialGradient id="centro-ruleta">
               <stop offset="0%" stopColor="#3a1f12" />
@@ -162,8 +232,8 @@ export function RuletaMagica({
             </linearGradient>
           </defs>
 
-          {/* El aro de oro con sus luces quietas: brillan, no parpadean. */}
           <circle cx="100" cy="100" r="98" fill="url(#aro-ruleta)" />
+          {/* Las luces del aro: quietas en reposo, corren cuando gira. */}
           {Array.from({ length: 18 }, (_, i) => {
             const a = (i * 20 * Math.PI) / 180;
             return (
@@ -171,9 +241,10 @@ export function RuletaMagica({
                 key={i}
                 cx={r3(100 + 92 * Math.sin(a))}
                 cy={r3(100 - 92 * Math.cos(a))}
-                r="2.2"
+                r="2.3"
                 fill="#fff8dc"
-                className="drop-shadow-[0_0_3px_rgba(255,255,255,0.9)]"
+                className="foco-ruleta"
+                style={{ animationDelay: `${(i % 3) * 0.12}s` }}
               />
             );
           })}
@@ -183,45 +254,55 @@ export function RuletaMagica({
             style={{
               transform: `rotate(${angulo}deg)`,
               transformOrigin: "100px 100px",
-              transition: "transform 5s cubic-bezier(0.12, 0.8, 0.12, 1)",
+              transition: "transform 6s cubic-bezier(0.1, 0.75, 0.1, 1)",
             }}
           >
-            {gajos.map((premio, i) => {
-              const desde = ((i * paso - 90) * Math.PI) / 180;
-              const hasta = (((i + 1) * paso - 90) * Math.PI) / 180;
+            {gajos.map((g, i) => {
+              const desde = ((i * PASO - 90) * Math.PI) / 180;
+              const hasta = (((i + 1) * PASO - 90) * Math.PI) / 180;
               const r = 86;
-              const color = COLORES[(premio.orden - 1) % COLORES.length];
-              const oscuro = i % 2 === 1 && premios.length < GAJOS;
-              const medio = i * paso + paso / 2;
-              const texto = premio.texto.length > 16 ? `${premio.texto.slice(0, 15)}…` : premio.texto;
+              const color = COLORES[i % COLORES.length];
+              const medio = i * PASO + PASO / 2;
+              // El texto va a lo largo del radio, de dentro hacia fuera; en la
+              // mitad izquierda se voltea para no quedar de cabeza.
+              const volteado = medio > 180;
+              const lineas = renglones(g.texto);
+              const tam = lineas.some((l) => l.length > 11) ? 6.4 : 7.4;
               return (
                 <g key={i}>
                   <path
                     d={`M100 100 L${r3(100 + r * Math.cos(desde))} ${r3(100 + r * Math.sin(desde))} A${r} ${r} 0 0 1 ${r3(100 + r * Math.cos(hasta))} ${r3(100 + r * Math.sin(hasta))} Z`}
-                    fill={oscuro ? GAJO_OSCURO : color.gajo}
+                    fill={color.fondo}
                     stroke="#fff3c4"
-                    strokeWidth="0.8"
+                    strokeWidth="1"
                   />
                   <text
-                    x="100"
-                    y="100"
-                    transform={`rotate(${medio} 100 100) translate(0 -52)`}
+                    transform={`rotate(${volteado ? medio + 90 : medio - 90} 100 100)`}
+                    x={volteado ? 45 : 155}
+                    y={100}
                     textAnchor="middle"
-                    dominantBaseline="middle"
-                    fontSize="7.5"
-                    fontWeight="700"
-                    fill={oscuro ? color.gajo : color.letra}
+                    fontSize={tam}
+                    fontWeight="800"
+                    fill={color.letra}
                     style={{ fontFamily: "var(--font-jakarta), sans-serif" }}
                   >
-                    {texto}
+                    {lineas.map((linea, n) => (
+                      <tspan
+                        key={n}
+                        x={volteado ? 45 : 155}
+                        dy={n === 0 ? (lineas.length === 2 ? -tam * 0.15 : tam * 0.35) : tam * 1.15}
+                      >
+                        {linea}
+                      </tspan>
+                    ))}
                   </text>
                 </g>
               );
             })}
           </g>
 
-          <circle cx="100" cy="100" r="17" fill="url(#centro-ruleta)" stroke="url(#aro-ruleta)" strokeWidth="3" />
-          <image href="/marca/mazorca.png" x="89" y="89" width="22" height="22" />
+          <circle cx="100" cy="100" r="18" fill="url(#centro-ruleta)" stroke="url(#aro-ruleta)" strokeWidth="3" />
+          <image href="/marca/mazorca.png" x="88" y="88" width="24" height="24" className="ruleta-centro" />
         </svg>
       </div>
 
@@ -232,7 +313,7 @@ export function RuletaMagica({
           disabled={girando}
           className="boton-oro brillo min-h-14 rounded-full px-10 font-display text-xl font-semibold text-ink disabled:opacity-70"
         >
-          {girando ? "Girando…" : "¡Girar la ruleta!"}
+          {girando ? "¡Girando!" : "¡Girar la ruleta!"}
         </button>
       ) : motivo === "sin-sesion" ? (
         <Link
@@ -243,7 +324,9 @@ export function RuletaMagica({
         </Link>
       ) : (
         <p className="text-center text-sm text-crema/70">
-          La ruleta es para los visitantes: entra con una cuenta de cliente para girarla.
+          {motivo === "propia"
+            ? "Es tu ruleta: así la ven tus visitantes. Gira las de otros negocios."
+            : "Termina de crear tu cuenta para girar la ruleta."}
         </p>
       )}
 
@@ -257,50 +340,68 @@ export function RuletaMagica({
         <p>{reglas}</p>
         <p className="mt-1">
           Probabilidades:{" "}
-          {premios.map((p, i) => (
-            <span key={p.orden}>
+          {[...chances].map(([texto, chance], i) => (
+            <span key={texto}>
               {i > 0 && " · "}
-              {p.texto} {p.probabilidad}%
+              {texto} {Math.round(chance * 10) / 10}%
             </span>
           ))}
         </p>
       </div>
 
-      {ganado && (
+      {resultado && (
         <div
           role="dialog"
-          aria-label="Ganaste un premio"
+          aria-label={resultado.esPremio ? "Ganaste un premio" : "Suerte para la próxima"}
           className="fixed inset-0 z-50 grid place-items-center bg-ink/70 p-4 backdrop-blur-sm"
         >
-          <LluviaDeMazorcas />
+          {resultado.esPremio && <LluviaDeMazorcas />}
           <div className="relative w-full max-w-md animate-brinca rounded-[2rem] border border-mango/50 bg-[#14231c] p-8 text-center text-crema shadow-[0_0_80px_rgb(255_183_3/0.35)]">
-            <p className="antetitulo">¡Ganaste!</p>
-            <p className="texto-oro mt-3 font-display text-4xl font-semibold leading-tight">{ganado.premio}</p>
-            <p className="mt-5 text-sm text-crema/70">Tu código</p>
-            <p className="mt-1 select-all font-mono text-3xl font-bold tracking-[0.15em] text-mango">
-              {ganado.codigo}
-            </p>
-            <p className="mt-3 text-sm text-crema/75">
-              Enséñalo en el negocio antes del {FECHA.format(new Date(`${ganado.venceEn}T00:00:00Z`))}.
-              Ya quedó guardado en tus premios.
-            </p>
+            {resultado.esPremio ? (
+              <>
+                <p className="antetitulo">¡Ganaste!</p>
+                <p className="texto-oro mt-3 font-display text-4xl font-semibold leading-tight">{resultado.premio}</p>
+                <p className="mt-5 text-sm text-crema/70">Tu código</p>
+                <p className="mt-1 select-all font-mono text-3xl font-bold tracking-[0.15em] text-mango">
+                  {resultado.codigo}
+                </p>
+                {resultado.venceEn && (
+                  <p className="mt-3 text-sm text-crema/75">
+                    Enséñalo en el negocio antes del{" "}
+                    {FECHA.format(new Date(`${resultado.venceEn}T00:00:00Z`))}. Ya quedó guardado en tus
+                    premios.
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="text-5xl">🍀</p>
+                <p className="mt-3 font-display text-3xl font-semibold">¡Uy, casi!</p>
+                <p className="mt-2 text-crema/75">
+                  Suerte para la próxima.
+                  {frecuenciaDiaria ? " Vuelve mañana por otro giro." : ""}
+                </p>
+              </>
+            )}
             <div className="mt-6 grid gap-3">
-              <Link
-                href="/cuenta?ver=premios"
-                className="boton-oro brillo inline-flex min-h-12 items-center justify-center rounded-full px-6 font-bold text-ink"
-              >
-                Ver mis premios
-              </Link>
+              {resultado.esPremio && (
+                <Link
+                  href={enlacePremios}
+                  className="boton-oro brillo inline-flex min-h-12 items-center justify-center rounded-full px-6 font-bold text-ink"
+                >
+                  Ver mis premios
+                </Link>
+              )}
               <a
                 href="#resenas"
-                onClick={() => setGanado(null)}
+                onClick={() => setResultado(null)}
                 className="inline-flex min-h-12 items-center justify-center rounded-full border border-mango/40 px-6 font-bold transition-colors hover:border-mango hover:text-mango"
               >
                 Déjale una reseña o pregunta
               </a>
               <button
                 type="button"
-                onClick={() => setGanado(null)}
+                onClick={() => setResultado(null)}
                 className="text-sm text-crema/60 underline-offset-4 hover:underline"
               >
                 Cerrar

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { InvitacionAEmbajador } from "@/components/embajador/invitacion";
+import { MisPremios } from "@/components/ruleta/mis-premios";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { FormularioCancelarSuscripcion } from "@/components/negocio/formularios";
@@ -87,7 +88,7 @@ export default async function CuentaNegocio({
   const publicadas = sucursales.filter((s) => s.estado === "publicado").length;
 
   const seccion =
-    ver === "datos" ? "datos" : ver === "sesion" ? "sesion" : "plan";
+    ver === "datos" ? "datos" : ver === "sesion" ? "sesion" : ver === "premios" ? "premios" : "plan";
 
   return (
     // Ancho para que los planes quepan lado a lado; el texto se queda en su
@@ -108,9 +109,13 @@ export default async function CuentaNegocio({
         pestanas={[
           { clave: "plan", texto: "Tu plan" },
           { clave: "datos", texto: "Tus datos" },
+          // Los negocios también giran ruletas de otros (migración 000062).
+          { clave: "premios", texto: "Mis premios" },
           { clave: "sesion", texto: "Sesión" },
         ]}
       />
+
+      {seccion === "premios" && <MisPremios />}
 
       {seccion === "plan" && (
         <div className="grid gap-8">

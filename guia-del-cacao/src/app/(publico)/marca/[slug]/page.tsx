@@ -23,7 +23,7 @@ import { BotonFavorito } from "@/components/publico/boton-favorito";
 import { BotonCompartir } from "@/components/publico/boton-compartir";
 import { Medir } from "@/components/publico/medir";
 import { RuletaMagica } from "@/components/ruleta/ruleta-magica";
-import { ruletaDe, sucursalesConRuleta, TEXTO_DE_FRECUENCIA } from "@/lib/datos/ruleta";
+import { gajosDe, ruletaDe, sucursalesConRuleta, TEXTO_DE_FRECUENCIA } from "@/lib/datos/ruleta";
 import { tipoDeContacto } from "@/lib/actividad";
 import { esFavorito } from "@/lib/datos/favoritos";
 import { productosDe } from "@/lib/datos/sucursales";
@@ -83,7 +83,7 @@ export default async function Micrositio({
   // primer plan que trae reseñas es un dato de la tabla `tiers`.
   const aceptaResenas = sucursal.tiers?.permite_resenas ?? false;
 
-  const [productos, resenas, perfil, calificacion, agenda, origen, conRuleta, ruleta] =
+  const [productos, resenas, perfil, calificacion, agenda, origen, conRuleta, ruleta, gajos] =
     await Promise.all([
       productosDe(sucursal.id),
       resenasDe(sucursal.id),
@@ -96,9 +96,10 @@ export default async function Micrositio({
       // La Ruleta Mágica (000060): se pinta solo si hoy se puede girar.
       sucursalesConRuleta(),
       ruletaDe(sucursal.id),
+      gajosDe(sucursal.id),
     ]);
 
-  const girable = conRuleta.has(sucursal.id) && ruleta && ruleta.premios.length > 0;
+  const girable = conRuleta.has(sucursal.id) && ruleta && gajos.length === 6;
 
   // El voto y el comentario viven en tablas distintas; esto es lo que los une
   // para poder enseñar las estrellas al lado de cada reseña y filtrar por ellas.
@@ -109,12 +110,37 @@ export default async function Micrositio({
 
   // Qué le toca ver a un cliente —reseñas y mazorcas— depende de cosas que solo
   // se pueden preguntar una vez que se sabe quién es.
+  let esDuenio = false;
+
+  if (perfil?.rol === "negocio") {
+    const supabase = await crearClienteServidor();
+
+    const { data } = await supabase
+      .from("marcas")
+      .select("id")
+      .eq("id", sucursal.marca_id)
+      .eq("perfil_id", perfil.id)
+      .maybeSingle();
+
+    esDuenio = data !== null;
+  }
+
+  /*
+    Quién puede reseñar, calificar, guardar y girar aquí: clientes y también
+    negocios (migración 000063), con su rol elegido y nunca en lo propio. La
+    base lo vuelve a frenar; esto es para no enseñar botones que no van.
+  */
+  const participa =
+    (perfil?.rol === "cliente" || perfil?.rol === "negocio") &&
+    Boolean(perfil?.rol_confirmado) &&
+    !esDuenio;
+
   let misEstrellas: number | null = null;
   let resenaPropia: Awaited<ReturnType<typeof miResena>> = null;
   let tienePendiente = false;
   let guardado = false;
 
-  if (perfil?.rol === "cliente" && perfil.rol_confirmado) {
+  if (perfil && participa) {
     [misEstrellas, resenaPropia, tienePendiente, guardado] = await Promise.all([
       miCalificacion(perfil.id, sucursal.id),
       miResena(perfil.id, sucursal.id),
@@ -142,21 +168,6 @@ export default async function Micrositio({
   // Para decidir si se muestra el cuadro de respuesta hay que preguntar si la
   // marca de esta sucursal es suya. RLS no sirve de filtro aquí: el micrositio
   // es público y cualquiera lo puede leer.
-  let esDuenio = false;
-
-  if (perfil?.rol === "negocio") {
-    const supabase = await crearClienteServidor();
-
-    const { data } = await supabase
-      .from("marcas")
-      .select("id")
-      .eq("id", sucursal.marca_id)
-      .eq("perfil_id", perfil.id)
-      .maybeSingle();
-
-    esDuenio = data !== null;
-  }
-
   const fondo = urlImagen(sucursal.imagen_fondo);
   const logo = urlImagen(sucursal.logo);
 
@@ -244,7 +255,7 @@ export default async function Micrositio({
               sucursalId={sucursal.id}
               nombre={sucursal.marcas?.nombre_comercial ?? sucursal.nombre_sucursal}
               inicial={guardado}
-              puedeGuardar={perfil?.rol === "cliente" && perfil.rol_confirmado}
+              puedeGuardar={participa}
               haySesion={Boolean(perfil)}
             />
           </div>
@@ -297,10 +308,14 @@ export default async function Micrositio({
             </p>
             <RuletaMagica
               sucursalId={sucursal.id}
-              premios={ruleta.premios}
+              gajos={gajos}
+              frecuenciaDiaria={ruleta.frecuencia === "diaria"}
+              enlacePremios={
+                perfil?.rol === "negocio" ? "/negocio/panel/cuenta?ver=premios" : "/cuenta?ver=premios"
+              }
               reglas={`${TEXTO_DE_FRECUENCIA[ruleta.frecuencia]} · el premio vale ${ruleta.vigenciaDias} ${ruleta.vigenciaDias === 1 ? "día" : "días"}`}
-              puedeGirar={perfil?.rol === "cliente" && perfil.rol_confirmado}
-              motivo={!perfil ? "sin-sesion" : perfil.rol !== "cliente" ? "no-es-cliente" : null}
+              puedeGirar={participa}
+              motivo={!perfil ? "sin-sesion" : esDuenio ? "propia" : !participa ? "sin-rol" : null}
               volver={`/marca/${sucursal.slug}`}
             />
           </div>
@@ -595,7 +610,7 @@ export default async function Micrositio({
               </p>
             )}
 
-            {perfil?.rol === "cliente" && (
+            {participa && (
               <FormularioResena
                 sucursalId={sucursal.id}
                 slug={slug}

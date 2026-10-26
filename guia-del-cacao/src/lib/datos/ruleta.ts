@@ -11,12 +11,22 @@ export { TEXTO_DE_FRECUENCIA, type Frecuencia } from "@/lib/ruleta/textos";
  * quien pregunta.
  */
 
-export type PremioDeRuleta = { orden: number; texto: string; probabilidad: number };
+export type PremioDeRuleta = {
+  orden: number;
+  texto: string;
+  probabilidad: number;
+  /** false: «Suerte para la próxima», que no deja premio. */
+  esPremio: boolean;
+};
+
+/** Cómo se llenan los gajos que el negocio deja vacíos (migración 000062). */
+export type Relleno = "suerte" | "repetir";
 
 export type Ruleta = {
   activa: boolean;
   frecuencia: Frecuencia;
   vigenciaDias: number;
+  relleno: Relleno;
   premios: PremioDeRuleta[];
 };
 
@@ -26,12 +36,12 @@ export async function ruletaDe(sucursalId: string): Promise<Ruleta | null> {
   const [{ data: ruleta }, { data: premios }] = await Promise.all([
     supabase
       .from("ruletas")
-      .select("activa, frecuencia, vigencia_dias")
+      .select("activa, frecuencia, vigencia_dias, relleno")
       .eq("sucursal_id", sucursalId)
       .maybeSingle(),
     supabase
       .from("premios_ruleta")
-      .select("orden, texto, probabilidad")
+      .select("orden, texto, probabilidad, es_premio")
       .eq("sucursal_id", sucursalId)
       .order("orden"),
   ]);
@@ -42,12 +52,34 @@ export async function ruletaDe(sucursalId: string): Promise<Ruleta | null> {
     activa: ruleta.activa as boolean,
     frecuencia: ruleta.frecuencia as Frecuencia,
     vigenciaDias: Number(ruleta.vigencia_dias),
-    premios: ((premios ?? []) as PremioDeRuleta[]).map((p) => ({
-      orden: Number(p.orden),
-      texto: p.texto,
-      probabilidad: Number(p.probabilidad),
-    })),
+    relleno: ruleta.relleno as Relleno,
+    premios: ((premios ?? []) as { orden: number; texto: string; probabilidad: number; es_premio: boolean }[]).map(
+      (p) => ({
+        orden: Number(p.orden),
+        texto: p.texto,
+        probabilidad: Number(p.probabilidad),
+        esPremio: p.es_premio,
+      }),
+    ),
   };
+}
+
+/**
+ * Los seis gajos que se pintan, ya con su relleno. Salen de la misma función
+ * de la base con la que se tira (`gajos_de_ruleta`): la rueda y el premio no
+ * pueden contar cosas distintas.
+ */
+export async function gajosDe(sucursalId: string) {
+  const supabase = await crearClienteServidor();
+  const { data } = await supabase.rpc("gajos_de_ruleta", { p_sucursal: sucursalId });
+  return ((data ?? []) as { gajo: number; texto: string; probabilidad: number; es_premio: boolean }[])
+    .map((g) => ({
+      gajo: Number(g.gajo),
+      texto: g.texto,
+      probabilidad: Number(g.probabilidad),
+      esPremio: g.es_premio,
+    }))
+    .sort((a, b) => a.gajo - b.gajo);
 }
 
 /** Las sucursales con una ruleta que hoy se puede girar. */

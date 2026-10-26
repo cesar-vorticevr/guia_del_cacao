@@ -77,10 +77,10 @@ export async function comentar(
   if (!contexto) return { error: "No se reconoce dónde comentar." };
   if (!perfil) redirect("/login");
 
-  // En una publicacion comentan los clientes; en el foro tambien los negocios
-  // de Tier 3, que si no abririan una conversacion en la que no pueden estar.
-  if (perfil.rol !== "cliente" && !(contexto === "publicacion" && perfil.rol === "negocio")) {
-    return { error: "Solo las cuentas de cliente pueden comentar aquí." };
+  // Comentan clientes y negocios, en todas partes (migración 000063): que
+  // los negocios se hablen entre ellos es parte de la guía.
+  if (perfil.rol !== "cliente" && perfil.rol !== "negocio") {
+    return { error: "Las cuentas de administración no comentan aquí." };
   }
 
   const texto = (datos.get("texto")?.toString() ?? "").trim();

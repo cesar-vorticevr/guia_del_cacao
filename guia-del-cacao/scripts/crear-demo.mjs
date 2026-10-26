@@ -35,10 +35,13 @@ const PRODUCTOS = [
   { nombre: "Taller de temperado", descripcion: "Dos horas, para principiantes.", precio: 450, foto: "mazorca-rosa.png" },
 ];
 
+// Cuatro premios; los dos gajos que quedan dicen «Suerte para la próxima» y
+// se reparten el 35% que falta (migración 000062).
 const PREMIOS = [
-  { orden: 1, texto: "10% de descuento", probabilidad: 60 },
-  { orden: 2, texto: "Chocolate caliente gratis", probabilidad: 30 },
-  { orden: 3, texto: "Caja de trufas", probabilidad: 10 },
+  { orden: 1, texto: "10% de descuento", probabilidad: 30 },
+  { orden: 2, texto: "Chocolate caliente gratis", probabilidad: 20 },
+  { orden: 3, texto: "2x1 en barras", probabilidad: 10 },
+  { orden: 4, texto: "Caja de trufas", probabilidad: 5 },
 ];
 
 // ---------------------------------------------------------------------------
@@ -267,7 +270,13 @@ revisar(
 
 // La Ruleta Mágica.
 revisar(
-  await db.from("ruletas").upsert({ sucursal_id: sucursal.id, activa: true, frecuencia: "diaria", vigencia_dias: 30 }),
+  await db.from("ruletas").upsert({
+    sucursal_id: sucursal.id,
+    activa: true,
+    frecuencia: "diaria",
+    vigencia_dias: 30,
+    relleno: "suerte",
+  }),
   "ruleta",
 );
 await db.from("premios_ruleta").delete().eq("sucursal_id", sucursal.id);
