@@ -148,8 +148,14 @@ export default async function Home() {
         */}
         <dl className="mx-auto mt-10 flex max-w-xl justify-center gap-3">
           {[
-            { valor: sucursales.length, texto: "negocios" },
-            { valor: eventos.proximos.length, texto: "eventos próximos" },
+            {
+              valor: sucursales.length,
+              texto: sucursales.length === 1 ? "negocio" : "negocios",
+            },
+            {
+              valor: eventos.proximos.length,
+              texto: eventos.proximos.length === 1 ? "evento próximo" : "eventos próximos",
+            },
             { valor: entidades, texto: entidades === 1 ? "estado" : "estados" },
           ]
             .filter((dato) => dato.valor > 0)
