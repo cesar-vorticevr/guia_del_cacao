@@ -260,8 +260,8 @@ export default function Terminos() {
         te da 20% de descuento en tu primer pago, sea del mes o del año; los
         siguientes van al precio normal. Se usa una sola vez por negocio, antes
         de su primer pago, y no se suma a una promoción. Quien te compartió el
-        código recibe de la Guía una comisión por ese pago; a ti no te cuesta
-        nada extra.
+        código recibe de la Guía una comisión por cada pago tuyo mientras sigas
+        en un plan de pago; a ti no te cuesta nada extra.
       </p>
       <p className="mt-3 text-cacao">
         Si al terminar la prueba o el periodo gratis no has pagado, tu sucursal{" "}

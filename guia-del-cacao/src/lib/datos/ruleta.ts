@@ -1,5 +1,6 @@
 import { crearClienteServidor } from "@/lib/supabase/server";
-import type { Frecuencia } from "@/lib/ruleta/textos";
+import { TEXTO_DE_FRECUENCIA, type Frecuencia } from "@/lib/ruleta/textos";
+import type { DatosDelTarjeton } from "@/lib/negocio/tarjeton-pdf";
 
 export { TEXTO_DE_FRECUENCIA, type Frecuencia } from "@/lib/ruleta/textos";
 
@@ -82,6 +83,41 @@ export async function gajosDe(sucursalId: string) {
     .sort((a, b) => a.gajo - b.gajo);
 }
 
+export type MiGiro = {
+  premio: string;
+  esPremio: boolean;
+  codigo: string | null;
+  venceEn: string | null;
+  canjeadoEn: string | null;
+  puedeGirar: boolean;
+};
+
+/**
+ * El último giro de quien mira en esta ruleta y si todavía le toca girar
+ * (migración 000064). Sin giros, null.
+ */
+export async function miGiroEn(sucursalId: string): Promise<MiGiro | null> {
+  const supabase = await crearClienteServidor();
+  const { data } = await supabase.rpc("mi_giro_en", { p_sucursal: sucursalId });
+  const fila = (data as {
+    premio: string;
+    es_premio: boolean;
+    codigo: string | null;
+    vence_en: string | null;
+    canjeado_en: string | null;
+    puede_girar: boolean;
+  }[] | null)?.[0];
+  if (!fila) return null;
+  return {
+    premio: fila.premio,
+    esPremio: fila.es_premio,
+    codigo: fila.codigo,
+    venceEn: fila.vence_en,
+    canjeadoEn: fila.canjeado_en,
+    puedeGirar: fila.puede_girar,
+  };
+}
+
 /** Las sucursales con una ruleta que hoy se puede girar. */
 export async function sucursalesConRuleta(): Promise<Set<string>> {
   const supabase = await crearClienteServidor();
@@ -158,4 +194,32 @@ export async function premiosEntregados(sucursalId: string): Promise<PremioEntre
 /** Hoy en el centro de México, `aaaa-mm-dd`, para saber si un premio venció. */
 export function hoyEnMexico() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Mexico_City" }).format(new Date());
+}
+
+/**
+ * Lo que lleva el tarjetón del mostrador de una sucursal
+ * (`lib/negocio/tarjeton-pdf`): a dónde lleva el QR y, si tiene la ruleta
+ * encendida, qué premios se pueden ganar y cada cuánto se gira.
+ */
+export async function tarjetonDe(
+  sucursal: { id: string; slug: string; nombre_sucursal: string; logo: string | null },
+  marca: string,
+  origen: string,
+  logo: string | null,
+  conRuleta: boolean,
+): Promise<DatosDelTarjeton> {
+  const ruleta = conRuleta ? await ruletaDe(sucursal.id) : null;
+  const premios = [
+    ...new Set((ruleta?.premios ?? []).filter((p) => p.esPremio && p.texto.trim()).map((p) => p.texto.trim())),
+  ];
+
+  return {
+    marca,
+    sucursal: sucursal.nombre_sucursal,
+    logo,
+    destino: `${origen}/marca/${sucursal.slug}`,
+    conRuleta: Boolean(ruleta?.activa) && conRuleta,
+    premios,
+    frecuencia: ruleta ? TEXTO_DE_FRECUENCIA[ruleta.frecuencia] : null,
+  };
 }

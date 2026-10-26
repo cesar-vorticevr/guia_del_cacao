@@ -16,11 +16,13 @@ import { pesos } from "@/lib/tipos";
  * tienen por qué viajar en el paquete de un micrositio que casi nadie va a
  * imprimir.
  *
- * **La hoja va en blanco, no en crema.** Es lo único que se aparta de la
- * pantalla, y es a propósito: un catálogo con precios se imprime, y una hoja
- * entera de fondo crema gasta tinta en cada copia y sale con un marco blanco
- * en cuanto la impresora impone su propio margen. La marca la ponen el
- * logotipo, los verdes y el mango, que es donde se reconoce.
+ * **Lleva la identidad de la guía: selva de noche y oro.** El encabezado y
+ * el pie son una banda de noche con estrellas doradas, los títulos van en
+ * serif (Times, la que trae jsPDF y más se parece a Fraunces) y las tarjetas
+ * llevan filo de oro. El centro de la hoja se queda claro a propósito: un
+ * catálogo con precios se imprime, y una hoja entera de noche gasta un
+ * cartucho por copia y sale con marco blanco en cuanto la impresora impone su
+ * margen. La noche va donde se reconoce la marca, no debajo de los precios.
  */
 
 /** Un producto, ya con la URL de su foto resuelta por el servidor. */
@@ -119,13 +121,28 @@ function repartoDelContacto(contacto: DatoDeContacto[]) {
 /** Hasta dónde puede llegar el contenido antes de chocar con el pie. */
 const TOPE_ABAJO = ALTO_HOJA - 16;
 
-/* Los tokens de `globals.css`, que aquí hay que escribir en RGB. */
-const SELVA: [number, number, number] = [16, 107, 70];
-const SELVA_2: [number, number, number] = [12, 82, 54];
-const CACAO: [number, number, number] = [74, 44, 29];
-const CREMA_2: [number, number, number] = [253, 238, 203];
-const MANGO: [number, number, number] = [255, 183, 3];
-const BORDE: [number, number, number] = [223, 214, 198];
+/* La paleta de la selva de noche (`globals.css`), escrita en RGB. */
+type Rgb = [number, number, number];
+const NOCHE: Rgb = [28, 18, 54];
+const NOCHE_2: Rgb = [15, 42, 34];
+const ORO: Rgb = [255, 183, 3];
+const ORO_CLARO: Rgb = [255, 209, 102];
+/** Oro oscuro: el dorado de verdad no se lee como texto sobre papel blanco. */
+const ORO_TINTA: Rgb = [150, 100, 6];
+const CREMA: Rgb = [255, 247, 232];
+const CREMA_ORO: Rgb = [255, 244, 214];
+const FILO: Rgb = [236, 205, 135];
+const CACAO: Rgb = [74, 44, 29];
+
+/**
+ * Estrellas doradas sobre una banda de noche, en sitios fijos y no al azar:
+ * dos catálogos del mismo negocio tienen que salir iguales.
+ */
+const ESTRELLAS: [number, number, number][] = [
+  [0.04, 0.22, 0.5], [0.13, 0.78, 0.35], [0.27, 0.12, 0.3], [0.38, 0.86, 0.45],
+  [0.49, 0.3, 0.25], [0.58, 0.72, 0.4], [0.66, 0.16, 0.3], [0.74, 0.9, 0.3],
+  [0.83, 0.42, 0.25], [0.92, 0.12, 0.45], [0.97, 0.7, 0.3], [0.33, 0.5, 0.2],
+];
 
 /** La foto se guarda a 480 px: a 57 mm de ancho eso son ~215 ppp, de sobra. */
 const LADO_FOTO = 480;
@@ -249,75 +266,112 @@ export async function armarCatalogoPdf(datos: CatalogoParaPdf): Promise<Blob> {
 
   /** El encabezado de la primera hoja. Devuelve dónde empieza la retícula. */
   function portada() {
-    const alto = 34;
+    // La banda va de orilla a orilla, como el encabezado del sitio.
+    const alto = 50;
+    bandaDeNoche(0, alto);
 
-    doc.setFillColor(...CREMA_2);
-    doc.roundedRect(MARGEN, 10, ANCHO_UTIL, alto, 4, 4, "F");
-
-    // La barra de mango de la izquierda es el mismo acento que lleva el cartel
-    // del mostrador: de lejos, los dos papeles se reconocen como la misma casa.
-    doc.setFillColor(...MANGO);
-    doc.rect(MARGEN, 14, 2.5, alto - 8, "F");
-
-    let x = MARGEN + 9;
+    let x = MARGEN;
 
     if (logoNegocio) {
-      doc.addImage(logoNegocio, "PNG", x, 15, 24, 24);
-      x += 30;
+      // El logo del negocio, en su medallón crema con filo de oro: sobre la
+      // noche, un logo de fondo oscuro se perdía sin él.
+      doc.setFillColor(...CREMA);
+      doc.setDrawColor(...ORO);
+      doc.setLineWidth(0.8);
+      doc.roundedRect(x, 9, 30, 30, 5, 5, "FD");
+      doc.addImage(logoNegocio, "PNG", x + 2.5, 11.5, 25, 25);
+      x += 37;
     }
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(17);
-    doc.setTextColor(...SELVA_2);
+    doc.setFontSize(7.5);
+    doc.setTextColor(...ORO);
+    doc.text("CATÁLOGO", x, 15, { charSpace: 0.8 });
+
+    doc.setFont("times", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor(...CREMA);
     // El nombre se recorta contra el hueco que deja el logotipo de la guía:
     // un nombre comercial largo se le metía encima.
     const anchoNombre = ANCHO_HOJA - MARGEN - 34 - x;
-    doc.text(enLineas(doc, datos.marca, anchoNombre, 1)[0], x, 24);
+    doc.text(enLineas(doc, datos.marca, anchoNombre, 1)[0], x, 25);
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(...CACAO);
-    doc.text(enLineas(doc, datos.sucursal, anchoNombre, 1)[0], x, 30.5);
+    doc.setFont("times", "italic");
+    doc.setFontSize(12);
+    doc.setTextColor(...ORO_CLARO);
+    doc.text(enLineas(doc, datos.sucursal, anchoNombre, 1)[0], x, 31.5);
 
     if (datos.lugar) {
+      doc.setFont("helvetica", "normal");
       doc.setFontSize(8.5);
-      doc.text(enLineas(doc, datos.lugar, anchoNombre, 1)[0], x, 36);
+      doc.setTextColor(...CREMA);
+      doc.text(enLineas(doc, datos.lugar, anchoNombre, 1)[0], x, 37);
     }
 
     if (logoGuia) {
-      doc.addImage(logoGuia, "PNG", ANCHO_HOJA - MARGEN - 30, 15, 24, 24);
+      doc.addImage(logoGuia, "PNG", ANCHO_HOJA - MARGEN - 28, 9, 28, 28);
     }
 
-    return tituloDeSeccion(alto + 10 + 9);
+    return tituloDeSeccion(alto + 12);
+  }
+
+  /**
+   * Una banda de noche a todo lo ancho, con estrellas y un filo de oro. La
+   * comparten la portada, el encabezado de las demás hojas y el pie; el pie
+   * lleva el filo arriba (`filoArriba`) y las demás, abajo.
+   */
+  function bandaDeNoche(arriba: number, alto: number, filoArriba = false) {
+    doc.setFillColor(...NOCHE);
+    doc.rect(0, arriba, ANCHO_HOJA, alto, "F");
+
+    // Una franja de selva al pie de la banda: la noche de la guía va del
+    // violeta al verde, y jsPDF no pinta degradados.
+    const franja = alto * 0.28;
+    doc.setFillColor(...NOCHE_2);
+    doc.rect(0, arriba + alto - franja, ANCHO_HOJA, franja, "F");
+
+    doc.setFillColor(...ORO_CLARO);
+    for (const [fx, fy, r] of ESTRELLAS) {
+      doc.circle(fx * ANCHO_HOJA, arriba + fy * alto, r, "F");
+    }
+
+    doc.setFillColor(...ORO);
+    doc.rect(0, filoArriba ? arriba : arriba + alto - 0.9, ANCHO_HOJA, 0.9, "F");
   }
 
   /** La banda delgada de las hojas siguientes, para que no queden anónimas. */
   function encabezadoDeArriba() {
-    if (logoGuia) doc.addImage(logoGuia, "PNG", MARGEN, 10, 11, 11);
+    bandaDeNoche(0, 22);
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(...SELVA_2);
-    doc.text(datos.marca, MARGEN + (logoGuia ? 14 : 0), 15.5);
+    if (logoGuia) doc.addImage(logoGuia, "PNG", MARGEN, 4, 13, 13);
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(...CACAO);
-    doc.text(datos.sucursal, MARGEN + (logoGuia ? 14 : 0), 20);
+    const x = MARGEN + (logoGuia ? 16 : 0);
 
-    doc.setDrawColor(...BORDE);
-    doc.setLineWidth(0.3);
-    doc.line(MARGEN, 25, ANCHO_HOJA - MARGEN, 25);
+    doc.setFont("times", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(...CREMA);
+    doc.text(datos.marca, x, 10.5);
+
+    doc.setFont("times", "italic");
+    doc.setFontSize(9);
+    doc.setTextColor(...ORO_CLARO);
+    doc.text(datos.sucursal, x, 15.5);
 
     return 31;
   }
 
   /** "Catálogo", con la cuenta y la fecha a la derecha. */
   function tituloDeSeccion(arriba: number) {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(13);
-    doc.setTextColor(...SELVA_2);
-    doc.text("Catálogo", MARGEN, arriba);
+    // «Nuestros *productos*»: la palabra clave en itálica dorada, como los
+    // títulos del sitio.
+    doc.setFont("times", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(...NOCHE);
+    doc.text("Nuestros", MARGEN, arriba);
+    const sangria = doc.getTextWidth("Nuestros ");
+    doc.setFont("times", "bolditalic");
+    doc.setTextColor(...ORO_TINTA);
+    doc.text("productos", MARGEN + sangria, arriba);
 
     const cuantos = datos.productos.length;
 
@@ -331,19 +385,26 @@ export async function armarCatalogoPdf(datos: CatalogoParaPdf): Promise<Blob> {
       { align: "right" },
     );
 
-    doc.setDrawColor(...BORDE);
-    doc.setLineWidth(0.3);
-    doc.line(MARGEN, arriba + 3, ANCHO_HOJA - MARGEN, arriba + 3);
+    filoDeOro(arriba + 3);
 
     return arriba + 9;
+  }
+
+  /** La raya bajo un título: un tramo de oro pleno y luego un filo fino. */
+  function filoDeOro(y: number) {
+    doc.setDrawColor(...FILO);
+    doc.setLineWidth(0.3);
+    doc.line(MARGEN, y, ANCHO_HOJA - MARGEN, y);
+    doc.setFillColor(...ORO);
+    doc.rect(MARGEN, y - 0.6, 18, 1.2, "F");
   }
 
   /** Una tarjeta de producto: foto, nombre, descripción y precio. */
   function tarjeta(producto: ProductoDelPdf, columna: number, arriba: number) {
     const x = MARGEN + columna * (ANCHO_TARJETA + HUECO);
 
-    doc.setDrawColor(...BORDE);
-    doc.setLineWidth(0.3);
+    doc.setDrawColor(...FILO);
+    doc.setLineWidth(0.5);
     doc.roundedRect(x, arriba, ANCHO_TARJETA, ALTO_TARJETA, 3, 3, "S");
 
     const foto = fotos.get(producto.id);
@@ -351,14 +412,15 @@ export async function armarCatalogoPdf(datos: CatalogoParaPdf): Promise<Blob> {
     if (foto) {
       doc.addImage(foto, "JPEG", x, arriba, ANCHO_TARJETA, ANCHO_TARJETA);
     } else {
-      // Sin foto, la inicial sobre crema: lo mismo que enseña el micrositio, y
-      // no un hueco en blanco que se lee como una tarjeta a medio cargar.
-      doc.setFillColor(...CREMA_2);
+      // Sin foto, la inicial dorada sobre la noche: lo mismo que enseña el
+      // micrositio, y no un hueco en blanco que se lee como una tarjeta a
+      // medio cargar.
+      doc.setFillColor(...NOCHE);
       doc.rect(x, arriba, ANCHO_TARJETA, ANCHO_TARJETA, "F");
 
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(30);
-      doc.setTextColor(...SELVA);
+      doc.setFont("times", "bolditalic");
+      doc.setFontSize(34);
+      doc.setTextColor(...ORO);
       doc.text(
         producto.nombre.charAt(0).toUpperCase(),
         x + ANCHO_TARJETA / 2,
@@ -369,16 +431,16 @@ export async function armarCatalogoPdf(datos: CatalogoParaPdf): Promise<Blob> {
 
     // La línea que separa la foto del texto: sin ella, una foto de fondo claro
     // se derrama en la ficha y la tarjeta pierde su borde de abajo.
-    doc.setDrawColor(...BORDE);
-    doc.line(x, arriba + ANCHO_TARJETA, x + ANCHO_TARJETA, arriba + ANCHO_TARJETA);
+    doc.setFillColor(...ORO);
+    doc.rect(x, arriba + ANCHO_TARJETA - 0.4, ANCHO_TARJETA, 0.8, "F");
 
     const izquierda = x + 3;
     const anchoTexto = ANCHO_TARJETA - 6;
     let texto = arriba + ANCHO_TARJETA + 5;
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.5);
-    doc.setTextColor(...SELVA_2);
+    doc.setFont("times", "bold");
+    doc.setFontSize(9.5);
+    doc.setTextColor(...NOCHE);
     for (const linea of enLineas(doc, producto.nombre, anchoTexto, 2)) {
       doc.text(linea, izquierda, texto);
       texto += 3.6;
@@ -407,7 +469,7 @@ export async function armarCatalogoPdf(datos: CatalogoParaPdf): Promise<Blob> {
     if (producto.precio !== null) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9.5);
-      doc.setTextColor(...SELVA);
+      doc.setTextColor(...ORO_TINTA);
       doc.text(pesos(producto.precio), izquierda, arriba + ALTO_TARJETA - 4);
     } else {
       doc.setFont("helvetica", "normal");
@@ -438,25 +500,27 @@ export async function armarCatalogoPdf(datos: CatalogoParaPdf): Promise<Blob> {
     const alto = altoDeLaCaja(filas);
     const anchoColumna = (ANCHO_UTIL - RELLENO * 2 - 6) / COLUMNAS_CONTACTO;
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(13);
-    doc.setTextColor(...SELVA_2);
-    doc.text("Contacto", MARGEN, arriba + 4);
+    doc.setFont("times", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(...NOCHE);
+    doc.text("Visítanos", MARGEN, arriba + 4);
 
-    doc.setDrawColor(...BORDE);
-    doc.setLineWidth(0.3);
-    doc.line(MARGEN, arriba + 7, ANCHO_HOJA - MARGEN, arriba + 7);
+    filoDeOro(arriba + 7);
 
     const caja = arriba + 11;
 
-    doc.setFillColor(...CREMA_2);
-    doc.roundedRect(MARGEN, caja, ANCHO_UTIL, alto, 3, 3, "F");
+    // La caja va de noche, como el pie del sitio: es lo que se busca al final,
+    // y así se encuentra de un vistazo.
+    doc.setFillColor(...NOCHE);
+    doc.setDrawColor(...ORO);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(MARGEN, caja, ANCHO_UTIL, alto, 3, 3, "FD");
 
     /** Un renglón: la etiqueta en negrita y el dato, que además es enlace. */
     function renglon(dato: DatoDeContacto, x: number, y: number, ancho: number) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
-      doc.setTextColor(...SELVA_2);
+      doc.setTextColor(...ORO);
       doc.text(dato.etiqueta, x, y);
 
       /*
@@ -466,7 +530,7 @@ export async function armarCatalogoPdf(datos: CatalogoParaPdf): Promise<Blob> {
       */
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8.5);
-      doc.setTextColor(...CACAO);
+      doc.setTextColor(...CREMA);
       doc.textWithLink(
         enLineas(doc, dato.texto, ancho - ANCHO_ETIQUETA, 1)[0],
         x + ANCHO_ETIQUETA,
@@ -538,10 +602,10 @@ export async function armarCatalogoPdf(datos: CatalogoParaPdf): Promise<Blob> {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.5);
 
-    doc.setFillColor(...CREMA_2);
+    doc.setFillColor(...CREMA_ORO);
     doc.roundedRect(MARGEN, arriba, ANCHO_UTIL, alto, 3, 3, "F");
 
-    doc.setFillColor(...MANGO);
+    doc.setFillColor(...ORO);
     doc.rect(MARGEN, arriba + 3, 2.5, alto - 6, "F");
 
     doc.setTextColor(...CACAO);
@@ -567,19 +631,18 @@ export async function armarCatalogoPdf(datos: CatalogoParaPdf): Promise<Blob> {
     for (let hoja = 1; hoja <= total; hoja += 1) {
       doc.setPage(hoja);
 
-      doc.setDrawColor(...BORDE);
-      doc.setLineWidth(0.3);
-      doc.line(MARGEN, ALTO_HOJA - 13, ANCHO_HOJA - MARGEN, ALTO_HOJA - 13);
+      bandaDeNoche(ALTO_HOJA - 12, 12, true);
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7.5);
-      doc.setTextColor(...CACAO);
-      doc.text(datos.url, MARGEN, ALTO_HOJA - 8.5);
+      doc.setTextColor(...CREMA);
+      doc.textWithLink(datos.url, MARGEN, ALTO_HOJA - 5, { url: datos.url });
 
+      doc.setTextColor(...ORO_CLARO);
       doc.text(
         `Guía del Cacao · ${hoja} de ${total}`,
         ANCHO_HOJA - MARGEN,
-        ALTO_HOJA - 8.5,
+        ALTO_HOJA - 5,
         { align: "right" },
       );
     }

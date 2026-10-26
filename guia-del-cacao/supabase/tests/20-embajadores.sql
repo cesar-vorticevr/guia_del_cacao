@@ -6,8 +6,9 @@ set client_min_messages to notice;
 --
 -- Un embajador no se aprueba solo ni se pone su codigo; nadie usa su propio
 -- codigo; una marca tiene un solo embajador y solo antes de su primer pago;
--- la comision se anota una vez; cada quien ve solo lo suyo; y solo el
--- administrador registra que pago.
+-- la comision (25%, desde la 000065) se anota una vez por factura de Stripe
+-- y en cada cobro mientras el negocio siga pagando; cada quien ve solo lo
+-- suyo; y solo el administrador registra que pago.
 --
 -- Dentro de una transaccion que se deshace.
 
@@ -138,7 +139,7 @@ select pg_temp.debe_fallar('el negocio no escribe referidos',
   $q$ insert into public.referidos (marca_id, embajador_id) values ('e2100000-0000-0000-0000-000000000002', 'e2000000-0000-0000-0000-000000000005') $q$);
 
 select pg_temp.debe_fallar('el negocio no se anota la comision',
-  $q$ select public.registrar_comision('e2100000-0000-0000-0000-000000000002', 1000, 'sub_x') $q$);
+  $q$ select public.registrar_comision('e2100000-0000-0000-0000-000000000002', 1000, 'sub_x', 'in_x') $q$);
 
 reset role;
 
@@ -161,11 +162,29 @@ reset role;
 -- ---------------------------------------------------------------- Stripe confirma el pago
 set local request.jwt.claims to '{"role":"service_role"}';
 
-select public.registrar_comision('e2100000-0000-0000-0000-000000000002', 399.20, 'sub_referido') as comision \gset
-select pg_temp.debe_ser('la comision es el 20% de lo pagado: ' || :'comision', :'comision'::numeric = 79.84);
+select public.registrar_comision('e2100000-0000-0000-0000-000000000002', 399.20, 'sub_referido', 'in_1') as comision \gset
+select pg_temp.debe_ser('la comision es el 25% de lo pagado: ' || :'comision', :'comision'::numeric = 99.80);
 
-select public.registrar_comision('e2100000-0000-0000-0000-000000000002', 399.20, 'sub_referido') as repetida \gset
-select pg_temp.debe_ser('un aviso repetido no la anota dos veces', :'repetida'::numeric = 0);
+select public.registrar_comision('e2100000-0000-0000-0000-000000000002', 399.20, 'sub_referido', 'in_1') as repetida \gset
+select pg_temp.debe_ser('un aviso repetido de la misma factura no la anota dos veces', :'repetida'::numeric = 0);
+
+select public.registrar_comision('e2100000-0000-0000-0000-000000000002', 0, 'sub_referido', 'in_cero') as cero \gset
+select pg_temp.debe_ser('una factura en cero no deja comision', :'cero'::numeric = 0);
+
+-- La renovacion del mes siguiente: otra factura, otra comision.
+select public.registrar_comision('e2100000-0000-0000-0000-000000000002', 499, 'sub_referido', 'in_2') as renovacion \gset
+select pg_temp.debe_ser('la renovacion tambien deja su 25%: ' || :'renovacion', :'renovacion'::numeric = 124.75);
+
+-- Sin marca en la metadata: se deduce de la suscripcion de Stripe si la hay;
+-- si no, no se anota nada.
+select public.registrar_comision(null, 499, 'sub_que_no_existe', 'in_huerfana') as huerfana \gset
+select pg_temp.debe_ser('sin marca ni suscripcion conocida no se anota', :'huerfana'::numeric = 0);
+
+-- Un embajador en pausa no suma comisiones.
+update public.embajadores set estado = 'pausado' where perfil_id = 'e2000000-0000-0000-0000-000000000001';
+select public.registrar_comision('e2100000-0000-0000-0000-000000000002', 499, 'sub_referido', 'in_pausa') as pausa \gset
+select pg_temp.debe_ser('en pausa no suma', :'pausa'::numeric = 0);
+update public.embajadores set estado = 'activo' where perfil_id = 'e2000000-0000-0000-0000-000000000001';
 
 select pg_temp.debe_ser('ya no queda descuento pendiente',
   (select count(*) from public.codigo_de_embajador_de('e2100000-0000-0000-0000-000000000002')) = 0);
@@ -179,7 +198,8 @@ set local request.jwt.claims to '{"sub":"e2000000-0000-0000-0000-000000000005","
 select pg_temp.debe_ser('la curiosa no ve embajadores, referidos ni pagos',
   (select count(*) from public.embajadores) = 0
   and (select count(*) from public.referidos) = 0
-  and (select count(*) from public.pagos_a_embajadores) = 0);
+  and (select count(*) from public.pagos_a_embajadores) = 0
+  and (select count(*) from public.comisiones) = 0);
 
 select pg_temp.debe_fallar('la curiosa no registra pagos',
   $q$ select public.registrar_pago_a_embajador('e2000000-0000-0000-0000-000000000001', 'x') $q$);
@@ -198,7 +218,7 @@ set local role authenticated;
 set local request.jwt.claims to '{"sub":"e2000000-0000-0000-0000-000000000004","role":"authenticated"}';
 
 select public.registrar_pago_a_embajador('e2000000-0000-0000-0000-000000000001', 'SPEI 123') as pagado \gset
-select pg_temp.debe_ser('se le paga lo acumulado: ' || :'pagado', :'pagado'::numeric = 79.84);
+select pg_temp.debe_ser('se le paga lo acumulado de los dos cobros: ' || :'pagado', :'pagado'::numeric = 224.55);
 
 select pg_temp.debe_fallar('no se paga dos veces lo mismo',
   $q$ select public.registrar_pago_a_embajador('e2000000-0000-0000-0000-000000000001', 'otra vez') $q$);
@@ -208,9 +228,12 @@ reset role;
 set local role authenticated;
 set local request.jwt.claims to '{"sub":"e2000000-0000-0000-0000-000000000001","role":"authenticated"}';
 
-select pg_temp.debe_ser('la embajadora ve su pago y su comision cubierta',
+select pg_temp.debe_ser('la embajadora ve su pago y sus dos comisiones cubiertas',
   (select count(*) from public.pagos_a_embajadores) = 1
-  and (select count(*) from public.referidos where pago_id is not null) = 1);
+  and (select count(*) from public.comisiones where pago_id is not null) = 2);
+
+select pg_temp.debe_ser('su tablero suma los dos cobros del negocio',
+  (select cobros = 2 and total_comision = 224.55 and por_cobrar = 0 from public.mis_referidos()));
 
 select pg_temp.debe_fallar('nadie usa su propio codigo',
   format($q$ select public.vincular_embajador('e2100000-0000-0000-0000-000000000001', %L) $q$, :'codigo'));

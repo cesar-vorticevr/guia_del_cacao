@@ -24,6 +24,9 @@ import { urlImagen } from "@/lib/imagenes";
 import { ESTADO } from "@/lib/tipos";
 import { TusNumeros } from "@/components/negocio/tus-numeros";
 import { numerosDeSucursales } from "@/lib/datos/actividad";
+import { TarjetonQr } from "@/components/negocio/tarjeton-qr";
+import { origenDelSitio } from "@/lib/auth/sesion";
+import { sucursalesConRuleta, tarjetonDe } from "@/lib/datos/ruleta";
 
 export const metadata: Metadata = {
   title: "Panel del negocio · Guía del Cacao",
@@ -98,6 +101,21 @@ export default async function PanelNegocio({
       ? numerosDeSucursales(publicadas.map((s) => s.id))
       : null,
   ]);
+
+  // El tarjetón del mostrador de cada sucursal publicada, con su ruleta si
+  // la tiene: es lo que la gente escanea en el negocio.
+  const [conRuleta, origen] = await Promise.all([sucursalesConRuleta(), origenDelSitio()]);
+  const tarjetones = new Map(
+    await Promise.all(
+      publicadas.map(
+        async (s) =>
+          [
+            s.id,
+            await tarjetonDe(s, marca.nombre_comercial, origen, urlImagen(s.logo), conRuleta.has(s.id)),
+          ] as const,
+      ),
+    ),
+  );
 
   // Qué le falta a cada micrositio, preguntado a la misma función que usa el
   // trigger al publicar: lo que aquí se ve completo se publica sin sorpresas.
@@ -417,6 +435,10 @@ export default async function PanelNegocio({
                             Publicar
                           </button>
                         </form>
+                      )}
+
+                      {tarjetones.has(sucursal.id) && (
+                        <TarjetonQr datos={tarjetones.get(sucursal.id)!} compacto />
                       )}
 
                       <BotonEliminarSucursal

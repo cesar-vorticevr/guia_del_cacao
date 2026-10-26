@@ -340,7 +340,7 @@ export async function resumen() {
         // La marca de cada una, para dejar fuera los negocios de demostración.
         .select("estado, monto_mensual, tier_id, sucursales(marcas(es_demo))")
         .in("estado", ["trial", "activo", "pausado_por_pago"]),
-      supabase.from("referidos").select("comision, pago_id, pagado_en"),
+      supabase.from("comisiones").select("comision, pago_id"),
       supabase
         .from("embajadores")
         .select("*", { count: "exact", head: true })
@@ -354,7 +354,7 @@ export async function resumen() {
     sucursales: { marcas: { es_demo: boolean } | null } | null;
   }[]).filter((s) => !s.sucursales?.marcas?.es_demo);
   const pagando = suscripciones.filter((s) => s.estado === "activo" && Number(s.monto_mensual) > 0);
-  const comisiones = (referidos.data ?? []) as { comision: number | null; pago_id: string | null }[];
+  const comisiones = (referidos.data ?? []) as { comision: number; pago_id: string | null }[];
 
   return {
     publicadas: publicadas.count ?? 0,
@@ -370,7 +370,7 @@ export async function resumen() {
     porPagarAEmbajadores:
       Math.round(
         comisiones
-          .filter((c) => c.comision !== null && !c.pago_id)
+          .filter((c) => !c.pago_id)
           .reduce((suma, c) => suma + Number(c.comision), 0) * 100,
       ) / 100,
     solicitudesDeEmbajador: solicitudes.count ?? 0,

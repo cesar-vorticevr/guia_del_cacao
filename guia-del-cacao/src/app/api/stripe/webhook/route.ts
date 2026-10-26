@@ -1,5 +1,5 @@
 import type Stripe from "stripe";
-import { cobroPerdido, esDeLaGuia, facturaPagada, pagoCompletado } from "@/lib/cobros";
+import { cobroPerdido, comisionDeLaFactura, esDeLaGuia, facturaPagada, pagoCompletado } from "@/lib/cobros";
 import { stripe } from "@/lib/stripe";
 
 /**
@@ -54,6 +54,7 @@ export async function POST(request: Request) {
         const suscripcionId =
           typeof detalle.subscription === "string" ? detalle.subscription : detalle.subscription.id;
         await facturaPagada(await cliente.subscriptions.retrieve(suscripcionId));
+        await comisionDeLaFactura(factura, suscripcionId);
         break;
       }
 

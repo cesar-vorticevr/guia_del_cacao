@@ -2,9 +2,18 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { CanjearPremio, FormularioRuleta } from "@/components/ruleta/formularios";
-import { perfilActual } from "@/lib/auth/sesion";
+import { TarjetonQr } from "@/components/negocio/tarjeton-qr";
+import { origenDelSitio, perfilActual } from "@/lib/auth/sesion";
+import { crearClienteServidor } from "@/lib/supabase/server";
+import { urlImagen } from "@/lib/imagenes";
 import { misSucursales } from "@/lib/datos/sucursales";
-import { hoyEnMexico, premiosEntregados, ruletaDe } from "@/lib/datos/ruleta";
+import {
+  hoyEnMexico,
+  premiosEntregados,
+  ruletaDe,
+  sucursalesConRuleta,
+  tarjetonDe,
+} from "@/lib/datos/ruleta";
 
 export const metadata: Metadata = { title: "Ruleta Mágica · Guía del Cacao" };
 
@@ -60,10 +69,24 @@ export default async function PanelRuleta({
     );
   }
 
-  const [ruleta, entregados] = await Promise.all([
+  const supabase = await crearClienteServidor();
+  const [ruleta, entregados, conRuleta, origen, { data: marca }] = await Promise.all([
     ruletaDe(sucursal.id),
     premiosEntregados(sucursal.id),
+    sucursalesConRuleta(),
+    origenDelSitio(),
+    supabase.from("marcas").select("nombre_comercial").eq("id", sucursal.marca_id).maybeSingle(),
   ]);
+  const tarjeton =
+    sucursal.estado === "publicado"
+      ? await tarjetonDe(
+          sucursal,
+          marca?.nombre_comercial ?? sucursal.nombre_sucursal,
+          origen,
+          urlImagen(sucursal.logo),
+          conRuleta.has(sucursal.id),
+        )
+      : null;
   const hoy = hoyEnMexico();
   const canjeados = entregados.filter((p) => p.canjeadoEn).length;
 
@@ -108,6 +131,18 @@ export default async function PanelRuleta({
             </Link>
           )}
         </section>
+
+        {tarjeton && (
+          <section className="rounded-3xl border-2 border-mango/50 bg-white p-6 lg:col-span-2">
+            <h2 className="font-display text-2xl">Tarjetón para tu mostrador</h2>
+            <p className="mt-1 mb-4 max-w-prose text-sm text-cacao">
+              Una hoja tamaño carta con un QR grande a tu micrositio. Imprímela y
+              pégala en tu negocio: tus clientes la escanean, llegan a tu página
+              y giran la ruleta ahí mismo.
+            </p>
+            <TarjetonQr datos={tarjeton} />
+          </section>
+        )}
 
         <div className="grid content-start gap-8">
           <section className="rounded-3xl border-2 border-mango/40 bg-white p-6">

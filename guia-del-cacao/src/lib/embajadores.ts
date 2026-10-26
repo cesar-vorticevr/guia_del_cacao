@@ -5,8 +5,8 @@ import { crearClienteDeServicio } from "@/lib/supabase/servicio";
  * Embajadores del Cacao (migración 000059).
  *
  * Quien es embajador comparte su código; el negocio que lo pone recibe 20% de
- * descuento en su primer pago y el embajador gana 20% de lo que ese negocio
- * pagó. Las reglas viven en la base —quién puede usar qué código, cuándo se
+ * descuento en su primer pago y el embajador gana 25% de cada cobro de ese
+ * negocio mientras siga pagando (migración 000065). Las reglas viven en la base —quién puede usar qué código, cuándo se
  * anota una comisión, quién registra un pago— y aquí solo se llaman.
  *
  * No es un archivo de acciones (`"use server"`): lo que hay aquí recibe ids y
@@ -55,16 +55,23 @@ export async function embajadorPendienteDe(marcaId: string) {
 }
 
 /**
- * Stripe confirmó el primer pago de una marca con código: se anota lo que se
- * pagó y la comisión. Solo con la llave de servicio (la llama el webhook), y la
- * base la hace idempotente.
+ * Stripe confirmó un cobro (una factura pagada): si la marca llegó con código
+ * de un embajador activo, se anota su comisión. Solo con la llave de servicio
+ * (la llama el webhook), y la base la hace idempotente por factura: un aviso
+ * repetido no la anota dos veces.
  */
-export async function registrarComision(marcaId: string, monto: number, suscripcionStripe: string) {
+export async function registrarComision(
+  marcaId: string | null,
+  monto: number,
+  suscripcionStripe: string,
+  facturaStripe: string,
+) {
   const servicio = crearClienteDeServicio();
   const { error } = await servicio.rpc("registrar_comision", {
     p_marca: marcaId,
     p_monto: monto,
-    p_stripe: suscripcionStripe,
+    p_suscripcion: suscripcionStripe,
+    p_factura: facturaStripe,
   });
   if (error) console.error("No se anotó la comisión del embajador:", error);
 }

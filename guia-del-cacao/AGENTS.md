@@ -1317,15 +1317,30 @@ Cualquier cuenta pide ser embajadora en `/embajador`; el administrador la
 aprueba en `/admin/embajadores` y entonces nace su código (`LUCIA-7K2P`: el
 primer nombre y cuatro caracteres sin los que se confunden al dictarlos). Un
 negocio que pone ese código en «¿Tienes un código?» recibe **20% de descuento en
-su primer pago** —del mes o del año— y el embajador gana **20% de lo que ese
-negocio pagó de verdad**. A fin de mes el administrador le transfiere lo
-acumulado a su CLABE y lo registra.
+su primer pago** —del mes o del año— y el embajador gana **25% de cada cobro de
+ese negocio mientras siga pagando** (migración 000065; antes era 20% del primer
+pago). A fin de mes el administrador le transfiere lo acumulado a su CLABE y lo
+registra.
+
+- **Cada cobro es una fila de `comisiones`**, con la factura de Stripe que lo
+  prueba (`stripe_factura`, única). La escribe `registrar_comision` desde el
+  webhook al recibir **`invoice.paid` con `amount_paid > 0`** —el primer pago y
+  cada renovación—, nunca al volver de Checkout: la factura pagada es la prueba
+  de que Stripe cobró. Una factura en cero (prueba, promoción al 100%) no deja
+  comisión; un embajador en pausa no suma.
+- `referidos` queda como el vínculo marca → embajador, y su `monto_pagado`
+  sigue marcando que el descuento ya se usó. Sus columnas `comision` y
+  `pago_id` quedaron **en desuso**: lo de antes se copió a `comisiones`
+  (factura `anterior-{marca}`, al 20%).
+- `mis_referidos()` da por negocio cuántos cobros, cuánto pagó, cuánto dejó,
+  cuánto falta por transferir y si **sigue pagando**; el tablero suma el mes,
+  lo acumulado, lo por cobrar y lo ya transferido.
 
 - **El dinero se enseña como dinero**, en pesos, no disfrazado de mazorcas: es
   lo que se le transfiere a alguien, y el trato tiene que leerse claro.
-- Tres tablas: `embajadores` (solicitud, código, CLABE), `referidos` (una fila
-  **por marca y para siempre**: nace al poner el código, sin monto, y el monto
-  y la comisión se llenan al primer pago) y `pagos_a_embajadores`.
+- Cuatro tablas: `embajadores` (solicitud, código, CLABE), `referidos` (una fila
+  **por marca y para siempre**: nace al poner el código), `comisiones` (una por
+  cobro) y `pagos_a_embajadores`.
 - **Nada se escribe desde la aplicación** más allá de pedir ser embajador y
   anotar la CLABE. Vincular (`vincular_embajador`), anotar la comisión
   (`registrar_comision`, solo `service_role`), aprobar
@@ -1339,16 +1354,17 @@ acumulado a su CLABE y lo registra.
 - **El descuento lo aplica Stripe**, con el cupón `guia-embajador-20`
   (`duration: once`) que `crearPago` crea la primera vez. Los cobros
   siguientes van completos solos. Con una promoción de convenio no se aplica:
-  un descuento por pago. El webhook (`pagoCompletado`) anota la comisión sobre
-  `amount_total`, que ya trae el descuento.
+  un descuento por pago. El webhook (`comisionDeLaFactura`) anota la comisión
+  sobre `amount_paid`, que ya trae el descuento.
 - **En el cobro simulado no se anotan comisiones**: hace falta la llave de
   servicio, y sin pasarela no hay dinero que repartir.
 - Los porcentajes están dos veces: `descuento_de_embajador()` /
   `comision_de_embajador()` en la base y `DESCUENTO_DE_EMBAJADOR` /
   `COMISION_DE_EMBAJADOR` en `lib/precios.ts`. Si cambian, en los dos.
 - **El embed de pagos nombra su llave**
-  (`embajadores!pagos_a_embajadores_embajador_id_fkey`): `referidos` apunta a
-  las dos tablas y abre un segundo camino. Es el quinto caso del tropiezo.
+  (`embajadores!pagos_a_embajadores_embajador_id_fkey`): `referidos` y
+  `comisiones` apuntan a las dos tablas y abren más caminos. Es el quinto caso
+  del tropiezo.
 - El embajador ve el nombre de sus referidos por `mis_referidos()`, aunque la
   marca esté en pausa y su nombre ya no sea público.
 - El administrador ve el dinero en `/admin`: ingreso mensual, micrositios en
@@ -1426,3 +1442,32 @@ negocio** con su rol elegido; el nombre se conservó para no tocar cada
 política. `no_en_lo_propio()` frena que un negocio se reseñe, se califique o
 se guarde a sí mismo, y `girar_ruleta` que gire la suya. Los negocios ven sus
 premios en su cuenta (`/negocio/panel/cuenta?ver=premios`).
+
+## La ruleta ya girada, la demo y el tarjetón (migración 000064)
+
+- **Quien ya giró y no le toca otra vez no ve la rueda grande**: ve un renglón
+  (`RuletaYaGirada`) con su premio y su código, o su suerte, y cuándo vuelve.
+  Lo decide `mi_giro_en(sucursal)`, que da el último giro de quien mira y si
+  `puede_girar` (sin límite siempre; una vez, nunca; al día, si no fue hoy en
+  hora del centro). Al cerrar el resultado, la rueda llama `router.refresh()`
+  y se encoge sola.
+- **La ruleta de un negocio demo (`es_demo`) gira siempre y no guarda nada**:
+  ni giro ni premio; contesta con el código `DEMO-MUESTRA`, que no existe en
+  ningún lado. Su dueño también la gira, para enseñarla. La migración borró los
+  giros que ya había en negocios demo.
+
+### El catálogo en PDF y el tarjetón van de noche y oro
+
+- **El catálogo** (`lib/publico/catalogo-pdf.ts`) lleva la identidad del
+  sitio: bandas de noche con estrellas arriba y abajo, títulos en serif (Times,
+  la de jsPDF que más se parece a Fraunces) con la palabra clave en itálica
+  dorada, tarjetas con filo de oro y el contacto en caja de noche. **El centro
+  de la hoja se queda claro** a propósito: se imprime a montones, y la noche
+  debajo de los precios gastaría un cartucho por copia.
+- **El tarjetón del mostrador** (`lib/negocio/tarjeton-pdf.ts`, botón
+  `TarjetonQr`) es una hoja **carta** —el papel de cualquier papelería en
+  México— entera de noche, con el QR grande al micrositio (`/marca/{slug}`, no
+  a `/monedas`) sobre su cuadro blanco, que es lo que no se negocia. Si la
+  sucursal tiene la ruleta, invita a girarla y nombra los premios; si no, a ver
+  el catálogo. Sale en la tarjeta de cada sucursal publicada del panel y en el
+  panel de la ruleta. Lo que lleva lo arma `tarjetonDe()` en el servidor.

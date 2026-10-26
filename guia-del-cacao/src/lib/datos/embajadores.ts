@@ -16,14 +16,20 @@ export type MiEmbajada = {
   clabe: string | null;
 };
 
+/** Un negocio que trajo, con lo que lleva pagado y lo que le ha dejado (000065). */
 export type Referido = {
   marca: string;
   vinculadoEn: string;
-  montoPagado: number | null;
-  comision: number | null;
-  pagadoEn: string | null;
-  cobrada: boolean;
+  cobros: number;
+  totalPagado: number;
+  totalComision: number;
+  porCobrar: number;
+  ultimoCobro: string | null;
+  siguePagando: boolean;
 };
+
+/** Una comisión: un cobro confirmado por Stripe de un negocio referido. */
+export type Comision = { comision: number; cobradoEn: string; cubierta: boolean };
 
 export type PagoRecibido = { monto: number; referencia: string | null; pagadoEn: string };
 
@@ -31,7 +37,7 @@ export type PagoRecibido = { monto: number; referencia: string | null; pagadoEn:
 export async function miEmbajada(perfilId: string) {
   const supabase = await crearClienteServidor();
 
-  const [{ data: fila }, { data: referidos }, { data: pagos }] = await Promise.all([
+  const [{ data: fila }, { data: referidos }, { data: pagos }, { data: comisiones }] = await Promise.all([
     supabase
       .from("embajadores")
       .select("estado, codigo, titular, banco, clabe")
@@ -43,6 +49,10 @@ export async function miEmbajada(perfilId: string) {
       .select("monto, referencia, pagado_en")
       .eq("embajador_id", perfilId)
       .order("pagado_en", { ascending: false }),
+    supabase
+      .from("comisiones")
+      .select("comision, cobrado_en, pago_id")
+      .eq("embajador_id", perfilId),
   ]);
 
   return {
@@ -50,19 +60,26 @@ export async function miEmbajada(perfilId: string) {
     referidos: ((referidos ?? []) as {
       marca: string;
       vinculado_en: string;
-      monto_pagado: number | null;
-      comision: number | null;
-      pagado_en: string | null;
-      cobrada: boolean;
+      cobros: number;
+      total_pagado: number;
+      total_comision: number;
+      por_cobrar: number;
+      ultimo_cobro: string | null;
+      sigue_pagando: boolean;
     }[]).map(
       (r): Referido => ({
         marca: r.marca,
         vinculadoEn: r.vinculado_en,
-        montoPagado: r.monto_pagado === null ? null : Number(r.monto_pagado),
-        comision: r.comision === null ? null : Number(r.comision),
-        pagadoEn: r.pagado_en,
-        cobrada: r.cobrada,
+        cobros: Number(r.cobros),
+        totalPagado: Number(r.total_pagado),
+        totalComision: Number(r.total_comision),
+        porCobrar: Number(r.por_cobrar),
+        ultimoCobro: r.ultimo_cobro,
+        siguePagando: r.sigue_pagando,
       }),
+    ),
+    comisiones: ((comisiones ?? []) as { comision: number; cobrado_en: string; pago_id: string | null }[]).map(
+      (c): Comision => ({ comision: Number(c.comision), cobradoEn: c.cobrado_en, cubierta: c.pago_id !== null }),
     ),
     pagos: ((pagos ?? []) as { monto: number; referencia: string | null; pagado_en: string }[]).map(
       (p): PagoRecibido => ({
@@ -74,38 +91,38 @@ export async function miEmbajada(perfilId: string) {
   };
 }
 
-/** Las cuentas del tablero: lo del mes, lo que se debe y lo ya cobrado. */
-export function cuentasDe(referidos: Referido[], pagos: PagoRecibido[]) {
+/** Las cuentas del tablero: lo del mes, lo acumulado, lo que se debe y lo ya cobrado. */
+export function cuentasDe(referidos: Referido[], comisiones: Comision[], pagos: PagoRecibido[]) {
   const mes = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Mexico_City",
     year: "numeric",
     month: "2-digit",
   }).format(new Date());
 
-  const delMes = referidos
-    .filter((r) => r.pagadoEn && r.comision !== null)
+  const delMes = comisiones
     .filter(
-      (r) =>
+      (c) =>
         new Intl.DateTimeFormat("en-CA", {
           timeZone: "America/Mexico_City",
           year: "numeric",
           month: "2-digit",
-        }).format(new Date(r.pagadoEn!)) === mes,
+        }).format(new Date(c.cobradoEn)) === mes,
     )
-    .reduce((suma, r) => suma + (r.comision ?? 0), 0);
+    .reduce((suma, c) => suma + c.comision, 0);
 
-  const porCobrar = referidos
-    .filter((r) => r.comision !== null && !r.cobrada)
-    .reduce((suma, r) => suma + (r.comision ?? 0), 0);
+  const acumulado = comisiones.reduce((suma, c) => suma + c.comision, 0);
+  const porCobrar = comisiones.filter((c) => !c.cubierta).reduce((suma, c) => suma + c.comision, 0);
 
   const cobrado = pagos.reduce((suma, p) => suma + p.monto, 0);
 
   return {
     delMes: Math.round(delMes * 100) / 100,
+    acumulado: Math.round(acumulado * 100) / 100,
     porCobrar: Math.round(porCobrar * 100) / 100,
     cobrado: Math.round(cobrado * 100) / 100,
     negocios: referidos.length,
-    esperando: referidos.filter((r) => r.montoPagado === null).length,
+    esperando: referidos.filter((r) => r.cobros === 0).length,
+    pagando: referidos.filter((r) => r.siguePagando).length,
   };
 }
 
@@ -130,29 +147,35 @@ export type EmbajadorParaAdmin = {
 export async function embajadoresParaAdmin(): Promise<EmbajadorParaAdmin[]> {
   const supabase = await crearClienteServidor();
 
-  const [{ data: filas }, { data: referidos }] = await Promise.all([
+  const [{ data: filas }, { data: referidos }, { data: comisiones }] = await Promise.all([
     supabase
       .from("embajadores")
       .select("perfil_id, estado, codigo, motivo, titular, banco, clabe, solicitado_en, perfiles(nombre, correo)")
       .order("solicitado_en", { ascending: false }),
-    supabase.from("referidos").select("embajador_id, monto_pagado, comision, pago_id"),
+    supabase.from("referidos").select("embajador_id, marca_id"),
+    // Las comisiones de cada cobro (000065), no la del primer pago de `referidos`.
+    supabase.from("comisiones").select("embajador_id, marca_id, comision, pago_id"),
   ]);
 
-  const porEmbajador = new Map<string, { negocios: number; pagaron: number; porPagar: number; generado: number }>();
-  for (const r of (referidos ?? []) as {
+  const nueva = () => ({ negocios: 0, pagaron: 0, porPagar: 0, generado: 0, marcas: new Set<string>() });
+  const porEmbajador = new Map<string, ReturnType<typeof nueva>>();
+  for (const r of (referidos ?? []) as { embajador_id: string }[]) {
+    const cuenta = porEmbajador.get(r.embajador_id) ?? nueva();
+    cuenta.negocios += 1;
+    porEmbajador.set(r.embajador_id, cuenta);
+  }
+  for (const c of (comisiones ?? []) as {
     embajador_id: string;
-    monto_pagado: number | null;
-    comision: number | null;
+    marca_id: string;
+    comision: number;
     pago_id: string | null;
   }[]) {
-    const cuenta = porEmbajador.get(r.embajador_id) ?? { negocios: 0, pagaron: 0, porPagar: 0, generado: 0 };
-    cuenta.negocios += 1;
-    if (r.comision !== null) {
-      cuenta.pagaron += 1;
-      cuenta.generado += Number(r.comision);
-      if (!r.pago_id) cuenta.porPagar += Number(r.comision);
-    }
-    porEmbajador.set(r.embajador_id, cuenta);
+    const cuenta = porEmbajador.get(c.embajador_id) ?? nueva();
+    cuenta.marcas.add(c.marca_id);
+    cuenta.pagaron = cuenta.marcas.size;
+    cuenta.generado += Number(c.comision);
+    if (!c.pago_id) cuenta.porPagar += Number(c.comision);
+    porEmbajador.set(c.embajador_id, cuenta);
   }
 
   return ((filas ?? []) as unknown as {
@@ -166,7 +189,7 @@ export async function embajadoresParaAdmin(): Promise<EmbajadorParaAdmin[]> {
     solicitado_en: string;
     perfiles: { nombre: string | null; correo: string | null } | null;
   }[]).map((f) => {
-    const cuenta = porEmbajador.get(f.perfil_id) ?? { negocios: 0, pagaron: 0, porPagar: 0, generado: 0 };
+    const cuenta = porEmbajador.get(f.perfil_id) ?? nueva();
     return {
       perfilId: f.perfil_id,
       nombre: f.perfiles?.nombre ?? "Sin nombre",
@@ -191,8 +214,9 @@ export type PagoHecho = { nombre: string; monto: number; referencia: string | nu
 /**
  * Las transferencias que ha registrado el administrador, la más nueva arriba.
  *
- * El embed nombra su llave: `referidos` apunta a `pagos_a_embajadores` y a
- * `embajadores`, así que hay dos caminos entre las dos tablas y PostgREST
+ * El embed nombra su llave: `referidos` y `comisiones` apuntan a
+ * `pagos_a_embajadores` y a `embajadores`, así que hay varios caminos entre
+ * las dos tablas y PostgREST
  * respondería PGRST201 —la lista saldría vacía—. Es el tropiezo de AGENTS.md.
  */
 export async function pagosHechos(limite = 20): Promise<PagoHecho[]> {

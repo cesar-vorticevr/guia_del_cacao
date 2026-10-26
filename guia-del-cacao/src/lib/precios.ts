@@ -81,12 +81,13 @@ export const MESES_PAGADOS_AL_ANIO = 10;
 export const DIAS_GRATIS = 15;
 
 /**
- * El 20% de los Embajadores del Cacao: lo que se descuenta el negocio en su
- * primer pago y lo que gana el embajador de lo que ese negocio pagó. La base
- * los tiene en `descuento_de_embajador()` y `comision_de_embajador()`.
+ * Los Embajadores del Cacao: el negocio se descuenta 20% en su primer pago, y
+ * el embajador gana 25% de **cada** cobro de ese negocio mientras siga pagando
+ * (migración 000065). La base los tiene en `descuento_de_embajador()` y
+ * `comision_de_embajador()`.
  */
 export const DESCUENTO_DE_EMBAJADOR = 20;
-export const COMISION_DE_EMBAJADOR = 20;
+export const COMISION_DE_EMBAJADOR = 25;
 
 const DIA = new Intl.DateTimeFormat("es-MX", {
   day: "numeric",

@@ -35,7 +35,8 @@ export default async function Embajadores() {
         <h1 className="mt-2 font-display text-4xl font-medium tracking-tight">Embajadores</h1>
         <p className="mt-2 max-w-prose text-cacao">
           Cada embajador comparte su código: el negocio ahorra 20% en su primer
-          pago y el embajador gana 20% de lo que pagó. Aquí apruebas a quien lo
+          pago y el embajador gana 25% de cada cobro que Stripe confirme
+          mientras ese negocio siga pagando. Aquí apruebas a quien lo
           pide y registras lo que les transfieres cada mes.
         </p>
       </header>

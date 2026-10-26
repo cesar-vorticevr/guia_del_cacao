@@ -14,7 +14,7 @@ export function InvitacionAEmbajador() {
       <span>
         <span className="antetitulo">Embajadores del Cacao</span>
         <strong className="mt-1 block font-display text-xl">
-          Invita negocios y gana el 20% de su primer pago
+          Invita negocios y gana el 25% de cada pago
         </strong>
       </span>
       <span className="font-bold text-mango">Ver mi código →</span>

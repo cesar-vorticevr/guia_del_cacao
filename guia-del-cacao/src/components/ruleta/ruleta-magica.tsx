@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { LluviaDeMazorcas } from "@/components/lluvia-de-mazorcas";
 import { casi, fanfarria, preparar, tic } from "@/components/ruleta/sonidos";
@@ -75,6 +76,7 @@ export function RuletaMagica({
   volver,
   frecuenciaDiaria,
   enlacePremios,
+  esDemo = false,
 }: {
   sucursalId: string;
   gajos: Gajo[];
@@ -87,12 +89,22 @@ export function RuletaMagica({
   frecuenciaDiaria: boolean;
   /** Dónde ve sus premios quien gira: la cuenta de cliente o la del negocio. */
   enlacePremios: string;
+  /** Ruleta de demostración: gira siempre y no guarda el premio (000064). */
+  esDemo?: boolean;
 }) {
   const [angulo, setAngulo] = useState(0);
   const [girando, setGirando] = useState(false);
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sonido, setSonido] = useState(true);
+  const router = useRouter();
+
+  // Al cerrar el resultado, la página se vuelve a pintar: si ya no le toca
+  // girar, la rueda grande se encoge a su aviso. La demo se queda como está.
+  function cerrar() {
+    setResultado(null);
+    if (!esDemo) router.refresh();
+  }
 
   const rueda = useRef<SVGGElement>(null);
   const flecha = useRef<SVGSVGElement>(null);
@@ -361,11 +373,16 @@ export function RuletaMagica({
               <>
                 <p className="antetitulo">¡Ganaste!</p>
                 <p className="texto-oro mt-3 font-display text-4xl font-semibold leading-tight">{resultado.premio}</p>
-                <p className="mt-5 text-sm text-crema/70">Tu código</p>
+                <p className="mt-5 text-sm text-crema/70">{esDemo ? "Código de muestra" : "Tu código"}</p>
                 <p className="mt-1 select-all font-mono text-3xl font-bold tracking-[0.15em] text-mango">
                   {resultado.codigo}
                 </p>
-                {resultado.venceEn && (
+                {esDemo ? (
+                  <p className="mt-3 text-sm text-crema/75">
+                    Es una ruleta de demostración: este premio no se guarda ni se canjea.
+                    Gírala las veces que quieras.
+                  </p>
+                ) : resultado.venceEn && (
                   <p className="mt-3 text-sm text-crema/75">
                     Enséñalo en el negocio antes del{" "}
                     {FECHA.format(new Date(`${resultado.venceEn}T00:00:00Z`))}. Ya quedó guardado en tus
@@ -379,12 +396,12 @@ export function RuletaMagica({
                 <p className="mt-3 font-display text-3xl font-semibold">¡Uy, casi!</p>
                 <p className="mt-2 text-crema/75">
                   Suerte para la próxima.
-                  {frecuenciaDiaria ? " Vuelve mañana por otro giro." : ""}
+                  {frecuenciaDiaria && !esDemo ? " Vuelve mañana por otro giro." : esDemo ? " Vuelve a girar cuando quieras." : ""}
                 </p>
               </>
             )}
             <div className="mt-6 grid gap-3">
-              {resultado.esPremio && (
+              {resultado.esPremio && !esDemo && (
                 <Link
                   href={enlacePremios}
                   className="boton-oro brillo inline-flex min-h-12 items-center justify-center rounded-full px-6 font-bold text-ink"
@@ -394,14 +411,14 @@ export function RuletaMagica({
               )}
               <a
                 href="#resenas"
-                onClick={() => setResultado(null)}
+                onClick={cerrar}
                 className="inline-flex min-h-12 items-center justify-center rounded-full border border-mango/40 px-6 font-bold transition-colors hover:border-mango hover:text-mango"
               >
                 Déjale una reseña o pregunta
               </a>
               <button
                 type="button"
-                onClick={() => setResultado(null)}
+                onClick={cerrar}
                 className="text-sm text-crema/60 underline-offset-4 hover:underline"
               >
                 Cerrar

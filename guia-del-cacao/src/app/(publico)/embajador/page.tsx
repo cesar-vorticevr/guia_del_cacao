@@ -28,12 +28,14 @@ const FECHA = new Intl.DateTimeFormat("es-MX", {
  */
 export default async function Embajador() {
   const perfil = await perfilActual();
+  // El primer cobro lleva el descuento del negocio; los siguientes van completos.
   const ganancia = (PRECIO_DEL_PLAN * (100 - DESCUENTO_DE_EMBAJADOR) * COMISION_DE_EMBAJADOR) / 10000;
+  const gananciaMes = (PRECIO_DEL_PLAN * COMISION_DE_EMBAJADOR) / 100;
 
   if (!perfil) {
     return (
       <div className="mx-auto max-w-3xl py-10">
-        <Invitacion ganancia={ganancia} />
+        <Invitacion gananciaMes={gananciaMes} />
         <p className="caja-vacia mt-8 rounded-3xl p-6 text-center">
           <Link href="/login?volver=/embajador" className="font-bold underline">
             Inicia sesión
@@ -48,12 +50,12 @@ export default async function Embajador() {
     );
   }
 
-  const { embajada, referidos, pagos } = await miEmbajada(perfil.id);
+  const { embajada, referidos, comisiones, pagos } = await miEmbajada(perfil.id);
 
   if (!embajada || embajada.estado === "rechazado") {
     return (
       <div className="mx-auto max-w-3xl py-10">
-        <Invitacion ganancia={ganancia} />
+        <Invitacion gananciaMes={gananciaMes} />
         <section className="mt-8 rounded-3xl border-2 border-ink/10 bg-white p-6 sm:p-8">
           {embajada?.estado === "rechazado" ? (
             <p className="text-cacao">
@@ -82,7 +84,7 @@ export default async function Embajador() {
     );
   }
 
-  const cuentas = cuentasDe(referidos, pagos);
+  const cuentas = cuentasDe(referidos, comisiones, pagos);
   const sitio = (await origenDelSitio()).replace(/^https?:\/\//, "");
 
   return (
@@ -109,23 +111,30 @@ export default async function Embajador() {
           </div>
           <p className="mx-auto mt-6 max-w-xl text-pretty text-crema/75">
             Quien lo ponga al contratar tiene {DESCUENTO_DE_EMBAJADOR}% de descuento en su
-            primer pago, y tú ganas el {COMISION_DE_EMBAJADOR}% de lo que pague: hoy, unos{" "}
-            <strong className="text-mango">{pesos(ganancia)}</strong> por cada negocio que pague
-            su mes, o <strong className="text-mango">{pesos(ganancia * MESES_PAGADOS_AL_ANIO)}</strong>{" "}
-            si paga el año.
+            primer pago, y tú ganas el {COMISION_DE_EMBAJADOR}% de <em>cada</em> pago mientras
+            siga en la Guía: unos <strong className="text-mango">{pesos(ganancia)}</strong> del
+            primer mes y <strong className="text-mango">{pesos(gananciaMes)}</strong> cada mes
+            después, o <strong className="text-mango">{pesos(gananciaMes * MESES_PAGADOS_AL_ANIO)}</strong>{" "}
+            cada año si paga el año.
           </p>
         </section>
       )}
 
       {/* Los números: lo del mes primero, que es lo que se viene a ver. */}
-      <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         {[
           { texto: "Ganado este mes", valor: pesos(cuentas.delMes), oro: true },
           { texto: "Por cobrar", valor: pesos(cuentas.porCobrar), oro: true },
-          { texto: "Ya cobrado", valor: pesos(cuentas.cobrado), oro: false },
+          { texto: "Acumulado", valor: pesos(cuentas.acumulado), oro: false },
+          { texto: "Ya te pagamos", valor: pesos(cuentas.cobrado), oro: false },
           {
             texto: cuentas.negocios === 1 ? "Negocio invitado" : "Negocios invitados",
             valor: String(cuentas.negocios),
+            oro: false,
+          },
+          {
+            texto: cuentas.pagando === 1 ? "Sigue pagando" : "Siguen pagando",
+            valor: String(cuentas.pagando),
             oro: false,
           },
         ].map((dato) => (
@@ -167,18 +176,31 @@ export default async function Embajador() {
                   <span className="text-sm text-cacao/70">
                     Usó tu código el {FECHA.format(new Date(r.vinculadoEn))}
                   </span>
+                  {r.cobros > 0 && (
+                    <span
+                      className={`mt-1.5 block w-fit rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                        r.siguePagando ? "bg-lima/25" : "bg-ink/10 text-cacao/70"
+                      }`}
+                    >
+                      {r.siguePagando ? "Sigue pagando" : "Ya no está pagando"}
+                    </span>
+                  )}
                 </span>
-                {r.comision === null ? (
+                {r.cobros === 0 ? (
                   <span className="rounded-full bg-crema-2 px-3 py-1 text-sm text-cacao/80">
                     Esperando su primer pago
                   </span>
                 ) : (
                   <span className="text-right">
                     <span className="block font-display text-xl font-semibold text-mango">
-                      +{pesos(r.comision)}
+                      +{pesos(r.totalComision)}
                     </span>
-                    <span className="text-xs text-cacao/70">
-                      Pagó {pesos(r.montoPagado ?? 0)} · {r.cobrada ? "ya te lo pagamos" : "por cobrar"}
+                    <span className="block text-xs text-cacao/70">
+                      {r.cobros} {r.cobros === 1 ? "pago" : "pagos"} · pagó {pesos(r.totalPagado)}
+                      {r.ultimoCobro ? ` · último el ${FECHA.format(new Date(r.ultimoCobro))}` : ""}
+                    </span>
+                    <span className="block text-xs text-cacao/70">
+                      {r.porCobrar > 0 ? `${pesos(r.porCobrar)} por cobrar` : "Todo ya te lo pagamos"}
                     </span>
                   </span>
                 )}
@@ -222,7 +244,7 @@ export default async function Embajador() {
 }
 
 /** Para quien todavía no es embajador: qué es y cuánto se gana. */
-function Invitacion({ ganancia }: { ganancia: number }) {
+function Invitacion({ gananciaMes }: { gananciaMes: number }) {
   return (
     <header className="text-center">
       <p className="antetitulo">Embajadores del Cacao</p>
@@ -238,7 +260,7 @@ function Invitacion({ ganancia }: { ganancia: number }) {
           ],
           [
             `Tú ganas ${COMISION_DE_EMBAJADOR}%`,
-            `De lo que paguen: unos ${pesos(ganancia)} por cada negocio, y te lo transferimos cada mes.`,
+            `De cada pago, mientras sigan en la Guía: unos ${pesos(gananciaMes)} al mes por negocio. Te lo transferimos cada mes.`,
           ],
         ].map(([titulo, texto], i) => (
           <li key={titulo} className="tarjeta-magica rounded-3xl border-2 border-ink/10 bg-white p-5">

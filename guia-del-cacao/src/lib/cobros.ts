@@ -109,12 +109,22 @@ export async function pagoCompletado(sesion: Stripe.Checkout.Session, suscripcio
 
   await servicio.from("sucursales").update({ tier_id: tierId }).in("id", sucursalIds);
   await republicar(servicio, ocultasPorPago);
+}
 
-  // Llegó con código de embajador: su comisión es el 20% de lo que Stripe
-  // cobró de verdad, ya con el descuento. La base no la anota dos veces.
-  if (meta.embajador_id && meta.marca_id) {
-    await registrarComision(meta.marca_id, (sesion.amount_total ?? 0) / 100, suscripcion.id);
-  }
+/**
+ * Stripe cobró una factura: la comisión del embajador, si la marca llegó con
+ * su código. Va aquí y no al volver de Checkout porque **la factura pagada es
+ * la prueba del cobro**, y porque llega igual en el primer pago que en cada
+ * renovación: así la comisión es recurrente mientras el negocio pague.
+ *
+ * Se cuenta `amount_paid`, lo que de verdad se cobró, ya con descuentos. Una
+ * factura en cero (una prueba, una promoción al 100%) no deja comisión.
+ */
+export async function comisionDeLaFactura(factura: Stripe.Invoice, suscripcionId: string) {
+  if (factura.status !== "paid" || !factura.id || (factura.amount_paid ?? 0) <= 0) return;
+
+  const meta = factura.parent?.subscription_details?.metadata ?? {};
+  await registrarComision(meta.marca_id || null, factura.amount_paid / 100, suscripcionId, factura.id);
 }
 
 /** Entró un cobro (la renovación de cada mes o año): sigue pagado. */

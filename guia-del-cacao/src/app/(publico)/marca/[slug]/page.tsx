@@ -23,7 +23,8 @@ import { BotonFavorito } from "@/components/publico/boton-favorito";
 import { BotonCompartir } from "@/components/publico/boton-compartir";
 import { Medir } from "@/components/publico/medir";
 import { RuletaMagica } from "@/components/ruleta/ruleta-magica";
-import { gajosDe, ruletaDe, sucursalesConRuleta, TEXTO_DE_FRECUENCIA } from "@/lib/datos/ruleta";
+import { gajosDe, miGiroEn, ruletaDe, sucursalesConRuleta, TEXTO_DE_FRECUENCIA } from "@/lib/datos/ruleta";
+import { RuletaYaGirada } from "@/components/ruleta/ruleta-ya-girada";
 import { tipoDeContacto } from "@/lib/actividad";
 import { esFavorito } from "@/lib/datos/favoritos";
 import { productosDe } from "@/lib/datos/sucursales";
@@ -134,6 +135,12 @@ export default async function Micrositio({
     (perfil?.rol === "cliente" || perfil?.rol === "negocio") &&
     Boolean(perfil?.rol_confirmado) &&
     !esDuenio;
+
+  // La demo gira siempre y no guarda nada (000064). En las demás, si ya giró
+  // y no le toca otra vez, la rueda grande se encoge a un aviso con su premio.
+  const esDemo = Boolean(sucursal.marcas?.es_demo);
+  const miGiro = girable && participa && !esDemo ? await miGiroEn(sucursal.id) : null;
+  const yaGiro = miGiro !== null && !miGiro.puedeGirar;
 
   let misEstrellas: number | null = null;
   let resenaPropia: Awaited<ReturnType<typeof miResena>> = null;
@@ -295,7 +302,19 @@ export default async function Micrositio({
         La Ruleta Mágica va justo después de la portada: es lo primero que
         invita a quedarse, y quien llega desde «Gira y gana» viene a eso.
       */}
-      {girable && ruleta && (
+      {girable && ruleta && yaGiro && miGiro && (
+        <section className="px-4 pt-6">
+          <RuletaYaGirada
+            giro={miGiro}
+            frecuencia={ruleta.frecuencia}
+            enlacePremios={
+              perfil?.rol === "negocio" ? "/negocio/panel/cuenta?ver=premios" : "/cuenta?ver=premios"
+            }
+          />
+        </section>
+      )}
+
+      {girable && ruleta && !yaGiro && (
         <section className="px-4 pt-8">
           <div className="rounded-[2rem] border border-mango/30 bg-white px-4 py-8 text-center shadow-[0_0_60px_rgb(255_183_3/0.12)] sm:px-8">
             <p className="antetitulo">Ruleta Mágica</p>
@@ -314,9 +333,13 @@ export default async function Micrositio({
                 perfil?.rol === "negocio" ? "/negocio/panel/cuenta?ver=premios" : "/cuenta?ver=premios"
               }
               reglas={`${TEXTO_DE_FRECUENCIA[ruleta.frecuencia]} · el premio vale ${ruleta.vigenciaDias} ${ruleta.vigenciaDias === 1 ? "día" : "días"}`}
-              puedeGirar={participa}
-              motivo={!perfil ? "sin-sesion" : esDuenio ? "propia" : !participa ? "sin-rol" : null}
+              // La demo la gira cualquiera con cuenta, también su dueño: es para enseñarla.
+              puedeGirar={participa || (esDemo && Boolean(perfil?.rol_confirmado))}
+              motivo={
+                !perfil ? "sin-sesion" : esDuenio && !esDemo ? "propia" : !participa && !esDemo ? "sin-rol" : null
+              }
               volver={`/marca/${sucursal.slug}`}
+              esDemo={esDemo}
             />
           </div>
         </section>
