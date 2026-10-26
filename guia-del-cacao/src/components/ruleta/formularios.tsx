@@ -86,7 +86,7 @@ export function FormularioRuleta({
               aria-label={`Premio ${premio.orden}`}
               className="min-h-12 min-w-0 flex-1 rounded-2xl border-2 border-selva/20 bg-white px-4 text-ink"
             />
-            <label className="flex min-h-12 w-28 shrink-0 items-center gap-1 rounded-2xl border-2 border-selva/20 bg-white px-3 text-ink">
+            <label className="flex min-h-12 w-28 shrink-0 items-center gap-1 rounded-2xl border-2 border-selva/20 bg-[#fff] px-3 text-[#22150e]">
               <span className="sr-only">Probabilidad del premio {premio.orden}</span>
               <input
                 name={`probabilidad_${premio.orden}`}

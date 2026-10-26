@@ -491,8 +491,8 @@ export function BotonEnviar({
 
   const estilos =
     variante === "principal"
-      ? "bg-selva text-crema hover:bg-selva-2"
-      : "border-2 border-selva/25 bg-white text-selva-2 hover:border-selva";
+      ? "boton-oro brillo text-ink"
+      : "border-2 border-mango/40 bg-white text-selva-2 hover:border-mango hover:text-mango";
 
   return (
     <button

@@ -711,3 +711,63 @@
     }
   }
 }
+
+/*
+  Ningún botón liso. Todo botón o enlace que venía en verde selva —enviar,
+  buscar, el filtro elegido, «Ver todo»— se vuelve el botón de oro: degradado
+  cálido, halo y un destello que lo cruza. Se hace aquí y no componente por
+  componente para que valga también para los que se escriban mañana.
+
+  Las fichas de categoría se quedan fuera: su color dice qué categoría son.
+  Sin capa a propósito, para ganarle a las utilidades de Tailwind.
+*/
+:is(button, a, [role="button"]):is(.bg-selva, .bg-selva-2):not(.ficha) {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border-color: transparent;
+  background: linear-gradient(135deg, #ffe08a 0%, #ffb703 50%, #ff9f43 100%);
+  color: var(--color-ink);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.25) inset,
+    0 6px 20px rgb(255 159 67 / 0.35);
+  transition:
+    transform 0.2s cubic-bezier(0.2, 1.6, 0.4, 1),
+    box-shadow 0.2s;
+}
+
+:is(button, a, [role="button"]):is(.bg-selva, .bg-selva-2):not(.ficha):hover {
+  transform: translateY(-1px) scale(1.03);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.35) inset,
+    0 8px 28px rgb(255 159 67 / 0.55);
+}
+
+:is(button, a, [role="button"]):is(.bg-selva, .bg-selva-2):not(.ficha) * {
+  color: inherit;
+}
+
+:is(button, a, [role="button"]):is(.bg-selva, .bg-selva-2):not(.ficha)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(110deg, transparent 35%, rgb(255 255 255 / 0.6) 50%, transparent 65%);
+  transform: translateX(-120%);
+  animation: destello 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/*
+  Los secundarios —borde y fondo claro— de noche se vuelven cristal con un hilo
+  de oro que se enciende al pasar el cursor: tampoco quedan opacos.
+*/
+.noche :is(button, a):is([class*="border-selva/"], [class*="border-ink/"]):not(.tarjeta-magica *, .tarjeta-magica, .ficha):hover {
+  border-color: var(--color-mango);
+  box-shadow: 0 0 18px rgb(255 183 3 / 0.35);
+}
+
+button:disabled:is(.bg-selva, .bg-selva-2) {
+  filter: saturate(0.6);
+  opacity: 0.65;
+}
