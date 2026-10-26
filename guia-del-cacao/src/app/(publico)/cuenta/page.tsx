@@ -5,6 +5,7 @@ import { cerrarSesion } from "@/lib/auth/acciones";
 import { FormularioContrasenaNueva } from "@/components/formularios-auth";
 import { Pestanas } from "@/components/negocio/pestanas";
 import { InvitacionAEmbajador } from "@/components/embajador/invitacion";
+import { MisPremios } from "@/components/ruleta/mis-premios";
 
 export const metadata: Metadata = { title: "Mi cuenta · Guía del Cacao" };
 
@@ -38,7 +39,7 @@ export default async function Cuenta({
   if (perfil.rol === "negocio") redirect("/negocio/panel/cuenta");
   if (perfil.rol === "admin") redirect("/admin");
 
-  const seccion = ver === "sesion" ? "sesion" : "datos";
+  const seccion = ver === "sesion" ? "sesion" : ver === "premios" ? "premios" : "datos";
 
   return (
     <div className="mx-auto grid max-w-3xl gap-6 py-8">
@@ -51,9 +52,12 @@ export default async function Cuenta({
         actual={seccion}
         pestanas={[
           { clave: "datos", texto: "Tus datos" },
+          { clave: "premios", texto: "Mis premios" },
           { clave: "sesion", texto: "Sesión" },
         ]}
       />
+
+      {seccion === "premios" && <MisPremios />}
 
       {seccion === "datos" && (
         <section className="grid gap-6">

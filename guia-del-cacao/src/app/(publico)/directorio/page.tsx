@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { BuscadorDirectorio } from "@/components/publico/buscador-directorio";
+import { sucursalesConRuleta } from "@/lib/datos/ruleta";
 import { entidadesConNegocios, listarDirectorio } from "@/lib/datos/publico";
 import { listarCategorias } from "@/lib/datos/categorias";
 import { esEntidad } from "@/lib/entidades";
@@ -26,10 +27,11 @@ export default async function Directorio({
     categoria?: string;
     estado?: string;
     favoritos?: string;
+    ruleta?: string;
     q?: string;
   }>;
 }) {
-  const { categoria, estado, favoritos: soloMios, q } = await searchParams;
+  const { categoria, estado, favoritos: soloMios, ruleta: soloRuleta, q } = await searchParams;
   const categoriaId = categoria ? Number(categoria) : undefined;
   const consulta = q?.trim() ?? "";
 
@@ -37,13 +39,17 @@ export default async function Directorio({
   // directorio entero como si no se hubiera filtrado nada.
   const entidad = esEntidad(estado) ? estado : undefined;
 
-  const [sucursales, categorias, entidades, perfil, atajos] = await Promise.all([
+  const [listado, categorias, entidades, perfil, atajos, conRuleta] = await Promise.all([
     listarDirectorio(categoriaId, entidad),
     listarCategorias(),
     entidadesConNegocios(),
     perfilActual(),
     palabrasQueSeRepiten(),
+    sucursalesConRuleta(),
   ]);
+
+  // Cada tarjeta sabe si tiene ruleta: es su insignia y es un filtro.
+  const sucursales = listado.map((s) => ({ ...s, conRuleta: conRuleta.has(s.id) }));
 
   // El catálogo de estas marcas viaja a la página para que el buscador encuentre
   // por producto sin pedirle nada al servidor por cada letra.
@@ -65,9 +71,13 @@ export default async function Directorio({
   */
   const filtrandoFavoritos = esCliente && soloMios === "1";
 
-  const visibles = filtrandoFavoritos
-    ? sucursales.filter((s) => favoritos.has(s.id))
-    : sucursales;
+  // «Con ruleta» solo filtra si hay alguna: si no, la lista vacía escondería
+  // el directorio por un enlace viejo.
+  const filtrandoRuleta = soloRuleta === "1" && conRuleta.size > 0;
+
+  const visibles = sucursales
+    .filter((s) => !filtrandoFavoritos || favoritos.has(s.id))
+    .filter((s) => !filtrandoRuleta || s.conRuleta);
 
   const activa = categorias.find((c) => c.id === categoriaId);
 
@@ -76,6 +86,7 @@ export default async function Directorio({
     categoria?: number;
     estado?: string;
     favoritos?: boolean;
+    ruleta?: boolean;
   }) => {
     const busca = new URLSearchParams();
     const cat = "categoria" in cambio ? cambio.categoria : categoriaId;
@@ -84,6 +95,8 @@ export default async function Directorio({
     if (cat) busca.set("categoria", String(cat));
     if (ent) busca.set("estado", ent);
     if (fav) busca.set("favoritos", "1");
+    const rul = "ruleta" in cambio ? cambio.ruleta : filtrandoRuleta;
+    if (rul) busca.set("ruleta", "1");
     const cola = busca.toString();
     return cola ? `/directorio?${cola}` : "/directorio";
   };
@@ -124,6 +137,20 @@ export default async function Directorio({
         se cruza con los demás. Solo aparece si esta cuenta tiene alguno —un
         filtro que siempre lleva a una lista vacía no es un filtro.
       */}
+      {conRuleta.size > 0 && (
+        <nav aria-label="Filtrar por ruleta" className="pt-5">
+          <Link
+            href={conFiltros({ ruleta: !filtrandoRuleta })}
+            aria-pressed={filtrandoRuleta}
+            className={`inline-flex items-center gap-2 ${PILDORA} ${
+              filtrandoRuleta ? "border-guayaba bg-guayaba text-ink" : "bg-white text-cacao"
+            }`}
+          >
+            🎡 {filtrandoRuleta ? "Viendo los que tienen ruleta" : `Con ruleta de premios (${conRuleta.size})`}
+          </Link>
+        </nav>
+      )}
+
       {esCliente && favoritos.size > 0 && (
         <nav aria-label="Filtrar por favoritos" className="pt-5">
           <Link

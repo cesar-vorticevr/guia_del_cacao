@@ -69,6 +69,8 @@ export function PestanasDelPanel({
       ? "cupones"
       : ruta.startsWith("/negocio/panel/catalogo")
         ? "catalogo"
+        : ruta.startsWith("/negocio/panel/ruleta")
+          ? "ruleta"
         : // El resto —editar sucursal, publicar— cae en sucursales, que es de
           // donde se llega a todas ellas.
           "sucursales";
@@ -90,6 +92,9 @@ export function PestanasDelPanel({
           href: "/negocio/panel/catalogo",
           cuenta: catalogo,
         },
+        // La Ruleta Mágica (migración 000060). Se enseña a todos: a quien no
+        // tiene Pro, su página le cuenta qué es y cómo tenerla.
+        { clave: "ruleta", texto: "Ruleta", href: "/negocio/panel/ruleta" },
         ...(FUNCIONES.cupones
           ? [
               {

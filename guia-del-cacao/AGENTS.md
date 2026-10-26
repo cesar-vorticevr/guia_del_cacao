@@ -1353,3 +1353,52 @@ acumulado a su CLABE y lo registra.
   marca esté en pausa y su nombre ya no sea público.
 - El administrador ve el dinero en `/admin`: ingreso mensual, micrositios en
   prueba y sin pagar, y lo que se debe a embajadores.
+
+## La Ruleta Mágica (migración 000060)
+
+Un negocio con plan Pro (`tiers.permite_ruleta`) arma en `/negocio/panel/ruleta`
+hasta **tres premios** con su probabilidad (suman 100), **cada cuánto se gira**
+—una vez por persona para siempre, una al día o sin límite— y cuántos días
+vale lo ganado. Un cliente gira en el micrositio y su premio queda con un
+código en **Mis premios** (`/cuenta?ver=premios`); el negocio lo canjea
+escribiendo ese código en su panel.
+
+- **El premio lo decide la base** (`girar_ruleta`), no el navegador: tira,
+  guarda y contesta cuál salió. `RuletaMagica` solo anima la rueda para que la
+  flecha caiga en ese gajo. Nadie gana lo que quiera tocando la página.
+- Solo **clientes** giran, nunca el dueño. La frecuencia se cuenta en hora del
+  centro y un candado (`pg_advisory_xact_lock`) evita que dos clics a la vez se
+  cuelen en «una vez».
+- `giros` guarda el **texto del premio** como era: cambiar los premios no toca
+  lo ya ganado. No hay políticas de escritura en `giros`; lo crea
+  `girar_ruleta` y lo marca `canjear_premio` (solo el negocio de esa
+  sucursal, una vez, antes de que venza).
+- `giros.usuario_id` apunta a `auth.users`, no a `perfiles`, para no abrir
+  otro camino de embeds. Los nombres salen por `mis_premios()` y
+  `premios_entregados()`.
+- Las **probabilidades se enseñan** debajo de la rueda: una promoción con
+  premios dice cuánto chance hay de cada uno.
+- Se anuncia con la insignia **🎡 Ruleta** en las tarjetas, el filtro
+  `?ruleta=1` del directorio y la sección «Gira y gana» de la portada. Todo
+  sale de `sucursales_con_ruleta()`: encendida, con premios, con el plan que la
+  trae y publicada.
+- Las coordenadas del SVG van redondeadas (`r3`): sin eso el servidor y el
+  navegador escriben el mismo número con distinta cola y React se queja al
+  hidratar.
+
+## Negocios de demostración
+
+`marcas.es_demo` (000060) marca un negocio de muestra: cinta **DEMO** en su
+tarjeta y su micrositio, y fuera de los números (el marcador de la portada,
+la cinta y el ingreso del admin). Solo el administrador o la llave de servicio
+la ponen.
+
+`node scripts/crear-demo.mjs` arma **Chocolatería Demo** (Pro, catálogo,
+ruleta, publicada) con una cuenta de negocio y una de cliente; con
+`--produccion` lo hace en la base de `.env.prod.local`. Las contraseñas las
+inventa y las deja en `.env.cuentas-demo.local` / `.env.cuentas-demo.produccion`,
+ignorados por git: **nunca en `CUENTAS-DE-PRUEBA.md`**, que sí se sube.
+
+`supabase/seed-demo.sql` está **desactualizado** (no pone `entidad`, crea
+sucursales antes del catálogo, escribe en `temas_foro`): la demo de hoy es la
+del script.

@@ -72,7 +72,7 @@ export type Sucursal = {
    * qué incluye cada plan es un dato de la tabla `tiers`, y escribir el número
    * a mano obliga a acordarse de cada sitio el día que los planes cambien.
    */
-  tiers: { puede_publicar_contenido: boolean } | null;
+  tiers: { puede_publicar_contenido: boolean; permite_ruleta: boolean } | null;
   estado: EstadoSucursal;
   motivo_rechazo: string | null;
   /** Una pausa puesta por moderación solo la levanta quien la puso. */

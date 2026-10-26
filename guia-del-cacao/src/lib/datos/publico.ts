@@ -43,7 +43,11 @@ export type TarjetaDirectorio = {
     categoria_id: number;
     /** Todas, incluida la principal. Un negocio puede ser finca, museo y taller. */
     categorias?: { id: number; nombre: string }[];
+    /** Negocio de demostración (migración 000060): lleva su cinta de DEMO. */
+    es_demo?: boolean;
   } | null;
+  /** Tiene una Ruleta Mágica que hoy se puede girar. Lo pone quien lista. */
+  conRuleta?: boolean;
 };
 
 export type MicrositioPublico = TarjetaDirectorio & {
@@ -94,7 +98,7 @@ export { nombrarNegocio };
 const CAMPOS_TARJETA =
   `id, marca_id, slug, nombre_sucursal, logo, imagen_fondo, acerca_de, tier_id,
    entidad, ciudad, tiers(puede_dar_puntos, permite_resenas),
-   marcas(nombre_comercial, categoria_id, marcas_categorias(categorias(id, nombre)))`;
+   marcas(nombre_comercial, categoria_id, es_demo, marcas_categorias(categorias(id, nombre)))`;
 
 /**
  * Directorio.
@@ -502,6 +506,8 @@ export function aplanarCategorias(tarjeta: TarjetaDirectorio): TarjetaDirectorio
       nombre_comercial: marcas.nombre_comercial,
       categoria_id: marcas.categoria_id,
       categorias: principal ? [principal, ...demas] : demas,
+      // Se rearma la marca a mano: lo que no se copie aquí se pierde.
+      es_demo: marcas.es_demo ?? false,
     },
   };
 }

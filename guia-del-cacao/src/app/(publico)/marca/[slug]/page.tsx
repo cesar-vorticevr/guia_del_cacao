@@ -22,6 +22,8 @@ import { DescargarCatalogo } from "@/components/publico/descargar-catalogo";
 import { BotonFavorito } from "@/components/publico/boton-favorito";
 import { BotonCompartir } from "@/components/publico/boton-compartir";
 import { Medir } from "@/components/publico/medir";
+import { RuletaMagica } from "@/components/ruleta/ruleta-magica";
+import { ruletaDe, sucursalesConRuleta, TEXTO_DE_FRECUENCIA } from "@/lib/datos/ruleta";
 import { tipoDeContacto } from "@/lib/actividad";
 import { esFavorito } from "@/lib/datos/favoritos";
 import { productosDe } from "@/lib/datos/sucursales";
@@ -81,7 +83,7 @@ export default async function Micrositio({
   // primer plan que trae reseñas es un dato de la tabla `tiers`.
   const aceptaResenas = sucursal.tiers?.permite_resenas ?? false;
 
-  const [productos, resenas, perfil, calificacion, agenda, origen] =
+  const [productos, resenas, perfil, calificacion, agenda, origen, conRuleta, ruleta] =
     await Promise.all([
       productosDe(sucursal.id),
       resenasDe(sucursal.id),
@@ -91,7 +93,12 @@ export default async function Micrositio({
       // Para el pie del PDF: una hoja impresa tiene que saber decir de dónde
       // salió y adónde volver.
       origenDelSitio(),
+      // La Ruleta Mágica (000060): se pinta solo si hoy se puede girar.
+      sucursalesConRuleta(),
+      ruletaDe(sucursal.id),
     ]);
+
+  const girable = conRuleta.has(sucursal.id) && ruleta && ruleta.premios.length > 0;
 
   // El voto y el comentario viven en tablas distintas; esto es lo que los une
   // para poder enseñar las estrellas al lado de cada reseña y filtrar por ellas.
@@ -171,6 +178,20 @@ export default async function Micrositio({
   return (
     <>
       <Medir tipo="vista_micrositio" sucursal={sucursal.id} />
+
+      {/*
+        Un negocio de demostración (000060) lo dice antes que nada: sirve para
+        enseñar cómo se ve la guía, y nadie debe ir a buscarlo a la calle.
+      */}
+      {sucursal.marcas?.es_demo && (
+        <p className="mt-4 rounded-2xl border border-white/30 bg-ink/70 px-4 py-3 text-center text-sm">
+          <strong className="mr-2 rounded-full bg-[#fff7e8] px-2 py-0.5 font-mono text-xs tracking-widest text-[#22150e]">
+            DEMO
+          </strong>
+          Este es un negocio de demostración: así se ve un micrositio en la Guía
+          del Cacao. No es un negocio real.
+        </p>
+      )}
 
       <header className="pt-4">
         {/*
@@ -258,6 +279,33 @@ export default async function Micrositio({
           </div>
         </div>
       </header>
+
+      {/*
+        La Ruleta Mágica va justo después de la portada: es lo primero que
+        invita a quedarse, y quien llega desde «Gira y gana» viene a eso.
+      */}
+      {girable && ruleta && (
+        <section className="px-4 pt-8">
+          <div className="rounded-[2rem] border border-mango/30 bg-white px-4 py-8 text-center shadow-[0_0_60px_rgb(255_183_3/0.12)] sm:px-8">
+            <p className="antetitulo">Ruleta Mágica</p>
+            <h2 className="mt-2 font-display text-3xl font-medium tracking-tight">
+              Gira y <em className="texto-oro">gana</em>
+            </h2>
+            <p className="mx-auto mt-2 mb-8 max-w-md text-cacao">
+              Un premio de {sucursal.marcas?.nombre_comercial ?? sucursal.nombre_sucursal} te
+              espera. Gira y llévate tu código.
+            </p>
+            <RuletaMagica
+              sucursalId={sucursal.id}
+              premios={ruleta.premios}
+              reglas={`${TEXTO_DE_FRECUENCIA[ruleta.frecuencia]} · el premio vale ${ruleta.vigenciaDias} ${ruleta.vigenciaDias === 1 ? "día" : "días"}`}
+              puedeGirar={perfil?.rol === "cliente" && perfil.rol_confirmado}
+              motivo={!perfil ? "sin-sesion" : perfil.rol !== "cliente" ? "no-es-cliente" : null}
+              volver={`/marca/${sucursal.slug}`}
+            />
+          </div>
+        </section>
+      )}
 
       {/*
         El botón de las mazorcas va aquí arriba, antes de acerca de y del
@@ -496,7 +544,7 @@ export default async function Micrositio({
         verse y vuelve solo cuando recupera el plan.
       */}
       {aceptaResenas && (
-        <section className="px-4 pt-8">
+        <section id="resenas" className="scroll-mt-20 px-4 pt-8">
           <div className="flex flex-wrap items-baseline justify-between gap-3">
             <h2 className="font-display text-xl">Reseñas</h2>
 

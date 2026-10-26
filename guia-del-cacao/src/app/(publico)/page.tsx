@@ -4,6 +4,7 @@ import { BannerRotativo } from "@/components/publico/banner-rotativo";
 import { BuscadorPortada } from "@/components/publico/buscador-portada";
 import { EscenarioDePortada } from "@/components/publico/escenario-portada";
 import { Marcador } from "@/components/publico/marcador";
+import { sucursalesConRuleta } from "@/lib/datos/ruleta";
 import { TarjetaPublicacion } from "@/components/publico/tarjeta-publicacion";
 import { TarjetaEntrada } from "@/components/publico/tarjeta-entrada";
 import { TarjetaSucursal } from "@/components/publico/tarjeta-sucursal";
@@ -28,7 +29,7 @@ export default async function Home() {
   // ya les dio corazón quien mira— y los favoritos del directorio.
   const perfil = await perfilActual();
 
-  const [banners, sucursales, categorias, eventos, muro] = await Promise.all([
+  const [banners, listado, categorias, eventos, muro, conRuleta] = await Promise.all([
     bannersDePortada(),
     listarDirectorio(),
     listarCategorias(),
@@ -45,7 +46,14 @@ export default async function Home() {
     FUNCIONES.comunidad
       ? muroDeComunidad(perfil?.id)
       : Promise.resolve({ entradas: [], siguiente: null }),
+    sucursalesConRuleta(),
   ]);
+
+  // Cada tarjeta sabe si tiene ruleta: es su insignia, y de ahí sale «Gira y gana».
+  const sucursales = listado.map((s) => ({ ...s, conRuleta: conRuleta.has(s.id) }));
+  const conRuletaHoy = sucursales.filter((s) => s.conRuleta);
+  // Los negocios de demostración se ven, pero no cuentan como negocios de la guía.
+  const reales = sucursales.filter((s) => !s.marcas?.es_demo);
 
   // Solo un cliente guarda favoritos. A un negocio o a un administrador el
   // corazón les prometería algo que su cuenta no hace.
@@ -73,12 +81,12 @@ export default async function Home() {
     categorias.map((c) => [c.id, c.nombre]),
   );
 
-  const entidades = new Set(sucursales.map((s) => s.entidad).filter(Boolean)).size;
+  const entidades = new Set(reales.map((s) => s.entidad).filter(Boolean)).size;
 
   // La cinta lleva los negocios y, entre ellos, las categorías: así no se
   // queda corta cuando el directorio todavía tiene pocos.
   const cinta = [
-    ...sucursales.slice(0, 12).map((s) => {
+    ...reales.slice(0, 12).map((s) => {
       const nombres = nombrarNegocio(s);
       return nombres.marca ?? s.nombre_sucursal;
     }),
@@ -149,8 +157,8 @@ export default async function Home() {
         <dl className="mx-auto mt-10 flex max-w-xl justify-center gap-3">
           {[
             {
-              valor: sucursales.length,
-              texto: sucursales.length === 1 ? "negocio" : "negocios",
+              valor: reales.length,
+              texto: reales.length === 1 ? "negocio" : "negocios",
             },
             {
               valor: eventos.proximos.length,
@@ -216,6 +224,38 @@ export default async function Home() {
           <div className="relative left-1/2 mt-8 w-[104vw] -translate-x-1/2">
             <BannerRotativo diapositivas={diapositivas} />
           </div>
+        </section>
+      )}
+
+      {/*
+        Gira y gana: los negocios con Ruleta Mágica (000060). Es la sección que
+        más invita a entrar a un micrositio, así que va antes del directorio.
+      */}
+      {conRuletaHoy.length > 0 && (
+        <section className="pt-24">
+          <Encabezado
+            antetitulo="Ruleta Mágica"
+            titulo={
+              <>
+                Gira y <em className="texto-oro">gana</em>
+              </>
+            }
+            texto="Estos negocios tienen una ruleta de premios. Entra, gira y guarda tu código."
+          />
+          <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {conRuletaHoy.slice(0, 6).map((sucursal) => (
+              <TarjetaSucursal
+                key={sucursal.id}
+                sucursal={sucursal}
+                favorito={favoritos.has(sucursal.id)}
+                puedeGuardar={esCliente}
+                haySesion={Boolean(perfil)}
+              />
+            ))}
+          </ul>
+          {conRuletaHoy.length > 6 && (
+            <BotonDeOro href="/directorio?ruleta=1">Ver todas las ruletas</BotonDeOro>
+          )}
         </section>
       )}
 

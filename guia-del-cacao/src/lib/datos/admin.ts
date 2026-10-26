@@ -337,7 +337,8 @@ export async function resumen() {
       // El dinero: lo que pagan hoy los negocios y lo que se debe a embajadores.
       supabase
         .from("suscripciones")
-        .select("estado, monto_mensual, tier_id")
+        // La marca de cada una, para dejar fuera los negocios de demostración.
+        .select("estado, monto_mensual, tier_id, sucursales(marcas(es_demo))")
         .in("estado", ["trial", "activo", "pausado_por_pago"]),
       supabase.from("referidos").select("comision, pago_id, pagado_en"),
       supabase
@@ -346,7 +347,12 @@ export async function resumen() {
         .eq("estado", "solicitado"),
     ]);
 
-  const suscripciones = (abiertas.data ?? []) as { estado: string; monto_mensual: number; tier_id: number }[];
+  const suscripciones = ((abiertas.data ?? []) as unknown as {
+    estado: string;
+    monto_mensual: number;
+    tier_id: number;
+    sucursales: { marcas: { es_demo: boolean } | null } | null;
+  }[]).filter((s) => !s.sucursales?.marcas?.es_demo);
   const pagando = suscripciones.filter((s) => s.estado === "activo" && Number(s.monto_mensual) > 0);
   const comisiones = (referidos.data ?? []) as { comision: number | null; pago_id: string | null }[];
 

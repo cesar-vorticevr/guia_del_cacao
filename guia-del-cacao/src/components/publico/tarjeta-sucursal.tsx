@@ -129,11 +129,28 @@ export function TarjetaSucursal({
             />
           )}
 
-          {destacada && (
-            <span className="absolute left-2 top-2 rounded-full bg-mango px-2.5 py-1 font-mono text-[0.65rem] font-bold text-ink">
-              Destacado
-            </span>
-          )}
+          {/*
+            Las etiquetas de la esquina, una debajo de otra: Destacado (plan),
+            la ruleta que se puede girar (000060) y la cinta de DEMO de un
+            negocio de demostración, que no debe confundirse con uno real.
+          */}
+          <span className="absolute left-2 top-2 flex flex-col items-start gap-1">
+            {destacada && (
+              <span className="rounded-full bg-mango px-2.5 py-1 font-mono text-[0.65rem] font-bold text-ink">
+                Destacado
+              </span>
+            )}
+            {sucursal.conRuleta && (
+              <span className="rounded-full bg-guayaba px-2.5 py-1 font-mono text-[0.65rem] font-bold text-ink shadow-[0_0_12px_rgb(255_93_115/0.6)]">
+                🎡 Ruleta
+              </span>
+            )}
+            {sucursal.marcas?.es_demo && (
+              <span className="rounded-full border border-white/70 bg-ink/80 px-2.5 py-1 font-mono text-[0.65rem] font-bold tracking-widest text-white">
+                DEMO
+              </span>
+            )}
+          </span>
         </span>
 
         <span className="flex min-w-0 flex-1 flex-col gap-1 p-4">
