@@ -293,9 +293,11 @@ export async function elegirRol(
   if (!user) redirect("/login");
 
   // El trigger proteger_rol es quien decide si esta ventana sigue abierta.
+  // `rol_confirmado` va explícito: quien elige «cliente» ya era cliente, y sin
+  // él no cambiaba nada y la cuenta se quedaba sin confirmar (migración 000061).
   const { error } = await supabase
     .from("perfiles")
-    .update({ rol })
+    .update({ rol, rol_confirmado: true })
     .eq("id", user.id);
 
   if (error) {
