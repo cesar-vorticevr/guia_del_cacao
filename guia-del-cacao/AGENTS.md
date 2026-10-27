@@ -1464,6 +1464,14 @@ premios en su cuenta (`/negocio/panel/cuenta?ver=premios`).
   dorada, tarjetas con filo de oro y el contacto en caja de noche. **El centro
   de la hoja se queda claro** a propósito: se imprime a montones, y la noche
   debajo de los precios gastaría un cartucho por copia.
+- **Y brilla** (27 de octubre de 2026, el azul plano con franja verde se veía
+  forzado): la noche es un degradado del violeta a la selva con el halo violeta
+  y las tres auroras del sitio, las estrellas tienen resplandor, los logos un
+  halo dorado, el filo deja una luz de oro sobre la hoja, las tarjetas van en
+  crema con aura dorada y el precio va en la píldora de `boton-oro`. jsPDF no
+  pinta degradados ni desenfoques: se arman con franjas finas, elipses casi
+  transparentes (`GState`) y recortes (`clip`). Para verlo sin navegador:
+  importar `armarCatalogoPdf` con jiti y sustituir `@/lib/descargas`.
 - **El tarjetón del mostrador** (`lib/negocio/tarjeton-pdf.ts`, botón
   `TarjetonQr`) es una hoja **carta** —el papel de cualquier papelería en
   México— entera de noche, con el QR grande al micrositio (`/marca/{slug}`, no

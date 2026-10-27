@@ -16,10 +16,15 @@ import { pesos } from "@/lib/tipos";
  * tienen por qué viajar en el paquete de un micrositio que casi nadie va a
  * imprimir.
  *
- * **Lleva la identidad de la guía: selva de noche y oro.** El encabezado y
- * el pie son una banda de noche con estrellas doradas, los títulos van en
- * serif (Times, la que trae jsPDF y más se parece a Fraunces) y las tarjetas
- * llevan filo de oro. El centro de la hoja se queda claro a propósito: un
+ * **Lleva la identidad de la guía: selva de noche y oro, con su brillo.** El
+ * encabezado y el pie son la misma noche del sitio —un degradado del violeta a
+ * la selva, con el halo violeta de arriba y las tres auroras de color— y el
+ * oro brilla: halos detrás de los logos, estrellas con resplandor, el filo que
+ * deja una luz dorada sobre la hoja y el precio en la píldora de `boton-oro`.
+ * Los títulos van en serif (Times, la que trae jsPDF y más se parece a
+ * Fraunces). Hasta octubre de 2026 la noche era un azul plano con una franja
+ * verde pegada abajo, y se leía forzada: el sitio nunca enseña un color liso.
+ * El centro de la hoja se queda claro a propósito: un
  * catálogo con precios se imprime, y una hoja entera de noche gasta un
  * cartucho por copia y sale con marco blanco en cuanto la impresora impone su
  * margen. La noche va donde se reconoce la marca, no debajo de los precios.
@@ -76,7 +81,9 @@ const ANCHO_TARJETA = (ANCHO_UTIL - HUECO * (COLUMNAS - 1)) / COLUMNAS;
   descripciones ocupen dos renglones y otras ninguno: así el precio queda a la
   misma altura en toda la fila, que es lo que hace comparable una retícula.
 */
-const ALTO_TEXTO = 23;
+// 26 y no 23: con dos renglones de nombre y dos de descripción, la última
+// línea se montaba sobre la píldora del precio.
+const ALTO_TEXTO = 26;
 const ALTO_TARJETA = ANCHO_TARJETA + ALTO_TEXTO;
 const HUECO_FILA = 7;
 
@@ -124,7 +131,27 @@ const TOPE_ABAJO = ALTO_HOJA - 16;
 /* La paleta de la selva de noche (`globals.css`), escrita en RGB. */
 type Rgb = [number, number, number];
 const NOCHE: Rgb = [28, 18, 54];
-const NOCHE_2: Rgb = [15, 42, 34];
+/**
+ * La noche de arriba abajo, con las mismas paradas que el fondo del sitio
+ * (`#1c1236` → `#0f2a22` → `#0b1f16`), un poco más violeta arriba porque ahí
+ * le cae el halo. Cada parada es [dónde, color].
+ */
+const CIELO: [number, Rgb][] = [
+  [0, [38, 22, 70]],
+  [0.45, [28, 18, 54]],
+  [0.8, [15, 42, 34]],
+  [1, [11, 31, 22]],
+];
+const VIOLETA: Rgb = [120, 70, 170];
+const GUAYABA: Rgb = [255, 93, 115];
+const LIMA: Rgb = [168, 217, 74];
+/** El degradado de `boton-oro`: de oro claro a mango. */
+const BOTON_ORO: [number, Rgb][] = [
+  [0, [255, 224, 138]],
+  [0.5, [255, 183, 3]],
+  [1, [255, 159, 67]],
+];
+const INK: Rgb = [34, 21, 14];
 const ORO: Rgb = [255, 183, 3];
 const ORO_CLARO: Rgb = [255, 209, 102];
 /** Oro oscuro: el dorado de verdad no se lee como texto sobre papel blanco. */
@@ -169,6 +196,19 @@ function nota(fecha: string) {
 }
 
 type Doc = import("jspdf").jsPDF;
+
+/** El color de un degradado en `t` (0 a 1), entre sus paradas. */
+function colorEn(paradas: [number, Rgb][], t: number): Rgb {
+  for (let i = 1; i < paradas.length; i += 1) {
+    const [hasta, b] = paradas[i];
+    if (t <= hasta) {
+      const [desde, a] = paradas[i - 1];
+      const k = (t - desde) / (hasta - desde || 1);
+      return [0, 1, 2].map((c) => Math.round(a[c] + (b[c] - a[c]) * k)) as Rgb;
+    }
+  }
+  return paradas[paradas.length - 1][1];
+}
 
 /**
  * Las líneas de un texto que caben en `ancho`, con puntos suspensivos si sobra.
@@ -219,9 +259,10 @@ async function traerFotos(productos: ProductoDelPdf[]) {
 }
 
 export async function armarCatalogoPdf(datos: CatalogoParaPdf): Promise<Blob> {
-  const { jsPDF } = await import("jspdf");
+  const { jsPDF, GState } = await import("jspdf");
 
   const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
+  const opaco = new GState({ opacity: 1 });
   const fecha = FECHA_LARGA.format(new Date());
 
   const [fotos, logoNegocio, logoGuia] = await Promise.all([
@@ -264,6 +305,119 @@ export async function armarCatalogoPdf(datos: CatalogoParaPdf): Promise<Blob> {
 
   /* ----------------------------------------------------------------- */
 
+  /*
+    El brillo. jsPDF no pinta degradados ni desenfoques, así que se hacen a
+    mano: un degradado son franjas finas de color que va cambiando, y un halo
+    son elipses concéntricas casi transparentes que se suman hacia el centro.
+    Lo que se pinta dentro de una banda se recorta a ella (`recortado`) para que
+    el halo no se derrame sobre la parte clara de la hoja.
+  */
+
+  function transparencia(opacidad: number) {
+    doc.setGState(opacidad >= 1 ? opaco : new GState({ opacity: opacidad }));
+  }
+
+  /** Dibuja `pintar` recortado al rectángulo (redondeado si `radio`). */
+  function recortado(x: number, y: number, ancho: number, alto: number, radio: number, pintar: () => void) {
+    doc.saveGraphicsState();
+    if (radio > 0) doc.roundedRect(x, y, ancho, alto, radio, radio, null);
+    else doc.rect(x, y, ancho, alto, null);
+    doc.clip();
+    doc.discardPath();
+    pintar();
+    doc.restoreGraphicsState();
+  }
+
+  /** Un degradado de arriba abajo (o de izquierda a derecha con `horizontal`). */
+  function degradado(
+    x: number,
+    y: number,
+    ancho: number,
+    alto: number,
+    paradas: [number, Rgb][],
+    horizontal = false,
+  ) {
+    const largo = horizontal ? ancho : alto;
+    const pasos = Math.max(2, Math.ceil(largo / 0.4));
+    const paso = largo / pasos;
+    for (let i = 0; i < pasos; i += 1) {
+      doc.setFillColor(...colorEn(paradas, (i + 0.5) / pasos));
+      // Cada franja se pasa un poco sobre la siguiente: sin eso el visor deja
+      // ver rayitas claras entre ellas al acercar.
+      if (horizontal) doc.rect(x + i * paso, y, paso + 0.15, alto, "F");
+      else doc.rect(x, y + i * paso, ancho, paso + 0.15, "F");
+    }
+  }
+
+  /** Un resplandor suave: elipses que se van sumando hacia el centro. */
+  function halo(cx: number, cy: number, rx: number, ry: number, color: Rgb, fuerza: number) {
+    const capas = 14;
+    doc.setFillColor(...color);
+    transparencia(fuerza / capas);
+    for (let i = 0; i < capas; i += 1) {
+      const k = 1 - i / capas;
+      doc.ellipse(cx, cy, rx * k, ry * k, "F");
+    }
+    transparencia(1);
+  }
+
+  /** El aura de una caja: rectángulos redondeados que crecen y se apagan. */
+  function aura(x: number, y: number, ancho: number, alto: number, radio: number, color: Rgb, fuerza: number, extension = 2.4) {
+    const capas = 6;
+    doc.setFillColor(...color);
+    transparencia(fuerza / capas);
+    for (let i = capas; i >= 1; i -= 1) {
+      const e = (extension * i) / capas;
+      doc.roundedRect(x - e, y - e, ancho + e * 2, alto + e * 2, radio + e, radio + e, "F");
+    }
+    transparencia(1);
+  }
+
+  /** Una estrella que brilla: el punto, su resplandor y, si `destello`, la cruz. */
+  function estrella(x: number, y: number, r: number, destello: boolean) {
+    halo(x, y, r * 4.5, r * 4.5, ORO_CLARO, 0.45);
+    doc.setFillColor(...ORO_CLARO);
+    if (destello) {
+      doc.ellipse(x, y, r * 3.6, r * 0.32, "F");
+      doc.ellipse(x, y, r * 0.32, r * 3.6, "F");
+    }
+    doc.setFillColor(255, 246, 214);
+    doc.circle(x, y, r * 0.75, "F");
+  }
+
+  /**
+   * El filo de oro de una banda y la luz que deja: unas franjas doradas que se
+   * apagan hacia `hacia` (1 = hacia abajo, -1 = hacia arriba).
+   */
+  function filoQueBrilla(y: number, hacia: 1 | -1) {
+    const pasos = 10;
+    doc.setFillColor(...ORO);
+    for (let i = 0; i < pasos; i += 1) {
+      transparencia(0.22 * (1 - i / pasos));
+      doc.rect(0, hacia === 1 ? y + i * 0.35 : y - (i + 1) * 0.35, ANCHO_HOJA, 0.36, "F");
+    }
+    transparencia(1);
+    degradado(0, hacia === 1 ? y - 0.9 : y, ANCHO_HOJA, 0.9, [
+      [0, ORO],
+      [0.5, ORO_CLARO],
+      [1, ORO],
+    ], true);
+  }
+
+  /** La píldora de `boton-oro`: el degradado, su brillo de arriba y su aura. */
+  function pildoraDeOro(x: number, y: number, ancho: number, alto: number) {
+    const radio = alto / 2;
+    aura(x, y, ancho, alto, radio, [255, 159, 67], 0.35, 1.6);
+    recortado(x, y, ancho, alto, radio, () => {
+      degradado(x, y, ancho, alto, BOTON_ORO, true);
+      // El filo claro de arriba que tiene el botón en el sitio.
+      doc.setFillColor(255, 255, 255);
+      transparencia(0.3);
+      doc.rect(x, y, ancho, alto * 0.42, "F");
+      transparencia(1);
+    });
+  }
+
   /** El encabezado de la primera hoja. Devuelve dónde empieza la retícula. */
   function portada() {
     // La banda va de orilla a orilla, como el encabezado del sitio.
@@ -274,7 +428,10 @@ export async function armarCatalogoPdf(datos: CatalogoParaPdf): Promise<Blob> {
 
     if (logoNegocio) {
       // El logo del negocio, en su medallón crema con filo de oro: sobre la
-      // noche, un logo de fondo oscuro se perdía sin él.
+      // noche, un logo de fondo oscuro se perdía sin él. Detrás, el halo
+      // dorado lo enciende como a las tarjetas del sitio.
+      recortado(0, 0, ANCHO_HOJA, alto, 0, () => halo(x + 15, 24, 30, 26, ORO, 0.55));
+      aura(x, 9, 30, 30, 5, ORO, 0.5, 2);
       doc.setFillColor(...CREMA);
       doc.setDrawColor(...ORO);
       doc.setLineWidth(0.8);
@@ -309,6 +466,9 @@ export async function armarCatalogoPdf(datos: CatalogoParaPdf): Promise<Blob> {
     }
 
     if (logoGuia) {
+      recortado(0, 0, ANCHO_HOJA, alto, 0, () =>
+        halo(ANCHO_HOJA - MARGEN - 14, 23, 26, 22, ORO, 0.5),
+      );
       doc.addImage(logoGuia, "PNG", ANCHO_HOJA - MARGEN - 28, 9, 28, 28);
     }
 
@@ -316,27 +476,33 @@ export async function armarCatalogoPdf(datos: CatalogoParaPdf): Promise<Blob> {
   }
 
   /**
-   * Una banda de noche a todo lo ancho, con estrellas y un filo de oro. La
-   * comparten la portada, el encabezado de las demás hojas y el pie; el pie
-   * lleva el filo arriba (`filoArriba`) y las demás, abajo.
+   * Una banda de noche a todo lo ancho: el degradado del cielo, el halo violeta
+   * y las auroras del sitio, estrellas que brillan y el filo de oro con su luz.
+   * La comparten la portada, el encabezado de las demás hojas y el pie; el pie
+   * lleva el filo arriba (`filoArriba`) y su luz sube hacia la hoja.
    */
   function bandaDeNoche(arriba: number, alto: number, filoArriba = false) {
-    doc.setFillColor(...NOCHE);
-    doc.rect(0, arriba, ANCHO_HOJA, alto, "F");
+    recortado(0, arriba, ANCHO_HOJA, alto, 0, () => {
+      degradado(0, arriba, ANCHO_HOJA, alto, CIELO);
 
-    // Una franja de selva al pie de la banda: la noche de la guía va del
-    // violeta al verde, y jsPDF no pinta degradados.
-    const franja = alto * 0.28;
-    doc.setFillColor(...NOCHE_2);
-    doc.rect(0, arriba + alto - franja, ANCHO_HOJA, franja, "F");
+      // El halo violeta de arriba y las tres auroras, como `body` y
+      // `.aurora` en globals.css. Se escalan con la banda para que el pie,
+      // que es delgado, no quede todo rosa.
+      const k = Math.min(1, alto / 50);
+      halo(ANCHO_HOJA / 2, arriba, ANCHO_HOJA * 0.55, alto * 1.1, VIOLETA, 0.75);
+      halo(ANCHO_HOJA * 0.18, arriba + alto * 0.4, 50 * k + 10, alto * 0.75, GUAYABA, 0.22);
+      halo(ANCHO_HOJA * 0.82, arriba + alto * 0.35, 50 * k + 10, alto * 0.75, LIMA, 0.17);
+      halo(ANCHO_HOJA * 0.5, arriba + alto * 0.95, 60 * k + 10, alto * 0.6, ORO, 0.2);
 
-    doc.setFillColor(...ORO_CLARO);
-    for (const [fx, fy, r] of ESTRELLAS) {
-      doc.circle(fx * ANCHO_HOJA, arriba + fy * alto, r, "F");
-    }
+      // En el pie, que mide 12 mm, no caben estrellas sin caer encima del texto.
+      if (alto > 15) {
+        ESTRELLAS.forEach(([fx, fy, r], i) => {
+          estrella(fx * ANCHO_HOJA, arriba + fy * alto, r, i % 3 === 0);
+        });
+      }
+    });
 
-    doc.setFillColor(...ORO);
-    doc.rect(0, filoArriba ? arriba : arriba + alto - 0.9, ANCHO_HOJA, 0.9, "F");
+    filoQueBrilla(filoArriba ? arriba : arriba + alto, filoArriba ? -1 : 1);
   }
 
   /** La banda delgada de las hojas siguientes, para que no queden anónimas. */
@@ -395,44 +561,56 @@ export async function armarCatalogoPdf(datos: CatalogoParaPdf): Promise<Blob> {
     doc.setDrawColor(...FILO);
     doc.setLineWidth(0.3);
     doc.line(MARGEN, y, ANCHO_HOJA - MARGEN, y);
-    doc.setFillColor(...ORO);
-    doc.rect(MARGEN, y - 0.6, 18, 1.2, "F");
+    pildoraDeOro(MARGEN, y - 0.7, 20, 1.4);
   }
 
   /** Una tarjeta de producto: foto, nombre, descripción y precio. */
   function tarjeta(producto: ProductoDelPdf, columna: number, arriba: number) {
     const x = MARGEN + columna * (ANCHO_TARJETA + HUECO);
+    const RADIO = 3.5;
 
-    doc.setDrawColor(...FILO);
-    doc.setLineWidth(0.5);
-    doc.roundedRect(x, arriba, ANCHO_TARJETA, ALTO_TARJETA, 3, 3, "S");
+    // El aura dorada de la tarjeta: la luz que en el sitio tienen las tarjetas
+    // al pasar el dedo, y lo que las despega de la hoja sin una sombra gris.
+    aura(x, arriba, ANCHO_TARJETA, ALTO_TARJETA, RADIO, ORO, 0.28, 2.2);
 
     const foto = fotos.get(producto.id);
 
-    if (foto) {
-      doc.addImage(foto, "JPEG", x, arriba, ANCHO_TARJETA, ANCHO_TARJETA);
-    } else {
-      // Sin foto, la inicial dorada sobre la noche: lo mismo que enseña el
-      // micrositio, y no un hueco en blanco que se lee como una tarjeta a
-      // medio cargar.
-      doc.setFillColor(...NOCHE);
-      doc.rect(x, arriba, ANCHO_TARJETA, ANCHO_TARJETA, "F");
+    // Todo lo de dentro se recorta a la tarjeta: la foto respeta sus esquinas
+    // redondeadas en vez de asomarse por encima del filo.
+    recortado(x, arriba, ANCHO_TARJETA, ALTO_TARJETA, RADIO, () => {
+      // La ficha va en crema, el color de fondo del sitio, y no en blanco de
+      // papel: es lo que la hace parecer una tarjeta de la guía.
+      doc.setFillColor(...CREMA);
+      doc.rect(x, arriba, ANCHO_TARJETA, ALTO_TARJETA, "F");
 
-      doc.setFont("times", "bolditalic");
-      doc.setFontSize(34);
-      doc.setTextColor(...ORO);
-      doc.text(
-        producto.nombre.charAt(0).toUpperCase(),
-        x + ANCHO_TARJETA / 2,
-        arriba + ANCHO_TARJETA / 2 + 5,
-        { align: "center" },
-      );
-    }
+      if (foto) {
+        doc.addImage(foto, "JPEG", x, arriba, ANCHO_TARJETA, ANCHO_TARJETA);
+      } else {
+        // Sin foto, la inicial dorada sobre la noche: lo mismo que enseña el
+        // micrositio, y no un hueco en blanco que se lee como una tarjeta a
+        // medio cargar.
+        degradado(x, arriba, ANCHO_TARJETA, ANCHO_TARJETA, CIELO);
+        halo(x + ANCHO_TARJETA / 2, arriba + ANCHO_TARJETA / 2, ANCHO_TARJETA * 0.5, ANCHO_TARJETA * 0.5, ORO, 0.4);
 
-    // La línea que separa la foto del texto: sin ella, una foto de fondo claro
-    // se derrama en la ficha y la tarjeta pierde su borde de abajo.
-    doc.setFillColor(...ORO);
-    doc.rect(x, arriba + ANCHO_TARJETA - 0.4, ANCHO_TARJETA, 0.8, "F");
+        doc.setFont("times", "bolditalic");
+        doc.setFontSize(34);
+        doc.setTextColor(...ORO_CLARO);
+        doc.text(
+          producto.nombre.charAt(0).toUpperCase(),
+          x + ANCHO_TARJETA / 2,
+          arriba + ANCHO_TARJETA / 2 + 5,
+          { align: "center" },
+        );
+      }
+
+      // La línea que separa la foto del texto: sin ella, una foto de fondo
+      // claro se derrama en la ficha y la tarjeta pierde su borde de abajo.
+      degradado(x, arriba + ANCHO_TARJETA - 0.5, ANCHO_TARJETA, 1, BOTON_ORO, true);
+    });
+
+    doc.setDrawColor(...FILO);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(x, arriba, ANCHO_TARJETA, ALTO_TARJETA, RADIO, RADIO, "S");
 
     const izquierda = x + 3;
     const anchoTexto = ANCHO_TARJETA - 6;
@@ -467,10 +645,15 @@ export async function armarCatalogoPdf(datos: CatalogoParaPdf): Promise<Blob> {
       alguien quiere saber antes de ir hasta allá.
     */
     if (producto.precio !== null) {
+      // En la píldora de `boton-oro`, con la tinta oscura que lleva el botón.
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9.5);
-      doc.setTextColor(...ORO_TINTA);
-      doc.text(pesos(producto.precio), izquierda, arriba + ALTO_TARJETA - 4);
+      const precio = pesos(producto.precio);
+      const anchoPrecio = doc.getTextWidth(precio) + 6;
+      const base = arriba + ALTO_TARJETA - 4;
+      pildoraDeOro(izquierda - 0.5, base - 3.9, anchoPrecio, 5.4);
+      doc.setTextColor(...INK);
+      doc.text(precio, izquierda + 2.5, base);
     } else {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7.5);
@@ -510,11 +693,16 @@ export async function armarCatalogoPdf(datos: CatalogoParaPdf): Promise<Blob> {
     const caja = arriba + 11;
 
     // La caja va de noche, como el pie del sitio: es lo que se busca al final,
-    // y así se encuentra de un vistazo.
-    doc.setFillColor(...NOCHE);
+    // y así se encuentra de un vistazo. Con su cielo, su halo y su aura de oro.
+    aura(MARGEN, caja, ANCHO_UTIL, alto, 4, ORO, 0.4, 2.2);
+    recortado(MARGEN, caja, ANCHO_UTIL, alto, 4, () => {
+      degradado(MARGEN, caja, ANCHO_UTIL, alto, CIELO);
+      halo(MARGEN + ANCHO_UTIL * 0.3, caja, ANCHO_UTIL * 0.5, alto * 1.2, VIOLETA, 0.6);
+      halo(MARGEN + ANCHO_UTIL * 0.85, caja + alto, ANCHO_UTIL * 0.3, alto, ORO, 0.18);
+    });
     doc.setDrawColor(...ORO);
     doc.setLineWidth(0.5);
-    doc.roundedRect(MARGEN, caja, ANCHO_UTIL, alto, 3, 3, "FD");
+    doc.roundedRect(MARGEN, caja, ANCHO_UTIL, alto, 4, 4, "S");
 
     /** Un renglón: la etiqueta en negrita y el dato, que además es enlace. */
     function renglon(dato: DatoDeContacto, x: number, y: number, ancho: number) {
@@ -605,8 +793,7 @@ export async function armarCatalogoPdf(datos: CatalogoParaPdf): Promise<Blob> {
     doc.setFillColor(...CREMA_ORO);
     doc.roundedRect(MARGEN, arriba, ANCHO_UTIL, alto, 3, 3, "F");
 
-    doc.setFillColor(...ORO);
-    doc.rect(MARGEN, arriba + 3, 2.5, alto - 6, "F");
+    pildoraDeOro(MARGEN + 2.5, arriba + 3, 2.2, alto - 6);
 
     doc.setTextColor(...CACAO);
     let y = arriba + 6.5;
