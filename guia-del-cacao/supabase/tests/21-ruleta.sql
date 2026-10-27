@@ -77,8 +77,11 @@ values ('f2300000-0000-0000-0000-000000000001', 3, 0, 'activo', now() + interval
 set local role authenticated;
 set local request.jwt.claims to '{"sub":"f2100000-0000-0000-0000-000000000002","role":"authenticated"}';
 
-select pg_temp.debe_fallar('sin plan Pro no hay ruleta',
-  $q$ insert into public.ruletas (sucursal_id) values ('f2300000-0000-0000-0000-000000000002') $q$);
+-- Desde la 000066 Gratis la arma y la guarda; no sale en publico sin Pro.
+insert into public.ruletas (sucursal_id) values ('f2300000-0000-0000-0000-000000000002');
+select pg_temp.debe_ser('sin plan Pro se arma, pero no se ve',
+  not ('f2300000-0000-0000-0000-000000000002'::uuid in (select * from public.sucursales_con_ruleta())));
+delete from public.ruletas where sucursal_id = 'f2300000-0000-0000-0000-000000000002';
 select pg_temp.debe_fallar('no se arma la ruleta de otro',
   $q$ insert into public.ruletas (sucursal_id) values ('f2300000-0000-0000-0000-000000000001') $q$);
 select pg_temp.debe_fallar('nadie se marca como demo solo',
@@ -160,12 +163,17 @@ reset role;
 
 update public.ruletas set frecuencia = 'ilimitada'
  where sucursal_id = 'f2300000-0000-0000-0000-000000000001';
+-- Lo ganado ya se canjeo: sin eso, «sin limite» da la ruleta de cacao (000066).
+update public.giros set canjeado_en = now()
+ where sucursal_id = 'f2300000-0000-0000-0000-000000000001' and codigo is not null;
 
 set local role authenticated;
 set local request.jwt.claims to '{"sub":"f2100000-0000-0000-0000-000000000004","role":"authenticated"}';
 select count(*) as otro from public.girar_ruleta('f2300000-0000-0000-0000-000000000001') \gset
 select pg_temp.debe_ser('sin limite se puede volver a girar', :'otro'::int = 1);
 reset role;
+-- El primer codigo vuelve a estar por canjear: lo usan las pruebas de abajo.
+update public.giros set canjeado_en = null where codigo = :'codigo';
 
 -- ---------------------------------------------------------------- el negocio canjea
 set local role authenticated;

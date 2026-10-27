@@ -1471,3 +1471,64 @@ premios en su cuenta (`/negocio/panel/cuenta?ver=premios`).
   sucursal tiene la ruleta, invita a girarla y nombra los premios; si no, a ver
   el catálogo. Sale en la tarjeta de cada sucursal publicada del panel y en el
   panel de la ruleta. Lo que lleva lo arma `tarjetonDe()` en el servidor.
+
+## Realidad aumentada y la ruleta de cacao (migración 000066), powered by Vórtice VR
+
+El editor y el visor de **realidad aumentada sobre imagen** son los de
+vorticevr.mx portados. Un negocio sube una imagen (tarjeta, empaque, cartel), le
+pone encima videos, imágenes y textos con link, y quien la enfoca con el celular
+la ve cobrar vida. Etapa 1: imagen, video, texto y links; el 3D, el audio y las
+escenas de Vórtice quedan para después (el motor ya los sabe pintar).
+
+- **Gratis arma, Pro publica.** Cualquiera crea y edita sus experiencias; publicar
+  pide un plan con `tiers.experiencias_ra` (Pro: 3). El cupo es **de la marca**:
+  su mejor plan vigente más `marcas.experiencias_extra`, que se compran de una en
+  una por **$499 de pago único** (la mensualidad no cambia). Lo exige
+  `exigir_cupo_de_experiencias`; la cuenta es `cupo_de_experiencias()`.
+- **Lo que se ve se deriva del plan de hoy**, como los eventos: bajar de plan no
+  toca las experiencias, `experiencia_publica()` deja de enseñarlas y al volver
+  regresan. Si el cupo baja, se ven las publicadas más recientes que quepan. La
+  dueña ve la suya aunque no se vea (el visor dice «Vista previa»).
+- **Los extras solo los suma `sumar_experiencia_extra`** (solo `service_role`,
+  idempotente por la referencia del pago): el webhook de Stripe con
+  `checkout.session.completed` en `mode = payment` y `metadata.tipo =
+  experiencia_extra` (`crearPagoDeExperiencia`, `experienciaPagada`). Sin
+  `STRIPE_SECRET_KEY` el cobro es simulado y la acción la suma con la llave de
+  servicio. Las vistas solo las cuenta `contar_vista_de_experiencia()`.
+- **Los archivos no pasan por Next.js**: el editor los sube directo al bucket
+  `experiencias` (`{marca}/{experiencia}/{archivo}`, 50 MB, público de lectura)
+  con la sesión del negocio. Vercel corta los cuerpos en 4.5 MB y un video pesa
+  más. A la acción solo viaja la lista, que pasa por `limpiarElementos`.
+- **El visor** es `public/ra/visor.html`, el `/x/` de Vórtice recortado a la RA
+  con imagen y pintado de noche y oro; `/ra/{codigo}` lo sirve por un rewrite
+  (`next.config.ts`) y él lee `/api/ra/{codigo}`. Es lo que llevan los QR: **la
+  ruta no se cambia**. MindAR 1.2.5 y three 0.160 van por import map.
+- **El motor 3D** (`lib/ra/editor-ra.js` y `lib/ra/escena.js`) se copia tal cual
+  de Vórtice; el editor React (`components/experiencias/editor.tsx`) solo pone el
+  panel. **`escena.js` está dos veces** —`lib/ra/` para el editor (three por npm,
+  fijo en 0.160.0) y `public/ra/` para el visor— y tienen que ser iguales: si no,
+  lo acomodado en el panel no queda donde se ve en el celular. La huella que
+  busca la cámara (`.mind`) se compila en el navegador con el Compiler de MindAR
+  desde el CDN, como en Vórtice.
+- El motor mueve los elementos escribiendo en sus objetos: la lista vive en un
+  `ref` para él y en estado para pintar. Los cambios a un elemento van con
+  `Object.assign`, que el compilador de React acepta sobre objetos compartidos.
+- **Powered by Vórtice VR** (`PoweredByVortice`), en español y en inglés, con la
+  invitación a vorticevr.mx, va en todo lo que se edita de lo interactivo (la
+  realidad aumentada y la ruleta) y en el visor.
+
+### La ruleta se arma gratis, y la de cacao
+
+- `exigir_plan_con_ruleta` ya no frena: Gratis arma y guarda su ruleta y la
+  prueba en el panel (`modo="vista-previa"`, gira en el navegador con sus
+  probabilidades y no guarda nada). Que salga en el micrositio, en «Gira y gana»
+  y con su insignia sigue siendo de Pro (`sucursal_tiene_ruleta`).
+- **Quien ya tiene su premio sigue girando, pero la ruleta de cacao**
+  (`modo="cacao"`, `gajosDeCacao` en `lib/ruleta/cacao.ts`): mazorcas, flores,
+  granos y el logo del negocio, sin premios y sin guardar nada; al parar le
+  recuerda su premio y su código. Sale cuando `mi_giro_en` dice que ya no le
+  toca girar.
+- **En «sin límite», un premio vigente sin canjear no deja ganar otro**: lo
+  frenan `mi_giro_en` y `girar_ruleta` (`tiene_premio_vigente`). Al canjearlo o
+  vencer, vuelve a ganar. Las pruebas 21, 23 y 24 canjean entre giro y giro por
+  eso.

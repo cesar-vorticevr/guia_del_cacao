@@ -71,6 +71,8 @@ export function PestanasDelPanel({
         ? "catalogo"
         : ruta.startsWith("/negocio/panel/ruleta")
           ? "ruleta"
+        : ruta.startsWith("/negocio/panel/experiencias")
+          ? "experiencias"
         : // El resto —editar sucursal, publicar— cae en sucursales, que es de
           // donde se llega a todas ellas.
           "sucursales";
@@ -92,9 +94,11 @@ export function PestanasDelPanel({
           href: "/negocio/panel/catalogo",
           cuenta: catalogo,
         },
-        // La Ruleta Mágica (migración 000060). Se enseña a todos: a quien no
-        // tiene Pro, su página le cuenta qué es y cómo tenerla.
+        // La Ruleta Mágica (migración 000060). Desde la 000066 cualquiera la
+        // arma; que se vea en el micrositio es del plan Pro.
         { clave: "ruleta", texto: "Ruleta", href: "/negocio/panel/ruleta" },
+        // Realidad aumentada sobre imagen, powered by Vórtice VR (000066).
+        { clave: "experiencias", texto: "Realidad aumentada", href: "/negocio/panel/experiencias" },
         ...(FUNCIONES.cupones
           ? [
               {

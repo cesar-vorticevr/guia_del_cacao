@@ -15,6 +15,10 @@ const eslintConfig = defineConfig([
     // El stack local de Supabase deja archivos temporales suyos aquí; no son
     // código de la app y traen su propio estilo.
     "supabase/**",
+    // El visor y el motor 3D de la realidad aumentada vienen de vorticevr.mx
+    // tal cual (migración 000066): se copian, no se reescriben.
+    "public/ra/**",
+    "src/lib/ra/*.js",
   ]),
 ]);
 

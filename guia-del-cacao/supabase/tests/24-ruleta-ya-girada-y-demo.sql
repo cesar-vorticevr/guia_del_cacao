@@ -111,7 +111,10 @@ select pg_temp.debe_ser('al dia: lo de antier deja volver',
   (select puede_girar from public.mi_giro_en('f2800000-0000-0000-0000-0000000000c1')));
 reset role;
 
+-- Sin limite: con el premio ya canjeado (desde la 000066, uno vigente sin
+-- canjear manda a la ruleta de cacao; eso lo prueba 25).
 update public.ruletas set frecuencia = 'ilimitada' where sucursal_id = 'f2800000-0000-0000-0000-0000000000c1';
+update public.giros set canjeado_en = now() where sucursal_id = 'f2800000-0000-0000-0000-0000000000c1';
 set local role authenticated;
 set local request.jwt.claims to '{"sub":"f2600000-0000-0000-0000-0000000000c3","role":"authenticated"}';
 select pg_temp.debe_ser('sin limite: siempre puede',
