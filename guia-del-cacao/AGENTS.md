@@ -1482,8 +1482,12 @@ premios en su cuenta (`/negocio/panel/cuenta?ver=premios`).
   importar `armarCatalogoPdf` con jiti y sustituir `@/lib/descargas`.
 - **El tarjetón del mostrador** (`lib/negocio/tarjeton-pdf.ts`, botón
   `TarjetonQr`) es una hoja **carta** —el papel de cualquier papelería en
-  México— entera de noche, con el QR grande al micrositio (`/marca/{slug}`, no
-  a `/monedas`) sobre su cuadro blanco, que es lo que no se negocia. Si la
+  México— con el QR grande al micrositio (`/marca/{slug}`, no a `/monedas`)
+  sobre su cuadro blanco, que es lo que no se negocia. **Va claro, no de
+  noche** (28 de octubre de 2026): entero de noche salía casi negro en la
+  impresora de una papelería. Hoja crema, oro metálico (`METAL`, un degradado
+  con reflejos) en el marco, la cinta del titular, el filo del QR y los números,
+  y el **logo del negocio grande** arriba: el tarjetón es suyo. Si la
   sucursal tiene la ruleta, invita a girarla y nombra los premios; si no, a ver
   el catálogo. Sale en la tarjeta de cada sucursal publicada del panel y en el
   panel de la ruleta. Lo que lleva lo arma `tarjetonDe()` en el servidor.

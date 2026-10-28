@@ -6,7 +6,7 @@ import type { DatosDelTarjeton } from "@/lib/negocio/tarjeton-pdf";
 
 /**
  * El botón que baja el tarjetón del mostrador (`lib/negocio/tarjeton-pdf`):
- * hoja carta, noche y oro, con el QR al micrositio.
+ * hoja carta, crema y oro metálico, con el logo grande y el QR al micrositio.
  *
  * `jspdf` y `qrcode` se piden al pulsar, no al cargar el panel: son cientos
  * de KB que la mayoría de las visitas no necesita.
