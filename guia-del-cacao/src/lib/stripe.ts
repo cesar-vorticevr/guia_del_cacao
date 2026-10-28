@@ -274,3 +274,46 @@ export async function abrirPortalDeStripe(clienteId: string, regreso: string) {
   });
   return sesion.url;
 }
+
+/**
+ * Una experiencia de realidad aumentada más (migración 000066): un solo pago,
+ * no una suscripción, así que la mensualidad sigue igual. La suma el webhook
+ * al recibir `checkout.session.completed` con `tipo = experiencia_extra`.
+ */
+export async function crearPagoDeExperiencia(datos: {
+  marcaId: string;
+  clienteStripe: string | null;
+  correo: string;
+  precio: number;
+  exito: string;
+  cancelado: string;
+}) {
+  const metadata = { app: APP, tipo: "experiencia_extra", marca_id: datos.marcaId };
+
+  const sesion = await stripe()!.checkout.sessions.create({
+    mode: "payment",
+    locale: "es",
+    ...(datos.clienteStripe ? { customer: datos.clienteStripe } : { customer_email: datos.correo }),
+    client_reference_id: datos.marcaId,
+    line_items: [
+      {
+        price_data: {
+          currency: "mxn",
+          product_data: {
+            name: "Guía del Cacao · Una experiencia de realidad aumentada más",
+            metadata: { app: APP },
+          },
+          unit_amount: centavos(datos.precio),
+        },
+        quantity: 1,
+      },
+    ],
+    metadata,
+    payment_intent_data: { metadata },
+    success_url: datos.exito,
+    cancel_url: datos.cancelado,
+  });
+
+  if (!sesion.url) throw new Error("Stripe no devolvió la página de pago.");
+  return sesion.url;
+}

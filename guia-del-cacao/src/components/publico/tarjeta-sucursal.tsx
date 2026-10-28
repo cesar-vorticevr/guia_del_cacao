@@ -130,19 +130,24 @@ export function TarjetaSucursal({
           )}
 
           {/*
-            Las etiquetas de la esquina, una debajo de otra: Destacado (plan),
-            la ruleta que se puede girar (000060) y la cinta de DEMO de un
-            negocio de demostración, que no debe confundirse con uno real.
+            Las insignias de la esquina. Destacado (plan) y Ruleta (000060) van
+            lado a lado y brillan: son lo que el negocio paga por que se note.
+            Debajo, la cinta de DEMO de un negocio de demostración, que no debe
+            confundirse con uno real.
           */}
-          <span className="absolute left-2 top-2 flex flex-col items-start gap-1">
-            {destacada && (
-              <span className="rounded-full bg-mango px-2.5 py-1 font-mono text-[0.65rem] font-bold text-ink">
-                Destacado
-              </span>
-            )}
-            {sucursal.conRuleta && (
-              <span className="rounded-full bg-guayaba px-2.5 py-1 font-mono text-[0.65rem] font-bold text-ink shadow-[0_0_12px_rgb(255_93_115/0.6)]">
-                🎡 Ruleta
+          <span className="absolute left-2 top-2 flex flex-col items-start gap-1.5 pr-12">
+            {(destacada || sucursal.conRuleta) && (
+              <span className="flex flex-wrap gap-1.5">
+                {destacada && (
+                  <span className="insignia-destacado brillo inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[0.7rem] font-extrabold text-ink">
+                    <span aria-hidden="true">★</span> Destacado
+                  </span>
+                )}
+                {sucursal.conRuleta && (
+                  <span className="insignia-ruleta brillo inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[0.7rem] font-extrabold text-ink">
+                    <span aria-hidden="true" className="rueda-gira inline-block">🎡</span> Ruleta
+                  </span>
+                )}
               </span>
             )}
             {sucursal.marcas?.es_demo && (

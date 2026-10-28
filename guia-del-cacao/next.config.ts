@@ -17,6 +17,15 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "22mb",
     },
   },
+
+  /**
+   * El visor de realidad aumentada (powered by Vórtice VR) es una página
+   * estática, la de vorticevr.mx portada: `/ra/{codigo}` la sirve y ella lee
+   * el código de su propia dirección. Es lo que llevan los QR.
+   */
+  async rewrites() {
+    return [{ source: "/ra/:codigo([a-z0-9]{6,12})", destination: "/ra/visor.html" }];
+  },
 };
 
 export default nextConfig;

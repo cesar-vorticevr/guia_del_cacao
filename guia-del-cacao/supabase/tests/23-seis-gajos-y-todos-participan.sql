@@ -85,18 +85,27 @@ select pg_temp.debe_ser('repetir reparte el chance de cada premio entre sus copi
 update public.ruletas set relleno = 'suerte' where sucursal_id = 'f2500000-0000-0000-0000-0000000000b1';
 
 -- ---------------------------------------------------------------- un negocio gira la de otro
-set local role authenticated;
+-- Desde la 000066, «sin limite» no da otro premio mientras haya uno vigente
+-- sin canjear: entre giro y giro se canjea lo ganado.
+create temp table tiros (gajo smallint, premio text, es_premio boolean, codigo text, vence_en date);
+grant insert, select on tiros to authenticated;
 set local request.jwt.claims to '{"sub":"f2300000-0000-0000-0000-0000000000b2","role":"authenticated"}';
 
-create temp table tiros as
-  select * from public.girar_ruleta('f2500000-0000-0000-0000-0000000000b1')
-  union all select * from public.girar_ruleta('f2500000-0000-0000-0000-0000000000b1')
-  union all select * from public.girar_ruleta('f2500000-0000-0000-0000-0000000000b1')
-  union all select * from public.girar_ruleta('f2500000-0000-0000-0000-0000000000b1')
-  union all select * from public.girar_ruleta('f2500000-0000-0000-0000-0000000000b1')
-  union all select * from public.girar_ruleta('f2500000-0000-0000-0000-0000000000b1')
-  union all select * from public.girar_ruleta('f2500000-0000-0000-0000-0000000000b1')
-  union all select * from public.girar_ruleta('f2500000-0000-0000-0000-0000000000b1');
+set local role authenticated; insert into tiros select * from public.girar_ruleta('f2500000-0000-0000-0000-0000000000b1'); reset role;
+update public.giros set canjeado_en = now() where sucursal_id = 'f2500000-0000-0000-0000-0000000000b1';
+set local role authenticated; insert into tiros select * from public.girar_ruleta('f2500000-0000-0000-0000-0000000000b1'); reset role;
+update public.giros set canjeado_en = now() where sucursal_id = 'f2500000-0000-0000-0000-0000000000b1';
+set local role authenticated; insert into tiros select * from public.girar_ruleta('f2500000-0000-0000-0000-0000000000b1'); reset role;
+update public.giros set canjeado_en = now() where sucursal_id = 'f2500000-0000-0000-0000-0000000000b1';
+set local role authenticated; insert into tiros select * from public.girar_ruleta('f2500000-0000-0000-0000-0000000000b1'); reset role;
+update public.giros set canjeado_en = now() where sucursal_id = 'f2500000-0000-0000-0000-0000000000b1';
+set local role authenticated; insert into tiros select * from public.girar_ruleta('f2500000-0000-0000-0000-0000000000b1'); reset role;
+update public.giros set canjeado_en = now() where sucursal_id = 'f2500000-0000-0000-0000-0000000000b1';
+set local role authenticated; insert into tiros select * from public.girar_ruleta('f2500000-0000-0000-0000-0000000000b1'); reset role;
+update public.giros set canjeado_en = now() where sucursal_id = 'f2500000-0000-0000-0000-0000000000b1';
+set local role authenticated; insert into tiros select * from public.girar_ruleta('f2500000-0000-0000-0000-0000000000b1'); reset role;
+update public.giros set canjeado_en = now() where sucursal_id = 'f2500000-0000-0000-0000-0000000000b1';
+set local role authenticated; insert into tiros select * from public.girar_ruleta('f2500000-0000-0000-0000-0000000000b1');
 
 select pg_temp.debe_ser('un negocio gira la ruleta de otro',
   (select count(*) = 8 from tiros));

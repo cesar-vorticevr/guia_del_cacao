@@ -23,6 +23,23 @@ export function esDeLaGuia(metadata: Stripe.Metadata | null | undefined) {
   return metadata?.app === APP;
 }
 
+/**
+ * Una experiencia de realidad aumentada pagada (migración 000066): suma una al
+ * cupo de la marca. La referencia es la sesión de Checkout, así que un aviso
+ * repetido no suma dos.
+ */
+export async function experienciaPagada(sesion: Stripe.Checkout.Session) {
+  const marcaId = sesion.metadata?.marca_id;
+  if (!marcaId) return;
+
+  const { error } = await crearClienteDeServicio().rpc("sumar_experiencia_extra", {
+    p_marca: marcaId,
+    p_referencia: sesion.id,
+    p_monto: (sesion.amount_total ?? 0) / 100,
+  });
+  if (error) throw error;
+}
+
 /** El id de un objeto que Stripe puede mandar expandido o como cadena. */
 function idDe(valor: string | { id: string } | null | undefined) {
   if (!valor) return null;

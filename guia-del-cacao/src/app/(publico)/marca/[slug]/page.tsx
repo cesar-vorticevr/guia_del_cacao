@@ -23,6 +23,7 @@ import { BotonFavorito } from "@/components/publico/boton-favorito";
 import { BotonCompartir } from "@/components/publico/boton-compartir";
 import { Medir } from "@/components/publico/medir";
 import { RuletaMagica } from "@/components/ruleta/ruleta-magica";
+import { gajosDeCacao } from "@/lib/ruleta/cacao";
 import { gajosDe, miGiroEn, ruletaDe, sucursalesConRuleta, TEXTO_DE_FRECUENCIA } from "@/lib/datos/ruleta";
 import { RuletaYaGirada } from "@/components/ruleta/ruleta-ya-girada";
 import { tipoDeContacto } from "@/lib/actividad";
@@ -303,7 +304,7 @@ export default async function Micrositio({
         invita a quedarse, y quien llega desde «Gira y gana» viene a eso.
       */}
       {girable && ruleta && yaGiro && miGiro && (
-        <section className="px-4 pt-6">
+        <section className="grid gap-5 px-4 pt-6">
           <RuletaYaGirada
             giro={miGiro}
             frecuencia={ruleta.frecuencia}
@@ -311,6 +312,34 @@ export default async function Micrositio({
               perfil?.rol === "negocio" ? "/negocio/panel/cuenta?ver=premios" : "/cuenta?ver=premios"
             }
           />
+          {/*
+            Ya no le toca ganar, pero sigue girando por gusto (000066): la
+            ruleta de cacao, con mazorcas, flores y el logo del negocio, que no
+            da premios ni guarda nada. Así se nota que no hay nada más que ganar.
+          */}
+          <div className="rounded-[2rem] border border-mango/30 bg-white px-4 py-8 text-center shadow-[0_0_60px_rgb(255_183_3/0.12)] sm:px-8">
+            <p className="antetitulo">Ruleta de cacao</p>
+            <h2 className="mt-2 font-display text-3xl font-medium tracking-tight">
+              Sigue girando, <em className="texto-oro">por gusto</em>
+            </h2>
+            <p className="mx-auto mt-2 mb-8 max-w-md text-cacao">
+              Tu premio ya está guardado. Esta vuelta es solo para divertirte.
+            </p>
+            <RuletaMagica
+              modo="cacao"
+              sucursalId={sucursal.id}
+              gajos={gajosDeCacao(urlImagen(sucursal.logo))}
+              recuerdo={miGiro.esPremio && !miGiro.canjeadoEn ? { premio: miGiro.premio, codigo: miGiro.codigo, esPremio: true } : null}
+              frecuenciaDiaria={false}
+              enlacePremios={
+                perfil?.rol === "negocio" ? "/negocio/panel/cuenta?ver=premios" : "/cuenta?ver=premios"
+              }
+              reglas=""
+              puedeGirar
+              motivo={null}
+              volver={`/marca/${sucursal.slug}`}
+            />
+          </div>
         </section>
       )}
 

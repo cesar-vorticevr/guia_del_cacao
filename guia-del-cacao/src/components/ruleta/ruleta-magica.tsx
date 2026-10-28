@@ -7,7 +7,34 @@ import { LluviaDeMazorcas } from "@/components/lluvia-de-mazorcas";
 import { casi, fanfarria, preparar, tic } from "@/components/ruleta/sonidos";
 import { girarRuleta } from "@/lib/ruleta/acciones";
 
-export type Gajo = { gajo: number; texto: string; probabilidad: number; esPremio: boolean };
+export type Gajo = {
+  gajo: number;
+  texto: string;
+  probabilidad: number;
+  esPremio: boolean;
+  /** En la ruleta de cacao el gajo lleva una imagen en vez de un premio. */
+  imagen?: string;
+};
+
+/**
+ * Cómo gira (000066):
+ * - `real`: la base decide el premio y lo guarda.
+ * - `cacao`: quien ya tiene su premio sigue girando por diversión; los gajos
+ *   son mazorcas, flores y el logo del negocio, y no se guarda nada.
+ * - `vista-previa`: el dueño la prueba en su panel; sale un premio al azar con
+ *   sus probabilidades, sin guardarse.
+ */
+export type ModoDeRuleta = "real" | "cacao" | "vista-previa";
+
+/** Los colores de la ruleta de cacao: chocolate y oro. */
+const COLORES_CACAO = [
+  { fondo: "#4a2c1d", letra: "#fff7e8" },
+  { fondo: "#ffe08a", letra: "#22150e" },
+  { fondo: "#6b3d22", letra: "#fff7e8" },
+  { fondo: "#ffb703", letra: "#22150e" },
+  { fondo: "#3a1f12", letra: "#fff7e8" },
+  { fondo: "#ff9f43", letra: "#22150e" },
+];
 
 /**
  * Los seis colores de la guía, uno por gajo, con la letra que se lee encima.
@@ -77,6 +104,9 @@ export function RuletaMagica({
   frecuenciaDiaria,
   enlacePremios,
   esDemo = false,
+  modo = "real",
+  recuerdo = null,
+  anchoRueda = "max-w-[24rem]",
 }: {
   sucursalId: string;
   gajos: Gajo[];
@@ -91,7 +121,13 @@ export function RuletaMagica({
   enlacePremios: string;
   /** Ruleta de demostración: gira siempre y no guarda el premio (000064). */
   esDemo?: boolean;
+  modo?: ModoDeRuleta;
+  /** En la de cacao: lo que ya ganó, para recordárselo al parar. */
+  recuerdo?: { premio: string; codigo: string | null; esPremio: boolean } | null;
+  /** Qué tan ancha puede ser la rueda: en el panel va chica, pegada al formulario. */
+  anchoRueda?: string;
 }) {
+  const local = modo !== "real";
   const [angulo, setAngulo] = useState(0);
   const [girando, setGirando] = useState(false);
   const [resultado, setResultado] = useState<Resultado | null>(null);
@@ -103,7 +139,25 @@ export function RuletaMagica({
   // girar, la rueda grande se encoge a su aviso. La demo se queda como está.
   function cerrar() {
     setResultado(null);
-    if (!esDemo) router.refresh();
+    if (!esDemo && !local) router.refresh();
+  }
+
+  /**
+   * El giro de la de cacao y de la vista previa: lo tira el navegador porque
+   * no hay nada que ganar ni que guardar. En la vista previa respeta las
+   * probabilidades para que el dueño vea cómo saldría.
+   */
+  function tiroLocal() {
+    const total = gajos.reduce((s, g) => s + Number(g.probabilidad), 0) || 1;
+    let tiro = Math.random() * total;
+    const gajo = gajos.find((g) => (tiro -= Number(g.probabilidad)) < 0) ?? gajos[gajos.length - 1];
+    return {
+      gajo: gajo.gajo,
+      premio: gajo.texto,
+      esPremio: modo === "vista-previa" && gajo.esPremio,
+      codigo: modo === "vista-previa" && gajo.esPremio ? "VISTA-PREVIA" : null,
+      venceEn: null,
+    };
   }
 
   const rueda = useRef<SVGGElement>(null);
@@ -164,7 +218,7 @@ export function RuletaMagica({
     setResultado(null);
     setGirando(true);
 
-    const respuesta = await girarRuleta(sucursalId);
+    const respuesta = local ? tiroLocal() : await girarRuleta(sucursalId);
 
     if ("error" in respuesta) {
       setGirando(false);
@@ -220,7 +274,7 @@ export function RuletaMagica({
         {sonido ? "🔊" : "🔇"}
       </button>
 
-      <div className={`relative w-full max-w-[24rem] ${girando ? "ruleta-girando" : ""}`}>
+      <div className={`relative w-full ${anchoRueda} ${girando ? "ruleta-girando" : ""}`}>
         {/* La flecha, arriba, que rebota con cada gajo que pasa. */}
         <svg
           ref={flecha}
@@ -273,8 +327,40 @@ export function RuletaMagica({
               const desde = ((i * PASO - 90) * Math.PI) / 180;
               const hasta = (((i + 1) * PASO - 90) * Math.PI) / 180;
               const r = 86;
-              const color = COLORES[i % COLORES.length];
+              const color = (modo === "cacao" ? COLORES_CACAO : COLORES)[i % COLORES.length];
               const medio = i * PASO + PASO / 2;
+              if (g.imagen) {
+                // La ruleta de cacao: una imagen de pie en el centro del gajo,
+                // mirando hacia afuera; el logo, sobre su círculo claro.
+                const rad = (medio * Math.PI) / 180;
+                const cx = r3(100 + 54 * Math.sin(rad));
+                const cy = r3(100 - 54 * Math.cos(rad));
+                const lado = 34;
+                const esLogo = !g.imagen.startsWith("/");
+                return (
+                  <g key={i}>
+                    <path
+                      d={`M100 100 L${r3(100 + r * Math.cos(desde))} ${r3(100 + r * Math.sin(desde))} A${r} ${r} 0 0 1 ${r3(100 + r * Math.cos(hasta))} ${r3(100 + r * Math.sin(hasta))} Z`}
+                      fill={color.fondo}
+                      stroke="#fff3c4"
+                      strokeWidth="1"
+                    />
+                    <g transform={`rotate(${medio} ${cx} ${cy})`}>
+                      {esLogo && <circle cx={cx} cy={cy} r={lado / 2 + 1.5} fill="#fff7e8" stroke="#ffd166" strokeWidth="1.2" />}
+                      <image
+                        href={g.imagen}
+                        x={cx - lado / 2}
+                        y={cy - lado / 2}
+                        width={lado}
+                        height={lado}
+                        preserveAspectRatio="xMidYMid meet"
+                        clipPath={esLogo ? `circle(${lado / 2}px)` : undefined}
+                        style={{ filter: "drop-shadow(0 0 3px rgba(255,209,102,0.7))" }}
+                      />
+                    </g>
+                  </g>
+                );
+              }
               // El texto va a lo largo del radio, de dentro hacia fuera; en la
               // mitad izquierda se voltea para no quedar de cabeza.
               const volteado = medio > 180;
@@ -348,18 +434,26 @@ export function RuletaMagica({
         </p>
       )}
 
-      <div className="text-center text-sm text-crema/65">
-        <p>{reglas}</p>
-        <p className="mt-1">
-          Probabilidades:{" "}
-          {[...chances].map(([texto, chance], i) => (
-            <span key={texto}>
-              {i > 0 && " · "}
-              {texto} {Math.round(chance * 10) / 10}%
-            </span>
-          ))}
+      {modo === "cacao" ? (
+        <p className="max-w-md text-center text-sm text-crema/70">
+          Esta es la ruleta de cacao: ya no da premios, es solo para divertirte. Tu premio ya está
+          guardado.
         </p>
-      </div>
+      ) : (
+        <div className="text-center text-sm text-crema/65">
+          <p>{reglas}</p>
+          {/* En el panel, la vista previa ya dice debajo qué tan seguido sale cada uno. */}
+          <p className={`mt-1 ${modo === "vista-previa" ? "hidden" : ""}`}>
+            Probabilidades:{" "}
+            {[...chances].map(([texto, chance], i) => (
+              <span key={texto}>
+                {i > 0 && " · "}
+                {texto} {Math.round(chance * 10) / 10}%
+              </span>
+            ))}
+          </p>
+        </div>
+      )}
 
       {resultado && (
         <div
@@ -369,15 +463,38 @@ export function RuletaMagica({
         >
           {resultado.esPremio && <LluviaDeMazorcas />}
           <div className="relative w-full max-w-md animate-brinca rounded-[2rem] border border-mango/50 bg-[#14231c] p-8 text-center text-crema shadow-[0_0_80px_rgb(255_183_3/0.35)]">
-            {resultado.esPremio ? (
+            {modo === "cacao" ? (
               <>
-                <p className="antetitulo">¡Ganaste!</p>
+                {/* eslint-disable-next-line @next/next/no-img-element -- adorno del diálogo, ya ligero */}
+                <img src="/parallax/flores-de-cacao.png" alt="" className="mx-auto h-20 w-auto drop-shadow-[0_0_14px_rgb(255_209_102/0.7)]" />
+                <p className="mt-3 font-display text-3xl font-semibold">¡Qué buen giro!</p>
+                {recuerdo?.esPremio ? (
+                  <p className="mt-2 text-crema/80">
+                    Ya tienes tu premio de esta ruleta: <strong className="text-mango">{recuerdo.premio}</strong>
+                    {recuerdo.codigo && (
+                      <>
+                        {" "}· código <strong className="select-all font-mono tracking-wider text-mango">{recuerdo.codigo}</strong>
+                      </>
+                    )}
+                    . Canjéalo en el negocio.
+                  </p>
+                ) : (
+                  <p className="mt-2 text-crema/80">Ya giraste esta ruleta. Esta vuelta es solo por diversión.</p>
+                )}
+              </>
+            ) : resultado.esPremio ? (
+              <>
+                <p className="antetitulo">{modo === "vista-previa" ? "Vista previa" : "¡Ganaste!"}</p>
                 <p className="texto-oro mt-3 font-display text-4xl font-semibold leading-tight">{resultado.premio}</p>
                 <p className="mt-5 text-sm text-crema/70">{esDemo ? "Código de muestra" : "Tu código"}</p>
                 <p className="mt-1 select-all font-mono text-3xl font-bold tracking-[0.15em] text-mango">
                   {resultado.codigo}
                 </p>
-                {esDemo ? (
+                {modo === "vista-previa" ? (
+                  <p className="mt-3 text-sm text-crema/75">
+                    Así lo verán tus clientes. En la vista previa el premio no se guarda.
+                  </p>
+                ) : esDemo ? (
                   <p className="mt-3 text-sm text-crema/75">
                     Es una ruleta de demostración: este premio no se guarda ni se canjea.
                     Gírala las veces que quieras.
@@ -401,7 +518,7 @@ export function RuletaMagica({
               </>
             )}
             <div className="mt-6 grid gap-3">
-              {resultado.esPremio && !esDemo && (
+              {(modo === "cacao" ? recuerdo?.esPremio : resultado.esPremio && modo === "real") && !esDemo && (
                 <Link
                   href={enlacePremios}
                   className="boton-oro brillo inline-flex min-h-12 items-center justify-center rounded-full px-6 font-bold text-ink"
@@ -409,13 +526,27 @@ export function RuletaMagica({
                   Ver mis premios
                 </Link>
               )}
-              <a
-                href="#resenas"
-                onClick={cerrar}
-                className="inline-flex min-h-12 items-center justify-center rounded-full border border-mango/40 px-6 font-bold transition-colors hover:border-mango hover:text-mango"
-              >
-                Déjale una reseña o pregunta
-              </a>
+              {modo === "cacao" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResultado(null);
+                    girar();
+                  }}
+                  className="boton-oro brillo inline-flex min-h-12 items-center justify-center rounded-full px-6 font-bold text-ink"
+                >
+                  Girar otra vez
+                </button>
+              )}
+              {modo !== "vista-previa" && (
+                <a
+                  href="#resenas"
+                  onClick={cerrar}
+                  className="inline-flex min-h-12 items-center justify-center rounded-full border border-mango/40 px-6 font-bold transition-colors hover:border-mango hover:text-mango"
+                >
+                  Déjale una reseña o pregunta
+                </a>
+              )}
               <button
                 type="button"
                 onClick={cerrar}

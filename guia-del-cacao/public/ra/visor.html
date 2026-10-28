@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#1c1236">
+<title>Realidad aumentada · Guía del Cacao</title>
+<link rel="icon" href="/icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap">
+<style>
+/* Visor de las experiencias de realidad aumentada de la Guía del Cacao: el de vorticevr.mx/x/ (Powered by Vórtice VR),
+   portado solo con la RA sobre imagen. Lo sirve /ra/{codigo} (next.config.ts) y lee /api/ra/{codigo}.
+   En Vórtice era el visor de experiencias creadas en vorticevr.mx/crear/. Pantalla completa sobre la cámara:
+   logo de Vórtice VR arriba, controles del video principal a la derecha, escenas, redes y captura abajo.
+   Los elementos (video, imagen, texto, 3D) se arman con /ra/escena.js, igual que en el editor. */
+:root{--void:#08150f;--ink:#fff7e8;--mute:#e8d9bf;--vortex:#ff9f43;--lav:#ffd166;--sun:#ffb703;--glass:rgba(12,22,18,.66);
+  --fd:"Fraunces",Georgia,serif;--fb:"Plus Jakarta Sans",system-ui,-apple-system,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;background:#000;color:var(--ink);font-family:var(--fb);overflow:hidden;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--lav);outline-offset:3px}
+#ar{position:fixed;inset:0}
+.mindar-ui-overlay{display:none!important}
+
+/* logo: always on top of everything */
+#brand{position:fixed;left:0;right:0;top:0;z-index:60;display:flex;justify-content:center;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 22px;background:linear-gradient(180deg,rgba(8,21,15,.7),rgba(8,21,15,0));pointer-events:none}
+#brand a{pointer-events:auto;display:block}
+#brand img{height:56px;width:auto;display:block;filter:drop-shadow(0 2px 8px rgba(0,0,0,.6))}
+/* the customer's own logo (Premium): as it is, with a thin light edge and a soft shadow so any color reads on the camera */
+#brand.own img{height:auto;max-height:34px;max-width:50vw;filter:drop-shadow(0 0 1.5px rgba(255,255,255,.75)) drop-shadow(0 2px 8px rgba(0,0,0,.45))}
+
+/* intro */
+#intro{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch;gap:18px;padding:74px 22px calc(28px + env(safe-area-inset-bottom,0px));text-align:center;
+  background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(120,70,170,.45),transparent 75%),linear-gradient(180deg,#1c1236 0,#0f2a22 55%,#08150f 100%)}
+#intro .k{font-family:var(--fd);font-size:.78rem;letter-spacing:.24em;text-transform:uppercase;color:var(--sun)}
+#intro h1{font-family:var(--fd);font-size:clamp(1.6rem,6vw,2.4rem);line-height:1.1;margin:0;max-width:18ch;text-wrap:balance}
+#intro p{margin:0;max-width:34ch;color:var(--mute);line-height:1.5}
+#intro .steps{margin:0;padding:0;list-style:none;counter-reset:s;display:grid;gap:8px;text-align:left;color:var(--mute);max-width:34ch}
+#intro .steps li{counter-increment:s;display:flex;gap:10px;align-items:baseline;line-height:1.4}
+#intro .steps li::before{content:counter(s);flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font:700 .78rem var(--fd);background:rgba(255,183,3,.9);color:#22150e}
+#intro .steps b{color:var(--ink)}
+#intro>:first-child{margin-top:auto}#intro>:last-child{margin-bottom:auto}
+#intro .thumb{width:auto;max-width:min(70vw,300px);max-height:32vh;max-height:32dvh;object-fit:contain;flex:none;border-radius:12px;box-shadow:0 0 0 2px rgba(255,183,3,.6),0 0 40px rgba(255,183,3,.35),0 20px 50px -12px rgba(0,0,0,.7)}
+.big{font-family:var(--fb);font-weight:700;letter-spacing:.04em;font-size:1rem;border:0;border-radius:999px;padding:16px 32px;color:#22150e;background:linear-gradient(135deg,#ffe08a 0%,#ffb703 50%,#ff9f43 100%);box-shadow:0 0 0 1px rgba(255,255,255,.25) inset,0 6px 26px rgba(255,159,67,.55),0 0 40px rgba(255,183,3,.35);position:relative;overflow:hidden}
+.big::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);transform:translateX(-120%);animation:brillo 3.2s ease-in-out infinite;pointer-events:none}
+@keyframes brillo{60%,100%{transform:translateX(120%)}}
+.big:disabled{opacity:.6}
+#err{color:#ffb3c0;font-weight:600;max-width:34ch}
+.made{font-size:.76rem;color:var(--mute);line-height:1.7;margin:0;opacity:.85}
+.made a{color:var(--mute);text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.made img{height:16px;width:auto}
+.back{color:var(--sun);font-weight:700;font-size:.9rem;text-shadow:0 0 14px rgba(255,183,3,.5)}
+#intro h1{text-shadow:0 0 28px rgba(255,183,3,.35)}
+#intro .k{text-shadow:0 0 12px rgba(255,183,3,.7)}
+
+/* watermark: the image to look for */
+#guide{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:none;transition:opacity .35s}
+#guide.off{opacity:0}
+#guide .frame{position:relative;width:min(78vw,420px)}
+#guide .frame img{width:100%;height:auto;display:block;opacity:.4;border-radius:8px}
+#guide .frame::before{content:"";position:absolute;inset:-8px;border:3px solid #fff;border-radius:12px;opacity:.9;
+  clip-path:polygon(0 0,22% 0,22% 4px,4px 4px,4px 22%,0 22%,0 78%,4px 78%,4px calc(100% - 4px),22% calc(100% - 4px),22% 100%,78% 100%,78% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 78%,100% 78%,100% 22%,calc(100% - 4px) 22%,calc(100% - 4px) 4px,78% 4px,78% 0,100% 0,100% 100%,0 100%)}
+#guide p{margin:0;background:var(--glass);padding:9px 16px;border-radius:999px;font-size:.88rem;font-weight:600}
+#guide.mini{justify-content:flex-start;padding-top:calc(64px + env(safe-area-inset-top,0px))}
+#guide.mini .frame{width:min(30vw,130px)}
+#guide.mini p{display:none}
+
+/* video on screen while the image is out of view */
+#vbox{position:fixed;left:50%;top:50%;z-index:12;width:min(92vw,560px);transform:translate(-50%,-50%) scale(.92);opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;display:flex;flex-direction:column;align-items:center;gap:10px}
+#vbox.on{opacity:1;transform:translate(-50%,-50%);pointer-events:auto}
+#vbox .player{position:relative;width:100%;border-radius:14px;overflow:hidden;background:#000;box-shadow:0 18px 50px -12px rgba(0,0,0,.8)}
+#vbox video{width:100%;max-height:60vh;display:block;object-fit:contain}
+#vbox p{margin:0;background:var(--glass);padding:8px 14px;border-radius:999px;font-size:.82rem;font-weight:600;text-align:center}
+#vbox.full{width:100vw;height:100dvh;top:0;left:0;transform:none;background:#000;z-index:55;justify-content:center}
+#vbox.full .player{border-radius:0;box-shadow:none;height:100%;display:flex;align-items:center}
+#vbox.full video{max-height:100%;height:100%}
+#vbox.full p{display:none}
+
+/* video controls */
+#vctl{position:fixed;right:12px;top:calc(64px + env(safe-area-inset-top,0px));z-index:58;display:flex;flex-direction:column;gap:10px}
+.ic{width:44px;height:44px;border-radius:50%;border:0;background:var(--glass);display:grid;place-items:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.ic svg{width:22px;height:22px;fill:#fff}
+
+/* scenes */
+#scenes{position:fixed;left:50%;transform:translateX(-50%);z-index:21;bottom:calc(206px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:10px;background:var(--glass);border-radius:999px;padding:4px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#scenes .ic{width:38px;height:38px;background:rgba(255,255,255,.12);font-size:1.3rem;line-height:1}
+#scenes span{font:700 .82rem var(--fd);letter-spacing:.08em;min-width:7ch;text-align:center}
+#vids{position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none;overflow:hidden}
+
+/* social buttons */
+#social{position:fixed;left:0;right:0;z-index:20;bottom:calc(150px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;flex-wrap:wrap;gap:10px;padding:0 16px}
+#social a{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:var(--glass);border:1px solid rgba(210,184,255,.35);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#social svg{width:22px;height:22px;fill:#fff}
+
+/* capture */
+#controls{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;flex-direction:column;align-items:center;gap:10px;padding:0 16px calc(18px + env(safe-area-inset-bottom,0px));background:linear-gradient(0deg,rgba(8,21,15,.55),rgba(8,21,15,0))}
+#modes{display:flex;gap:4px;background:var(--glass);border-radius:999px;padding:4px}
+#modes button{font-size:.8rem;font-weight:700;background:transparent;border:0;border-radius:999px;padding:7px 16px}
+#modes button[aria-pressed="true"]{background:#fff;color:#111}
+#shutter{width:70px;height:70px;border-radius:50%;border:4px solid #fff;background:rgba(255,255,255,.22);padding:0;display:grid;place-items:center}
+#shutter span{width:52px;height:52px;border-radius:50%;background:#fff;transition:all .2s}
+#shutter.video span{background:#e5243b}
+#shutter.rec span{width:24px;height:24px;border-radius:6px;background:#e5243b}
+#timer{font-weight:800;font-size:.85rem;background:#e5243b;padding:3px 10px;border-radius:999px;font-variant-numeric:tabular-nums}
+#flash{position:fixed;inset:0;z-index:70;background:#fff;opacity:0;pointer-events:none;transition:opacity .25s}
+#flash.on{opacity:.85;transition:none}
+#sheet{position:fixed;inset:0;z-index:80;background:rgba(10,8,12,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:calc(20px + env(safe-area-inset-top,0px)) 16px calc(20px + env(safe-area-inset-bottom,0px))}
+#sheet .media{max-width:100%;max-height:62vh;border-radius:14px;overflow:hidden;background:#000;display:flex}
+#sheet img,#sheet video{max-width:100%;max-height:62vh;display:block}
+#sheet .row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.act{font-weight:800;font-size:.95rem;border:0;border-radius:999px;padding:13px 22px;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+.act.primary{background:linear-gradient(135deg,#ffe08a,#ffb703 50%,#ff9f43);color:#22150e}
+.act.ghost{background:rgba(255,255,255,.12);color:#fff}
+#sheet small{color:rgba(255,255,255,.7);font-size:.78rem;text-align:center;max-width:36ch;line-height:1.4}
+
+/* message screens (expired / not found) */
+#msg{position:fixed;inset:0;z-index:45;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(120,70,170,.45),transparent 75%),linear-gradient(180deg,#1c1236 0,#0f2a22 55%,#08150f 100%)}
+#msg h1{font-family:var(--fd);margin:0;font-size:1.8rem}
+#msg p{margin:0;color:var(--mute);max-width:34ch;line-height:1.5}
+#msg a.big{text-decoration:none}
+/* trivia (assets/trivia.js) */
+#tvHint{position:fixed;left:50%;top:calc(58px + env(safe-area-inset-top,0px));transform:translate(-50%,-8px);z-index:30;background:var(--glass);padding:9px 16px;border-radius:999px;font-weight:700;font-size:.9rem;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
+#tvHint.on{opacity:1;transform:translate(-50%,0)}
+#tvHint{top:auto;bottom:calc(120px + env(safe-area-inset-bottom,0px))}
+#controls.reconly #shutter,#controls.reconly #modes{display:none}
+#controls.reconly{background:none}
+#controls.reconly #timer::before{content:"● ";}
+.big.ghost{background:transparent;border-color:rgba(210,184,255,.6);box-shadow:none;padding:12px 26px;font-size:.85rem}
+#intro .thumb.logo{width:min(40vw,150px);border-radius:24px;background:#fff;padding:10px;object-fit:contain}
+#tvHint:empty{display:none}
+#intro .thumb.tall{width:min(42vw,170px);max-height:none;height:min(75vw,302px,34dvh);aspect-ratio:auto;object-fit:cover;border-radius:18px}
+#tvAgain{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(160px + env(safe-area-inset-bottom,0px));z-index:30;font-family:var(--fd);font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:.95rem;border:1px solid #fff3d6;border-radius:999px;padding:15px 28px;color:#2b1300;background:linear-gradient(135deg,#ffd27f,#ff9f3a);box-shadow:0 0 30px rgba(255,190,85,.6);animation:tvPop .5s cubic-bezier(.3,1.6,.5,1)}
+@keyframes tvPop{from{transform:translateX(-50%) scale(.4);opacity:0}}
+@media (prefers-reduced-motion:reduce){#vbox,#guide{transition:none}}
+</style>
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+  "mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
+}}
+</script>
+</head>
+<body>
+<div id="ar"></div>
+<header id="brand"><a href="/" aria-label="Guía del Cacao"><img src="/marca/logotipo.png" alt="Guía del Cacao"></a></header>
+
+<div id="intro">
+  <span class="k" id="kick">Esta imagen tiene un video</span>
+  <h1 id="title">Cargando…</h1>
+  <img class="thumb" id="thumb" alt="Imagen que debes enfocar con la cámara" hidden>
+  <ol class="steps" id="steps"><li><span>Toca <b>Abrir la cámara</b> y, si te lo pregunta, <b>Permitir</b>.</span></li><li><span>Apunta a esta imagen.</span></li><li><span>Mira cómo cobra vida.</span></li></ol>
+  <button class="big" id="start" type="button" disabled>Abrir la cámara</button>
+  <div id="err" hidden></div>
+  <a class="back" id="back" href="/" hidden>Conoce el negocio en la Guía del Cacao</a>
+  <p class="made"><a href="https://vorticevr.mx/?utm_source=guia-del-cacao&amp;utm_medium=visor" target="_blank" rel="noopener"><span>Powered by</span> <img src="/marca/vortice-vr-blanco.png" alt="Vórtice VR"></a><br><span>Realidad aumentada de Vórtice VR</span> · <span lang="en">Augmented reality by Vórtice VR</span></p>
+</div>
+
+<div id="msg" hidden><h1 id="msgT"></h1><p id="msgP"></p><a class="big" href="/directorio">Ir a la Guía del Cacao</a><p class="made"><a href="https://vorticevr.mx/" target="_blank" rel="noopener"><span>Powered by</span> <img src="/marca/vortice-vr-blanco.png" alt="Vórtice VR"></a></p></div>
+
+<div id="guide" hidden><div class="frame"><img id="guideImg" alt=""></div><p>Apunta la cámara a esta imagen</p></div>
+
+<div id="vbox" aria-hidden="true">
+  <div class="player"><video id="vid" playsinline webkit-playsinline loop preload="auto" crossorigin="anonymous"></video></div>
+  <p>Apunta a la imagen para verlo sobre ella</p>
+</div>
+
+<div id="vctl" hidden>
+  <button class="ic" id="play" type="button" aria-label="Pausar video"></button>
+  <button class="ic" id="snd" type="button" aria-label="Silenciar"></button>
+  <button class="ic" id="fs" type="button" aria-label="Ver video en pantalla completa"><svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4z"/></svg></button>
+</div>
+
+<nav id="scenes" aria-label="Escenas" hidden><button class="ic" id="sPrev" type="button" aria-label="Escena anterior">‹</button><span id="sLbl"></span><button class="ic" id="sNext" type="button" aria-label="Escena siguiente">›</button></nav>
+<div id="vids" aria-hidden="true"></div>
+
+<nav id="social" aria-label="Redes" hidden></nav>
+
+<div id="controls" hidden>
+  <span id="timer" hidden>0:00</span>
+  <button id="shutter" type="button" aria-label="Tomar foto"><span></span></button>
+  <div id="modes" role="group" aria-label="Modo de captura"><button type="button" data-mode="photo" aria-pressed="true">Foto</button><button type="button" data-mode="video" aria-pressed="false">Video</button></div>
+</div>
+<div id="flash"></div>
+<div id="sheet" hidden>
+  <div class="media" id="media"></div>
+  <div class="row">
+    <button class="act primary" id="share" type="button">Guardar o compartir</button>
+    <a class="act ghost" id="download" href="#" download>Descargar</a>
+    <button class="act ghost" id="close" type="button">Cerrar</button>
+  </div>
+  <small id="saveHint">En iPhone toca “Guardar o compartir” y elige “Guardar imagen” o “Guardar video” para que quede en tu galería.</small>
+</div>
+
+<script type="module">
+import { sfx } from "/ra/sonidos.js";
+// The 3D/AR libraries load when the camera starts (and are warmed up in the background), so the page shows
+// its title and image right away even if a browser is slow or strict with third-party scripts.
+let THREE=null, MindARThree=null, ESC=null;
+const libs=()=>Promise.all([import("three"),import("mindar-image-three"),import("/ra/escena.js")]).then(([t,m,e])=>{ THREE=t; MindARThree=m.MindARThree; ESC=e;
+  if(CFG.items.some(i=>i.type==="text")&&!document.getElementById("fonts")) document.head.appendChild(Object.assign(document.createElement("link"),{id:"fonts",rel:"stylesheet",href:ESC.FONT_CSS})); });
+let libsP=null;
+
+const $=id=>document.getElementById(id);
+const vid=$("vid"), vbox=$("vbox"), guide=$("guide"), startBtn=$("start");
+
+// ---- which experience: nombre.vorticevr.mx, /e/nombre/, or ?s=nombre (pruebas) ----
+function slugFromUrl(){
+  const q=new URLSearchParams(location.search).get("s"); if(q) return q;
+  const m=location.pathname.match(/\/ra\/([a-z0-9]+)/); if(m) return m[1];
+  return null;
+}
+const slug=slugFromUrl();
+let CFG=null;
+// Videos: the main one (the one with sound, or the first) is #vid and goes on screen when the image is lost; the rest play muted.
+let PRIMARY=null; const VIDS=new Map();
+// Audios (one per scene): they play while their scene is on view and the image is found. quiet = the user muted the sound.
+const AUDS=new Map(); let quiet=false, sceneNow=0;
+const primaryHere=()=>!!PRIMARY&&(PRIMARY.scene||0)===sceneNow;
+const audioHere=()=>CFG&&CFG.items.some(i=>i.type==="audio"&&(i.scene||0)===sceneNow);
+const isMuted=()=>primaryHere()?vid.muted:quiet;
+function message(t,p){ $("intro").hidden=true; $("msgT").textContent=t; $("msgP").textContent=p; $("msg").hidden=false; }
+
+const ICONS={
+  whatsapp:'<path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 2.9 2.9 0 0 0-.9 2.2 5 5 0 0 0 1 2.6 11.4 11.4 0 0 0 4.4 3.9c1.6.7 2.3.8 3.1.6a2.6 2.6 0 0 0 1.7-1.2 2.1 2.1 0 0 0 .2-1.2c-.1-.1-.3-.2-.5-.3z"/>',
+  facebook:'<path d="M20 2H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h8.6v-7.7H10v-3h2.6V9c0-2.6 1.6-4 3.9-4 1.1 0 2.1.1 2.3.1v2.7h-1.6c-1.3 0-1.5.6-1.5 1.5v1.9h3l-.4 3h-2.6V22H20a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/>',
+  instagram:'<path d="M7.8 2h8.4A5.8 5.8 0 0 1 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8A5.8 5.8 0 0 1 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2zm-.2 2A3.6 3.6 0 0 0 4 7.6v8.8A3.6 3.6 0 0 0 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6A3.6 3.6 0 0 0 16.4 4H7.6zm9.7 1.5a1.3 1.3 0 1 1 0 2.5 1.3 1.3 0 0 1 0-2.5zM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/>',
+  youtube:'<path d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4a2.5 2.5 0 0 0-1.8 1.8C2 8.8 2 12 2 12s0 3.2.4 4.8a2.5 2.5 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8c.4-1.6.4-4.8.4-4.8s0-3.2-.4-4.8zM10 15V9l5.2 3-5.2 3z"/>',
+  x:'<path d="M17.8 3h3.1l-6.8 7.7L22 21h-6.2l-4.9-6.4L5.3 21H2.2l7.3-8.3L2 3h6.4l4.4 5.8L17.8 3zm-1.1 16.2h1.7L7.4 4.7H5.6l11.1 14.5z"/>',
+  tiktok:'<path d="M16.6 3c.4 2.2 1.8 3.7 4 3.9v3a7.4 7.4 0 0 1-4-1.3v6.2A5.8 5.8 0 1 1 10.8 9v3.1a2.8 2.8 0 1 0 2.8 2.8V3h3z"/>',
+  web:'<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm7.9 9h-3a15.6 15.6 0 0 0-1.3-5.5A8 8 0 0 1 19.9 11zM12 4c.9 1.1 1.8 3.6 2 7h-4c.2-3.4 1.1-5.9 2-7zM4.1 13h3c.1 2 .6 3.9 1.3 5.5A8 8 0 0 1 4.1 13zm3-2h-3a8 8 0 0 1 4.3-5.5A15.6 15.6 0 0 0 7.1 11zM12 20c-.9-1.1-1.8-3.6-2-7h4c-.2 3.4-1.1 5.9-2 7zm3.6-1.5c.7-1.6 1.2-3.5 1.3-5.5h3a8 8 0 0 1-4.3 5.5z"/>'};
+const LABEL={whatsapp:"WhatsApp",facebook:"Facebook",instagram:"Instagram",youtube:"YouTube",x:"X",tiktok:"TikTok",web:"Sitio web"};
+const ORDER=["whatsapp","facebook","instagram","youtube","x","tiktok","web"];
+function socialHref(k,v){ if(k==="whatsapp") return "https://wa.me/"+String(v).replace(/[^\d]/g,""); return v; }
+
+function socialButtons(){
+  const soc=$("social"); soc.replaceChildren();
+  for(const k of ORDER){ const v=CFG.buttons&&CFG.buttons[k]; if(!v) continue;
+    const a=document.createElement("a"); a.href=socialHref(k,v); a.target="_blank"; a.rel="noopener"; a.setAttribute("aria-label",LABEL[k]);
+    a.innerHTML=`<svg viewBox="0 0 24 24">${ICONS[k]}</svg>`; soc.appendChild(a); }
+}
+async function load(){
+  if(!slug){ message("Experiencia no encontrada","Revisa que el link esté completo."); return; }
+  const base=new URLSearchParams(location.search).get("api")||"";
+  let r; try{ r=await fetch(`/api/ra/${encodeURIComponent(slug)}`,{signal:AbortSignal.timeout?AbortSignal.timeout(15000):undefined}); }catch(e){ message("Sin conexión","Revisa tu internet y vuelve a abrir el link."); return; }
+  if(r.status===410){ const j=await r.json().catch(()=>({})); if(j.paused) message("Esta experiencia está pausada","El negocio puede reactivarla desde la Guía del Cacao."); else message("Esta experiencia no está disponible","El negocio puede volver a publicarla desde la Guía del Cacao."); return; }
+  if(!r.ok){ message("Experiencia no encontrada","Revisa que el link esté completo."); return; }
+  CFG=await r.json(); CFG.base=base;
+  const m=CFG.files;
+  CFG.media={target:CFG.target,image:CFG.image};
+  CFG.items=CFG.items||[];
+  document.title=(CFG.title||"Realidad aumentada")+" · Guía del Cacao";
+  $("title").textContent=CFG.title||"Realidad aumentada";
+  const types=new Set(CFG.items.map(i=>i.type));
+  $("kick").textContent=types.size===1&&types.has("video")?"Esta imagen tiene un video":types.size===1&&types.has("model")?"Esta imagen tiene un objeto 3D":"Esta imagen cobra vida";
+  // la dueña la abre antes de publicarla (o sin plan): se ve, pero se le avisa
+  if(CFG.preview) $("kick").textContent="Vista previa · solo tú la ves";
+  $("thumb").src=CFG.media.image; $("thumb").hidden=false; $("guideImg").src=CFG.media.image;
+  const videos=CFG.items.filter(i=>i.type==="video");
+  PRIMARY=videos.find(i=>i.sound)||videos[0]||null;
+  for(const it of videos){
+    const v=it===PRIMARY?vid:document.createElement("video");
+    if(v!==vid){ v.playsInline=true; v.setAttribute("webkit-playsinline",""); v.loop=true; v.preload="auto"; v.crossOrigin="anonymous"; $("vids").appendChild(v); }
+    v.muted=!it.sound; v.src=m+it.file; VIDS.set(it.id,v);
+  }
+  for(const it of CFG.items.filter(i=>i.type==="audio")){
+    const a=new Audio(); a.preload="auto"; a.crossOrigin="anonymous"; a.loop=it.loop!==false; a.src=m+it.file; AUDS.set(it.id,a);
+  }
+  if(CFG.slug){ $("back").href=`/marca/${CFG.slug}`; $("back").textContent=`Conoce ${CFG.marca} en la Guía del Cacao`; $("back").hidden=false; }
+  socialButtons();
+  startBtn.disabled=false;
+  libsP=libs().catch(e=>{ console.error(e); libsP=null; });
+}
+
+
+// ---- video controls ----
+const I_PLAY='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>', I_PAUSE='<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+const I_SON='<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>';
+const I_SOFF='<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm16.6 3 2.1-2.1-1.4-1.4-2.1 2.1-2.1-2.1-1.4 1.4 2.1 2.1-2.1 2.1 1.4 1.4 2.1-2.1 2.1 2.1 1.4-1.4-2.1-2.1z"/></svg>';
+let userPaused=false;
+const showCtl=()=>{ $("play").innerHTML=vid.paused?I_PLAY:I_PAUSE; $("play").setAttribute("aria-label",vid.paused?"Reproducir video":"Pausar video");
+  $("snd").innerHTML=isMuted()?I_SOFF:I_SON; $("snd").setAttribute("aria-label",isMuted()?"Activar sonido":"Silenciar"); };
+["play","pause","volumechange"].forEach(e=>vid.addEventListener(e,showCtl));
+const playVid=()=>vid.play().catch(()=>{ vid.muted=true; return vid.play().catch(()=>{}); });
+$("play").addEventListener("click",()=>{ if(vid.paused){ userPaused=false; playVid(); } else { userPaused=true; vid.pause(); } });
+$("snd").addEventListener("click",()=>{ const m=!isMuted(); quiet=m; for(const a of AUDS.values()) a.muted=m;   // one button for the video and the audio
+  if(primaryHere()){ vid.muted=m; if(vid.paused&&!userPaused) playVid(); } showCtl(); });
+let setMode=()=>{};
+const cssFull=on=>{ vbox.classList.toggle("full",on); setMode(); };
+$("fs").addEventListener("click",()=>{
+  if(vbox.classList.contains("full")) return cssFull(false);
+  const fallback=()=>{ if(vid.webkitEnterFullscreen){ try{ vid.webkitEnterFullscreen(); return; }catch(e){} } cssFull(true); };
+  if(vid.requestFullscreen) vid.requestFullscreen().catch(fallback); else fallback();
+});
+vid.addEventListener("webkitendfullscreen",()=>{ if(!userPaused) playVid(); });
+
+// ---- photo / video capture: camera + 3D layer (+ on-screen video), audio of the video when possible ----
+function setupCapture(mind,opts={}){
+  const container=$("ar"), shutter=$("shutter"), timer=$("timer"), flash=$("flash"), sheet=$("sheet"), media=$("media");
+  const out=document.createElement("canvas"), ctx=out.getContext("2d");
+  let mode="photo", wantPhoto=false, recorder=null, chunks=[], recStart=0, tick=null, lastUrl=null;
+  const MAX_SEC=opts.maxSec||30;
+  document.querySelectorAll("#modes button").forEach(b=>b.addEventListener("click",()=>{ if(recorder) return; sfx.tap(); mode=b.dataset.mode;
+    document.querySelectorAll("#modes button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+    shutter.classList.toggle("video",mode==="video"); shutter.setAttribute("aria-label",mode==="video"?"Grabar video":"Tomar foto"); }));
+  function size(){ const r=container.getBoundingClientRect(), dpr=Math.min(devicePixelRatio||1,2);
+    let w=Math.round(r.width*dpr), h=Math.round(r.height*dpr); const f=Math.min(1,1920/Math.max(w,h)); w=Math.round(w*f)&~1; h=Math.round(h*f)&~1;
+    if(out.width!==w||out.height!==h){ out.width=w; out.height=h; } return {r,sx:w/r.width,sy:h/r.height}; }
+  function compose(){ const {r,sx,sy}=size(); const cam=container.querySelector("video"), gl=mind.renderer.domElement, onScreen=vbox.classList.contains("on")?vid:null;
+    ctx.fillStyle="#000"; ctx.fillRect(0,0,out.width,out.height);
+    for(const el of [cam,gl,onScreen]){ if(!el) continue; const b=el.getBoundingClientRect(), x=(b.left-r.left)*sx, y=(b.top-r.top)*sy, w=b.width*sx, h=b.height*sy;
+      if(el===cam&&/scaleX\(-1\)/.test(el.style.transform)){ ctx.save(); ctx.translate(x+w,y); ctx.scale(-1,1); ctx.drawImage(el,0,0,w,h); ctx.restore(); } else ctx.drawImage(el,x,y,w,h); }
+    // logo on the capture too
+    const lg=$("brand").querySelector("img"); if(!$("brand").hidden&&lg.complete&&lg.naturalWidth){ let lw=out.width*.32, lh=lw*lg.naturalHeight/lg.naturalWidth; const mh=out.height*.07; if(lh>mh){ lh=mh; lw=lh*lg.naturalWidth/lg.naturalHeight; }
+      const lx=(out.width-lw)/2, ly=out.height*.03;
+      if($("brand").classList.contains("own")) { ctx.save(); ctx.shadowColor = "rgba(0,0,0,.45)"; ctx.shadowBlur = lh * .22; ctx.shadowOffsetY = lh * .04; ctx.drawImage(lg, lx, ly, lw, lh); ctx.shadowColor = "rgba(255,255,255,.7)"; ctx.shadowBlur = lh * .05; ctx.shadowOffsetY = 0; ctx.drawImage(lg, lx, ly, lw, lh); ctx.restore(); }
+      else { ctx.globalAlpha=.95; ctx.drawImage(lg,lx,ly,lw,lh); ctx.globalAlpha=1; } } }
+  // Photos and the first frame of a video are composed right after a render: outside of it the 3D canvas is already
+  // cleared (it is shown and wiped every frame), so a video started from the tap began with the camera alone.
+  let wantRec=false;
+  function afterRender(){ if(wantRec){ wantRec=false; compose(); beginRec(); } else if(wantPhoto){ wantPhoto=false; compose(); out.toBlob(b=>show(b,"image"),"image/jpeg",.92); } else if(recorder) compose(); }
+  function pickType(){ for(const t of ["video/mp4;codecs=avc1,mp4a","video/mp4;codecs=avc1","video/mp4","video/webm;codecs=vp9,opus","video/webm"]) if(window.MediaRecorder&&MediaRecorder.isTypeSupported(t)) return t; return ""; }
+  function startRec(){   // it really starts on the next frame drawn (afterRender)
+    if(!window.MediaRecorder||!out.captureStream){ alertSheet("Tu navegador no permite grabar video aquí. Usa la opción de foto."); return; }
+    wantRec=true; sfx.recStart(); }
+  function beginRec(){
+    const stream=out.captureStream(30);
+    if(AUDIO.dest) AUDIO.dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));   // muted elements add silence
+    const type=pickType(); recorder=new MediaRecorder(stream,type?{mimeType:type,videoBitsPerSecond:6e6}:undefined); chunks=[];
+    recorder.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
+    recorder.onstop=()=>{ const t=recorder.mimeType||type||"video/webm"; recorder=null; show(new Blob(chunks,{type:t}),"video"); };
+    recorder.start(250); recStart=performance.now(); shutter.classList.add("rec"); shutter.setAttribute("aria-label","Detener grabación"); timer.hidden=false;
+    tick=setInterval(()=>{ const s=Math.floor((performance.now()-recStart)/1000); timer.textContent=`0:${String(s).padStart(2,"0")}`; if(s>=MAX_SEC) stopRec(); },250); }
+  function stopRec(){ if(recorder||wantRec) sfx.recStop(); wantRec=false; clearInterval(tick); timer.hidden=true; timer.textContent="0:00"; shutter.classList.remove("rec"); shutter.setAttribute("aria-label","Grabar video"); if(recorder&&recorder.state!=="inactive") recorder.stop(); }
+  shutter.addEventListener("click",()=>{ if(mode==="photo"){ sfx.shutter(); flash.classList.add("on"); requestAnimationFrame(()=>requestAnimationFrame(()=>flash.classList.remove("on"))); wantPhoto=true; } else if(recorder) stopRec(); else if(!wantRec) startRec(); });
+  const stamp=()=>{ const d=new Date(),p=n=>String(n).padStart(2,"0"); return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; };
+  function show(blob,kind){
+    if(!blob||!blob.size){ alertSheet("No se pudo guardar la captura. Intenta de nuevo."); return; }
+    if(lastUrl) URL.revokeObjectURL(lastUrl); lastUrl=URL.createObjectURL(blob);
+    const name=`GuiaDelCacao-${CFG.codigo}-${stamp()}.${kind==="image"?"jpg":(blob.type.includes("mp4")?"mp4":"webm")}`;
+    media.replaceChildren(); const el=document.createElement(kind==="image"?"img":"video"); el.src=lastUrl;
+    if(kind==="video"){ el.controls=true; el.playsInline=true; el.autoplay=true; el.muted=true; el.loop=true; } else el.alt="Tu foto en realidad aumentada";
+    media.appendChild(el); $("download").href=lastUrl; $("download").download=name;
+    const file=new File([blob],name,{type:blob.type}); const canShare=!!(navigator.canShare&&navigator.canShare({files:[file]}));
+    $("share").hidden=!canShare; $("download").hidden=false; $("saveHint").hidden=!canShare;
+    $("share").onclick=async()=>{ try{ await navigator.share({files:[file],title:CFG.title||"Realidad aumentada"}); }catch(e){} };
+    sheet.hidden=false; }
+  function alertSheet(msg){ media.replaceChildren(Object.assign(document.createElement("p"),{textContent:msg,style:"color:#fff;padding:20px;margin:0;max-width:30ch;text-align:center"})); $("share").hidden=true; $("download").hidden=true; $("saveHint").hidden=true; sheet.hidden=false; }
+  $("close").addEventListener("click",()=>{ sheet.hidden=true; media.replaceChildren(); });
+  return {afterRender,startRec:()=>{ if(!recorder&&!wantRec) startRec(); },stopRec};
+}
+// Audio of the video for recordings: routed through WebAudio once (created inside the user's tap).
+const AUDIO={};
+function setupAudio(){ try{ const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return; const ac=new AC();
+  const dest=ac.createMediaStreamDestination();
+  for(const el of [PRIMARY&&PRIMARY.sound?vid:null,...AUDS.values()]){ if(!el) continue; const src=ac.createMediaElementSource(el); src.connect(ac.destination); src.connect(dest); }
+  AUDIO.ac=ac; AUDIO.dest=dest; ac.resume&&ac.resume(); }catch(e){} }
+
+async function start(){
+  if(PRIMARY){ vid.muted=!PRIMARY.sound; vid.play().then(()=>vid.pause()).catch(()=>{}); }   // unlock sound inside the tap (iOS)
+  for(const a of AUDS.values()) a.play().then(()=>a.pause()).catch(()=>{});
+  if((PRIMARY&&PRIMARY.sound)||AUDS.size) setupAudio();
+  for(const v of VIDS.values()) if(v!==vid) v.play().then(()=>v.pause()).catch(()=>{});
+  startBtn.disabled=true; startBtn.textContent="Cargando…"; $("err").hidden=true;
+  try{ await (libsP||libs()); if(!THREE||!MindARThree||!ESC) throw 0; }
+  catch(e){ startBtn.disabled=false; startBtn.textContent="Intentar de nuevo"; $("err").hidden=false;
+    $("err").textContent="No se pudo cargar la realidad aumentada. Revisa tu conexión; si estás en navegación privada, ábrelo en una pestaña normal."; return; }
+  try{
+    const mind=new MindARThree({container:$("ar"),imageTargetSrc:CFG.media.target,uiLoading:"no",uiScanning:"no",uiError:"no",filterMinCF:0.0001,filterBeta:0.001});
+    const {renderer,scene,camera}=mind; renderer.outputColorSpace=THREE.SRGBColorSpace;
+    const anchor=mind.addAnchor(0);
+    // Steadier elements: they do not ride the anchor directly. They live in their own group that follows the anchor
+    // with an adaptive low-pass filter: tiny movements (tracking jitter) are damped hard, real movements are followed fast.
+    const steady=new THREE.Group(); steady.matrixAutoUpdate=false; steady.visible=false; scene.add(steady);
+    if(CFG.items.some(i=>i.type==="model")) await ESC.light(renderer,scene);
+    const base=CFG.files;
+    const nodes=(await Promise.all(CFG.items.map(async(it,i)=>{
+      try{ const n=await ESC.build(it,{url:base+it.file,video:VIDS.get(it.id)}); n.order=i; steady.add(n.root); return n; }
+      catch(e){ console.error(e); return null; }   // one element that fails does not stop the rest
+    }))).filter(Boolean);
+    if(!nodes.length) throw new Error("items");
+    // sparkles: around the image and its elements (all scenes), in the same steady group
+    let sparks=null;
+    if(CFG.sparks){
+      sparks=new ESC.Sparkles(); steady.add(sparks.group);
+      const IHr=CFG.img&&CFG.img.w?CFG.img.h/CFG.img.w:1, box=new THREE.Box3(new THREE.Vector3(-.55,-IHr/2-.03,.02),new THREE.Vector3(.55,IHr/2+.03,.3)), b=new THREE.Box3();
+      steady.updateMatrixWorld(true);
+      for(const n of nodes){ if(n.audio) continue; ESC.place(n,n.it,1,n.order); n.root.updateMatrixWorld(true); b.setFromObject(n.root); if(!b.isEmpty()) box.union(b); }
+      sparks.set(CFG.sparks,box,0.05);
+    }
+    const scenes=Math.max(1,CFG.scenes||1,...nodes.map(n=>(n.it.scene||0)+1));
+    for(let k=0;k<scenes;k++) nodes.filter(n=>(n.it.scene||0)===k).forEach((n,i)=>n.si=i);   // entrance order within its scene
+    let cur=0, sceneT=0;
+    const inScene=n=>(n.it.scene||0)===cur;
+    const tP=new THREE.Vector3(), tQ=new THREE.Quaternion(), tS=new THREE.Vector3(), sP=new THREE.Vector3(), sQ=new THREE.Quaternion(), sS=new THREE.Vector3();
+    let steadyOn=false;
+    const SMOOTH=new URLSearchParams(location.search).get("suave")!=="0";   // ?suave=0 turns it off, to compare
+    const follow=dt=>{
+      if(!found){ steady.visible=false; steadyOn=false; return; }
+      anchor.group.updateMatrixWorld(true); anchor.group.matrixWorld.decompose(tP,tQ,tS);
+      if(!steadyOn||!SMOOTH){ sP.copy(tP); sQ.copy(tQ); sS.copy(tS); steadyOn=true; }   // just found (or smoothing off): snap
+      else {
+        const size=Math.max(1e-6,tS.x), move=Math.max(sP.distanceTo(tP)/size, sQ.angleTo(tQ)*0.5);   // in image widths / radians
+        const k=Math.min(1,Math.max(0,(move-0.004)/0.06)), a=0.07+0.6*k*k;                     // jitter → 0.07 · real move → up to 0.67
+        const f=1-Math.pow(1-a,Math.min(4,dt*60));                                              // same feel at any frame rate
+        sP.lerp(tP,f); sQ.slerp(tQ,f); sS.lerp(tS,f);
+      }
+      steady.matrix.compose(sP,sQ,sS); steady.matrixWorldNeedsUpdate=true; steady.visible=true;
+    };
+
+    let found=false, started=false;
+    // videos of the scene on view play; the main one keeps playing on screen while the image is out of view
+    const playScene=()=>{ for(const [id,v] of VIDS){ const n=nodes.find(x=>x.it.id===id), on=!!n&&inScene(n);
+      if(v===vid){ if(!on) v.pause(); else if(found&&!userPaused) playVid(); }
+      else if(on&&found) v.play().catch(()=>{}); else v.pause(); }
+      // the audio of the scene on view plays while the image is found; one that plays once stays done
+      for(const [id,a] of AUDS){ const on=(CFG.items.find(i=>i.id===id).scene||0)===cur;
+        if(on&&found){ if(!a.ended||a.loop) a.play().catch(()=>{}); } else a.pause(); } };
+    setMode=()=>{ const here=primaryHere(), full=vbox.classList.contains("full"), onScreen=!!here&&!PRIMARY.chroma&&started&&(!found||full);
+      vbox.classList.toggle("on",onScreen); vbox.setAttribute("aria-hidden",String(!onScreen)); $("vctl").hidden=!((here||audioHere())&&started);
+      $("play").hidden=$("fs").hidden=!here; showCtl();   // with only an audio: just the sound button
+      guide.classList.toggle("off",found&&!full); guide.classList.toggle("mini",started&&!found); };
+    anchor.onTargetFound=()=>{ found=true; if(!started){ started=true; sfx.appear(); if(PRIMARY) vid.currentTime=0; } sceneT=0; playScene(); setMode(); };
+    anchor.onTargetLost=()=>{ found=false; playScene(); setMode(); };
+    // scenes: arrows at the bottom
+    const go=k=>{ cur=(k+scenes)%scenes; sceneNow=cur; sceneT=0;
+      for(const [id,a] of AUDS) if((CFG.items.find(i=>i.id===id).scene||0)===cur){ try{ a.currentTime=0; }catch(e){} }   // its audio starts over
+      $("sLbl").textContent=`Escena ${cur+1} de ${scenes}`; playScene(); setMode(); };
+    $("sPrev").addEventListener("click",()=>go(cur-1)); $("sNext").addEventListener("click",()=>go(cur+1)); go(0);
+    // tapping an element with a link opens it
+    const ray=new THREE.Raycaster(), ptr=new THREE.Vector2();
+    $("ar").addEventListener("click",e=>{ if(!found) return; const linked=nodes.filter(n=>n.it.link&&inScene(n)); if(!linked.length) return;
+      const r=renderer.domElement.getBoundingClientRect(); ptr.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1); ray.setFromCamera(ptr,camera);
+      const hit=ray.intersectObjects(linked.map(n=>n.root),true)[0]; if(!hit) return;
+      const n=linked.find(n=>{ for(let o=hit.object;o;o=o.parent) if(o===n.root) return true; return false; });
+      if(n) window.open(n.it.link,"_blank","noopener"); });
+
+    const capture=setupCapture(mind);
+    await mind.start();
+    $("intro").hidden=true; guide.hidden=false; $("controls").hidden=false; $("social").hidden=!$("social").children.length; $("scenes").hidden=scenes<2; showCtl(); setMode();
+    const clock=new THREE.Clock(); let time=0;
+    renderer.setAnimationLoop(()=>{ const dt=clock.getDelta(); time+=dt; follow(dt); sceneT=found?sceneT+dt:0;
+      for(const n of nodes){
+        if(!inScene(n)||!found){ n.root.visible=false; continue; }
+        ESC.place(n,n.it,(sceneT-n.si*ESC.STAGGER)/ESC.DURATION,n.order);
+        ESC.animate(n,n.it,time);   // its motion in a loop (girar, palpitar, vaivén, balancear)
+        if(n.it.link) n.root.scale.multiplyScalar(1+0.03*Math.sin(time*4));   // elements you can tap breathe a little
+        n.update(dt);
+      }
+      if(sparks){ sparks.group.visible=found; if(found) sparks.update(dt); }
+      renderer.render(scene,camera); capture.afterRender(); });
+  }catch(e){
+    console.error(e); startBtn.disabled=false; startBtn.textContent="Intentar de nuevo"; $("err").hidden=false;
+    if(e&&e.message==="items"){ $("err").textContent="No se pudieron cargar los elementos de esta experiencia. Revisa tu conexión e intenta de nuevo."; return; }
+    $("err").textContent=(e&&(e.name==="NotAllowedError"||/Permission/i.test(e.message||"")))?"No se dio permiso a la cámara. Actívalo en los ajustes del navegador y vuelve a intentar.":"No se pudo iniciar la cámara. Abre este link en Chrome o Safari (no dentro de Instagram o WhatsApp).";
+  }
+}
+startBtn.addEventListener("click",()=>{ fetch(`/api/ra/${encodeURIComponent(slug)}`,{method:"POST"}).catch(()=>{}); start(); });
+load();
+</script>
+</body>
+</html>

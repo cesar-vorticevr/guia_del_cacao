@@ -1,5 +1,12 @@
 import type Stripe from "stripe";
-import { cobroPerdido, comisionDeLaFactura, esDeLaGuia, facturaPagada, pagoCompletado } from "@/lib/cobros";
+import {
+  cobroPerdido,
+  comisionDeLaFactura,
+  esDeLaGuia,
+  experienciaPagada,
+  facturaPagada,
+  pagoCompletado,
+} from "@/lib/cobros";
 import { stripe } from "@/lib/stripe";
 
 /**
@@ -35,7 +42,15 @@ export async function POST(request: Request) {
     switch (evento.type) {
       case "checkout.session.completed": {
         const sesion = evento.data.object;
-        if (!esDeLaGuia(sesion.metadata) || sesion.mode !== "subscription") break;
+        if (!esDeLaGuia(sesion.metadata)) break;
+
+        // Una experiencia de realidad aumentada más: pago único (000066).
+        if (sesion.mode === "payment" && sesion.metadata?.tipo === "experiencia_extra") {
+          if (sesion.payment_status === "paid") await experienciaPagada(sesion);
+          break;
+        }
+
+        if (sesion.mode !== "subscription") break;
 
         const suscripcionId =
           typeof sesion.subscription === "string" ? sesion.subscription : sesion.subscription?.id;

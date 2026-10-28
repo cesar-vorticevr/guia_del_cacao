@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { CanjearPremio, FormularioRuleta } from "@/components/ruleta/formularios";
 import { TarjetonQr } from "@/components/negocio/tarjeton-qr";
+import { PoweredByVortice } from "@/components/experiencias/powered-by-vortice";
 import { origenDelSitio, perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { urlImagen } from "@/lib/imagenes";
@@ -24,11 +25,12 @@ const FECHA = new Intl.DateTimeFormat("es-MX", {
 });
 
 /**
- * La Ruleta Mágica en el panel (migración 000060): armarla, canjear los
- * códigos que enseñan los clientes y ver lo que se ha repartido.
+ * La Ruleta Mágica en el panel (migración 000060): armarla, probarla, canjear
+ * los códigos que enseñan los clientes y ver lo que se ha repartido.
  *
- * Es del plan Pro. Una sucursal sin él ve qué es y cómo tenerla, no un
- * formulario que la base rechazaría al guardar.
+ * Desde la 000066 cualquiera la arma, la guarda y la prueba aquí; que se vea y
+ * se gire en el micrositio es del plan Pro. Una sucursal sin él tiene todo
+ * para editar y el aviso de qué le falta para publicarla.
  */
 export default async function PanelRuleta({
   searchParams,
@@ -43,31 +45,10 @@ export default async function PanelRuleta({
   if (perfil.rol !== "negocio") redirect("/cuenta");
 
   const sucursales = await misSucursales(perfil.id);
-  const conPlan = sucursales.filter((s) => s.tiers?.permite_ruleta);
-  const sucursal = conPlan.find((s) => s.id === elegida) ?? conPlan[0] ?? null;
+  const sucursal = sucursales.find((s) => s.id === elegida) ?? sucursales[0] ?? null;
 
-  if (!sucursal) {
-    return (
-      <div className="grid max-w-2xl gap-5">
-        <h1 className="font-display text-3xl">Ruleta Mágica</h1>
-        <div className="rounded-3xl border-2 border-mango/50 bg-white p-6">
-          <p className="antetitulo">Viene con el plan Pro</p>
-          <p className="mt-3 text-cacao">
-            Pon una ruleta de premios en tu micrositio: tú eliges tres premios y
-            cada cuánto se puede girar, y quien gana se lleva un código para
-            canjearlo en tu negocio. Los negocios con ruleta salen con su
-            insignia en el directorio y en «Gira y gana» de la portada.
-          </p>
-          <Link
-            href="/negocio/panel/cuenta"
-            className="boton-oro brillo mt-5 inline-flex min-h-12 items-center rounded-full px-6 font-bold text-ink"
-          >
-            Pasarme a Pro
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  if (!sucursal) redirect("/negocio/panel");
+  const tienePro = Boolean(sucursal.tiers?.permite_ruleta);
 
   const supabase = await crearClienteServidor();
   const [ruleta, entregados, conRuleta, origen, { data: marca }] = await Promise.all([
@@ -93,14 +74,16 @@ export default async function PanelRuleta({
   return (
     <div className="grid gap-10">
       <header>
-        <h1 className="font-display text-3xl">Ruleta Mágica</h1>
+        <p className="antetitulo">Powered by Vórtice VR</p>
+        <h1 className="mt-2 font-display text-3xl">Ruleta Mágica</h1>
         <p className="mt-2 max-w-prose text-cacao">
           Tus clientes giran en tu micrositio y se llevan un código. Cuando te lo
-          enseñen, escríbelo abajo para marcarlo como entregado.
+          enseñen, escríbelo abajo para marcarlo como entregado. Quien ya tiene su
+          premio sigue girando una ruleta de cacao, que no da nada más.
         </p>
-        {conPlan.length > 1 && (
+        {sucursales.length > 1 && (
           <nav aria-label="Sucursal" className="mt-4 flex flex-wrap gap-2">
-            {conPlan.map((s) => (
+            {sucursales.map((s) => (
               <Link
                 key={s.id}
                 href={`/negocio/panel/ruleta?sucursal=${s.id}`}
@@ -116,13 +99,30 @@ export default async function PanelRuleta({
         )}
       </header>
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <section className="rounded-3xl border-2 border-ink/10 bg-white p-6">
-          <h2 className="font-display text-2xl">Tu ruleta</h2>
-          <div className="mt-5">
-            <FormularioRuleta sucursalId={sucursal.id} ruleta={ruleta} />
+      {!tienePro && (
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border-2 border-mango/50 bg-crema-2 p-6">
+          <div className="max-w-prose">
+            <p className="antetitulo">Arma gratis, publica con Pro</p>
+            <p className="mt-2 text-cacao">
+              Tu ruleta se guarda y la puedes probar aquí abajo. Para que salga en tu micrositio, en
+              «Gira y gana» de la portada y con su insignia en el directorio, pásate a{" "}
+              <strong>Pro ($499/mes)</strong>.
+            </p>
           </div>
-          {sucursal.estado === "publicado" && (
+          <Link
+            href="/negocio/panel/cuenta"
+            className="boton-oro brillo inline-flex min-h-12 items-center rounded-full px-6 font-bold text-ink"
+          >
+            Pasarme a Pro
+          </Link>
+        </div>
+      )}
+
+      <div className="grid gap-8 lg:grid-cols-2">
+        {/* El formulario trae su vista previa: se pinta con lo escrito, no con lo guardado. */}
+        <section className="lg:col-span-2">
+          <FormularioRuleta sucursalId={sucursal.id} ruleta={ruleta} />
+          {sucursal.estado === "publicado" && tienePro && (
             <Link
               href={`/marca/${sucursal.slug}`}
               className="mt-4 inline-block font-bold text-selva underline"
@@ -144,7 +144,7 @@ export default async function PanelRuleta({
           </section>
         )}
 
-        <div className="grid content-start gap-8">
+        <div className="grid content-start gap-8 lg:col-span-2 lg:grid-cols-2">
           <section className="rounded-3xl border-2 border-mango/40 bg-white p-6">
             <h2 className="font-display text-2xl">Canjear un premio</h2>
             <p className="mt-1 mb-4 text-sm text-cacao">
@@ -196,6 +196,8 @@ export default async function PanelRuleta({
           </section>
         </div>
       </div>
+
+      <PoweredByVortice />
     </div>
   );
 }
