@@ -106,6 +106,7 @@ export function RuletaMagica({
   esDemo = false,
   modo = "real",
   recuerdo = null,
+  anchoRueda = "max-w-[24rem]",
 }: {
   sucursalId: string;
   gajos: Gajo[];
@@ -123,6 +124,8 @@ export function RuletaMagica({
   modo?: ModoDeRuleta;
   /** En la de cacao: lo que ya ganó, para recordárselo al parar. */
   recuerdo?: { premio: string; codigo: string | null; esPremio: boolean } | null;
+  /** Qué tan ancha puede ser la rueda: en el panel va chica, pegada al formulario. */
+  anchoRueda?: string;
 }) {
   const local = modo !== "real";
   const [angulo, setAngulo] = useState(0);
@@ -271,7 +274,7 @@ export function RuletaMagica({
         {sonido ? "🔊" : "🔇"}
       </button>
 
-      <div className={`relative w-full max-w-[24rem] ${girando ? "ruleta-girando" : ""}`}>
+      <div className={`relative w-full ${anchoRueda} ${girando ? "ruleta-girando" : ""}`}>
         {/* La flecha, arriba, que rebota con cada gajo que pasa. */}
         <svg
           ref={flecha}
@@ -439,7 +442,8 @@ export function RuletaMagica({
       ) : (
         <div className="text-center text-sm text-crema/65">
           <p>{reglas}</p>
-          <p className="mt-1">
+          {/* En el panel, la vista previa ya dice debajo qué tan seguido sale cada uno. */}
+          <p className={`mt-1 ${modo === "vista-previa" ? "hidden" : ""}`}>
             Probabilidades:{" "}
             {[...chances].map(([texto, chance], i) => (
               <span key={texto}>

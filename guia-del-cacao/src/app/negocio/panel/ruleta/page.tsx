@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { CanjearPremio, FormularioRuleta } from "@/components/ruleta/formularios";
-import { RuletaMagica } from "@/components/ruleta/ruleta-magica";
 import { TarjetonQr } from "@/components/negocio/tarjeton-qr";
 import { PoweredByVortice } from "@/components/experiencias/powered-by-vortice";
 import { origenDelSitio, perfilActual } from "@/lib/auth/sesion";
@@ -10,13 +9,11 @@ import { crearClienteServidor } from "@/lib/supabase/server";
 import { urlImagen } from "@/lib/imagenes";
 import { misSucursales } from "@/lib/datos/sucursales";
 import {
-  gajosDe,
   hoyEnMexico,
   premiosEntregados,
   ruletaDe,
   sucursalesConRuleta,
   tarjetonDe,
-  TEXTO_DE_FRECUENCIA,
 } from "@/lib/datos/ruleta";
 
 export const metadata: Metadata = { title: "Ruleta Mágica · Guía del Cacao" };
@@ -54,12 +51,11 @@ export default async function PanelRuleta({
   const tienePro = Boolean(sucursal.tiers?.permite_ruleta);
 
   const supabase = await crearClienteServidor();
-  const [ruleta, entregados, conRuleta, origen, gajos, { data: marca }] = await Promise.all([
+  const [ruleta, entregados, conRuleta, origen, { data: marca }] = await Promise.all([
     ruletaDe(sucursal.id),
     premiosEntregados(sucursal.id),
     sucursalesConRuleta(),
     origenDelSitio(),
-    gajosDe(sucursal.id),
     supabase.from("marcas").select("nombre_comercial").eq("id", sucursal.marca_id).maybeSingle(),
   ]);
   const tarjeton =
@@ -123,11 +119,9 @@ export default async function PanelRuleta({
       )}
 
       <div className="grid gap-8 lg:grid-cols-2">
-        <section className="rounded-3xl border-2 border-ink/10 bg-white p-6">
-          <h2 className="font-display text-2xl">Tu ruleta</h2>
-          <div className="mt-5">
-            <FormularioRuleta sucursalId={sucursal.id} ruleta={ruleta} />
-          </div>
+        {/* El formulario trae su vista previa: se pinta con lo escrito, no con lo guardado. */}
+        <section className="lg:col-span-2">
+          <FormularioRuleta sucursalId={sucursal.id} ruleta={ruleta} />
           {sucursal.estado === "publicado" && tienePro && (
             <Link
               href={`/marca/${sucursal.slug}`}
@@ -135,34 +129,6 @@ export default async function PanelRuleta({
             >
               Verla en mi micrositio →
             </Link>
-          )}
-        </section>
-
-        <section
-          className="rounded-3xl border-2 border-mango/50 p-6 text-crema shadow-[0_0_40px_rgb(255_183_3/0.2)]"
-          style={{ background: "linear-gradient(180deg, #1c1236 0%, #0f2a22 70%, #08150f 100%)" }}
-        >
-          <p className="antetitulo">Vista previa</p>
-          <h2 className="mt-2 font-display text-2xl text-crema">Así la ven tus clientes</h2>
-          {ruleta && gajos.length === 6 ? (
-            <div className="mt-6">
-              <RuletaMagica
-                modo="vista-previa"
-                sucursalId={sucursal.id}
-                gajos={gajos}
-                reglas={`${TEXTO_DE_FRECUENCIA[ruleta.frecuencia]} · el premio vale ${ruleta.vigenciaDias} ${ruleta.vigenciaDias === 1 ? "día" : "días"}`}
-                puedeGirar
-                motivo={null}
-                volver="/negocio/panel/ruleta"
-                frecuenciaDiaria={false}
-                enlacePremios="/negocio/panel/cuenta?ver=premios"
-              />
-              <p className="mt-4 text-center text-xs text-crema/60">
-                Gírala cuantas veces quieras: en la vista previa no se guarda ningún premio.
-              </p>
-            </div>
-          ) : (
-            <p className="mt-4 text-crema/75">Guarda tus premios y aquí verás tu ruleta girar.</p>
           )}
         </section>
 

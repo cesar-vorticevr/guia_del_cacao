@@ -104,29 +104,19 @@ export async function guardarRuleta(
       const esSuerte = datos.get(`suerte_${n}`) === "si";
       return {
         texto: esSuerte ? SUERTE : (datos.get(`premio_${n}`)?.toString() ?? "").trim().slice(0, 40),
-        probabilidad: Number(datos.get(`probabilidad_${n}`) ?? 0),
         es_premio: !esSuerte,
       };
     })
     .filter((p) => p.texto);
 
-  const premios = puestos.map((p, i) => ({ ...p, orden: i + 1 }));
+  if (!puestos.some((p) => p.es_premio)) return { error: "Escribe al menos un premio." };
 
-  if (!premios.some((p) => p.es_premio)) return { error: "Escribe al menos un premio." };
-  if (premios.some((p) => !(p.probabilidad > 0) || p.probabilidad > 100)) {
-    return { error: "Cada gajo necesita una probabilidad mayor que 0%." };
-  }
-  const suma = Math.round(premios.reduce((total, p) => total + p.probabilidad, 0) * 100) / 100;
-  const vacios = 6 - premios.length;
-
-  if ((vacios === 0 || relleno === "repetir") && suma !== 100) {
-    return { error: `Las probabilidades tienen que sumar 100%. Ahora suman ${suma}%.` };
-  }
-  if (vacios > 0 && relleno === "suerte" && suma >= 100) {
-    return {
-      error: `Suman ${suma}%: no le queda chance a la «Suerte para la próxima» de los ${vacios} gajos vacíos. Baja algún porcentaje o elige repetir premios.`,
-    };
-  }
+  // Como en Vórtice VR, el negocio no pone porcentajes: cada gajo de la rueda
+  // vale lo mismo. Con relleno de suerte cada puesto es un sexto y la suerte se
+  // queda el resto; repitiendo, los puestos se reparten el cien. La base tira
+  // sobre la suma real, así que el redondeo no mueve el chance.
+  const probabilidad = Math.round((100 / (relleno === "repetir" ? puestos.length : 6)) * 100) / 100;
+  const premios = puestos.map((p, i) => ({ ...p, probabilidad, orden: i + 1 }));
 
   const activa = datos.get("activa") === "si";
   const supabase = await crearClienteServidor();

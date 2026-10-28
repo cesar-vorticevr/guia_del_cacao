@@ -1430,6 +1430,14 @@ pinta el micrositio y con ella tira `girar_ruleta`, que devuelve el gajo
 donde paró. La suerte cuenta como giro para «una vez» y «una al día», pero no
 deja código ni sale en «Mis premios».
 
+**El negocio ya no escribe porcentajes** (como en Vórtice VR): los seis gajos
+valen lo mismo. `guardarRuleta` pone a cada puesto un sexto (relleno con
+suerte) o cien entre los puestos (repitiendo); un premio que se quiere más
+seguido se escribe dos veces. La columna `probabilidad` y `gajos_de_ruleta()`
+no cambiaron. La vista previa del panel vive dentro de `FormularioRuleta` y se
+pinta con lo escrito (`gajosDelFormulario`, espejo de `gajos_de_ruleta`), pegada
+arriba mientras se baja por el formulario.
+
 La rueda usa los seis colores de la guía, parte el texto en dos renglones a lo
 largo del radio (volteado en la mitad izquierda) y suena con Web Audio
 (`components/ruleta/sonidos.ts`): un tic por gajo que pasa la flecha, que
