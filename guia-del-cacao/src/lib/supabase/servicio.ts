@@ -6,7 +6,10 @@ import { createClient } from "@supabase/supabase-js";
  * **Solo para el webhook de Stripe** (`/api/stripe/webhook`), que llega sin
  * sesión de nadie y tiene que abrir suscripciones y volver a publicar
  * micrositios cuando un pago entra. Ninguna pantalla ni acción de usuario
- * debe usarlo: ahí quien decide es RLS.
+ * debe usarlo: ahí quien decide es RLS. La excepción son las cuentas de
+ * ventas (`lib/admin/embajadores.ts`): crear un usuario con su contraseña solo
+ * se puede con esta llave, y la acción comprueba antes que llama el
+ * administrador.
  *
  * La llave (`SUPABASE_SERVICE_ROLE_KEY`) vive solo en el servidor —en Vercel,
  * sin el prefijo `NEXT_PUBLIC_`— y nunca llega al navegador. Este archivo no

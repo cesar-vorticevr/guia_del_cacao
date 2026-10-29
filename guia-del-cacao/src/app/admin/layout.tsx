@@ -11,7 +11,7 @@ const SECCIONES = [
   { href: "/admin/micrositios", texto: "Micrositios" },
   { href: "/admin/metricas", texto: "Métricas" },
   { href: "/admin/convenios", texto: "Códigos" },
-  { href: "/admin/embajadores", texto: "Embajadores" },
+  { href: "/admin/embajadores", texto: "Ventas" },
   { href: "/admin/moderacion", texto: "Moderación" },
   { href: "/admin/usuarios", texto: "Personas" },
 ];

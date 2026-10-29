@@ -60,7 +60,7 @@ export function ofertaDeFila(codigo: string, fila: FilaDeConvenio): Oferta {
 export function ofertaDeEmbajador(codigo: string, nombre: string): Oferta {
   return {
     codigo,
-    descripcion: `Código de ${nombre}, Embajador del Cacao: ${DESCUENTO_DE_EMBAJADOR}% de descuento en tu primer pago.`,
+    descripcion: `Código de ${nombre}, asesor de la Guía: ${DESCUENTO_DE_EMBAJADOR}% de descuento en tu primer pago.`,
     basicoGratisHasta: null,
     descuento: DESCUENTO_DE_EMBAJADOR,
     planId: null,
@@ -81,12 +81,12 @@ export const MESES_PAGADOS_AL_ANIO = 10;
 export const DIAS_GRATIS = 15;
 
 /**
- * Los Embajadores del Cacao: el negocio se descuenta 20% en su primer pago, y
- * el embajador gana 25% de **cada** cobro de ese negocio mientras siga pagando
- * (migración 000065). La base los tiene en `descuento_de_embajador()` y
- * `comision_de_embajador()`.
+ * Las cuentas de ventas: el negocio se descuenta 15% en su primer pago, y el
+ * vendedor gana 25% de **cada** cobro de ese negocio, ya con el descuento,
+ * hasta su `comision_hasta` (migraciones 000065 y 000067). La base los tiene
+ * en `descuento_de_embajador()` y `comision_de_embajador()`.
  */
-export const DESCUENTO_DE_EMBAJADOR = 20;
+export const DESCUENTO_DE_EMBAJADOR = 15;
 export const COMISION_DE_EMBAJADOR = 25;
 
 const DIA = new Intl.DateTimeFormat("es-MX", {

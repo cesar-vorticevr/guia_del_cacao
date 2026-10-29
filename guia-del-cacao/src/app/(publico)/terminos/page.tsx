@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { CORREO_DE_CONTACTO } from "@/components/publico/pie-de-pagina";
 import { ACTUALIZADO, DOMICILIO, RESPONSABLE } from "@/lib/legal";
 import { PAGO_SIMULADO } from "@/lib/pagos";
+import { DESCUENTO_DE_EMBAJADOR } from "@/lib/precios";
 
 export const metadata: Metadata = {
   title: "Condiciones del Servicio · Guía del Cacao",
@@ -238,6 +239,15 @@ export default function Terminos() {
         </li>
       </ul>
       <p className="mt-3 text-cacao">
+        <strong className="text-selva-2">Los precios ya incluyen IVA.</strong>{" "}
+        Si necesitas factura, escríbenos a{" "}
+        <a href={`mailto:${CORREO_DE_CONTACTO}`} className="font-bold underline">
+          {CORREO_DE_CONTACTO}
+        </a>{" "}
+        con tu constancia de situación fiscal; también lo puedes pedir desde tu
+        panel.
+      </p>
+      <p className="mt-3 text-cacao">
         Quien ya pagaba el plan Básico ($199 al mes) lo conserva con su precio
         mientras no lo cambie. El plan Gratis dura quince días. Con el plan de
         pago, cada sucursal
@@ -256,12 +266,12 @@ export default function Terminos() {
         código y pagas el año, se aplica uno.
       </p>
       <p className="mt-3 text-cacao">
-        Un <strong className="text-selva-2">código de Embajador del Cacao</strong>{" "}
-        te da 20% de descuento en tu primer pago, sea del mes o del año; los
-        siguientes van al precio normal. Se usa una sola vez por negocio, antes
-        de su primer pago, y no se suma a una promoción. Quien te compartió el
-        código recibe de la Guía una comisión por cada pago tuyo mientras sigas
-        en un plan de pago; a ti no te cuesta nada extra.
+        El <strong className="text-selva-2">código de un asesor de la Guía</strong>{" "}
+        te da {DESCUENTO_DE_EMBAJADOR}% de descuento en tu primer pago, sea del
+        mes o del año; los siguientes van al precio normal. Se usa una sola vez
+        por negocio, antes de su primer pago, y no se suma a una promoción.
+        Quien te compartió el código recibe de la Guía una comisión por tus
+        pagos; a ti no te cuesta nada extra.
       </p>
       <p className="mt-3 text-cacao">
         Si al terminar la prueba o el periodo gratis no has pagado, tu sucursal{" "}

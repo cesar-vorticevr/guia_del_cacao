@@ -1,10 +1,12 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { perfilActual } from "@/lib/auth/sesion";
 import { cerrarSesion } from "@/lib/auth/acciones";
 import { FormularioContrasenaNueva } from "@/components/formularios-auth";
 import { Pestanas } from "@/components/negocio/pestanas";
-import { InvitacionAEmbajador } from "@/components/embajador/invitacion";
+import { AccesoAVentas } from "@/components/embajador/acceso";
+import { esVendedor } from "@/lib/datos/embajadores";
 import { MisPremios } from "@/components/ruleta/mis-premios";
 
 export const metadata: Metadata = { title: "Mi cuenta · Guía del Cacao" };
@@ -40,12 +42,15 @@ export default async function Cuenta({
   if (perfil.rol === "admin") redirect("/admin");
 
   const seccion = ver === "sesion" ? "sesion" : ver === "premios" ? "premios" : "datos";
+  // A una cuenta de ventas el correo y la contraseña se los asigna el
+  // administrador (migración 000067): aquí no se le ofrece cambiarlos.
+  const vendedor = await esVendedor(perfil.id);
 
   return (
     <div className="mx-auto grid max-w-3xl gap-6 py-8">
       <h1 className="font-display text-3xl">Hola, {perfil.nombre}</h1>
 
-      <InvitacionAEmbajador />
+      <AccesoAVentas perfilId={perfil.id} />
 
       <Pestanas
         base="/cuenta"
@@ -79,6 +84,13 @@ export default async function Cuenta({
             </div>
           </dl>
 
+          {vendedor ? (
+            <p className="rounded-3xl border-2 border-selva/15 p-6 text-cacao">
+              Tu correo y tu contraseña te los asigna el administrador. Si
+              necesitas cambiarlos, pídeselo. Tu nombre lo cambias en tu{" "}
+              <Link href="/ventas?ver=cuenta" className="font-bold underline">panel de ventas</Link>.
+            </p>
+          ) : (
           <div className="grid gap-4 rounded-3xl border-2 border-selva/15 p-6">
             <div>
               <h3 className="font-display text-xl text-selva-2">
@@ -97,6 +109,7 @@ export default async function Cuenta({
 
             <FormularioContrasenaNueva />
           </div>
+          )}
         </section>
       )}
 

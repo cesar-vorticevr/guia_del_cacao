@@ -38,7 +38,7 @@ export default async function Admin() {
       href: "/admin/micrositios",
     },
     {
-      texto: "Por pagar a embajadores",
+      texto: "Por pagar a vendedores",
       valor: pesos(numeros.porPagarAEmbajadores),
       nota: "Comisiones de este corte",
       href: "/admin/embajadores",
@@ -65,11 +65,11 @@ export default async function Admin() {
         numeros.solicitudesDeEmbajador === 1
           ? "1 persona quiere ser embajadora"
           : `${numeros.solicitudesDeEmbajador} personas quieren ser embajadoras`,
-      texto: "Apruébala para que reciba su código.",
+      texto: "Solicitudes de antes: actívalas en Cuentas de ventas si van a vender.",
     },
     numeros.porPagarAEmbajadores > 0 && {
       href: "/admin/embajadores",
-      titulo: `Transferir ${pesos(numeros.porPagarAEmbajadores)} a embajadores`,
+      titulo: `Transferir ${pesos(numeros.porPagarAEmbajadores)} a vendedores`,
       texto: "Sus comisiones ya están confirmadas por Stripe.",
     },
   ].filter(Boolean) as { href: string; titulo: string; texto: string }[];

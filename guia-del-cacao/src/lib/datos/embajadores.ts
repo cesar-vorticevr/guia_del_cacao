@@ -1,5 +1,6 @@
 import { crearClienteServidor } from "@/lib/supabase/server";
 import type { EstadoDeEmbajador } from "@/lib/embajadores";
+import type { EtapaDeProspecto, Prospecto } from "@/lib/ventas";
 
 /**
  * Lecturas de los Embajadores del Cacao (migración 000059).
@@ -14,6 +15,8 @@ export type MiEmbajada = {
   titular: string | null;
   banco: string | null;
   clabe: string | null;
+  /** Último día cuyos cobros le dejan comisión (000067). */
+  comision_hasta: string;
 };
 
 /** Un negocio que trajo, con lo que lleva pagado y lo que le ha dejado (000065). */
@@ -40,7 +43,7 @@ export async function miEmbajada(perfilId: string) {
   const [{ data: fila }, { data: referidos }, { data: pagos }, { data: comisiones }] = await Promise.all([
     supabase
       .from("embajadores")
-      .select("estado, codigo, titular, banco, clabe")
+      .select("estado, codigo, titular, banco, clabe, comision_hasta")
       .eq("perfil_id", perfilId)
       .maybeSingle(),
     supabase.rpc("mis_referidos"),
@@ -137,6 +140,9 @@ export type EmbajadorParaAdmin = {
   banco: string | null;
   clabe: string | null;
   solicitadoEn: string;
+  comisionHasta: string;
+  /** Cuántos negocios lleva apuntados en su libreta. */
+  prospectos: number;
   negocios: number;
   pagaron: number;
   porPagar: number;
@@ -147,15 +153,21 @@ export type EmbajadorParaAdmin = {
 export async function embajadoresParaAdmin(): Promise<EmbajadorParaAdmin[]> {
   const supabase = await crearClienteServidor();
 
-  const [{ data: filas }, { data: referidos }, { data: comisiones }] = await Promise.all([
+  const [{ data: filas }, { data: referidos }, { data: comisiones }, { data: prospectos }] = await Promise.all([
     supabase
       .from("embajadores")
-      .select("perfil_id, estado, codigo, motivo, titular, banco, clabe, solicitado_en, perfiles(nombre, correo)")
+      .select("perfil_id, estado, codigo, motivo, titular, banco, clabe, solicitado_en, comision_hasta, perfiles(nombre, correo)")
       .order("solicitado_en", { ascending: false }),
     supabase.from("referidos").select("embajador_id, marca_id"),
     // Las comisiones de cada cobro (000065), no la del primer pago de `referidos`.
     supabase.from("comisiones").select("embajador_id, marca_id, comision, pago_id"),
+    supabase.from("prospectos").select("embajador_id"),
   ]);
+
+  const prospectosDe = new Map<string, number>();
+  for (const p of (prospectos ?? []) as { embajador_id: string }[]) {
+    prospectosDe.set(p.embajador_id, (prospectosDe.get(p.embajador_id) ?? 0) + 1);
+  }
 
   const nueva = () => ({ negocios: 0, pagaron: 0, porPagar: 0, generado: 0, marcas: new Set<string>() });
   const porEmbajador = new Map<string, ReturnType<typeof nueva>>();
@@ -187,6 +199,7 @@ export async function embajadoresParaAdmin(): Promise<EmbajadorParaAdmin[]> {
     banco: string | null;
     clabe: string | null;
     solicitado_en: string;
+    comision_hasta: string;
     perfiles: { nombre: string | null; correo: string | null } | null;
   }[]).map((f) => {
     const cuenta = porEmbajador.get(f.perfil_id) ?? nueva();
@@ -201,6 +214,8 @@ export async function embajadoresParaAdmin(): Promise<EmbajadorParaAdmin[]> {
       banco: f.banco,
       clabe: f.clabe,
       solicitadoEn: f.solicitado_en,
+      comisionHasta: f.comision_hasta,
+      prospectos: prospectosDe.get(f.perfil_id) ?? 0,
       negocios: cuenta.negocios,
       pagaron: cuenta.pagaron,
       porPagar: Math.round(cuenta.porPagar * 100) / 100,
@@ -237,5 +252,49 @@ export async function pagosHechos(limite = 20): Promise<PagoHecho[]> {
     monto: Number(p.monto),
     referencia: p.referencia,
     pagadoEn: p.pagado_en,
+  }));
+}
+
+/** ¿Quien mira tiene cuenta de ventas? Activa o en pausa: rechazada no cuenta. */
+export async function esVendedor(perfilId: string) {
+  const supabase = await crearClienteServidor();
+  const { data } = await supabase
+    .from("embajadores")
+    .select("estado")
+    .eq("perfil_id", perfilId)
+    .maybeSingle();
+  const estado = (data as { estado: EstadoDeEmbajador } | null)?.estado;
+  return estado === "activo" || estado === "pausado";
+}
+
+/** La libreta de quien mira, lo que se tocó al último arriba. */
+export async function misProspectos(perfilId: string): Promise<Prospecto[]> {
+  const supabase = await crearClienteServidor();
+  const { data } = await supabase
+    .from("prospectos")
+    .select("id, negocio, contacto, telefono, ciudad, etapa, nota, siguiente_en, actualizado_en")
+    .eq("embajador_id", perfilId)
+    .order("actualizado_en", { ascending: false });
+
+  return ((data ?? []) as {
+    id: string;
+    negocio: string;
+    contacto: string | null;
+    telefono: string | null;
+    ciudad: string | null;
+    etapa: EtapaDeProspecto;
+    nota: string | null;
+    siguiente_en: string | null;
+    actualizado_en: string;
+  }[]).map((p) => ({
+    id: p.id,
+    negocio: p.negocio,
+    contacto: p.contacto,
+    telefono: p.telefono,
+    ciudad: p.ciudad,
+    etapa: p.etapa,
+    nota: p.nota,
+    siguienteEn: p.siguiente_en,
+    actualizadoEn: p.actualizado_en,
   }));
 }

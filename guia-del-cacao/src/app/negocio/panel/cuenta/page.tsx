@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { InvitacionAEmbajador } from "@/components/embajador/invitacion";
+import { AccesoAVentas } from "@/components/embajador/acceso";
 import { MisPremios } from "@/components/ruleta/mis-premios";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
@@ -19,6 +19,7 @@ import {
 import { PAGO_SIMULADO } from "@/lib/pagos";
 import { abrirPortalDePago } from "@/lib/negocio/plan";
 import { pesos } from "@/lib/tipos";
+import { CORREO_DE_CONTACTO } from "@/components/publico/pie-de-pagina";
 import { textoDePrecio, fechaDeOferta, type Periodo } from "@/lib/precios";
 
 export const metadata: Metadata = { title: "Mi cuenta · Guía del Cacao" };
@@ -101,7 +102,7 @@ export default async function CuentaNegocio({
         <h1 className="mt-3 font-display text-3xl">Mi cuenta</h1>
       </div>
 
-      <InvitacionAEmbajador />
+      <AccesoAVentas perfilId={perfil.id} />
 
       <Pestanas
         base="/negocio/panel/cuenta"
@@ -255,6 +256,45 @@ export default async function CuentaNegocio({
                 Cambiar mi tarjeta o ver mis recibos
               </button>
             </form>
+          )}
+
+          {/*
+            La factura la hace la Guía a mano: el negocio manda un correo ya
+            escrito con lo que hace falta. El día que haya timbrado automático
+            (un PAC), este botón cambia y el texto de las condiciones con él.
+          */}
+          {suscripcion && (
+            <div className="max-w-2xl rounded-3xl border-2 border-selva/15 p-5">
+              <p className="font-display text-xl text-selva-2">¿Necesitas factura?</p>
+              <p className="mt-1 text-cacao">
+                Los precios ya incluyen IVA. Mándanos tu constancia de situación
+                fiscal y el uso de CFDI, y te la enviamos por correo.
+              </p>
+              <a
+                href={`mailto:${CORREO_DE_CONTACTO}?subject=${encodeURIComponent(
+                  `Factura · ${marca.nombre_comercial}`,
+                )}&body=${encodeURIComponent(
+                  [
+                    `Hola, quiero la factura de mi pago en la Guía del Cacao.`,
+                    ``,
+                    `Negocio: ${marca.nombre_comercial}`,
+                    `Correo de la cuenta: ${perfil.correo}`,
+                    `Plan: ${plan?.nombre ?? ""}`,
+                    `Mes que quiero facturar: `,
+                    `RFC: `,
+                    `Razón social: `,
+                    `Régimen fiscal: `,
+                    `Código postal fiscal: `,
+                    `Uso de CFDI: `,
+                    ``,
+                    `Adjunto mi constancia de situación fiscal.`,
+                  ].join("\n"),
+                )}`}
+                className="mt-3 inline-flex min-h-11 items-center rounded-full border-2 border-selva/25 bg-white px-5 font-bold text-selva-2"
+              >
+                Pedir factura por correo
+              </a>
+            </div>
           )}
 
           <PlanesDesplegables

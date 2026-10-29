@@ -1370,6 +1370,42 @@ registra.
 - El administrador ve el dinero en `/admin`: ingreso mensual, micrositios en
   prueba y sin pagar, y lo que se debe a embajadores.
 
+## Cuentas de ventas (migración 000067)
+
+Desde el 29 de octubre de 2026 **los embajadores ya no se anuncian ni se
+piden**: son cuentas de ventas que crea el administrador en
+`/admin/embajadores` («Ventas» en el menú). Lo de arriba sobre el código, las
+comisiones y los pagos sigue valiendo; cambia esto:
+
+- **El administrador pone el correo y la contraseña.** `crearCuentaDeVentas`
+  crea el usuario de Auth con la llave de servicio (confirmado, rol cliente) y
+  le da código con `asignar_embajador`, que exige `es_admin()`. La política
+  `embajadores_solicita` se quitó: nadie se inserta solo. El vendedor solo
+  cambia su nombre y su CLABE; la cuenta oculta el cambio de contraseña. **Eso
+  es de pantalla, no de base**: GoTrue no deja frenar a un usuario que cambie
+  su propia contraseña por la API o con «Olvidé mi contraseña». Si importa, que
+  su correo sea uno que solo lea el administrador.
+- **15% para el negocio** en su primer pago (`descuento_de_embajador()`, cupón
+  de Stripe `guia-embajador-15`; el de 20 se queda para quien ya lo usó) y
+  **25% para el vendedor** de cada cobro ya con descuento, **hasta
+  `embajadores.comision_hasta`** (por omisión el 30 de abril de 2027). Un cobro
+  después de esa fecha, en hora del centro, no deja comisión. La fecha solo la
+  mueve el administrador (`proteger_embajador`).
+- **`/ventas` es el panel** (`/embajador` redirige): resumen con código y
+  ganancias, **libreta** de prospectos (`prospectos`, cada vendedor la suya,
+  el administrador ve todas), **kit de venta** (`components/embajador/kit.tsx`:
+  precios con y sin código, guion, objeciones y mensajes, calculados de las
+  constantes de `lib/precios.ts`) y su cuenta. Quien no tiene cuenta de ventas
+  vuelve a `/cuenta`. La tarjeta de entrada (`AccesoAVentas`) solo sale a
+  vendedores; el pie de página ya no enlaza el programa.
+- Para el negocio el código es «el de tu asesor de la Guía», no de un
+  embajador.
+
+**Los precios incluyen IVA** y así lo dicen la tarjeta del plan y las
+condiciones. La factura todavía es a mano: «Pedir factura por correo» en
+Mi cuenta → Tu plan abre un correo a `CORREO_DE_CONTACTO` ya escrito con lo que
+pide el SAT. Timbrar solo hace falta un PAC (Facturapi, Facturama…).
+
 ## La Ruleta Mágica (migración 000060)
 
 Un negocio con plan Pro (`tiers.permite_ruleta`) arma en `/negocio/panel/ruleta`

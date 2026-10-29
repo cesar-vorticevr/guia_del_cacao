@@ -459,7 +459,7 @@ function CodigoDeConvenio({
         </button>
       </div>
       <p className={`mt-1.5 text-sm ${error ? "font-bold text-guayaba" : "text-cacao/70"}`}>
-        {error ?? "Si te dieron un código de promoción o de un Embajador del Cacao, escríbelo aquí para ver tus precios."}
+        {error ?? "Si te dieron un código de promoción o el de tu asesor de la Guía, escríbelo aquí para ver tus precios."}
       </p>
     </div>
   );
@@ -1006,7 +1006,7 @@ function TarjetaDePlan({
         </span>
         {!gratis && !precio.cubreHasta && (
           <span className={`font-mono text-sm ${resaltado ? "text-crema/75" : "text-cacao/70"}`}>
-            /{precio.periodo === "anual" ? "año" : "mes"}
+            /{precio.periodo === "anual" ? "año" : "mes"} · IVA incluido
           </span>
         )}
       </span>

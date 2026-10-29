@@ -88,8 +88,15 @@ select pg_temp.debe_fallar('no se pide con codigo propio',
 select pg_temp.debe_fallar('no se pide a nombre de otra persona',
   $q$ insert into public.embajadores (perfil_id) values ('e2000000-0000-0000-0000-000000000005') $q$);
 
+-- Desde la 000067 nadie lo pide: la fila la pone el administrador.
+select pg_temp.debe_fallar('ya no se pide ser embajadora',
+  $q$ insert into public.embajadores (perfil_id, motivo) values ('e2000000-0000-0000-0000-000000000001', 'Conozco a muchas chocolateras') $q$);
+
+reset role;
 insert into public.embajadores (perfil_id, motivo)
 values ('e2000000-0000-0000-0000-000000000001', 'Conozco a muchas chocolateras');
+set local role authenticated;
+set local request.jwt.claims to '{"sub":"e2000000-0000-0000-0000-000000000001","role":"authenticated"}';
 
 select pg_temp.debe_fallar('no se aprueba sola',
   $q$ update public.embajadores set estado = 'activo' where perfil_id = 'e2000000-0000-0000-0000-000000000001' $q$);

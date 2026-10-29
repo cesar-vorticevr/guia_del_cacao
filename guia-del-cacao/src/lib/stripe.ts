@@ -98,12 +98,14 @@ async function productoDelPlan(tier: Tier) {
 }
 
 /**
- * El cupón de los Embajadores del Cacao: 20% en un solo cobro. Stripe lo
+ * El cupón de las cuentas de ventas: su descuento en un solo cobro. Stripe lo
  * descuenta del primer pago y los siguientes van completos, que es justo el
- * trato. Se crea la primera vez con un id fijo y después se reutiliza.
+ * trato. Se crea la primera vez con un id fijo y después se reutiliza; el id
+ * lleva el porcentaje porque un cupón de Stripe no cambia de monto (el de 20%
+ * de antes de la 000067 se queda para quien ya lo usó).
  */
 async function cuponDeEmbajador() {
-  const id = "guia-embajador-20";
+  const id = `guia-embajador-${DESCUENTO_DE_EMBAJADOR}`;
   const s = stripe()!;
   try {
     return (await s.coupons.retrieve(id)).id;
@@ -145,7 +147,7 @@ export type DatosDelPago = {
   oferta: Oferta | null;
   convenioId: string | null;
   /**
-   * El embajador cuyo código estrena esta marca: el cobro lleva su 20% de
+   * El vendedor cuyo código estrena esta marca: el cobro lleva su
    * descuento, solo esta vez, y el webhook le anota la comisión.
    */
   embajadorId: string | null;
