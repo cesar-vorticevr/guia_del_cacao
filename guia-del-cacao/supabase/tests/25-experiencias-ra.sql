@@ -28,7 +28,8 @@ begin
   if valor then raise notice 'OK     %', etiqueta; else raise notice 'FALLA  %', etiqueta; end if;
 end $$;
 
--- 1 negocio Pro, 2 negocio Gratis, 3 clienta.
+-- 1 negocio Pro, 2 negocio con el Gratis ya vencido, 3 clienta. Desde la 000068
+-- el Gratis trae todo durante sus quince dias (prueba 27); vencido, nada.
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password,
   email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
 values
@@ -61,11 +62,15 @@ values
   ('f2920000-0000-0000-0000-0000000000a1', 'f2910000-0000-0000-0000-0000000000a1',
    'Centro', 'ra-pro', 'Tabasco', 'publicado', 'Cacao', 'logo.png', 3),
   ('f2920000-0000-0000-0000-0000000000a2', 'f2910000-0000-0000-0000-0000000000a2',
-   'Centro', 'ra-gratis', 'Tabasco', 'publicado', 'Cacao', 'logo.png', 1);
+   'Centro', 'ra-gratis', 'Tabasco', 'pausado', 'Cacao', 'logo.png', 1);
 
 insert into public.suscripciones (sucursal_id, tier_id, monto_mensual, estado, fecha_proximo_cobro, fecha_fin_trial)
 values ('f2920000-0000-0000-0000-0000000000a1', 3, 0, 'activo', now() + interval '1 month', null),
        ('f2920000-0000-0000-0000-0000000000a2', 1, 0, 'trial', now() + interval '1 month', now() + interval '10 days');
+
+-- Al abrirla, la base la deja en prueba; se vence a mano, como `vencer_pruebas()`.
+update public.suscripciones set estado = 'pausado_por_pago', fecha_fin_trial = now() - interval '1 day'
+ where sucursal_id = 'f2920000-0000-0000-0000-0000000000a2';
 
 -- ---------------------------------------------------------------- Gratis
 set local role authenticated;

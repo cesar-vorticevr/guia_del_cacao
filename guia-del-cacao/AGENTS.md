@@ -1406,6 +1406,22 @@ condiciones. La factura todavía es a mano: «Pedir factura por correo» en
 Mi cuenta → Tu plan abre un correo a `CORREO_DE_CONTACTO` ya escrito con lo que
 pide el SAT. Timbrar solo hace falta un PAC (Facturapi, Facturama…).
 
+## El Gratis trae todo, quince días (migración 000068)
+
+Desde el 29 de octubre de 2026 el Gratis es **la prueba del Pro**: sus
+banderas en `tiers` son las mismas (reseñas, eventos, banner, ruleta, tres
+experiencias) y solo cambia el precio, $0, y que dura `dias_gratis()`. No
+hizo falta tocar ninguna regla: todo se deriva de `plan_de_sucursal()` (trial
+o activo) y de las banderas, así que al vencer `vencer_pruebas()` pausa la
+sucursal y todo se apaga solo. La prueba 27 lo cuida, y la 25 ahora usa un
+Gratis **vencido** para lo que antes probaba con un Gratis a secas.
+
+De paso, el banner de la portada y la tarjeta destacada dejaron de preguntar
+por `tier_id = 3`: leen `tiers.en_banner_principal`, como manda «Los planes».
+
+Ojo: un convenio viejo con `basico_gratis_hasta` alarga el Gratis, y ahora eso
+alarga todo lo del Pro. Hoy el formulario ya no crea esos convenios.
+
 ## La Ruleta Mágica (migración 000060)
 
 Un negocio con plan Pro (`tiers.permite_ruleta`) arma en `/negocio/panel/ruleta`

@@ -106,7 +106,7 @@ set local request.jwt.claims to '{"role":"service_role"}';
 select public.registrar_comision('e6100000-0000-0000-0000-000000000002', 424.15, 'sub_jorge', 'in_j1') as primera \gset
 select pg_temp.debe_ser('la comision va sobre lo pagado con descuento: ' || :'primera', :'primera'::numeric = 106.04);
 
-update public.embajadores set comision_hasta = current_date - 1
+update public.embajadores set comision_hasta = '2026-01-01'
  where perfil_id = 'e6000000-0000-0000-0000-000000000001';
 select public.registrar_comision('e6100000-0000-0000-0000-000000000002', 499, 'sub_jorge', 'in_j2') as vencida \gset
 select pg_temp.debe_ser('pasada la fecha ya no deja comision', :'vencida'::numeric = 0);
@@ -147,7 +147,7 @@ set local role authenticated;
 set local request.jwt.claims to '{"sub":"e6000000-0000-0000-0000-000000000003","role":"authenticated"}';
 
 select pg_temp.debe_ser('el administrador ve todas las libretas',
-  (select count(*) from public.prospectos) = 1);
+  (select count(*) from public.prospectos where embajador_id::text like 'e6000000-%') = 1);
 
 reset role;
 

@@ -229,13 +229,16 @@ export default function Terminos() {
       </p>
       <ul className="mt-3 grid gap-2 text-cacao">
         <li>
-          <strong className="text-selva-2">Gratis, por 15 días</strong> — la
-          ficha en el directorio y el micrositio con catálogo y contacto.
+          <strong className="text-selva-2">Gratis, por 15 días</strong> — todo
+          lo del Pro, sin dejar tarjeta. Al terminar, tu micrositio sale del
+          directorio hasta que pagues.
         </li>
         <li>
           <strong className="text-selva-2">Pro, $499 al mes o $4,990 al año</strong>{" "}
-          — lo anterior sin vencimiento, las reseñas de tus clientes, anunciar
-          tus eventos en la agenda y salir en el banner de la portada.
+          — tu micrositio con catálogo y contacto, las reseñas de tus
+          clientes, anunciar tus eventos en la agenda, salir en el banner de la
+          portada, la ruleta de premios y tres experiencias de realidad
+          aumentada, sin vencimiento mientras pagues.
         </li>
       </ul>
       <p className="mt-3 text-cacao">

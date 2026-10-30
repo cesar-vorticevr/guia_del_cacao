@@ -49,7 +49,7 @@ export function TarjetaSucursal({
 }) {
   const logo = urlImagen(sucursal.logo);
   const portada = urlImagen(sucursal.imagen_fondo);
-  const destacada = sucursal.tier_id === 3;
+  const destacada = sucursal.tiers?.en_banner_principal ?? false;
   const daMazorcas =
     FUNCIONES.mazorcas && (sucursal.tiers?.puede_dar_puntos ?? false);
   const tono = tonoDeCategoria(sucursal.marcas?.categoria_id);

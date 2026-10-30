@@ -32,7 +32,7 @@ export type TarjetaDirectorio = {
    * que las incluye es un dato de la tabla `tiers`, y escribir el número aquí
    * obligaría a acordarse de este sitio el día que cambien los planes.
    */
-  tiers: { puede_dar_puntos: boolean; permite_resenas: boolean } | null;
+  tiers: { puede_dar_puntos: boolean; permite_resenas: boolean; en_banner_principal: boolean } | null;
   /** Entidad federativa. Es el filtro principal desde que la guía es nacional. */
   entidad: string;
   /** Ciudad o municipio; las sucursales anteriores al alcance nacional no la tienen. */
@@ -97,7 +97,7 @@ export { nombrarNegocio };
 
 const CAMPOS_TARJETA =
   `id, marca_id, slug, nombre_sucursal, logo, imagen_fondo, acerca_de, tier_id,
-   entidad, ciudad, tiers(puede_dar_puntos, permite_resenas),
+   entidad, ciudad, tiers(puede_dar_puntos, permite_resenas, en_banner_principal),
    marcas(nombre_comercial, categoria_id, es_demo, marcas_categorias(categorias(id, nombre)))`;
 
 /**
@@ -201,10 +201,12 @@ export async function bannersDePortada() {
   const { data } = await supabase
     .from("sucursales")
     .select(
-      "id, slug, nombre_sucursal, imagen_fondo, marcas(nombre_comercial), banners(imagen, texto, orden_rotacion)",
+      "id, slug, nombre_sucursal, imagen_fondo, marcas(nombre_comercial), banners(imagen, texto, orden_rotacion), tiers!inner(en_banner_principal)",
     )
     .eq("estado", "publicado")
-    .eq("tier_id", 3)
+    // Del plan que lo incluye, no de `tier_id = 3`: desde la 000068 también
+    // el Gratis sale en el banner mientras dura.
+    .eq("tiers.en_banner_principal", true)
     .order("fecha_publicacion", { ascending: false });
 
   type Fila = {
