@@ -98,6 +98,16 @@ export async function tengoDatosDePago() {
   return (data ?? []).length > 0;
 }
 
+/**
+ * Si el negocio de quien mira ya recibe pedidos pero no ha anotado su CLABE
+ * (000074): sin ella no puede confirmar ninguno, así que el panel se lo dice.
+ */
+export async function faltanDatosDePago() {
+  const supabase = await crearClienteServidor();
+  const { data } = await supabase.rpc("faltan_datos_de_pago");
+  return Boolean(data);
+}
+
 /** Si una sucursal recibe pedidos: la pregunta el micrositio para enseñar el carrito. */
 export async function sucursalVende(sucursalId: string) {
   const supabase = await crearClienteServidor();

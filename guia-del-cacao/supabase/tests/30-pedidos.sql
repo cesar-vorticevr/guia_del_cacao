@@ -92,8 +92,20 @@ set local role authenticated;
 -- ---------------------------------------------------------------- datos de pago
 select pg_temp.como('f3000000-0000-0000-0000-000000000002');
 
-select pg_temp.debe_ser('sin datos de pago no vende',
-  public.por_que_no_vende('f3030000-0000-0000-0000-000000000002') like 'Falta anotar%');
+-- Desde la 000074 se vende sin datos de pago: se piden al confirmar.
+select pg_temp.debe_ser('con plan pagado vende aunque no haya anotado su CLABE',
+  public.sucursal_vende('f3030000-0000-0000-0000-000000000002'));
+select pg_temp.debe_ser('y el panel le recuerda que faltan sus datos de pago',
+  public.faltan_datos_de_pago());
+
+select pg_temp.como('f3000000-0000-0000-0000-000000000001');
+select public.hacer_pedido('f3030000-0000-0000-0000-000000000002',
+  '[{"producto_id":"f3020000-0000-0000-0000-000000000001","cantidad":1}]', 'recoger') as sin_clabe \gset
+select pg_temp.como('f3000000-0000-0000-0000-000000000002');
+select pg_temp.debe_fallar('sin datos de pago no se confirma un pedido',
+  format($q$ select public.cambiar_estado_pedido(%L, 'confirmado') $q$, :'sin_clabe'));
+select public.cambiar_estado_pedido(:'sin_clabe', 'cancelado', null, 'Prueba');
+
 select pg_temp.debe_fallar('una CLABE con el digito de control mal no entra',
   $q$ insert into public.datos_de_pago (marca_id, banco, titular, clabe)
       values ('f3010000-0000-0000-0000-000000000002', 'BBVA', 'Cacao que vende SA', '012180001234567890') $q$);
@@ -109,6 +121,13 @@ select pg_temp.debe_ser('la CLABE se guarda sin espacios',
   (select clabe from public.datos_de_pago) = '002010077777777771');
 select pg_temp.debe_ser('con plan pagado y datos de pago, vende',
   public.sucursal_vende('f3030000-0000-0000-0000-000000000002'));
+select pg_temp.debe_ser('con sus datos anotados ya no se le recuerda',
+  not public.faltan_datos_de_pago());
+
+update public.datos_de_pago set recibe_pedidos = false;
+select pg_temp.debe_ser('con «Recibir pedidos» apagado no vende',
+  public.por_que_no_vende('f3030000-0000-0000-0000-000000000002') like 'Apagaste%');
+update public.datos_de_pago set recibe_pedidos = true;
 
 select pg_temp.como('f3000000-0000-0000-0000-000000000003');
 insert into public.datos_de_pago (marca_id, banco, titular, clabe)
@@ -147,7 +166,7 @@ select public.hacer_pedido('f3030000-0000-0000-0000-000000000002',
   'envio', 'Calle Reforma 123, Villahermosa', 'Sin nuez') as pedido \gset
 
 select pg_temp.debe_ser('un producto repetido se junta en un renglon',
-  (select cantidad from public.pedido_productos where nombre = 'Barra 70%') = 3);
+  (select cantidad from public.pedido_productos where nombre = 'Barra 70%' and pedido_id = :'pedido') = 3);
 select pg_temp.debe_ser('el subtotal suma lo que tiene precio',
   (select subtotal from public.pedidos where id = :'pedido') = 270);
 select pg_temp.debe_ser('el pedido deja su mensaje en el chat',
@@ -174,7 +193,7 @@ select pg_temp.como('f3000000-0000-0000-0000-000000000002');
 
 select pg_temp.debe_ser('el negocio lo ve por atender', public.pedidos_por_atender() = 1);
 select pg_temp.debe_ser('y sale con el nombre de la clienta',
-  (select otro_nombre from public.mis_pedidos('ventas')) = 'Lucía');
+  (select otro_nombre from public.mis_pedidos('ventas') where id = :'pedido') = 'Lucía');
 select pg_temp.debe_fallar('con productos sin precio, confirmar pide el total',
   format($q$ select public.cambiar_estado_pedido(%L, 'confirmado') $q$, :'pedido'));
 select pg_temp.debe_fallar('no se marca pagado sin confirmar',

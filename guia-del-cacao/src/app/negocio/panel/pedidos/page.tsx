@@ -123,7 +123,7 @@ export default async function PanelPedidos({
         )}
       </section>
 
-      <section className="grid gap-4">
+      <section id="datos-de-pago" className="grid scroll-mt-24 gap-4">
         <div>
           <h2 className="font-display text-2xl">Tus datos de pago</h2>
           <p className="mt-1 max-w-prose text-crema/75">

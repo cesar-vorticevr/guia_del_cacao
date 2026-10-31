@@ -1854,3 +1854,12 @@ negocio de cacao** (`/soy-negocio`), luego a crear cuenta para pedir.
   enlace del pie lo vuelve a abrir aunque ya se haya cerrado en esa visita.
 - Las animaciones `aparece-magia` y `titila` están en `@theme`, con las demás
   de marca, y todo lo que se mueve lleva `motion-safe:`.
+
+### Los pedidos vienen encendidos (migración 000074)
+
+En la 000071 vender esperaba a que el negocio anotara su CLABE; ninguno lo hizo
+y el botón de pedir no salía en ningún lado. Desde la 000074 **vende todo
+negocio publicado con plan pagado** (no demo): los datos de pago se piden **al
+confirmar** el primer pedido —`cambiar_estado_pedido` ya lo exigía— y el
+panel lo recuerda arriba de todas sus pestañas mientras falten
+(`faltan_datos_de_pago`). Solo lo detiene apagar «Recibir pedidos».

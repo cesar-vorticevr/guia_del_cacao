@@ -3,7 +3,8 @@ import { BarraSesion } from "@/components/barra-sesion";
 import { PestanasDelPanel } from "@/components/negocio/pestanas-del-panel";
 import { solicitudesPorSucursal } from "@/lib/datos/notificaciones";
 import { mensajesSinLeer } from "@/lib/datos/buzon";
-import { pedidosPorAtender } from "@/lib/datos/pedidos";
+import { faltanDatosDePago, pedidosPorAtender } from "@/lib/datos/pedidos";
+import Link from "next/link";
 import { catalogoDeMarca } from "@/lib/datos/catalogo";
 import { cuposLibres, misCupones, TOPE_CUPONES } from "@/lib/datos/cupones";
 import { misSucursales } from "@/lib/datos/sucursales";
@@ -54,12 +55,13 @@ export default async function LayoutDelPanel({
 
   const marca = marcas[0];
 
-  const [sucursales, catalogo, solicitudes, sinLeer, pedidos] = await Promise.all([
+  const [sucursales, catalogo, solicitudes, sinLeer, pedidos, sinClabe] = await Promise.all([
     misSucursales(perfil.id),
     catalogoDeMarca(marca.id),
     solicitudesPorSucursal(),
     mensajesSinLeer(),
     pedidosPorAtender(),
+    faltanDatosDePago(),
   ]);
 
   // En la pestaña se cuentan los vigentes, no todos: los caducados no ocupan
@@ -109,6 +111,24 @@ export default async function LayoutDelPanel({
             empezando={empezando}
           />
         </div>
+
+        {/*
+          Desde la 000074 los pedidos vienen encendidos con el plan pagado, y
+          sin CLABE no se confirma ninguno. Arriba de todo el panel hasta que
+          la anote: enterarse al primer pedido sería dejar esperando a alguien.
+        */}
+        {sinClabe && (
+          <Link
+            href="/negocio/panel/pedidos#datos-de-pago"
+            className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-3xl border-2 border-mango bg-mango/15 px-5 py-4 font-bold"
+          >
+            <span>
+              🛒 Ya puedes recibir pedidos desde tu catálogo. Anota a dónde te transfieren para
+              poder confirmarlos.
+            </span>
+            <span className="text-mango">Anotar mis datos de pago →</span>
+          </Link>
+        )}
 
         <div className="mt-6">{children}</div>
       </main>
