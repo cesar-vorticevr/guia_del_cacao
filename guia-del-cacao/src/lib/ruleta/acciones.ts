@@ -45,8 +45,15 @@ export async function girarRuleta(sucursalId: string): Promise<ResultadoDeGiro> 
     codigo: string | null;
     vence_en: string | null;
   }[])[0];
-  revalidatePath("/cuenta");
-  revalidatePath("/negocio/panel/cuenta");
+  /*
+    Aquí **no** va `revalidatePath`. Una acción que revalida hace que Next
+    vuelva a pintar la página donde se llamó en la misma respuesta, y el
+    micrositio, al ver que ya giró, cambia la rueda grande por la de cacao:
+    la que estaba girando se desmontaba a media vuelta y no salía el premio.
+    La vista previa no lo sufría porque gira sin servidor. La rueda refresca
+    la página sola al cerrar el resultado (`cerrar`), y «Mis premios» es
+    dinámica: lee de la base cada vez que se abre.
+  */
   return {
     gajo: Number(fila.gajo),
     premio: fila.premio,
