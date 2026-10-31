@@ -25,7 +25,16 @@ const NUMERO = new Intl.NumberFormat("es-MX");
  * Las tarjetas de experiencias, como «Mis experiencias» de Vórtice VR: la
  * imagen, sus vistas y su estado, y a la mano Editar, QR, Copiar link y Borrar.
  */
-export function Tablero({ experiencias, puedePublicar }: { experiencias: TarjetaDeExperiencia[]; puedePublicar: boolean }) {
+export function Tablero({
+  experiencias,
+  puedePublicar,
+  marca,
+}: {
+  experiencias: TarjetaDeExperiencia[];
+  puedePublicar: boolean;
+  /** El nombre del negocio, para el póster. */
+  marca: string;
+}) {
   const [qr, setQr] = useState<TarjetaDeExperiencia | null>(null);
   const [aviso, setAviso] = useState<EstadoExperiencia>({});
 
@@ -44,22 +53,24 @@ export function Tablero({ experiencias, puedePublicar }: { experiencias: Tarjeta
 
       <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {experiencias.map((e) => (
-          <Tarjeta key={e.id} e={e} puedePublicar={puedePublicar} onQr={() => setQr(e)} onAviso={setAviso} />
+          <Tarjeta key={e.id} e={e} marca={marca} puedePublicar={puedePublicar} onQr={() => setQr(e)} onAviso={setAviso} />
         ))}
       </ul>
 
-      {qr && <DialogoQr e={qr} onCerrar={() => setQr(null)} />}
+      {qr && <DialogoQr e={qr} marca={marca} onCerrar={() => setQr(null)} />}
     </>
   );
 }
 
 function Tarjeta({
   e,
+  marca,
   puedePublicar,
   onQr,
   onAviso,
 }: {
   e: TarjetaDeExperiencia;
+  marca: string;
   puedePublicar: boolean;
   onQr: () => void;
   onAviso: (a: EstadoExperiencia) => void;
@@ -137,6 +148,7 @@ function Tarjeta({
           <button type="button" onClick={onQr} className={BOTON}>
             QR
           </button>
+          <BotonPoster e={e} marca={marca} />
           <button type="button" onClick={copiar} className={BOTON}>
             {copiado ? "¡Copiado!" : "Copiar link"}
           </button>
@@ -162,7 +174,45 @@ function Tarjeta({
 const BOTON =
   "min-h-10 rounded-full border-2 border-mango/50 bg-white px-4 text-sm font-bold text-selva-2 shadow-[0_0_14px_rgb(255_183_3/0.18)] transition-transform hover:-translate-y-px disabled:opacity-50";
 
-function DialogoQr({ e, onCerrar }: { e: TarjetaDeExperiencia; onCerrar: () => void }) {
+/**
+ * Baja el póster tamaño carta (`lib/ra/poster-pdf`): la imagen que se enfoca,
+ * grande, con el QR debajo, listo para imprimir y pegar. `jspdf` y `qrcode` se
+ * piden al pulsar. Sin imagen no hay póster: es lo que la cámara busca.
+ */
+function BotonPoster({ e, marca }: { e: TarjetaDeExperiencia; marca: string }) {
+  const [estado, setEstado] = useState<"listo" | "armando" | "fallo">("listo");
+  if (!e.miniatura) return null;
+  const imagen = e.miniatura;
+
+  async function bajar() {
+    setEstado("armando");
+    try {
+      const [{ armarPosterPdf }, { bajarBlob, enNombreDeArchivo }] = await Promise.all([
+        import("@/lib/ra/poster-pdf"),
+        import("@/lib/descargas"),
+      ]);
+      const pdf = await armarPosterPdf({ titulo: e.titulo, marca, imagen, destino: e.link });
+      bajarBlob(pdf, `poster-${enNombreDeArchivo(`${marca} ${e.titulo || e.codigo}`)}.pdf`);
+      setEstado("listo");
+    } catch {
+      setEstado("fallo");
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={bajar}
+      disabled={estado === "armando"}
+      title="Hoja carta con tu imagen y el QR, para imprimir"
+      className={BOTON}
+    >
+      {estado === "armando" ? "Armando el póster…" : estado === "fallo" ? "No se pudo, reintenta" : "🖨️ Póster carta"}
+    </button>
+  );
+}
+
+function DialogoQr({ e, marca, onCerrar }: { e: TarjetaDeExperiencia; marca: string; onCerrar: () => void }) {
   const lienzo = useRef<HTMLCanvasElement>(null);
   const dialogo = useRef<HTMLDialogElement>(null);
   const [listo, setListo] = useState(false);
@@ -200,6 +250,7 @@ function DialogoQr({ e, onCerrar }: { e: TarjetaDeExperiencia; onCerrar: () => v
         >
           Descargar QR
         </button>
+        <BotonPoster e={e} marca={marca} />
         <button type="button" onClick={() => dialogo.current?.close()} className={BOTON}>
           Cerrar
         </button>

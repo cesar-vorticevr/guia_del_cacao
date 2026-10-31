@@ -1588,6 +1588,15 @@ escenas de Vórtice quedan para después (el motor ya los sabe pintar).
 - **Powered by Vórtice VR** (`PoweredByVortice`), en español y en inglés, con la
   invitación a vorticevr.mx, va en todo lo que se edita de lo interactivo (la
   realidad aumentada y la ruleta) y en el visor.
+- **El póster tamaño carta** (`lib/ra/poster-pdf.ts`, botón «🖨️ Póster
+  carta» en cada tarjeta de experiencia y en su diálogo del QR): la imagen
+  que se enfoca, grande, y debajo el QR a `/ra/{codigo}` con los tres pasos.
+  Es lo que el negocio imprime y pega. **La imagen va entera, con su
+  proporción y nada encima**: la cámara la reconoce por sus rasgos, y
+  recortada, estirada o con un sello encima deja de encontrarla. Sale en JPEG
+  sobre blanco hasta 2400 px de lado. Comparte los pinceles del tarjetón
+  (`lib/pdf/oro.ts`: hoja crema, marco de oro metálico, halos, pie de la
+  guía); si se cambia uno, se ven los dos.
 
 ### La ruleta se arma gratis, y la de cacao
 

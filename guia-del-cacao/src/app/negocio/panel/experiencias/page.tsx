@@ -134,6 +134,7 @@ export default async function PanelExperiencias({
         </div>
       ) : (
         <Tablero
+          marca={marca.nombre_comercial}
           puedePublicar={conPro}
           experiencias={experiencias.map((e) => ({
             id: e.id,
