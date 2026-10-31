@@ -368,7 +368,7 @@ export async function resumen() {
       supabase
         .from("suscripciones")
         // La marca de cada una, para dejar fuera los negocios de demostración.
-        .select("estado, monto_mensual, tier_id, sucursales(marcas(es_demo))")
+        .select("estado, monto_mensual, tier_id, stripe_subscription_id, sucursales(marcas(es_demo))")
         .in("estado", ["trial", "activo", "pausado_por_pago"]),
       supabase.from("comisiones").select("comision, pago_id"),
       supabase
@@ -381,9 +381,19 @@ export async function resumen() {
     estado: string;
     monto_mensual: number;
     tier_id: number;
+    stripe_subscription_id: string | null;
     sucursales: { marcas: { es_demo: boolean } | null } | null;
   }[]).filter((s) => !s.sucursales?.marcas?.es_demo);
-  const pagando = suscripciones.filter((s) => s.estado === "activo" && Number(s.monto_mensual) > 0);
+  /*
+    Ingreso es solo lo que se cobra con tarjeta: una suscripción activa con su
+    suscripción de Stripe. Las que están activas sin Stripe entraron con un
+    código o una promoción (al 100%, o un convenio que las cubre) y no dejan
+    dinero: su `monto_mensual` es el precio del plan, no lo que pagaron. Antes
+    se sumaban y el tablero enseñaba un ingreso que no existía.
+  */
+  const activas = suscripciones.filter((s) => s.estado === "activo");
+  const pagando = activas.filter((s) => s.stripe_subscription_id && Number(s.monto_mensual) > 0);
+  const conCodigo = activas.filter((s) => !s.stripe_subscription_id);
   const comisiones = (referidos.data ?? []) as { comision: number; pago_id: string | null }[];
 
   return {
@@ -392,9 +402,11 @@ export async function resumen() {
     marcas: marcas.count ?? 0,
     perfiles: perfiles.count ?? 0,
     reportadas: ((reportadas.data ?? []) as unknown[]).length,
-    /** Lo que entra cada mes: la suma de lo que equivale al mes de cada plan pagado. */
+    /** Lo que entra cada mes por Stripe: lo que equivale al mes de cada plan cobrado con tarjeta. */
     ingresoMensual: Math.round(pagando.reduce((suma, s) => suma + Number(s.monto_mensual), 0) * 100) / 100,
     pagando: pagando.length,
+    /** Activos sin cobro con tarjeta: entraron con un código o una promoción. */
+    conCodigo: conCodigo.length,
     enPrueba: suscripciones.filter((s) => s.estado === "trial").length,
     sinPagar: suscripciones.filter((s) => s.estado === "pausado_por_pago").length,
     porPagarAEmbajadores:

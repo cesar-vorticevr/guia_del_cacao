@@ -21,9 +21,18 @@ export default async function Admin() {
   const dinero = [
     {
       texto: "Ingreso mensual",
+      oro: true,
       valor: pesos(numeros.ingresoMensual),
-      nota: `${numeros.pagando} ${numeros.pagando === 1 ? "micrositio pagando" : "micrositios pagando"}`,
+      nota: `${numeros.pagando} ${numeros.pagando === 1 ? "micrositio paga" : "micrositios pagan"} con tarjeta`,
       href: "/admin/micrositios",
+    },
+    {
+      // No es ingreso: están activos porque un código o una promoción los
+      // cubre, sin cobro de Stripe. Se cuentan aparte para no perderlos.
+      texto: "Con código o promoción",
+      valor: String(numeros.conCodigo),
+      nota: "Activos sin pagar con tarjeta",
+      href: "/admin/convenios",
     },
     {
       texto: "En prueba",
@@ -39,6 +48,7 @@ export default async function Admin() {
     },
     {
       texto: "Por pagar a vendedores",
+      oro: true,
       valor: pesos(numeros.porPagarAEmbajadores),
       nota: "Comisiones de este corte",
       href: "/admin/embajadores",
@@ -83,8 +93,8 @@ export default async function Admin() {
         </h1>
       </header>
 
-      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {dinero.map((dato, i) => (
+      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {dinero.map((dato) => (
           <li key={dato.texto}>
             <Link
               href={dato.href}
@@ -92,7 +102,7 @@ export default async function Admin() {
             >
               <span className="text-sm font-bold uppercase tracking-wider text-cacao/70">{dato.texto}</span>
               <span
-                className={`mt-2 font-display text-4xl font-semibold ${i === 0 || i === 3 ? "text-mango drop-shadow-[0_0_12px_rgba(255,183,3,0.45)]" : ""}`}
+                className={`mt-2 font-display text-4xl font-semibold ${dato.oro ? "text-mango drop-shadow-[0_0_12px_rgba(255,183,3,0.45)]" : ""}`}
               >
                 {dato.valor}
               </span>
