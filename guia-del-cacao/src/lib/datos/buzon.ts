@@ -1,4 +1,5 @@
 import { crearClienteServidor } from "@/lib/supabase/server";
+import { BUCKET_BUZON, type TipoDeAdjunto } from "@/lib/buzon/adjuntos";
 
 export type ConversacionDeBuzon = {
   id: string;
@@ -23,6 +24,12 @@ export type Mensaje = {
   autor_id: string;
   texto: string;
   creado_en: string;
+  adjunto: string | null;
+  adjunto_tipo: TipoDeAdjunto | null;
+  adjunto_nombre: string | null;
+  adjunto_bytes: number | null;
+  /** URL firmada del adjunto, una hora: el bucket es privado. */
+  adjunto_url: string | null;
 };
 
 export type Destinatario = { id: string; nombre: string; tipo: string };
@@ -63,7 +70,7 @@ export async function conversacionDe(id: string) {
     supabase.rpc("participantes_de", { p_conversacion: id }),
     supabase
       .from("mensajes")
-      .select("id, autor_id, texto, creado_en")
+      .select("id, autor_id, texto, creado_en, adjunto, adjunto_tipo, adjunto_nombre, adjunto_bytes")
       .eq("conversacion_id", id)
       .order("creado_en")
       .order("id"),
@@ -72,7 +79,27 @@ export async function conversacionDe(id: string) {
   const partes = (participantes ?? []) as Participante[];
   if (partes.length === 0) return null;
 
-  return { participantes: partes, mensajes: (mensajes ?? []) as Mensaje[] };
+  const filas = (mensajes ?? []) as Omit<Mensaje, "adjunto_url">[];
+
+  // Los adjuntos se firman todos de una vez, una hora: la conversación se
+  // refresca cada 20 segundos y vuelve a firmarlos.
+  const rutas = filas.flatMap((m) => (m.adjunto ? [m.adjunto] : []));
+  const firmadas = new Map<string, string>();
+
+  if (rutas.length > 0) {
+    const { data } = await supabase.storage.from(BUCKET_BUZON).createSignedUrls(rutas, 60 * 60);
+    for (const f of data ?? []) {
+      if (f.path && f.signedUrl) firmadas.set(f.path, f.signedUrl);
+    }
+  }
+
+  return {
+    participantes: partes,
+    mensajes: filas.map((m) => ({
+      ...m,
+      adjunto_url: m.adjunto ? (firmadas.get(m.adjunto) ?? null) : null,
+    })),
+  };
 }
 
 /**

@@ -71,16 +71,24 @@ export async function enviarMensaje(
 
   const conversacion = datos.get("conversacion_id")?.toString() ?? "";
   const texto = (datos.get("texto")?.toString() ?? "").trim();
+  // El archivo ya subió del navegador al bucket; aquí llega su ruta. Tipo y
+  // tamaño los revisa la base contra el archivo guardado (000072).
+  const adjunto = datos.get("adjunto")?.toString() || null;
+  const adjuntoNombre = datos.get("adjunto_nombre")?.toString() || null;
 
-  if (!texto) return { error: "Escribe algo antes de mandar.", texto };
+  if (!texto && !adjunto) return { error: "Escribe algo antes de mandar.", texto };
   if (texto.length > LARGO_DE_MENSAJE) {
     return { error: `Un mensaje lleva hasta ${LARGO_DE_MENSAJE} letras.`, texto };
   }
 
   const supabase = await crearClienteServidor();
-  const { error } = await supabase
-    .from("mensajes")
-    .insert({ conversacion_id: conversacion, autor_id: perfil.id, texto });
+  const { error } = await supabase.from("mensajes").insert({
+    conversacion_id: conversacion,
+    autor_id: perfil.id,
+    texto,
+    adjunto,
+    adjunto_nombre: adjuntoNombre,
+  });
 
   if (error) {
     return {

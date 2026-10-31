@@ -219,11 +219,16 @@ export default async function Micrositio({
         </p>
       )}
 
-      <header className="pt-4">
+      {/*
+        En escritorio, la portada a la izquierda y quién es a la derecha; en
+        celular, una debajo de la otra con el logo montado en el borde. La
+        portada va en 4:3 en los dos, la forma de la tarjeta del directorio: es
+        la misma foto, y así se ve igual de completa aquí que allá.
+      */}
+      <header className="grid gap-x-8 pt-4 sm:grid-cols-[minmax(0,28rem)_minmax(0,1fr)] sm:items-end">
         {/*
-          La portada se abre al tocarla. Recortada a la altura de la cabecera
-          se ve una franja de la finca o del mostrador, y esa foto es justo lo
-          que alguien mira antes de decidir si va hasta allá.
+          La portada se abre al tocarla: esa foto es justo lo que alguien mira
+          antes de decidir si va hasta allá.
         */}
         {fondo ? (
           <PortadaAmpliable
@@ -231,10 +236,11 @@ export default async function Micrositio({
             negocio={sucursal.marcas?.nombre_comercial ?? sucursal.nombre_sucursal}
           />
         ) : (
-          <div className="h-40 rounded-3xl bg-cacao sm:h-56" role="presentation" />
+          <div className="aspect-[4/3] rounded-3xl bg-cacao" role="presentation" />
         )}
 
-        <div className="-mt-10 flex items-end gap-4 px-4">
+        <div className="min-w-0">
+        <div className="-mt-10 flex items-end gap-4 px-4 sm:mt-0">
           {logo ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -321,6 +327,7 @@ export default async function Micrositio({
               </button>
             </form>
           )}
+        </div>
         </div>
       </header>
 

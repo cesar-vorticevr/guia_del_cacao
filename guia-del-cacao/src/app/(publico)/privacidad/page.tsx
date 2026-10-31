@@ -72,7 +72,8 @@ export default function Privacidad() {
       <h2 className="mt-8 font-display text-2xl">Qué datos recabamos</h2>
       <p className="mt-3 text-cacao">
         Solo los que hacen falta para que el sitio funcione. No pedimos tu CURP,
-        tu RFC, tu domicilio ni tu fecha de nacimiento.
+        tu RFC ni tu fecha de nacimiento, y tu domicilio solo si tú lo escribes
+        para que un negocio te envíe un pedido.
       </p>
 
       <ul className="mt-3 grid gap-3 text-cacao">
@@ -107,6 +108,16 @@ export default function Privacidad() {
           <strong className="text-selva-2">Las fotos que subes:</strong> a tus
           publicaciones, y si tienes negocio, a tu micrositio, tu catálogo y tus
           eventos.
+        </li>
+        <li>
+          <strong className="text-selva-2">Tus mensajes y tus pedidos:</strong>{" "}
+          lo que escribes en el buzón y los archivos que adjuntas (imágenes,
+          videos o PDF, como un comprobante de pago), y los pedidos que haces a
+          un negocio: qué pediste, cómo lo recibes, la dirección si pediste
+          envío y en qué paso va. Solo lo ven tú y la otra parte de la
+          conversación; el administrador puede leerlo para atender un reporte.
+          Los archivos se guardan en un espacio privado y se abren con enlaces
+          que caducan en una hora. No se borran, igual que los mensajes.
         </li>
         <li>
           <strong className="text-selva-2">Tu plan, si tienes negocio:</strong>{" "}

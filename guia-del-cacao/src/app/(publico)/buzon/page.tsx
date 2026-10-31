@@ -161,7 +161,8 @@ export default async function Buzon({
                     <span className="block text-xs text-cacao/60">{tipoDeCuenta(c.otro_tipo)}</span>
                     <span className={`mt-1 block truncate ${c.sin_leer > 0 ? "font-bold text-cacao" : "text-cacao/75"}`}>
                       {c.ultimo_es_mio && "Tú: "}
-                      {c.ultimo_texto}
+                      {/* Un adjunto puede ir sin texto (000072). */}
+                      {c.ultimo_texto || "Mandó un archivo"}
                     </span>
                   </span>
                   {c.sin_leer > 0 && (

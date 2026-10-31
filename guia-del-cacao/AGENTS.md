@@ -1766,3 +1766,38 @@ deja ahí su mensaje.
 - Las llaves de personas van a `auth.users`, no a `perfiles`. La prueba es la
   30 (los folios saltan entre corridas: una identidad no se devuelve al
   deshacer la transacción).
+
+## Adjuntos en el buzón (migración 000072)
+
+Desde el 31 de octubre de 2026 un mensaje puede llevar **una imagen, un video o
+un PDF** (el clip de la caja de escribir). Con adjunto, el texto puede ir vacío.
+
+- **El bucket `buzon` es privado**: ahí van comprobantes de pago. Sube y lee
+  quien es parte de la conversación de la primera carpeta
+  (`{conversacion}/{archivo}`, `ruta_de_mi_conversacion`); el administrador
+  lee para moderar. Se pintan con URL firmada de una hora (`conversacionDe`
+  firma todas de una vez). Sin políticas de UPDATE ni DELETE: no se borran,
+  como los mensajes.
+- **Topes: imagen 5 MB, PDF 10 MB, video 20 MB.** Están en
+  `public.tope_de_adjunto` y en `TOPES_DE_ADJUNTO` (`lib/buzon/adjuntos.ts`):
+  si cambia uno, cambian los dos. La pantalla avisa antes de subir; el trigger
+  `al_escribir_mensaje_0_adjunto` **lee tipo y tamaño del archivo guardado**
+  en `storage.objects`, no del formulario, y exige que lo haya subido quien
+  escribe y que sea de esa conversación. Un archivo va en un solo mensaje.
+- **El archivo sube del navegador al bucket** con la sesión de quien escribe,
+  como las experiencias: Vercel corta los cuerpos en 4.5 MB. A `enviarMensaje`
+  solo viaja la ruta.
+- La imagen del chat **no lleva `loading="lazy"`**: mientras no carga mide cero
+  de alto y la carga diferida nunca arrancaba.
+- La prueba es la 31.
+
+## La portada va en 4:3 en todos lados
+
+La `imagen_fondo` es **la portada**: sale en la tarjeta del directorio (4:3), en
+la tarjeta del panel y arriba del micrositio. Hasta el 31 de octubre de 2026 el
+encuadre pedía 8:3 y el micrositio la pintaba en una franja de alto fijo (casi
+5:1 en escritorio), así que cada pantalla la recortaba distinto. Ahora las tres
+son 4:3 (`PROPORCIONES.fondo`, `MEDIDAS.fondo`) y el micrositio pone en
+escritorio la portada a la izquierda y el nombre a la derecha; en celular, una
+sobre otra con el logo montado en el borde. Las portadas subidas antes en 8:3
+se recortan por los lados hasta que el negocio suba una nueva.

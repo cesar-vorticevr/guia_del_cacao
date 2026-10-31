@@ -19,13 +19,16 @@ export const ACEPTA = FORMATOS.join(",");
  * El logo es cuadrado porque se muestra en círculos y cuadros pequeños del
  * directorio; cualquier otra proporción se recortaría por los lados.
  *
- * La de fondo es horizontal porque encabeza el micrositio a todo lo ancho.
- * 8:3 es el punto medio entre el encabezado de escritorio (muy apaisado) y el
- * de celular (más alto): con esa proporción se recorta poco en ambos.
+ * La portada (de fondo) es **4:3, la de la tarjeta del directorio**, y el
+ * micrositio la pinta con esa misma forma. Fue 8:3 y el micrositio una franja
+ * de alto fijo: la tarjeta la recortaba por los lados, la cabecera de
+ * escritorio (casi 5:1) por arriba y por abajo, y ninguna de las dos se
+ * parecía a lo que el negocio había acomodado.
  */
 export const MEDIDAS = {
   logo: "Cuadrada. Lo ideal: 512 × 512 px.",
-  fondo: "Horizontal. Lo ideal: 1600 × 600 px (proporción 8:3).",
+  fondo:
+    "Horizontal 4:3. Lo ideal: 1200 × 900 px. Es la misma foto en tu tarjeta del directorio y arriba de tu página, y en las dos se ve completa.",
   galeria: "Horizontal se ve mejor. Lo ideal: 1200 × 800 px.",
   producto: "Cuadrada. Lo ideal: 800 × 800 px.",
   cupon: "Cuadrada. Lo ideal: 800 × 800 px. Es la que se ve en la lista.",
@@ -47,7 +50,7 @@ export const MEDIDAS = {
  */
 export const PROPORCIONES = {
   logo: 1,
-  fondo: 8 / 3,
+  fondo: 4 / 3,
   galeria: 3 / 2,
   producto: 1,
   cupon: 1,

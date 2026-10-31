@@ -11,6 +11,10 @@ import { VisorDeFotos } from "@/components/publico/visor-de-fotos";
  * mostrador recortada a 160 px de alto enseña una franja, y justo esa foto es
  * lo que alguien quiere mirar antes de decidir si va.
  *
+ * Va en 4:3, la forma de la tarjeta del directorio y del encuadre al subirla
+ * (`PROPORCIONES.fondo`): lo que el negocio acomoda es lo que se ve aquí y
+ * allá. Una franja de alto fijo recortaba distinto en cada pantalla.
+ *
  * Sigue siendo fondo y no contenido: el `alt` va vacío en la cabecera —lo que
  * describe al negocio es el `h1` de al lado— y el texto del botón es lo que
  * anuncia la acción a un lector de pantalla.
@@ -30,7 +34,7 @@ export function PortadaAmpliable({
         type="button"
         onClick={() => setAbierta(0)}
         aria-label={`Ver la foto de ${negocio} en grande`}
-        className="group block h-40 w-full overflow-hidden rounded-3xl bg-cacao sm:h-56"
+        className="group block aspect-[4/3] w-full overflow-hidden rounded-3xl bg-cacao"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img

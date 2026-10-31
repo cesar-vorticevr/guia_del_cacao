@@ -307,15 +307,15 @@ export default async function EditorMicrositio({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={fondo}
-                        alt="Imagen de fondo actual"
-                        className="h-24 w-full rounded-2xl border-2 border-selva/15 bg-white object-cover"
+                        alt="Portada actual"
+                        className="aspect-[4/3] w-full max-w-xs rounded-2xl border-2 border-selva/15 bg-white object-cover"
                       />
                     )}
                     <FormularioImagen
                       sucursalId={sucursal.id}
                       campo="imagen_fondo"
-                      etiqueta="Imagen de fondo"
-                      uso="Encabeza tu micrositio."
+                      etiqueta="Portada"
+                      uso="Sale en tu tarjeta del directorio y arriba de tu micrositio."
                     />
                   </div>
                 </div>

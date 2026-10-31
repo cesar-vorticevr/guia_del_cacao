@@ -5,7 +5,8 @@ import { EscribirMensaje, RefrescarConversacion } from "@/components/buzon/escri
 import { ReportarEnBuzon } from "@/components/buzon/reportar";
 import { perfilActual } from "@/lib/auth/sesion";
 import { tipoDeCuenta } from "@/lib/buzon/textos";
-import { conversacionDe, marcarConversacionLeida, misReportesEn } from "@/lib/datos/buzon";
+import { conversacionDe, marcarConversacionLeida, misReportesEn, type Mensaje } from "@/lib/datos/buzon";
+import { pesoLegible } from "@/lib/buzon/adjuntos";
 import { haceCuanto } from "@/lib/tiempo";
 import { TarjetaPedido } from "@/components/pedidos/tarjeta-pedido";
 import { misPedidos, tengoDatosDePago } from "@/lib/datos/pedidos";
@@ -152,15 +153,18 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
                 {moderando && (
                   <span className="px-2 text-xs font-bold text-mango">{nombres.get(mensaje.autor_id)}</span>
                 )}
-                <p
-                  className={`max-w-[85%] whitespace-pre-line break-words rounded-3xl px-4 py-2.5 ${
-                    mio
-                      ? "rounded-br-md bg-mango/90 text-ink"
-                      : "rounded-bl-md border-2 border-ink/10 bg-white text-cacao"
-                  }`}
-                >
-                  {mensaje.texto}
-                </p>
+                {mensaje.adjunto && <Adjunto mensaje={mensaje} mio={mio} />}
+                {mensaje.texto && (
+                  <p
+                    className={`max-w-[85%] whitespace-pre-line break-words rounded-3xl px-4 py-2.5 ${
+                      mio
+                        ? "rounded-br-md bg-mango/90 text-ink"
+                        : "rounded-bl-md border-2 border-ink/10 bg-white text-cacao"
+                    }`}
+                  >
+                    {mensaje.texto}
+                  </p>
+                )}
                 <span className="flex flex-wrap items-center gap-3 px-2">
                   <time
                     dateTime={mensaje.creado_en}
@@ -202,5 +206,71 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
 
       {!moderando && <EscribirMensaje conversacionId={id} />}
     </div>
+  );
+}
+
+/**
+ * El adjunto de un mensaje (000072): la imagen se ve y se abre entera, el
+ * video trae los controles del navegador sin arrancar solo, y el PDF es una
+ * tarjeta que lo abre en otra pestaña. La URL es firmada y caduca en una hora;
+ * si no se pudo firmar, se dice en vez de dejar un hueco.
+ */
+function Adjunto({ mensaje, mio }: { mensaje: Mensaje; mio: boolean }) {
+  const borde = mio ? "rounded-br-md" : "rounded-bl-md";
+  const nombre = mensaje.adjunto_nombre ?? "Archivo";
+
+  if (!mensaje.adjunto_url) {
+    return (
+      <p className={`max-w-[85%] rounded-3xl ${borde} bg-crema-2 px-4 py-2.5 text-sm text-cacao`}>
+        {nombre}: no se pudo cargar. Recarga la página.
+      </p>
+    );
+  }
+
+  if (mensaje.adjunto_tipo === "imagen") {
+    return (
+      <a
+        href={mensaje.adjunto_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        // Ancho fijo y no solo un tope: en la columna del chat el enlace se
+        // encogía a cero. Y sin `loading="lazy"`: con alto cero mientras no
+        // carga, la imagen diferida nunca entraba en vista.
+        className={`block w-[85%] overflow-hidden rounded-3xl ${borde} border-2 border-ink/10 bg-white sm:w-80`}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={mensaje.adjunto_url} alt={nombre} className="max-h-80 w-full object-contain" />
+      </a>
+    );
+  }
+
+  if (mensaje.adjunto_tipo === "video") {
+    return (
+      <video
+        src={mensaje.adjunto_url}
+        controls
+        preload="metadata"
+        className={`max-h-80 w-[85%] rounded-3xl ${borde} bg-ink sm:w-80`}
+      />
+    );
+  }
+
+  return (
+    <a
+      href={mensaje.adjunto_url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`flex max-w-[85%] items-center gap-3 rounded-3xl ${borde} border-2 border-ink/10 bg-white px-4 py-3 text-cacao hover:border-mango`}
+    >
+      <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-xl bg-guayaba/15 font-mono text-xs font-bold text-guayaba">
+        PDF
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate font-bold text-selva-2">{nombre}</span>
+        <span className="block text-xs text-cacao/70">
+          {mensaje.adjunto_bytes ? `${pesoLegible(mensaje.adjunto_bytes)} · ` : ""}Abrir
+        </span>
+      </span>
+    </a>
   );
 }

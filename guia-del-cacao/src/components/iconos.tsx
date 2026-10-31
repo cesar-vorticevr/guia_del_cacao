@@ -173,6 +173,15 @@ export function IconoSobre({ className = "size-6" }: Props) {
   );
 }
 
+/** Clip: adjuntar un archivo al mensaje. */
+export function IconoClip({ className = "size-6" }: Props) {
+  return (
+    <svg {...BASE} className={className}>
+      <path d="m20.5 11.5-8.2 8.2a5 5 0 0 1-7.1-7.1l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.5 8.5a1.7 1.7 0 0 1-2.4-2.4l7.8-7.8" />
+    </svg>
+  );
+}
+
 /** Ojo abierto: la contraseña se está viendo. */
 export function IconoOjo({ className = "size-6" }: Props) {
   return (
