@@ -31,6 +31,7 @@ import {
   DIAS_GRATIS,
   esPlanGratis,
   fechaDeOferta,
+  MESES_DE_DESTACADO,
   precioDe,
   promocionPara,
   textoDePrecio,
@@ -369,7 +370,12 @@ function CodigoDeConvenio({
         </p>
         <p className="text-sm">{oferta.descripcion}</p>
         <ul className="mt-2 grid gap-0.5 text-sm">
-          {oferta.embajador ? (
+          {oferta.destacado ? (
+          <li>
+            ✓ Tu negocio sale en <strong>Destacados</strong> de la portada durante{" "}
+            {MESES_DE_DESTACADO} meses. Los precios son los de siempre.
+          </li>
+        ) : oferta.embajador ? (
           <li>
             ✓ {oferta.descuento}% de descuento en tu primer pago. Los siguientes van
             al precio normal.
@@ -929,7 +935,7 @@ function TarjetaDePlan({
       hay: tier.en_banner_principal,
       texto: (
         <>
-          En el <strong>banner de la portada</strong> y destacado en el directorio
+          En el <strong>banner de la portada</strong>
         </>
       ),
     },

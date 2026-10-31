@@ -46,8 +46,6 @@ export type TarjetaDirectorio = {
     /** Negocio de demostración (migración 000060): lleva su cinta de DEMO. */
     es_demo?: boolean;
   } | null;
-  /** Tiene una Ruleta Mágica que hoy se puede girar. Lo pone quien lista. */
-  conRuleta?: boolean;
 };
 
 export type MicrositioPublico = TarjetaDirectorio & {
@@ -685,4 +683,16 @@ export async function misReportes(perfilId: string, resenaIds: string[]) {
     .in("resena_id", resenaIds);
 
   return (data ?? []).map((fila) => fila.resena_id as string);
+}
+
+/**
+ * Las sucursales que hoy salen en «Destacados» de la portada: las de las
+ * marcas que pusieron el código destacado de su asesor hace menos de tres
+ * meses (migración 000070). La regla vive en `sucursales_destacadas()`; aquí
+ * solo se piden los ids, porque las tarjetas ya vienen con el directorio.
+ */
+export async function sucursalesDestacadas(): Promise<Set<string>> {
+  const supabase = await crearClienteServidor();
+  const { data } = await supabase.rpc("sucursales_destacadas");
+  return new Set(((data ?? []) as { sucursal_id: string }[]).map((f) => f.sucursal_id));
 }

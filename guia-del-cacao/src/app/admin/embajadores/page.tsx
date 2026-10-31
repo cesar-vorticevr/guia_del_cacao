@@ -212,6 +212,14 @@ export default async function Ventas({
                     {e.codigo && (
                       <p className="font-mono text-xl font-bold tracking-wider text-mango select-all">{e.codigo}</p>
                     )}
+                    {e.codigoDestacado && (
+                      <p className="text-sm text-cacao/70">
+                        Destacado:{" "}
+                        <span className="font-mono font-bold tracking-wider text-crema select-all">
+                          {e.codigoDestacado}
+                        </span>
+                      </p>
+                    )}
                     <p className="text-sm text-cacao/70">Comisión hasta el {dia(e.comisionHasta)}</p>
                     <Link href={`/admin/embajadores/${e.perfilId}`} className="text-sm font-bold text-mango">
                       Ver cómo va →

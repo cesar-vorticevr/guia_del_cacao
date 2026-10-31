@@ -57,6 +57,12 @@ export default async function Vendedor({ params }: { params: Promise<{ id: strin
         </div>
         <div className="text-right">
           <p className="font-mono text-2xl font-bold tracking-wider text-mango select-all">{vendedor.codigo}</p>
+          {vendedor.codigoDestacado && (
+            <p className="font-mono text-sm font-bold tracking-wider text-crema/80 select-all">
+              <span className="font-sans font-normal text-cacao/70">Destacado: </span>
+              {vendedor.codigoDestacado}
+            </p>
+          )}
           <p className="text-sm text-cacao/70">
             {COMISION_DE_EMBAJADOR}% de cada cobro hasta el {dia(vendedor.comisionHasta)}
           </p>
@@ -105,6 +111,9 @@ export default async function Vendedor({ params }: { params: Promise<{ id: strin
                         </Link>
                       ) : (
                         n.marca
+                      )}
+                      {n.tipo === "destacado" && (
+                        <span className="ml-2 rounded-full bg-mango/25 px-2 py-0.5 text-xs font-bold">Destacado</span>
                       )}
                     </td>
                     <td className="px-3 py-3">{dia(n.vinculadoEn)}</td>

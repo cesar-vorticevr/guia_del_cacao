@@ -35,6 +35,8 @@ import { crearClienteServidor } from "@/lib/supabase/server";
 import { BUCKET_RESENAS, urlImagen } from "@/lib/imagenes";
 import { listaDeContacto } from "@/lib/redes";
 import { tarjetaSocial } from "@/lib/compartir";
+import { IconoSobre } from "@/components/iconos";
+import { escribirAMarca } from "@/lib/buzon/acciones";
 
 export async function generateMetadata({
   params,
@@ -296,12 +298,30 @@ export default async function Micrositio({
               }
             />
           </div>
+
+          {/*
+            Escribirle por el buzón (migración 000069): una pregunta que no
+            cabe en WhatsApp o para quien no quiere dar su número. Sin sesión
+            lleva a entrar y vuelve aquí. Al dueño no se le ofrece.
+          */}
+          {!esDuenio && (
+            <form action={escribirAMarca} className="mt-3">
+              <input type="hidden" name="marca_id" value={sucursal.marca_id} />
+              <input type="hidden" name="slug" value={slug} />
+              <button
+                type="submit"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border-2 border-mango/40 bg-white px-5 font-bold text-selva-2 transition-colors hover:border-mango hover:text-mango"
+              >
+                <IconoSobre className="size-5" /> Escribir al negocio
+              </button>
+            </form>
+          )}
         </div>
       </header>
 
       {/*
         La Ruleta Mágica va justo después de la portada: es lo primero que
-        invita a quedarse, y quien llega desde «Gira y gana» viene a eso.
+        invita a quedarse.
       */}
       {girable && ruleta && yaGiro && miGiro && (
         <section className="grid gap-5 px-4 pt-6">

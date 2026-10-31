@@ -31,6 +31,11 @@ export type Oferta = {
    * primer pago (migración 000059), no de cada mes como el de un convenio.
    */
   embajador: string | null;
+  /**
+   * El código destacado del asesor (migración 000070): no descuenta nada y
+   * deja al negocio `MESES_DE_DESTACADO` meses en «Destacados» de la portada.
+   */
+  destacado?: boolean;
 };
 
 /** Una fila de `revisar_convenio` o `convenio_de_sucursal`, como `Oferta`. */
@@ -56,8 +61,30 @@ export function ofertaDeFila(codigo: string, fila: FilaDeConvenio): Oferta {
   };
 }
 
-/** El código de un embajador, como `Oferta`: 20% en el primer pago. */
-export function ofertaDeEmbajador(codigo: string, nombre: string): Oferta {
+/**
+ * El código de un asesor de ventas, como `Oferta`: el de descuento da
+ * `DESCUENTO_DE_EMBAJADOR`% en el primer pago; el destacado no descuenta y
+ * pone al negocio en «Destacados» de la portada.
+ */
+export function ofertaDeEmbajador(
+  codigo: string,
+  nombre: string,
+  tipo: "descuento" | "destacado" = "descuento",
+): Oferta {
+  if (tipo === "destacado") {
+    return {
+      codigo,
+      descripcion: `Código de ${nombre}, asesor de la Guía: tu negocio sale en Destacados de la portada durante ${MESES_DE_DESTACADO} meses.`,
+      basicoGratisHasta: null,
+      descuento: 0,
+      planId: null,
+      cubreHasta: null,
+      quedan: null,
+      embajador: nombre,
+      destacado: true,
+    };
+  }
+
   return {
     codigo,
     descripcion: `Código de ${nombre}, asesor de la Guía: ${DESCUENTO_DE_EMBAJADOR}% de descuento en tu primer pago.`,
@@ -88,6 +115,12 @@ export const DIAS_GRATIS = 15;
  */
 export const DESCUENTO_DE_EMBAJADOR = 15;
 export const COMISION_DE_EMBAJADOR = 25;
+
+/**
+ * Cuánto dura un negocio en «Destacados» desde que pone el código destacado de
+ * su asesor (migración 000070). La base lo tiene en `meses_de_destacado()`.
+ */
+export const MESES_DE_DESTACADO = 3;
 
 const DIA = new Intl.DateTimeFormat("es-MX", {
   day: "numeric",
@@ -175,7 +208,8 @@ export function precioDe(
 
   // El de un embajador también, pero sin fecha: el primer cobro, sea del mes o
   // del año, va con descuento y los siguientes al precio normal.
-  if (oferta?.embajador) {
+  // El destacado no descuenta: su precio es el normal.
+  if (oferta?.embajador && !oferta.destacado) {
     return {
       ...vacio,
       cobro: Math.round(normal * (1 - oferta.descuento / 100) * 100) / 100,

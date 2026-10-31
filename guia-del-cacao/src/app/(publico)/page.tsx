@@ -4,7 +4,6 @@ import { BannerRotativo } from "@/components/publico/banner-rotativo";
 import { BuscadorPortada } from "@/components/publico/buscador-portada";
 import { EscenarioDePortada } from "@/components/publico/escenario-portada";
 import { Marcador } from "@/components/publico/marcador";
-import { sucursalesConRuleta } from "@/lib/datos/ruleta";
 import { TarjetaPublicacion } from "@/components/publico/tarjeta-publicacion";
 import { TarjetaEntrada } from "@/components/publico/tarjeta-entrada";
 import { TarjetaSucursal } from "@/components/publico/tarjeta-sucursal";
@@ -14,6 +13,7 @@ import {
   listarDirectorio,
   listarEventos,
   nombrarNegocio,
+  sucursalesDestacadas,
 } from "@/lib/datos/publico";
 import { listarCategorias } from "@/lib/datos/categorias";
 import { muroDeComunidad } from "@/lib/datos/comunidad";
@@ -29,7 +29,7 @@ export default async function Home() {
   // ya les dio corazón quien mira— y los favoritos del directorio.
   const perfil = await perfilActual();
 
-  const [banners, listado, categorias, eventos, muro, conRuleta] = await Promise.all([
+  const [banners, listado, categorias, eventos, muro, destacadas] = await Promise.all([
     bannersDePortada(),
     listarDirectorio(),
     listarCategorias(),
@@ -46,12 +46,22 @@ export default async function Home() {
     FUNCIONES.comunidad
       ? muroDeComunidad(perfil?.id)
       : Promise.resolve({ entradas: [], siguiente: null }),
-    sucursalesConRuleta(),
+    sucursalesDestacadas(),
   ]);
 
-  // Cada tarjeta sabe si tiene ruleta: es su insignia, y de ahí sale «Gira y gana».
-  const sucursales = listado.map((s) => ({ ...s, conRuleta: conRuleta.has(s.id) }));
-  const conRuletaHoy = sucursales.filter((s) => s.conRuleta);
+  /*
+    Ya no se separan los que tienen ruleta: desde las migraciones 000066 y
+    000068 la tiene cualquiera, incluso en el Gratis, así que «Gira y gana» y
+    su insignia se quitaron el 30 de octubre de 2026. La ruleta se descubre
+    dentro del micrositio.
+  */
+  const sucursales = listado;
+  /*
+    «Destacados»: los que pusieron el código destacado de su asesor en los
+    últimos tres meses (migración 000070). Ya no es el banner —desde la 000068
+    ahí salen todos—, sino una sección propia arriba del directorio.
+  */
+  const enDestacados = sucursales.filter((s) => destacadas.has(s.id));
   // Los negocios de demostración se ven, pero no cuentan como negocios de la guía.
   const reales = sucursales.filter((s) => !s.marcas?.es_demo);
 
@@ -208,15 +218,15 @@ export default async function Home() {
       </div>
 
       {/*
-        Destacados, de orilla a orilla: la foto ocupa la pantalla entera y el
-        texto va encima, sobre un velo oscuro. Es el escaparate de los planes
-        altos, así que se le da el ancho completo, como a la portada de una
-        película.
+        El banner, de orilla a orilla: la foto ocupa la pantalla entera y el
+        texto va encima, sobre un velo oscuro. Ya no dice «Destacados»: desde
+        la migración 000068 el Gratis trae el banner igual que el Pro, así que
+        no es un escaparate de unos cuantos sino una vuelta por la guía.
       */}
       {diapositivas.length > 0 && (
         <section className="pt-20">
           <Encabezado
-            antetitulo="Destacados"
+            antetitulo="Recorre la guía"
             titulo={
               <>
                 Lugares que <em className="texto-oro">hay que</em> conocer
@@ -229,23 +239,19 @@ export default async function Home() {
         </section>
       )}
 
-      {/*
-        Gira y gana: los negocios con Ruleta Mágica (000060). Es la sección que
-        más invita a entrar a un micrositio, así que va antes del directorio.
-      */}
-      {conRuletaHoy.length > 0 && (
+      {enDestacados.length > 0 && (
         <section className="pt-24">
           <Encabezado
-            antetitulo="Ruleta Mágica"
+            antetitulo="Destacados"
             titulo={
               <>
-                Gira y <em className="texto-oro">gana</em>
+                Para empezar <em className="texto-oro">por aquí</em>
               </>
             }
-            texto="Estos negocios tienen una ruleta de premios. Entra, gira y guarda tu código."
+            texto="Negocios que la Guía te recomienda conocer esta temporada."
           />
           <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {conRuletaHoy.slice(0, 6).map((sucursal) => (
+            {enDestacados.map((sucursal) => (
               <TarjetaSucursal
                 key={sucursal.id}
                 sucursal={sucursal}
@@ -255,9 +261,6 @@ export default async function Home() {
               />
             ))}
           </ul>
-          {conRuletaHoy.length > 6 && (
-            <BotonDeOro href="/directorio?ruleta=1">Ver todas las ruletas</BotonDeOro>
-          )}
         </section>
       )}
 

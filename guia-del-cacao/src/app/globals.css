@@ -385,53 +385,6 @@
   }
 
   /*
-    Las insignias de la tarjeta del directorio: Destacado es oro, la ruleta es
-    guayaba con su rueda girando. Las dos llevan el destello de `.brillo` y un
-    halo que respira, para que se noten sobre cualquier foto.
-  */
-  .insignia-destacado {
-    background: linear-gradient(135deg, #fff1b8 0%, #ffb703 45%, #ff9f43 100%);
-    box-shadow:
-      0 0 0 1px rgb(255 255 255 / 0.55) inset,
-      0 0 14px rgb(255 183 3 / 0.75);
-    animation: respira-oro 2.6s ease-in-out infinite;
-  }
-
-  .insignia-ruleta {
-    background: linear-gradient(135deg, #ffc2cb 0%, #ff5d73 45%, #e23a7a 100%);
-    box-shadow:
-      0 0 0 1px rgb(255 255 255 / 0.5) inset,
-      0 0 14px rgb(255 93 115 / 0.75);
-    animation: respira-guayaba 2.6s ease-in-out infinite 1.3s;
-  }
-
-  @keyframes respira-oro {
-    50% {
-      box-shadow:
-        0 0 0 1px rgb(255 255 255 / 0.55) inset,
-        0 0 24px rgb(255 183 3 / 1);
-    }
-  }
-
-  @keyframes respira-guayaba {
-    50% {
-      box-shadow:
-        0 0 0 1px rgb(255 255 255 / 0.5) inset,
-        0 0 24px rgb(255 93 115 / 1);
-    }
-  }
-
-  .rueda-gira {
-    animation: rueda-gira 3s linear infinite;
-  }
-
-  @keyframes rueda-gira {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  /*
     Las tarjetas del sitio: directorio, eventos, comunidad, catálogo, reseñas
     y las del panel del negocio.
 

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { BotonEmbajador, BotonesRol } from "@/components/admin/formularios";
 import { Buscador, enlaceDeLista, numeroDePagina, Paginacion } from "@/components/admin/listas";
 import { perfilesPagina } from "@/lib/datos/admin";
+import { abrirConversacion } from "@/lib/buzon/acciones";
 
 export const metadata: Metadata = { title: "Personas · Guía del Cacao" };
 
@@ -88,6 +89,17 @@ export default async function Usuarios({
               {perfil.rol !== "admin" && (
                 <BotonEmbajador perfilId={perfil.id} embajador={perfil.embajador} />
               )}
+
+              {/* El administrador le escribe a cualquiera por el buzón (000069). */}
+              <form action={abrirConversacion}>
+                <input type="hidden" name="destino" value={perfil.id} />
+                <button
+                  type="submit"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-full border-2 border-mango/40 bg-white px-5 font-bold text-selva-2 hover:border-mango"
+                >
+                  ✉ Escribirle
+                </button>
+              </form>
             </li>
           ))}
         </ul>

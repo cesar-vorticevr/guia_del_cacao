@@ -194,7 +194,7 @@ export async function detalleDeVendedor(perfilId: string) {
   const [{ data: referidos }, { data: comisiones }, { data: pagos }, prospectos] = await Promise.all([
     supabase
       .from("referidos")
-      .select("marca_id, vinculado_en, marcas(nombre_comercial)")
+      .select("marca_id, vinculado_en, tipo, marcas(nombre_comercial)")
       .eq("embajador_id", perfilId)
       .order("vinculado_en", { ascending: false }),
     supabase
@@ -212,6 +212,7 @@ export async function detalleDeVendedor(perfilId: string) {
   const filas = (referidos ?? []) as unknown as {
     marca_id: string;
     vinculado_en: string;
+    tipo: "descuento" | "destacado";
     marcas: { nombre_comercial: string } | null;
   }[];
   const cobros = (comisiones ?? []) as {
@@ -252,6 +253,7 @@ export async function detalleDeVendedor(perfilId: string) {
       porCobrar: redondear(suyos.filter((c) => !c.pago_id).reduce((s, c) => s + Number(c.comision), 0)),
       ultimoCobro: suyos.map((c) => c.cobrado_en).sort().at(-1) ?? null,
       siguePagando: sus.some((s) => quePagan.has(s.id)),
+      tipo: f.tipo ?? "descuento",
     };
   });
 

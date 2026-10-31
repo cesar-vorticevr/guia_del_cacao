@@ -2,7 +2,7 @@ import { crearClienteServidor } from "@/lib/supabase/server";
 
 export type Aviso = {
   id: string;
-  tipo: "resena" | "solicitud";
+  tipo: "resena" | "solicitud" | "canje" | "mensaje";
   titulo: string;
   detalle: string | null;
   enlace: string;

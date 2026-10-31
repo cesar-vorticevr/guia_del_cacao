@@ -8,6 +8,8 @@ import { Pestanas } from "@/components/negocio/pestanas";
 import { AccesoAVentas } from "@/components/embajador/acceso";
 import { esVendedor } from "@/lib/datos/embajadores";
 import { MisPremios } from "@/components/ruleta/mis-premios";
+import { AccesoAlBuzon } from "@/components/buzon/acceso";
+import { mensajesSinLeer } from "@/lib/datos/buzon";
 
 export const metadata: Metadata = { title: "Mi cuenta · Guía del Cacao" };
 
@@ -51,6 +53,8 @@ export default async function Cuenta({
       <h1 className="font-display text-3xl">Hola, {perfil.nombre}</h1>
 
       <AccesoAVentas perfilId={perfil.id} />
+
+      <AccesoAlBuzon sinLeer={await mensajesSinLeer()} />
 
       <Pestanas
         base="/cuenta"

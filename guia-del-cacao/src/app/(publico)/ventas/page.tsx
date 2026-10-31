@@ -2,12 +2,14 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { perfilActual, origenDelSitio } from "@/lib/auth/sesion";
 import { cuentasDe, miEmbajada, misProspectos } from "@/lib/datos/embajadores";
-import { COMISION_DE_EMBAJADOR, DESCUENTO_DE_EMBAJADOR } from "@/lib/precios";
+import { COMISION_DE_EMBAJADOR, DESCUENTO_DE_EMBAJADOR, MESES_DE_DESTACADO } from "@/lib/precios";
 import { pesos } from "@/lib/tipos";
 import { ETAPAS } from "@/lib/ventas";
 import { Pestanas } from "@/components/negocio/pestanas";
 import { DatosDeCobro, FilaDeProspecto, MiNombre, NuevoProspecto, TuCodigo } from "@/components/embajador/formularios";
 import { KitDeVenta } from "@/components/embajador/kit";
+import { AccesoAlBuzon } from "@/components/buzon/acceso";
+import { mensajesSinLeer } from "@/lib/datos/buzon";
 
 export const metadata: Metadata = { title: "Mi panel de ventas · Guía del Cacao" };
 
@@ -50,9 +52,10 @@ export default async function Ventas({
   const perfil = await perfilActual();
   if (!perfil) redirect("/login?volver=/ventas");
 
-  const [{ embajada, referidos, comisiones, pagos }, prospectos] = await Promise.all([
+  const [{ embajada, referidos, comisiones, pagos }, prospectos, sinLeer] = await Promise.all([
     miEmbajada(perfil.id),
     misProspectos(perfil.id),
+    mensajesSinLeer(),
   ]);
 
   if (!embajada || embajada.estado === "rechazado" || embajada.estado === "solicitado") {
@@ -99,9 +102,16 @@ export default async function Ventas({
 
       {seccion === "resumen" && (
         <>
+          {/* El buzón: los negocios le escriben a su asesor, y él a ellos (000069). */}
+          <AccesoAlBuzon sinLeer={sinLeer} />
+
+          {/*
+            Dos códigos (migración 000070): el vendedor elige cuál darle a cada
+            negocio. Los dos le dejan su comisión; cambia lo que gana el negocio.
+          */}
           {embajada.codigo && (
             <section className="rounded-[2rem] border border-mango/30 bg-white px-6 py-10 text-center shadow-[0_0_60px_rgb(255_183_3/0.12)]">
-              <p className="antetitulo">Tu código</p>
+              <p className="antetitulo">Tu código de descuento</p>
               <div className="mt-5">
                 <TuCodigo codigo={embajada.codigo} sitio={sitio} />
               </div>
@@ -116,6 +126,21 @@ export default async function Ventas({
                   Tu periodo de comisiones ya terminó. Lo que ganaste antes se te paga igual.
                 </p>
               )}
+            </section>
+          )}
+
+          {embajada.codigo_destacado && (
+            <section className="rounded-[2rem] border border-mango/30 bg-white px-6 py-10 text-center shadow-[0_0_60px_rgb(255_183_3/0.12)]">
+              <p className="antetitulo">Tu código destacado</p>
+              <div className="mt-5">
+                <TuCodigo codigo={embajada.codigo_destacado} sitio={sitio} destacado />
+              </div>
+              <p className="mx-auto mt-6 max-w-xl text-pretty text-crema/75">
+                Este no da descuento: el negocio que lo pone sale en{" "}
+                <strong className="text-mango">Destacados</strong> de la portada
+                durante {MESES_DE_DESTACADO} meses. Tú ganas tu {COMISION_DE_EMBAJADOR}%
+                igual. Cada negocio pone uno u otro, no los dos.
+              </p>
             </section>
           )}
 
@@ -174,7 +199,8 @@ export default async function Ventas({
                     <span>
                       <span className="block font-bold">{r.marca}</span>
                       <span className="text-sm text-cacao/70">
-                        Usó tu código el {FECHA.format(new Date(r.vinculadoEn))}
+                        Usó tu código {r.tipo === "destacado" ? "destacado" : "de descuento"} el{" "}
+                        {FECHA.format(new Date(r.vinculadoEn))}
                       </span>
                       {r.cobros > 0 && (
                         <span
@@ -273,7 +299,7 @@ export default async function Ventas({
               tu código.
             </p>
           </div>
-          <KitDeVenta codigo={embajada.codigo} sitio={sitio} demo={`${origen}/marca/chocolateria-demo`} />
+          <KitDeVenta codigo={embajada.codigo} codigoDestacado={embajada.codigo_destacado} sitio={sitio} demo={`${origen}/marca/chocolateria-demo`} />
         </section>
       )}
 

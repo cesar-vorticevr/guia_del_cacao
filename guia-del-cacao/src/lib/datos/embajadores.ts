@@ -12,6 +12,8 @@ import type { EtapaDeProspecto, Prospecto } from "@/lib/ventas";
 export type MiEmbajada = {
   estado: EstadoDeEmbajador;
   codigo: string | null;
+  /** El segundo código: sin descuento, deja al negocio en «Destacados» (000070). */
+  codigo_destacado: string | null;
   titular: string | null;
   banco: string | null;
   clabe: string | null;
@@ -29,6 +31,8 @@ export type Referido = {
   porCobrar: number;
   ultimoCobro: string | null;
   siguePagando: boolean;
+  /** Qué código puso: el de descuento o el destacado (000070). */
+  tipo: "descuento" | "destacado";
 };
 
 /** Una comisión: un cobro confirmado por Stripe de un negocio referido. */
@@ -43,7 +47,7 @@ export async function miEmbajada(perfilId: string) {
   const [{ data: fila }, { data: referidos }, { data: pagos }, { data: comisiones }] = await Promise.all([
     supabase
       .from("embajadores")
-      .select("estado, codigo, titular, banco, clabe, comision_hasta")
+      .select("estado, codigo, codigo_destacado, titular, banco, clabe, comision_hasta")
       .eq("perfil_id", perfilId)
       .maybeSingle(),
     supabase.rpc("mis_referidos"),
@@ -69,6 +73,7 @@ export async function miEmbajada(perfilId: string) {
       por_cobrar: number;
       ultimo_cobro: string | null;
       sigue_pagando: boolean;
+      tipo: "descuento" | "destacado";
     }[]).map(
       (r): Referido => ({
         marca: r.marca,
@@ -79,6 +84,7 @@ export async function miEmbajada(perfilId: string) {
         porCobrar: Number(r.por_cobrar),
         ultimoCobro: r.ultimo_cobro,
         siguePagando: r.sigue_pagando,
+        tipo: r.tipo ?? "descuento",
       }),
     ),
     comisiones: ((comisiones ?? []) as { comision: number; cobrado_en: string; pago_id: string | null }[]).map(
@@ -135,6 +141,8 @@ export type EmbajadorParaAdmin = {
   correo: string;
   estado: EstadoDeEmbajador;
   codigo: string | null;
+  /** El código destacado (000070). */
+  codigoDestacado: string | null;
   motivo: string | null;
   titular: string | null;
   banco: string | null;
@@ -156,7 +164,7 @@ export async function embajadoresParaAdmin(): Promise<EmbajadorParaAdmin[]> {
   const [{ data: filas }, { data: referidos }, { data: comisiones }, { data: prospectos }] = await Promise.all([
     supabase
       .from("embajadores")
-      .select("perfil_id, estado, codigo, motivo, titular, banco, clabe, solicitado_en, comision_hasta, perfiles(nombre, correo)")
+      .select("perfil_id, estado, codigo, codigo_destacado, motivo, titular, banco, clabe, solicitado_en, comision_hasta, perfiles(nombre, correo)")
       .order("solicitado_en", { ascending: false }),
     supabase.from("referidos").select("embajador_id, marca_id"),
     // Las comisiones de cada cobro (000065), no la del primer pago de `referidos`.
@@ -194,6 +202,7 @@ export async function embajadoresParaAdmin(): Promise<EmbajadorParaAdmin[]> {
     perfil_id: string;
     estado: EstadoDeEmbajador;
     codigo: string | null;
+    codigo_destacado: string | null;
     motivo: string | null;
     titular: string | null;
     banco: string | null;
@@ -209,6 +218,7 @@ export async function embajadoresParaAdmin(): Promise<EmbajadorParaAdmin[]> {
       correo: f.perfiles?.correo ?? "",
       estado: f.estado,
       codigo: f.codigo,
+      codigoDestacado: f.codigo_destacado,
       motivo: f.motivo,
       titular: f.titular,
       banco: f.banco,

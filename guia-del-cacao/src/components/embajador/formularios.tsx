@@ -10,7 +10,7 @@ import {
   guardarProspecto,
   type EstadoEmbajador,
 } from "@/lib/embajador/acciones";
-import { DESCUENTO_DE_EMBAJADOR } from "@/lib/precios";
+import { DESCUENTO_DE_EMBAJADOR, MESES_DE_DESTACADO } from "@/lib/precios";
 import { ETAPAS, type Prospecto } from "@/lib/ventas";
 
 const INICIAL: EstadoEmbajador = {};
@@ -95,8 +95,19 @@ function Copiar({ texto, etiqueta }: { texto: string; etiqueta: string }) {
  * por WhatsApp con un mensaje ya escrito. El mensaje dice qué gana el negocio,
  * que es lo que hace que lo use.
  */
-export function TuCodigo({ codigo, sitio }: { codigo: string; sitio: string }) {
-  const mensaje = `¡Hola! Te invito a poner tu negocio en la Guía del Cacao (${sitio}): tu página con catálogo, reseñas y un QR para tu mostrador. Son 15 días gratis y con mi código ${codigo} tienes ${DESCUENTO_DE_EMBAJADOR}% de descuento en tu primer pago.`;
+export function TuCodigo({
+  codigo,
+  sitio,
+  destacado = false,
+}: {
+  codigo: string;
+  sitio: string;
+  /** El código destacado (000070): no descuenta, pone al negocio en «Destacados». */
+  destacado?: boolean;
+}) {
+  const mensaje = destacado
+    ? `¡Hola! Te invito a poner tu negocio en la Guía del Cacao (${sitio}): tu página con catálogo, reseñas y un QR para tu mostrador. Son 15 días gratis y con mi código ${codigo} tu negocio sale en Destacados de la portada durante ${MESES_DE_DESTACADO} meses.`
+    : `¡Hola! Te invito a poner tu negocio en la Guía del Cacao (${sitio}): tu página con catálogo, reseñas y un QR para tu mostrador. Son 15 días gratis y con mi código ${codigo} tienes ${DESCUENTO_DE_EMBAJADOR}% de descuento en tu primer pago.`;
 
   return (
     <div className="flex flex-col items-center gap-5">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { EncabezadoQueVuelve } from "@/components/publico/encabezado-que-vuelve";
 import { Logotipo } from "@/components/marca";
+import { BotonBuzon } from "@/components/buzon/boton-buzon";
 
 const SECCIONES = [
   { href: "/directorio", texto: "Explorar" },
@@ -22,8 +23,11 @@ const SECCIONES = [
 export function BarraSesion({
   nombre,
   cuenta = "/negocio/panel/cuenta",
+  sinLeer,
 }: {
   nombre: string;
+  /** Mensajes del buzón sin leer (migración 000069). Sin él no se pinta el sobre. */
+  sinLeer?: number;
   /**
    * A dónde lleva el botón con su nombre: la cuenta del negocio, o la del
    * administrador. Apuntaba siempre a la del negocio y el administrador se
@@ -49,12 +53,15 @@ export function BarraSesion({
           ))}
         </nav>
 
-        <Link
-          href={cuenta}
-          className="min-h-10 max-w-40 truncate rounded-full border-2 border-mango/40 px-4 py-2 text-sm font-bold transition-colors hover:border-mango hover:text-mango"
-        >
-          {nombre}
-        </Link>
+        <div className="flex items-center gap-2">
+          {sinLeer !== undefined && <BotonBuzon sinLeer={sinLeer} />}
+          <Link
+            href={cuenta}
+            className="min-h-10 max-w-40 truncate rounded-full border-2 border-mango/40 px-4 py-2 text-sm font-bold transition-colors hover:border-mango hover:text-mango"
+          >
+            {nombre}
+          </Link>
+        </div>
       </div>
       </header>
     </EncabezadoQueVuelve>

@@ -1201,13 +1201,17 @@ export async function consultarCodigo(codigo: string): Promise<RespuestaDeCodigo
 
   const supabase = await crearClienteServidor();
 
-  // Primero, ¿es de un Embajador del Cacao? Solo se consulta: vincularlo a la
-  // marca pasa al publicar o al contratar, que lo revisan otra vez.
-  const { data: embajador } = await supabase.rpc("embajador_del_codigo", {
+  // Primero, ¿es de un asesor de ventas? Puede ser su código de descuento o el
+  // destacado (migración 000070). Solo se consulta: vincularlo a la marca pasa
+  // al publicar o al contratar, que lo revisan otra vez.
+  const { data: asesor } = await supabase.rpc("codigo_de_asesor", {
     p_codigo: codigo,
   });
-  if (embajador) {
-    return { oferta: ofertaDeEmbajador(normalizarCodigo(codigo), embajador as string) };
+  const delAsesor = (asesor as { nombre: string; tipo: "descuento" | "destacado" }[] | null)?.[0];
+  if (delAsesor) {
+    return {
+      oferta: ofertaDeEmbajador(normalizarCodigo(codigo), delAsesor.nombre, delAsesor.tipo),
+    };
   }
 
   const { data, error } = await supabase.rpc("revisar_convenio", {

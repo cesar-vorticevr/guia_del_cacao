@@ -9,6 +9,8 @@ import { PieDePagina } from "@/components/publico/pie-de-pagina";
 import { destinoSegunRol, perfilActual } from "@/lib/auth/sesion";
 import { pestanaDePerfil } from "@/lib/auth/navegacion";
 import { pasaporteDe } from "@/lib/datos/puntos";
+import { mensajesSinLeer } from "@/lib/datos/buzon";
+import { BotonBuzon } from "@/components/buzon/boton-buzon";
 import { FUNCIONES, HAY_ECONOMIA_DE_MAZORCAS } from "@/lib/funciones";
 
 const SECCIONES = [
@@ -40,6 +42,8 @@ export default async function LayoutPublico({
     esCliente && HAY_ECONOMIA_DE_MAZORCAS ? await pasaporteDe(perfil.id) : null;
 
   const pestana = pestanaDePerfil(perfil);
+  // El sobre del buzón va para cualquier cuenta con sesión (migración 000069).
+  const sinLeer = perfil ? await mensajesSinLeer() : null;
 
   return (
     <>
@@ -60,6 +64,8 @@ export default async function LayoutPublico({
             ))}
           </nav>
 
+          <div className="flex items-center gap-2">
+          {sinLeer !== null && <BotonBuzon sinLeer={sinLeer} />}
           {pasaporte ? (
             <PastillaPasaporte puntos={pasaporte.puntos} nivel={pasaporte.nivel} />
           ) : perfil ? (
@@ -82,6 +88,7 @@ export default async function LayoutPublico({
               </Link>
             </div>
           )}
+          </div>
         </div>
       </header>
       </EncabezadoQueVuelve>

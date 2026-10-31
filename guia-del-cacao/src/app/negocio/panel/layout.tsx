@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { BarraSesion } from "@/components/barra-sesion";
 import { PestanasDelPanel } from "@/components/negocio/pestanas-del-panel";
 import { solicitudesPorSucursal } from "@/lib/datos/notificaciones";
+import { mensajesSinLeer } from "@/lib/datos/buzon";
 import { catalogoDeMarca } from "@/lib/datos/catalogo";
 import { cuposLibres, misCupones, TOPE_CUPONES } from "@/lib/datos/cupones";
 import { misSucursales } from "@/lib/datos/sucursales";
@@ -52,10 +53,11 @@ export default async function LayoutDelPanel({
 
   const marca = marcas[0];
 
-  const [sucursales, catalogo, solicitudes] = await Promise.all([
+  const [sucursales, catalogo, solicitudes, sinLeer] = await Promise.all([
     misSucursales(perfil.id),
     catalogoDeMarca(marca.id),
     solicitudesPorSucursal(),
+    mensajesSinLeer(),
   ]);
 
   // En la pestaña se cuentan los vigentes, no todos: los caducados no ocupan
@@ -79,7 +81,7 @@ export default async function LayoutDelPanel({
 
   return (
     <>
-      <BarraSesion nombre={perfil.nombre} />
+      <BarraSesion nombre={perfil.nombre} sinLeer={sinLeer} />
 
       <main className="mx-auto w-[92vw] max-w-[1180px] py-8">
         <p className="font-mono text-xs tracking-wide text-cacao/70 uppercase">

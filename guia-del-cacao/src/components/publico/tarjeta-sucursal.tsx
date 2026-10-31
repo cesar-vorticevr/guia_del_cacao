@@ -49,7 +49,6 @@ export function TarjetaSucursal({
 }) {
   const logo = urlImagen(sucursal.logo);
   const portada = urlImagen(sucursal.imagen_fondo);
-  const destacada = sucursal.tiers?.en_banner_principal ?? false;
   const daMazorcas =
     FUNCIONES.mazorcas && (sucursal.tiers?.puede_dar_puntos ?? false);
   const tono = tonoDeCategoria(sucursal.marcas?.categoria_id);
@@ -80,9 +79,7 @@ export function TarjetaSucursal({
 
       <Link
         href={`/marca/${sucursal.slug}`}
-        className={`flex h-full flex-col overflow-hidden rounded-3xl border-2 bg-white shadow-dura ${
-          destacada ? "border-mango" : "border-ink/10"
-        }`}
+        className="flex h-full flex-col overflow-hidden rounded-3xl border-2 border-ink/10 bg-white shadow-dura"
       >
         {/*
           4:3 y no cuadrada: las portadas se suben apaisadas —son fotos de un
@@ -130,26 +127,14 @@ export function TarjetaSucursal({
           )}
 
           {/*
-            Las insignias de la esquina. Destacado (plan) y Ruleta (000060) van
-            lado a lado y brillan: son lo que el negocio paga por que se note.
-            Debajo, la cinta de DEMO de un negocio de demostración, que no debe
-            confundirse con uno real.
+            La esquina solo lleva la cinta de DEMO de un negocio de
+            demostración, que no debe confundirse con uno real. Las insignias
+            «Destacado» y «Ruleta» se quitaron el 30 de octubre de 2026: desde
+            las migraciones 000066 y 000068 todos tienen premios y ruleta,
+            incluso en el Gratis, y una insignia que llevan todos no distingue
+            a nadie.
           */}
           <span className="absolute left-2 top-2 flex flex-col items-start gap-1.5 pr-12">
-            {(destacada || sucursal.conRuleta) && (
-              <span className="flex flex-wrap gap-1.5">
-                {destacada && (
-                  <span className="insignia-destacado brillo inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[0.7rem] font-extrabold text-ink">
-                    <span aria-hidden="true">★</span> Destacado
-                  </span>
-                )}
-                {sucursal.conRuleta && (
-                  <span className="insignia-ruleta brillo inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[0.7rem] font-extrabold text-ink">
-                    <span aria-hidden="true" className="rueda-gira inline-block">🎡</span> Ruleta
-                  </span>
-                )}
-              </span>
-            )}
             {sucursal.marcas?.es_demo && (
               <span className="rounded-full border border-white/70 bg-ink/80 px-2.5 py-1 font-mono text-[0.65rem] font-bold tracking-widest text-white">
                 DEMO

@@ -1,5 +1,11 @@
 import { MensajeListo } from "@/components/embajador/formularios";
-import { COMISION_DE_EMBAJADOR, DESCUENTO_DE_EMBAJADOR, DIAS_GRATIS, MESES_PAGADOS_AL_ANIO } from "@/lib/precios";
+import {
+  COMISION_DE_EMBAJADOR,
+  DESCUENTO_DE_EMBAJADOR,
+  DIAS_GRATIS,
+  MESES_DE_DESTACADO,
+  MESES_PAGADOS_AL_ANIO,
+} from "@/lib/precios";
 import { pesos } from "@/lib/tipos";
 
 /** Lo que cuesta el Pro al mes. La base lo tiene en `tiers` (000059). */
@@ -15,7 +21,18 @@ const centavos = (n: number) => Math.round(n * 100) / 100;
  * Los números salen de las mismas constantes que la pantalla de planes: si
  * cambia el precio o el descuento, el kit no se queda diciendo otro.
  */
-export function KitDeVenta({ codigo, sitio, demo }: { codigo: string; sitio: string; demo: string }) {
+export function KitDeVenta({
+  codigo,
+  codigoDestacado = null,
+  sitio,
+  demo,
+}: {
+  codigo: string;
+  /** El segundo código: sin descuento, «Destacados» en la portada (000070). */
+  codigoDestacado?: string | null;
+  sitio: string;
+  demo: string;
+}) {
   const anual = PRECIO_PRO * MESES_PAGADOS_AL_ANIO;
   const conCodigoMes = centavos(PRECIO_PRO * (1 - DESCUENTO_DE_EMBAJADOR / 100));
   const conCodigoAnio = centavos(anual * (1 - DESCUENTO_DE_EMBAJADOR / 100));
@@ -38,10 +55,33 @@ export function KitDeVenta({ codigo, sitio, demo }: { codigo: string; sitio: str
       titulo: "Antes de que acabe su prueba",
       texto: `¡Hola! Tu página en la Guía del Cacao termina su prueba en unos días. Para que siga visible, entra a tu panel → Plan y paga el Pro: ${pesos(PRECIO_PRO)} al mes o ${pesos(anual)} al año (dos meses gratis), IVA incluido. Con mi código ${codigo} tu primer pago queda en ${pesos(conCodigoMes)}. Si necesitas factura, también se puede.`,
     },
+    ...(codigoDestacado
+      ? [
+          {
+            titulo: "Con el código destacado",
+            texto: `¡Hola! Soy de la Guía del Cacao (${sitio}). Te armamos tu página con catálogo, reseñas y un QR para tu mostrador. Son ${DIAS_GRATIS} días gratis, y si la publicas con mi código ${codigoDestacado} tu negocio sale en Destacados, en la portada de la Guía, durante ${MESES_DE_DESTACADO} meses. ¿Te enseño cómo se ve?`,
+          },
+        ]
+      : []),
   ];
 
   return (
     <div className="grid gap-8">
+      {codigoDestacado && (
+        <section className="grid gap-4">
+          <h3 className="font-display text-2xl">¿Descuento o destacado?</h3>
+          <p className="rounded-3xl border border-mango/30 bg-white p-5">
+            Tienes dos códigos y a cada negocio le das <strong>uno</strong>. Con{" "}
+            <strong className="font-mono">{codigo}</strong> ahorra {DESCUENTO_DE_EMBAJADOR}% en su
+            primer pago; con <strong className="font-mono">{codigoDestacado}</strong> paga el
+            precio normal pero sale en <strong>Destacados</strong> de la portada{" "}
+            {MESES_DE_DESTACADO} meses. Tú ganas tu {COMISION_DE_EMBAJADOR}% con los dos. El
+            descuento convence a quien cuida el precio; el destacado, a quien quiere que lo
+            vean.
+          </p>
+        </section>
+      )}
+
       <section className="grid gap-4">
         <h3 className="font-display text-2xl">La oferta, en una frase</h3>
         <p className="rounded-3xl border border-mango/30 bg-white p-5 text-lg">

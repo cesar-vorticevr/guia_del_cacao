@@ -1400,6 +1400,8 @@ comisiones y los pagos sigue valiendo; cambia esto:
   vendedores; el pie de página ya no enlaza el programa.
 - Para el negocio el código es «el de tu asesor de la Guía», no de un
   embajador.
+- Desde la migración 000070 cada vendedor tiene **dos códigos**: el de
+  descuento y el destacado. Ver «El código destacado» más abajo.
 
 **Los precios incluyen IVA** y así lo dicen la tarjeta del plan y las
 condiciones. La factura todavía es a mano: «Pedir factura por correo» en
@@ -1446,10 +1448,14 @@ escribiendo ese código en su panel.
   `premios_entregados()`.
 - Las **probabilidades se enseñan** debajo de la rueda: una promoción con
   premios dice cuánto chance hay de cada uno.
-- Se anuncia con la insignia **🎡 Ruleta** en las tarjetas, el filtro
-  `?ruleta=1` del directorio y la sección «Gira y gana» de la portada. Todo
-  sale de `sucursales_con_ruleta()`: encendida, con premios, con el plan que la
-  trae y publicada.
+- **Ya no se anuncia fuera del micrositio** (30 de octubre de 2026): la
+  insignia «🎡 Ruleta» de las tarjetas, el filtro `?ruleta=1` del directorio
+  y la sección «Gira y gana» de la portada se quitaron, igual que la insignia
+  «Destacado» y el borde dorado de la tarjeta. Desde las migraciones 000066 y
+  000068 todos tienen premios y ruleta, incluso en el Gratis, y una insignia
+  que llevan todos no distingue a nadie. Un `?ruleta=1` viejo se ignora.
+  `sucursales_con_ruleta()` sigue mandando dónde se puede girar: la usan el
+  micrositio y el tarjetón.
 - Las coordenadas del SVG van redondeadas (`r3`): sin eso el servidor y el
   navegador escriben el mismo número con distinta cola y React se queja al
   hidratar.
@@ -1613,3 +1619,102 @@ escenas de Vórtice quedan para después (el motor ya los sabe pintar).
   frenan `mi_giro_en` y `girar_ruleta` (`tiene_premio_vigente`). Al canjearlo o
   vencer, vuelve a ganar. Las pruebas 21, 23 y 24 canjean entre giro y giro por
   eso.
+
+## El buzón (migración 000069)
+
+Cada cuenta —cliente, negocio, administrador, ventas— tiene un buzón en
+`/buzon`: le escribe a otra y la otra contesta. Vive en el sitio público y no
+en cada panel porque es el mismo para las cuatro, como `/eventos`. Se llega por
+el **sobre del encabezado** (público, panel del negocio y administración, con
+los no leídos encima), por la tarjeta `AccesoAlBuzon` en `/cuenta`, `/ventas` y
+el panel del negocio, por «Buzón» en el menú del administrador, por «Escribir
+al negocio» en cada micrositio y por «Escribirle» en Personas.
+
+- **Nada se borra ni se edita.** `conversaciones`, `mensajes`,
+  `lecturas_conversacion` y `reportes_conversacion` no tienen políticas de
+  UPDATE ni DELETE, y además se les quitó el permiso (`revoke all` + solo
+  `select`/`insert`): la ausencia es la regla, como en `canjes`. La prueba 28
+  lo comprueba.
+- **Una conversación por pareja** (índice único sobre `least`/`greatest`):
+  escribir otra vez retoma la misma. Solo se crea con `abrir_conversacion` /
+  `abrir_conversacion_con_marca`; no hay INSERT directo.
+- **A quién se le escribe primero** lo decide `puede_escribirle`: a un negocio,
+  a la administración o a un asesor de ventas, cualquiera; el administrador, a
+  cualquiera. A un cliente nadie le escribe en frío: se le contesta cuando
+  escribió él. Es la misma razón que en las menciones: un buscador de toda la
+  gente del sitio es por donde entra el spam. `buscar_destinatarios` solo
+  devuelve lo que esa regla deja (y un negocio en borrador solo lo encuentran
+  el administrador y los asesores).
+- **Cada quien ve solo lo suyo; el administrador lee para moderar.** La
+  política de lectura lo deja leer todo, pero **no escribir** en una ajena, y
+  su buzón sale de `mis_conversaciones()`, que filtra por quien pregunta (RLS
+  autoriza, no acota). Abierta por el administrador sin ser parte, la pantalla
+  no trae caja de escribir y lo dice.
+- **Cómo se llama cada quien** lo dice `cuenta_en_buzon` (interna): el negocio
+  por su **marca**, el administrador como «Guía del Cacao», el asesor con su
+  nombre y una persona con el suyo.
+- **«Sin leer» se deriva**, no se cuenta: mensajes ajenos posteriores a
+  `lecturas_conversacion.leida_en`. Escribir deja leída la conversación de quien
+  escribe; abrirla la marca con `marcar_conversacion_leida`, que se llama desde
+  el render (`lib/datos/buzon.ts`, como `anotarMonedasVistas`). **La hora es
+  `clock_timestamp()`, no `now()`**: con la hora de la transacción, un mensaje y
+  la lectura de quien contesta empataban y el no leído se perdía.
+- **Reportar** un mensaje o la conversación entera (`ReportarEnBuzon`): nunca
+  un mensaje propio, ni una conversación donde la otra parte no ha escrito
+  nada (ahí solo hablaste tú). Uno pendiente por persona y cosa. La otra parte
+  no sabe que la reportaron. El administrador los ve en **Moderación →
+  Mensajes** y los marca «Ya lo revisé» (`atender_reportes_de_conversacion`):
+  quedan con `atendido_en`, no se borran, y se puede volver a reportar. Los
+  motivos están en el `check` y en `MOTIVOS_DE_MENSAJE`
+  (`lib/buzon/textos.ts`): si se agrega uno, va en los dos.
+- **El aviso al negocio lo escribe un trigger** (`al_escribir_mensaje_2_aviso`),
+  porque en `notificaciones` no hay política de INSERT. Solo si la cuenta
+  encendió `perfiles.avisar_mensajes` (en Mi cuenta → Tus datos → «Avisos de
+  mensajes»; **viene apagado**), y uno por conversación mientras no lo lea.
+  Sale arriba del panel del negocio y se apaga al abrir la conversación. El
+  tipo `mensaje` se agregó al `check` de `notificaciones`.
+- **Las llaves van a `auth.users`, no a `perfiles`**, como `giros` y
+  `reportes_resena`: otra llave a perfiles abriría un camino más hacia
+  `perfiles_publicos` y PostgREST respondería PGRST201. Los nombres salen por
+  funciones (`mis_conversaciones`, `participantes_de`).
+- No hay tiempo real: la conversación abierta se refresca sola cada 20
+  segundos mientras la pestaña está a la vista (`RefrescarConversacion`).
+
+## El código destacado (migración 000070)
+
+Desde el 30 de octubre de 2026 cada cuenta de ventas tiene **dos códigos** y le
+da **uno** a cada negocio:
+
+| Código | Ejemplo | Qué recibe el negocio |
+|---|---|---|
+| De descuento (`embajadores.codigo`) | `LUCIA-7K2P` | 15% en su primer pago, como antes |
+| Destacado (`embajadores.codigo_destacado`) | `TOP-LUCIA-7K2` | Sin descuento: sale en **«Destacados»** de la portada tres meses |
+
+Con los dos el vendedor gana su 25% de cada cobro: `registrar_comision` no
+cambió, solo mira que haya un referido.
+
+- **Por qué una sección y no el banner.** Desde la 000068 el Gratis trae el
+  banner, así que todos salen ahí y «estar en el banner» ya no distingue a
+  nadie. «Destacados» es una sección propia de la portada, arriba de «El
+  directorio», que solo aparece si hay alguno.
+- **Destacado se deriva, no se guarda**: `sucursales_destacadas()` da las
+  sucursales publicadas cuya marca puso el código destacado hace menos de
+  `meses_de_destacado()` meses (3; `MESES_DE_DESTACADO` en `lib/precios.ts`, si
+  cambia, en los dos). Cuentan desde que se pone el código
+  (`referidos.vinculado_en`), y al vencer sale solo. Pausar al vendedor no se
+  lo quita al negocio: ya lo recibió.
+- **`referidos.tipo`** (`descuento` | `destacado`) dice cuál puso. Por eso
+  `codigo_de_embajador_de` —lo que le pone el cupón de Stripe al primer pago—
+  solo devuelve los de descuento. Un negocio pone uno u otro: el segundo del
+  mismo vendedor lo rechaza `vincular_embajador`.
+- `codigo_de_asesor(codigo)` dice de quién es un código y de qué tipo; lo usa
+  «¿Tienes un código?» para enseñar la oferta (`ofertaDeEmbajador(…, tipo)`,
+  `Oferta.destacado`). Con el destacado los precios se enseñan sin descuento.
+- El destacado lo inventa `inventar_codigo_destacado` (`TOP-` para que se
+  distinga a simple vista) al dar de alta, y a los vendedores que ya existían
+  se les dio en la migración. Solo lo cambia el administrador
+  (`proteger_embajador`).
+- Se ve en `/ventas` (los dos códigos, cada uno con su mensaje de WhatsApp, y
+  qué código usó cada negocio), en el kit de venta («¿Descuento o
+  destacado?»), y en `/admin/embajadores` y su detalle.
+- La prueba es la 29.

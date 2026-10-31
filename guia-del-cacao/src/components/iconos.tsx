@@ -163,6 +163,16 @@ export function IconoCampana({ className = "size-6" }: Props) {
   );
 }
 
+/** Sobre: el buzón (migración 000069). */
+export function IconoSobre({ className = "size-6" }: Props) {
+  return (
+    <svg {...BASE} className={className}>
+      <rect x="3.5" y="5.5" width="17" height="13" rx="2" />
+      <path d="m4 7 8 6 8-6" />
+    </svg>
+  );
+}
+
 /** Ojo abierto: la contraseña se está viendo. */
 export function IconoOjo({ className = "size-6" }: Props) {
   return (

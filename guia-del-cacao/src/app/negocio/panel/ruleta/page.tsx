@@ -104,8 +104,8 @@ export default async function PanelRuleta({
           <div className="max-w-prose">
             <p className="antetitulo">Arma gratis, publica con Pro</p>
             <p className="mt-2 text-cacao">
-              Tu ruleta se guarda y la puedes probar aquí abajo. Para que salga en tu micrositio, en
-              «Gira y gana» de la portada y con su insignia en el directorio, pásate a{" "}
+              Tu ruleta se guarda y la puedes probar aquí abajo. Para que salga en tu micrositio y
+              la giren tus clientes, pásate a{" "}
               <strong>Pro ($499/mes)</strong>.
             </p>
           </div>

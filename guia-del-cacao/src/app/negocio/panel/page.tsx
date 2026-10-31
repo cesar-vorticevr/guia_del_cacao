@@ -9,6 +9,8 @@ import {
   solicitudesPorSucursal,
 } from "@/lib/datos/notificaciones";
 import { AvisosDeSucursal } from "@/components/negocio/avisos-de-sucursal";
+import { AccesoAlBuzon } from "@/components/buzon/acceso";
+import { avisosDeMensajes, mensajesSinLeer } from "@/lib/datos/buzon";
 import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import {
@@ -104,7 +106,12 @@ export default async function PanelNegocio({
 
   // El tarjetón del mostrador de cada sucursal publicada, con su ruleta si
   // la tiene: es lo que la gente escanea en el negocio.
-  const [conRuleta, origen] = await Promise.all([sucursalesConRuleta(), origenDelSitio()]);
+  const [conRuleta, origen, mensajesNuevos, avisos] = await Promise.all([
+    sucursalesConRuleta(),
+    origenDelSitio(),
+    mensajesSinLeer(),
+    avisosDeMensajes(),
+  ]);
   const tarjetones = new Map(
     await Promise.all(
       publicadas.map(
@@ -149,6 +156,11 @@ export default async function PanelNegocio({
           botón de abajo.
         </p>
       )}
+
+      {/* El buzón, con los avisos de mensaje si los pidió en su cuenta (000069). */}
+      <div className="mb-6">
+        <AccesoAlBuzon sinLeer={mensajesNuevos} avisos={avisos} />
+      </div>
 
       {sucursales.length === 0 ? (
         <PrimerosPasos

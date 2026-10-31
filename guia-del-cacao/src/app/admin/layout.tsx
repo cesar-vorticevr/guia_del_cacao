@@ -5,6 +5,7 @@ import { BarraInferior } from "@/components/publico/barra-inferior";
 import { CieloMagico } from "@/components/publico/cielo-magico";
 import { perfilActual } from "@/lib/auth/sesion";
 import { pestanaDePerfil } from "@/lib/auth/navegacion";
+import { mensajesSinLeer } from "@/lib/datos/buzon";
 
 const SECCIONES = [
   { href: "/admin", texto: "Resumen" },
@@ -14,6 +15,7 @@ const SECCIONES = [
   { href: "/admin/embajadores", texto: "Ventas" },
   { href: "/admin/moderacion", texto: "Moderación" },
   { href: "/admin/usuarios", texto: "Personas" },
+  { href: "/buzon", texto: "Buzón" },
 ];
 
 /**
@@ -28,6 +30,7 @@ export default async function LayoutAdmin({ children }: LayoutProps<"/admin">) {
   if (perfil.rol !== "admin") redirect("/cuenta");
 
   const pestana = pestanaDePerfil(perfil);
+  const sinLeer = await mensajesSinLeer();
 
   return (
     /*
@@ -37,7 +40,7 @@ export default async function LayoutAdmin({ children }: LayoutProps<"/admin">) {
     */
     <div className="noche relative isolate min-h-screen">
       <CieloMagico />
-      <BarraSesion nombre={perfil.nombre} cuenta="/admin/cuenta" />
+      <BarraSesion nombre={perfil.nombre} cuenta="/admin/cuenta" sinLeer={sinLeer} />
 
       <nav aria-label="Administración" className="border-b border-mango/15 bg-white/5 backdrop-blur-md">
         <ul className="mx-auto flex w-[92vw] max-w-5xl gap-1 overflow-x-auto [scrollbar-width:none]">

@@ -8,6 +8,9 @@ import { FormularioDatosPersonales } from "@/components/negocio/cuenta";
 import { PlanesDesplegables } from "@/components/negocio/planes-desplegables";
 import { Pestanas } from "@/components/negocio/pestanas";
 import { FormularioContrasenaNueva } from "@/components/formularios-auth";
+import { BotonEnviar, Casilla } from "@/components/formulario";
+import { guardarAvisoDeMensajes } from "@/lib/buzon/acciones";
+import { quiereAvisoDeMensajes } from "@/lib/datos/buzon";
 import { cerrarSesion } from "@/lib/auth/acciones";
 import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
@@ -72,10 +75,11 @@ export default async function CuentaNegocio({
 
   if (!marca) redirect("/negocio/completar-marca");
 
-  const [tiers, suscripcion, sucursales] = await Promise.all([
+  const [tiers, suscripcion, sucursales, avisarMensajes] = await Promise.all([
     listarTiers(),
     suscripcionDeMarca(marca.id),
     misSucursales(perfil.id),
+    quiereAvisoDeMensajes(perfil.id),
   ]);
 
   const plan = tiers.find((tier) => tier.id === suscripcion?.tier_id);
@@ -423,6 +427,32 @@ export default async function CuentaNegocio({
             </div>
 
             <FormularioContrasenaNueva />
+          </section>
+
+          {/*
+            El aviso de mensajes del buzón (migración 000069). Se enciende
+            aquí y lo escribe un trigger: en `notificaciones` no hay política
+            de INSERT, así que la aplicación no podría dejarlo aunque quisiera.
+          */}
+          <section id="avisos" className="grid gap-4">
+            <div>
+              <h2 className="font-display text-xl">Avisos de mensajes</h2>
+              <p className="mt-1 text-cacao">
+                Cuando alguien te escribe al <Link href="/buzon" className="font-bold underline">buzón</Link>,
+                te dejamos un aviso arriba de tu panel. Uno por conversación,
+                aunque te manden varios mensajes seguidos.
+              </p>
+            </div>
+
+            <form action={guardarAvisoDeMensajes} className="grid gap-4 rounded-3xl border-2 border-selva/15 p-6">
+              <Casilla
+                nombre="avisar_mensajes"
+                etiqueta="Avisarme cuando me llegue un mensaje"
+                ayuda={avisarMensajes ? "Encendido: te avisamos en tu panel." : "Apagado: los mensajes llegan igual, solo que sin aviso."}
+                marcada={avisarMensajes}
+              />
+              <BotonEnviar variante="secundario">Guardar</BotonEnviar>
+            </form>
           </section>
         </div>
       )}

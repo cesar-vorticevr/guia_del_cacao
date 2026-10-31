@@ -56,7 +56,7 @@ export function BannerRotativo({ diapositivas }: { diapositivas: Diapositiva[] }
   if (total === 0) return null;
 
   return (
-    <section aria-label="Negocios destacados">
+    <section aria-label="Negocios de la guía">
       <div className="relative h-[34rem] overflow-hidden border-y border-mango/20 sm:h-[38rem]">
         {diapositivas.map((slide, i) => {
           const visible = i === activa;
@@ -101,8 +101,6 @@ export function BannerRotativo({ diapositivas }: { diapositivas: Diapositiva[] }
                     visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
                   }`}
                 >
-                  <span className="antetitulo">Destacado</span>
-
                   <span className="block text-balance font-display text-4xl font-medium leading-tight tracking-tight text-crema sm:text-6xl">
                     {slide.nombre}
                   </span>
