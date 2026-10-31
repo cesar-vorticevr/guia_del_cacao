@@ -26,6 +26,7 @@ import { RuletaMagica } from "@/components/ruleta/ruleta-magica";
 import { gajosDeCacao } from "@/lib/ruleta/cacao";
 import { gajosDe, miGiroEn, ruletaDe, sucursalesConRuleta, TEXTO_DE_FRECUENCIA } from "@/lib/datos/ruleta";
 import { RuletaYaGirada } from "@/components/ruleta/ruleta-ya-girada";
+import { RuletaEmergente } from "@/components/ruleta/ruleta-emergente";
 import { tipoDeContacto } from "@/lib/actividad";
 import { esFavorito } from "@/lib/datos/favoritos";
 import { productosDe } from "@/lib/datos/sucursales";
@@ -332,11 +333,15 @@ export default async function Micrositio({
       </header>
 
       {/*
-        La Ruleta Mágica va justo después de la portada: es lo primero que
-        invita a quedarse.
+        La Ruleta Mágica es una ventana emergente (`RuletaEmergente`): se abre
+        sola al entrar si hay premio que ganar, se cierra, y queda un botón
+        flotante para volver a abrirla. Antes era una sección a todo lo ancho
+        que se quedaba ahí aun después de girar. Cada caso lleva su `key`: al
+        girar cambia de uno a otro y se monta de nuevo, ya sin abrirse sola.
       */}
       {girable && ruleta && yaGiro && miGiro && (
-        <section className="grid gap-5 px-4 pt-6">
+        <RuletaEmergente key="ya-giro" sucursalId={sucursal.id} abrirSola={false} etiqueta="Tu premio">
+        <div className="grid gap-4">
           <RuletaYaGirada
             giro={miGiro}
             frecuencia={ruleta.frecuencia}
@@ -372,11 +377,12 @@ export default async function Micrositio({
               volver={`/marca/${sucursal.slug}`}
             />
           </div>
-        </section>
+        </div>
+        </RuletaEmergente>
       )}
 
       {girable && ruleta && !yaGiro && (
-        <section className="px-4 pt-8">
+        <RuletaEmergente key="por-girar" sucursalId={sucursal.id} abrirSola etiqueta="Gira y gana">
           <div className="rounded-[2rem] border border-mango/30 bg-white px-4 py-8 text-center shadow-[0_0_60px_rgb(255_183_3/0.12)] sm:px-8">
             <p className="antetitulo">Ruleta Mágica</p>
             <h2 className="mt-2 font-display text-3xl font-medium tracking-tight">
@@ -403,7 +409,7 @@ export default async function Micrositio({
               esDemo={esDemo}
             />
           </div>
-        </section>
+        </RuletaEmergente>
       )}
 
       {/*

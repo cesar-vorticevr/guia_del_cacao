@@ -1863,3 +1863,29 @@ negocio publicado con plan pagado** (no demo): los datos de pago se piden **al
 confirmar** el primer pedido —`cambiar_estado_pedido` ya lo exigía— y el
 panel lo recuerda arriba de todas sus pestañas mientras falten
 (`faltan_datos_de_pago`). Solo lo detiene apagar «Recibir pedidos».
+
+## La ruleta del micrositio es una ventana emergente
+
+Desde el 31 de octubre de 2026 la Ruleta Mágica ya no es una sección a todo lo
+ancho debajo de la portada (ocupaba media pantalla y seguía ahí después de
+girar). `RuletaEmergente` (`components/ruleta/ruleta-emergente.tsx`):
+
+- **Se abre sola al entrar** si hay premio que ganar, **una vez por visita**
+  (`sessionStorage`, `guia-ruleta-{sucursal}`). Lo leído se guarda en un `Map`
+  del módulo: `useSyncExternalStore` pide la instantánea en cada pintada, y al
+  anotar «ya se abrió» la siguiente pintada la cerraba al instante.
+- Se cierra con ✕, Esc o tocando fuera; queda el botón 🎡 flotante abajo a la
+  derecha («Gira y gana», late mientras hay premio; «Tu premio» después),
+  por encima de la barra del pedido y de la navegación del celular.
+- **La tarjeta no lleva `transform` ni filtros**, y el desenfoque va en una
+  capa hermana: el resultado del giro es un `fixed` de `RuletaMagica`, y un
+  ancestro con `transform`/`filter`/`backdrop-filter` lo encerraría.
+- El micrositio monta una con `key="por-girar"` y otra con `key="ya-giro"`:
+  al cerrar el resultado, la ruleta refresca la página y cambia de una a otra,
+  ya sin abrirse sola.
+- Va por portal a `body` con la clase `noche`, para que las tarjetas de dentro
+  se pinten de noche como el resto del sitio.
+
+En desarrollo, si se cae la conexión de recarga en caliente, Next recarga la
+página dos veces seguidas y la segunda ya la encuentra «vista»: en producción
+no pasa.
