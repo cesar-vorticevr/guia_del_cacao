@@ -70,7 +70,7 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
   const dias = conversacion.mensajes.map((m) => DIA.format(new Date(m.creado_en)));
 
   return (
-    <div className="mx-auto grid max-w-3xl gap-6 py-8">
+    <div className="mx-auto grid max-w-3xl grid-cols-[minmax(0,1fr)] gap-6 py-8">
       <RefrescarConversacion />
 
       <header className="flex flex-wrap items-center justify-between gap-3">
@@ -128,7 +128,7 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
         </details>
       )}
 
-      <ol className="grid gap-3" aria-label="Mensajes">
+      <ol className="grid grid-cols-[minmax(0,1fr)] gap-3" aria-label="Mensajes">
         {conversacion.mensajes.length === 0 && (
           <li className="rounded-3xl bg-crema-2 p-6 text-center text-cacao">
             Todavía no hay mensajes. Escribe el primero abajo.

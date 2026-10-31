@@ -51,7 +51,7 @@ export default async function Buzon({
   const vuelta = volverA(perfil.rol);
 
   return (
-    <div className="mx-auto grid max-w-3xl gap-8 py-10">
+    <div className="mx-auto grid max-w-3xl grid-cols-[minmax(0,1fr)] gap-8 py-10">
       <header className="text-center">
         <p className="antetitulo">Tu buzón</p>
         <h1 className="mt-3 font-display text-4xl font-medium tracking-tight sm:text-5xl">
@@ -129,14 +129,17 @@ export default async function Buzon({
         </p>
       </details>
 
-      <section aria-label="Conversaciones" className="grid gap-3">
+      <section aria-label="Conversaciones" className="grid grid-cols-[minmax(0,1fr)] gap-3">
         {conversaciones.length === 0 ? (
           <p className="rounded-3xl bg-crema-2 p-6 text-center text-cacao">
             Todavía no tienes conversaciones. En el micrositio de cada negocio está
             «Escribir al negocio», o empieza una desde «Nuevo mensaje».
           </p>
         ) : (
-          <ul className="grid gap-3">
+          // La columna va en `minmax(0,1fr)`: con `1fr` a secas, una cuadrícula crece
+          // hasta el ancho del renglón más largo aunque lleve `truncate`, y un
+          // pedido de un solo renglón empujaba todo el buzón fuera de la pantalla.
+          <ul className="grid grid-cols-[minmax(0,1fr)] gap-3">
             {conversaciones.map((c) => (
               <li key={c.id}>
                 <Link
