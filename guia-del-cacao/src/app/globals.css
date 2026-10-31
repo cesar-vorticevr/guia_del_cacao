@@ -865,3 +865,56 @@ button:disabled:is(.bg-selva, .bg-selva-2) {
     animation: none;
   }
 }
+
+/*
+  El dossier impreso (o guardado en PDF desde el navegador). La selva de noche
+  impresa es una plasta de tinta, y como el navegador no imprime fondos, la
+  letra crema quedaba en blanco sobre blanco. Solo cuando la página trae el
+  dossier: el resto del sitio se imprime como siempre.
+*/
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  body:has(.dossier) {
+    background: #fff !important;
+  }
+
+  /* Lo del sitio alrededor del dossier, no lo de adentro (su portada es un header). */
+  body:has(.dossier) :is(header, nav, footer, canvas, .cielo-magico, .escenario-aurora):not(.dossier *) {
+    display: none !important;
+  }
+
+  .no-imprimir {
+    display: none !important;
+  }
+
+  .dossier,
+  .dossier * {
+    color: #22150e !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    animation: none !important;
+  }
+
+  .dossier [class*="bg-white"],
+  .dossier [class*="bg-white/"] {
+    background: #fff !important;
+    border-color: #e0c48a !important;
+  }
+
+  .dossier .texto-oro {
+    background: none !important;
+    -webkit-text-fill-color: #a0620a !important;
+    color: #a0620a !important;
+  }
+
+  .dossier-seccion,
+  .dossier li,
+  .dossier .tarjeta-magica {
+    break-inside: avoid;
+  }
+}
