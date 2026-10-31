@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { BotonesRol } from "@/components/admin/formularios";
+import { BotonEmbajador, BotonesRol } from "@/components/admin/formularios";
 import { Buscador, enlaceDeLista, numeroDePagina, Paginacion } from "@/components/admin/listas";
 import { perfilesPagina } from "@/lib/datos/admin";
 
@@ -17,6 +17,7 @@ const ROLES = [
   { valor: "cliente", texto: "Clientes" },
   { valor: "negocio", texto: "Negocios" },
   { valor: "admin", texto: "Administradores" },
+  { valor: "embajador", texto: "Embajadores" },
 ];
 
 export default async function Usuarios({
@@ -84,6 +85,9 @@ export default async function Usuarios({
               </div>
 
               <BotonesRol perfilId={perfil.id} rolActual={perfil.rol} />
+              {perfil.rol !== "admin" && (
+                <BotonEmbajador perfilId={perfil.id} embajador={perfil.embajador} />
+              )}
             </li>
           ))}
         </ul>

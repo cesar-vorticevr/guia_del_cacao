@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import {
-  destinoSegunRol,
+  destinoAlEntrar,
   origenDelSitio,
   perfilActual,
 } from "@/lib/auth/sesion";
@@ -225,7 +225,7 @@ export async function iniciarSesion(
   // todos los perfiles, así que la consulta devuelve varias filas.
   const perfil = await perfilActual();
 
-  redirect(perfil ? destinoSegunRol(perfil) : "/cuenta");
+  redirect(perfil ? await destinoAlEntrar(perfil) : "/cuenta");
 }
 
 /**
@@ -384,7 +384,7 @@ export async function cambiarContrasena(
   if (error) return { error: traducirError(error.message) };
 
   const perfil = await perfilActual();
-  redirect(perfil ? destinoSegunRol(perfil) : "/cuenta");
+  redirect(perfil ? await destinoAlEntrar(perfil) : "/cuenta");
 }
 
 // ---------------------------------------------------------------------------

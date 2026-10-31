@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { crearClienteServidor } from "@/lib/supabase/server";
-import { destinoSegunRol, perfilActual } from "@/lib/auth/sesion";
+import { destinoAlEntrar, perfilActual } from "@/lib/auth/sesion";
 
 /**
  * Una ruta interna y nada más.
@@ -58,6 +58,6 @@ export async function GET(request: Request) {
   const perfil = await perfilActual();
 
   return NextResponse.redirect(
-    `${origin}${perfil ? destinoSegunRol(perfil) : "/cuenta"}`,
+    `${origin}${perfil ? await destinoAlEntrar(perfil) : "/cuenta"}`,
   );
 }

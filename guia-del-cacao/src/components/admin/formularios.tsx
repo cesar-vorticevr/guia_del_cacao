@@ -7,6 +7,7 @@ import {
   crearConvenio,
   type EstadoAccion,
 } from "@/lib/admin/acciones";
+import { cambiarEmbajador } from "@/lib/admin/embajadores";
 
 const INICIAL: EstadoAccion = {};
 
@@ -58,6 +59,55 @@ export function BotonesRol({
           </form>
         ))}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Hacer embajadora a una persona o ponerla en pausa. Ser embajador no es un
+ * rol: va aparte de los tres botones de arriba y se suma a cualquiera.
+ */
+export function BotonEmbajador({
+  perfilId,
+  embajador,
+}: {
+  perfilId: string;
+  embajador: { estado: string; codigo: string | null } | null;
+}) {
+  const [estado, accion] = useActionState(cambiarEmbajador, INICIAL);
+  const activo = embajador?.estado === "activo";
+
+  return (
+    <div className="grid gap-2">
+      {estado.error && <Aviso>{estado.error}</Aviso>}
+      {estado.ok && (
+        <p role="status" className="text-sm font-bold text-selva">
+          {estado.ok}
+        </p>
+      )}
+
+      <form action={accion} className="flex flex-wrap items-center gap-3">
+        <input type="hidden" name="perfil_id" value={perfilId} />
+        <input type="hidden" name="activar" value={activo ? "0" : "1"} />
+        <button
+          type="submit"
+          aria-pressed={activo}
+          className={`min-h-10 rounded-full px-4 text-sm font-bold ${
+            activo
+              ? "bg-mango text-ink"
+              : "border-2 border-mango/50 bg-white text-selva-2"
+          }`}
+        >
+          {activo ? "✓ Embajador" : "Hacer embajador"}
+        </button>
+        {embajador?.codigo && embajador.estado !== "solicitado" && (
+          <span className="text-sm text-cacao/80">
+            Código <span className="font-mono font-bold">{embajador.codigo}</span>
+            {embajador.estado === "pausado" && " · en pausa"}
+            {activo && " · pulsa para pausar"}
+          </span>
+        )}
+      </form>
     </div>
   );
 }

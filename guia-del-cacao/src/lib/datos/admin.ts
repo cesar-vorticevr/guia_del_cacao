@@ -1,5 +1,6 @@
 import { crearClienteServidor } from "@/lib/supabase/server";
 import type { EstadoSucursal } from "@/lib/tipos";
+import type { EstadoDeEmbajador } from "@/lib/embajadores";
 
 /**
  * Consultas del panel de administración.
@@ -54,6 +55,8 @@ export type PerfilAdmin = {
   correo: string;
   rol: "cliente" | "negocio" | "admin";
   fecha_registro: string;
+  /** Su cuenta de ventas, si alguna vez la tuvo o la pidió. */
+  embajador: { estado: EstadoDeEmbajador; codigo: string | null } | null;
 };
 
 /** Cuántos renglones va cada página de las listas del panel. */
@@ -170,10 +173,37 @@ export async function perfilesPagina(
     consulta = consulta.eq("rol", rol);
   }
 
+  // Ser embajador no es un rol: es una fila en `embajadores` (migración 000067).
+  if (rol === "embajador") {
+    const { data: vendedores } = await supabase
+      .from("embajadores")
+      .select("perfil_id")
+      .in("estado", ["activo", "pausado"]);
+    const ids = (vendedores ?? []).map((v) => v.perfil_id as string);
+    consulta = consulta.in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+  }
+
   const [desde, hasta] = rango(numero);
   const { data, count } = await consulta.range(desde, hasta);
+  const filas = (data ?? []) as Omit<PerfilAdmin, "embajador">[];
 
-  return pagina(data as PerfilAdmin[] | null, count, numero);
+  const { data: embajadas } = filas.length
+    ? await supabase
+        .from("embajadores")
+        .select("perfil_id, estado, codigo")
+        .in("perfil_id", filas.map((f) => f.id))
+    : { data: [] };
+  const embajadaDe = new Map(
+    ((embajadas ?? []) as { perfil_id: string; estado: EstadoDeEmbajador; codigo: string | null }[]).map(
+      (e) => [e.perfil_id, { estado: e.estado, codigo: e.codigo }],
+    ),
+  );
+
+  return pagina(
+    filas.map((f) => ({ ...f, embajador: embajadaDe.get(f.id) ?? null })),
+    count,
+    numero,
+  );
 }
 
 const CAMPOS_RESENA =

@@ -53,6 +53,25 @@ export function destinoSegunRol(perfil: Pick<Perfil, "rol" | "rol_confirmado">) 
 }
 
 /**
+ * A dónde mandar a cada quien justo al entrar. Igual que `destinoSegunRol`,
+ * salvo que un cliente con cuenta de ventas (migración 000067) llega a su
+ * panel de ventas: es para lo que entra.
+ */
+export async function destinoAlEntrar(perfil: Pick<Perfil, "id" | "rol" | "rol_confirmado">) {
+  const destino = destinoSegunRol(perfil);
+  if (destino !== "/cuenta") return destino;
+
+  const supabase = await crearClienteServidor();
+  const { data } = await supabase
+    .from("embajadores")
+    .select("estado")
+    .eq("perfil_id", perfil.id)
+    .maybeSingle();
+  const estado = (data as { estado: string } | null)?.estado;
+  return estado === "activo" || estado === "pausado" ? "/ventas" : destino;
+}
+
+/**
  * Origen público del sitio, para armar la URL de retorno de Google.
  *
  * En producción conviene fijar NEXT_PUBLIC_SITE_URL: detrás de un proxy la

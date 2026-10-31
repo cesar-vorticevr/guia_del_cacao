@@ -167,6 +167,37 @@ export async function editarCuentaDeVentas(
 }
 
 /**
+ * Hacer embajadora a una persona que ya tiene cuenta, desde Personas, o
+ * ponerla en pausa. Activar le da su código con `asignar_embajador`; pausar
+ * conserva código, referidos y comisiones, y su panel de ventas sigue abierto.
+ */
+export async function cambiarEmbajador(
+  _previo: EstadoCuentaDeVentas,
+  datos: FormData,
+): Promise<EstadoCuentaDeVentas> {
+  await exigirAdmin();
+
+  const perfilId = datos.get("perfil_id")?.toString() ?? "";
+  const activar = datos.get("activar") === "1";
+  const supabase = await crearClienteServidor();
+
+  const { data, error } = activar
+    ? await supabase.rpc("asignar_embajador", { p_perfil: perfilId })
+    : await supabase.rpc("decidir_embajador", { p_perfil: perfilId, p_estado: "pausado" });
+
+  if (error) {
+    console.error("No se cambió el embajador:", error);
+    return { error: activar ? "No se pudo hacer embajador." : "No se pudo pausar." };
+  }
+
+  revalidatePath("/admin/usuarios");
+  revalidatePath("/admin/embajadores");
+  return {
+    ok: activar ? `Ahora es embajador, con el código ${data}.` : "Embajador en pausa.",
+  };
+}
+
+/**
  * Ya se le transfirió a un embajador: se anota el pago con su referencia y
  * quedan cubiertas todas las comisiones que se le debían.
  */
