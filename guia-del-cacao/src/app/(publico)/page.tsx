@@ -3,6 +3,7 @@ import { EscudoDeMarca } from "@/components/marca";
 import { BannerRotativo } from "@/components/publico/banner-rotativo";
 import { BuscadorPortada } from "@/components/publico/buscador-portada";
 import { EscenarioDePortada } from "@/components/publico/escenario-portada";
+import { RecorridoDeBienvenida } from "@/components/publico/recorrido-de-bienvenida";
 import { Marcador } from "@/components/publico/marcador";
 import { TarjetaPublicacion } from "@/components/publico/tarjeta-publicacion";
 import { TarjetaEntrada } from "@/components/publico/tarjeta-entrada";
@@ -24,7 +25,12 @@ import { perfilActual } from "@/lib/auth/sesion";
 import { tonoDeCategoria } from "@/lib/paleta";
 import { urlImagen } from "@/lib/imagenes";
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ recorrido?: string }>;
+}) {
+  const { recorrido } = await searchParams;
   // El perfil va primero porque lo necesitan los eventos —para saber a cuáles
   // ya les dio corazón quien mira— y los favoritos del directorio.
   const perfil = await perfilActual();
@@ -107,6 +113,17 @@ export default async function Home() {
 
   return (
     <div className="pb-4">
+      {/*
+        El recorrido de bienvenida: la primera vez sin sesión, o con
+        `?recorrido=1`. La `key` lo monta de nuevo cuando cambia el pedido, para
+        que el enlace del pie lo vuelva a abrir aunque ya se haya cerrado.
+      */}
+      <RecorridoDeBienvenida
+        key={recorrido === "1" ? "pedido" : "solo"}
+        conSesion={Boolean(perfil)}
+        pedido={recorrido === "1"}
+      />
+
       {/*
         La portada abre con el escenario: una banda oscura de orilla a orilla
         con el vórtice de destellos, los focos de marquesina y las mazorcas

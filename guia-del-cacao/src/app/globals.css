@@ -47,6 +47,38 @@
   --animate-late: late 0.7s ease-out 0.15s both;
   --animate-cae: cae 2.6s linear forwards;
 
+  /*
+    El recorrido de bienvenida: cada paso entra desde la niebla —borroso,
+    un poco abajo y chico— y las estrellas del fondo titilan a destiempo.
+  */
+  --animate-aparece-magia: aparece-magia 0.7s cubic-bezier(0.2, 1, 0.3, 1) both;
+  --animate-titila: titila 2.4s ease-in-out infinite;
+
+  @keyframes aparece-magia {
+    from {
+      opacity: 0;
+      filter: blur(12px);
+      transform: translateY(18px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      filter: blur(0);
+      transform: none;
+    }
+  }
+
+  @keyframes titila {
+    0%,
+    100% {
+      opacity: 0.15;
+      transform: scale(0.6);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.2);
+    }
+  }
+
   @keyframes brinca {
     from {
       opacity: 0;

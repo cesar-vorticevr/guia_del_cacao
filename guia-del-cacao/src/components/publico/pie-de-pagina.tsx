@@ -32,6 +32,8 @@ const REDES: {
 
 const ENLACES = [
   { href: "/acerca", texto: "Acerca de nosotros" },
+  // Vuelve a abrir el recorrido de bienvenida de la portada.
+  { href: "/?recorrido=1", texto: "¿Cómo funciona?" },
   { href: `mailto:${CORREO_DE_CONTACTO}`, texto: "Contáctanos", externo: true },
   // Pasa por el aviso: a un cliente le explica que su negocio va en otra cuenta,
   // y a quien no ha entrado lo manda derecho al alta sin estorbarle.

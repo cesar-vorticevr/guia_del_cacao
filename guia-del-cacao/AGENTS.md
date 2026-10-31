@@ -1833,3 +1833,24 @@ pago del negocio. **Tres activos a la vez** (`tope_de_cupones_de_vendedor()`,
 - `PRECIO_PRO` pasó de `kit.tsx` a `lib/precios.ts`: lo usan el kit y los
   cupones.
 - La prueba es la 32.
+
+## El recorrido de bienvenida
+
+`RecorridoDeBienvenida` (`components/publico/recorrido-de-bienvenida.tsx`) sale
+en la portada **la primera vez que alguien sin sesión entra**, y otra vez con
+`/?recorrido=1` («¿Cómo funciona?» en el pie). Cinco pantallas sobre la noche
+de la selva —auroras, estrellas que titilan, mazorcas de `public/parallax/`
+flotando— que cuentan lo importante (explorar, pedir directo, la ruleta y la
+realidad aumentada) y cierran invitando, primero y en grande, a **registrar un
+negocio de cacao** (`/soy-negocio`), luego a crear cuenta para pedir.
+
+- Se omite con «Omitir», con Esc o tocando fuera, y no vuelve: lo recuerda
+  `localStorage` (`guia-recorrido-visto`). Si el navegador no deja guardar, se
+  vuelve a enseñar, que es lo menos malo.
+- **Solo se pinta en el navegador** (`useSyncExternalStore` con instantánea
+  del servidor en falso): va por portal a `document.body`, que en el servidor
+  no existe. Con `?recorrido=1` ya reventó una vez por eso.
+- La página le pasa `pedido` y una `key` que cambia con el parámetro: así el
+  enlace del pie lo vuelve a abrir aunque ya se haya cerrado en esa visita.
+- Las animaciones `aparece-magia` y `titila` están en `@theme`, con las demás
+  de marca, y todo lo que se mueve lleva `motion-safe:`.
