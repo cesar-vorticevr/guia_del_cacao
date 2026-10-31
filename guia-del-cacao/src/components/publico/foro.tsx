@@ -43,6 +43,7 @@ export function FormularioTema({
   sucursales = [],
   /** La inicial de quien publica, para el círculo del renglón plegado. */
   inicial = "?",
+  productos = [],
 }: {
   /**
    * Las sucursales con las que un negocio puede firmar.
@@ -52,6 +53,11 @@ export function FormularioTema({
    */
   sucursales?: { id: string; nombre_sucursal: string }[];
   inicial?: string;
+  /**
+   * El catálogo del negocio, para etiquetar un producto (migración 000075).
+   * Vacío para una persona: solo un negocio etiqueta, y solo lo suyo.
+   */
+  productos?: { id: string; nombre: string }[];
 }) {
   const [abierto, setAbierto] = useState(false);
   const [estado, accion] = useActionState(crearTema, INICIAL);
@@ -139,6 +145,31 @@ export function FormularioTema({
           className="w-full rounded-2xl border-2 border-selva/20 bg-white px-4 py-3 text-base text-ink placeholder:text-cacao/40 focus:border-selva"
         />
       </label>
+
+      {/*
+        Etiquetar un producto (000075): sale en la publicación con su foto y su
+        precio, y lleva a la tienda donde se pide. Es opcional, y la base
+        vuelve a revisar que sea del catálogo de quien firma.
+      */}
+      {productos.length > 0 && (
+        <label className="block">
+          <span className="mb-1.5 block font-bold text-selva-2">
+            Etiquetar un producto (opcional)
+          </span>
+          <select
+            name="producto_id"
+            defaultValue=""
+            className="min-h-14 w-full rounded-2xl border-2 border-selva/20 bg-white px-4 text-base text-ink"
+          >
+            <option value="">Sin producto</option>
+            {productos.map((producto) => (
+              <option key={producto.id} value={producto.id}>
+                {producto.nombre}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <BotonEnviar>Publicar</BotonEnviar>
 

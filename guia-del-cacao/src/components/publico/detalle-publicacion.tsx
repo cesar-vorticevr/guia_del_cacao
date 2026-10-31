@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { urlImagen } from "@/lib/imagenes";
+import { FirmaDeNegocio } from "@/components/publico/firma-de-negocio";
 import { nombrarNegocio, type Publicacion } from "@/lib/datos/publico";
 
 const FECHA = new Intl.DateTimeFormat("es-MX", {
@@ -63,11 +64,16 @@ export function DetallePublicacion({
         <p className="mt-2 text-lg text-cacao/80">{publicacion.subtitulo}</p>
       )}
 
-      {marca && (
-        <p className="mt-3">
-          <span className="block font-display text-xl text-selva">{marca}</span>
-          {sucursal && <span className="block text-cacao">{sucursal}</span>}
-        </p>
+      {/* Quién lo organiza, y un toque lleva a su tienda. */}
+      {publicacion.sucursales && (
+        <div className="mt-4">
+          <FirmaDeNegocio
+            slug={publicacion.sucursales.slug}
+            marca={marca ?? publicacion.sucursales.nombre_sucursal}
+            sucursal={sucursal}
+            logo={publicacion.sucursales.logo ?? null}
+          />
+        </div>
       )}
 
       {portada && (
@@ -88,7 +94,7 @@ export function DetallePublicacion({
           href={`/marca/${publicacion.sucursales.slug}`}
           className="mt-6 inline-flex min-h-14 items-center rounded-full bg-selva px-6 font-display text-lg font-semibold text-crema shadow-dura-sm transition-transform active:translate-y-0.5"
         >
-          Ver negocio
+          Ir a su tienda
         </Link>
       )}
     </article>

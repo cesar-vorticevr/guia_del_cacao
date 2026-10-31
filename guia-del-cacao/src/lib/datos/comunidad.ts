@@ -64,6 +64,10 @@ export type Entrada = {
   mia: boolean;
   /** El autor la escondió: solo él la ve, y con este aviso. */
   oculta: boolean;
+  /** La tienda del negocio que firma (`/marca/{slug}`), o null si es una persona. */
+  tienda: string | null;
+  /** El producto que etiquetó el negocio (000075), solo su nombre para la tarjeta. */
+  producto: string | null;
 };
 
 const CUANDO = new Intl.DateTimeFormat("es-MX", {
@@ -75,7 +79,8 @@ const CUANDO = new Intl.DateTimeFormat("es-MX", {
 const CAMPOS = `
   id, titulo, contenido, fecha, imagenes, oculta_en, autor_id,
   perfiles_publicos!publicaciones_autor_id_fkey(nombre),
-  sucursales(nombre_sucursal, logo, marcas(nombre_comercial))
+  sucursales(slug, nombre_sucursal, logo, marcas(nombre_comercial)),
+  productos_servicios(nombre)
 `;
 
 type Fila = {
@@ -89,10 +94,12 @@ type Fila = {
   autor_id: string;
   perfiles_publicos: { nombre: string } | null;
   sucursales: {
+    slug: string;
     nombre_sucursal: string;
     logo: string | null;
     marcas: { nombre_comercial: string } | null;
   } | null;
+  productos_servicios: { nombre: string } | null;
 };
 
 /** Cuántas publicaciones trae cada tirón del scroll. */
@@ -278,6 +285,8 @@ export async function muroDeComunidad(
       guardada: guardadas.has(fila.id),
       mia: fila.autor_id === perfilId,
       oculta: fila.oculta_en !== null,
+      tienda: fila.sucursales?.slug ?? null,
+      producto: fila.productos_servicios?.nombre ?? null,
     };
   });
 

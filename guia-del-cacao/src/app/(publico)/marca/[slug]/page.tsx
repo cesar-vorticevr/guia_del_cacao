@@ -478,7 +478,7 @@ export default async function Micrositio({
       )}
 
       {productos.length > 0 && (
-        <section className="px-4 pt-6">
+        <section id="catalogo" className="scroll-mt-24 px-4 pt-6">
           {/*
             El botón del PDF va junto al encabezado y no al final de la
             cuadrícula: quien quiere la lista de precios para llevársela lo

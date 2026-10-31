@@ -12,6 +12,21 @@ export type Tema = {
   /** Las fotos, ya como rutas del bucket. La primera es la portada. */
   imagenes: string[];
   perfiles_publicos: { nombre: string; foto_perfil: string | null } | null;
+  /** La sucursal que firma, cuando publica un negocio: lleva a su tienda. */
+  sucursales: {
+    slug: string;
+    nombre_sucursal: string;
+    logo: string | null;
+    marcas: { nombre_comercial: string } | null;
+  } | null;
+  /** El producto que etiquetó el negocio (000075). */
+  productos_servicios: {
+    id: string;
+    nombre: string;
+    descripcion: string | null;
+    precio: number | null;
+    imagen: string | null;
+  } | null;
   /** Cuántos comentarios y cuántos apoyos lleva. */
   comentarios: number;
   apoyos: number;
@@ -22,7 +37,7 @@ export type Tema = {
 // autor y la tabla de apoyos—, y sin decir cual, PostgREST responde un error
 // que aqui se veria como "no hay temas".
 const CAMPOS =
-  "id, autor_id, titulo, contenido, fecha, fecha_edicion, imagenes, perfiles_publicos!publicaciones_autor_id_fkey(nombre, foto_perfil)";
+  "id, autor_id, titulo, contenido, fecha, fecha_edicion, imagenes, perfiles_publicos!publicaciones_autor_id_fkey(nombre, foto_perfil), sucursales(slug, nombre_sucursal, logo, marcas(nombre_comercial)), productos_servicios(id, nombre, descripcion, precio, imagen)";
 
 /**
  * Pega los conteos a una lista de temas, en una sola consulta.

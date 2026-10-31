@@ -1889,3 +1889,34 @@ girar). `RuletaEmergente` (`components/ruleta/ruleta-emergente.tsx`):
 En desarrollo, si se cae la conexión de recarga en caliente, Next recarga la
 página dos veces seguidas y la segunda ya la encuentra «vista»: en producción
 no pasa.
+
+## Del contenido a la tienda, y el producto etiquetado (migración 000075)
+
+- **Quién publicó lleva a su tienda.** `FirmaDeNegocio`
+  (`components/publico/firma-de-negocio.tsx`) pinta logo, marca y sucursal
+  con «Ver tienda →» hacia `/marca/{slug}`, arriba de una publicación de la
+  comunidad y de un evento. En el muro, el nombre del negocio es un enlace
+  **fuera** del enlace a la publicación (un enlace dentro de otro es inválido).
+  Las publicaciones ya guardaban `sucursal_id` desde la 000029.
+- **Un producto etiquetado.** `publicaciones.producto_id` (opcional, `on
+  delete set null`). Solo un negocio etiqueta, y solo de la marca que firma:
+  lo exige `revisar_producto_de_publicacion`. Se elige al publicar («Etiquetar
+  un producto»), sale en la publicación con foto y precio
+  (`ProductoEtiquetado`, lleva a `/marca/{slug}#catalogo`) y como 🏷 en la
+  tarjeta del muro. Prueba 33.
+
+## El cursor de cacao y la explosión de semillas
+
+El cursor es una mazorca (`public/marca/cursor-cacao.svg`, y
+`cursor-cacao-brillo.svg` sobre lo que se toca), solo con ratón (`pointer:
+fine`) y fuera de capa en `globals.css` para ganarle a `cursor-pointer`. Al
+hacer clic, `PolvoDeHada` revienta: fogonazo, dos anillos dorados, **semillas
+de cacao** que salen disparadas y caen con su peso, estrellas y hojas. Con
+«reducir movimiento» no se monta.
+
+## La letra clara lleva un difuminado oscuro
+
+`.noche` pone a todo el texto dos sombras oscuras y tenues (una que perfila y
+otra ancha que oscurece el fondo alrededor) para que la letra crema se lea
+sobre las partículas del cielo. Se quita en campos, en lo que va sobre oro o
+mango y en `.texto-oro`, que se pinta con `background-clip: text`.

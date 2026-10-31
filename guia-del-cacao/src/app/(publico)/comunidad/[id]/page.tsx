@@ -22,6 +22,7 @@ import {
 import { haceCuanto } from "@/lib/tiempo";
 import { tarjetaSocial } from "@/lib/compartir";
 import { BotonCompartir } from "@/components/publico/boton-compartir";
+import { FirmaDeNegocio, ProductoEtiquetado } from "@/components/publico/firma-de-negocio";
 
 const CUANDO = new Intl.DateTimeFormat("es-MX", {
   day: "numeric",
@@ -139,9 +140,24 @@ export default async function Publicacion({
         ← Volver a la comunidad
       </Link>
 
+      {/*
+        Si la firma un negocio, su logo y su nombre llevan a su tienda: quien
+        llega por un enlace compartido quiere saber de quién es y ir a verlo.
+      */}
+      {tema.sucursales && (
+        <div className="mt-4">
+          <FirmaDeNegocio
+            slug={tema.sucursales.slug}
+            marca={tema.sucursales.marcas?.nombre_comercial ?? tema.sucursales.nombre_sucursal}
+            sucursal={tema.sucursales.marcas ? tema.sucursales.nombre_sucursal : null}
+            logo={tema.sucursales.logo}
+          />
+        </div>
+      )}
+
       <p className="mt-4 font-mono text-xs tracking-wide text-cacao/70 uppercase">
-        {CUANDO.format(new Date(tema.fecha))} ·{" "}
-        {tema.perfiles_publicos?.nombre ?? "Alguien"}
+        {CUANDO.format(new Date(tema.fecha))}
+        {!tema.sucursales && ` · ${tema.perfiles_publicos?.nombre ?? "Alguien"}`}
         {tema.fecha_edicion && " · editado"}
       </p>
 
@@ -166,6 +182,13 @@ export default async function Publicacion({
       <p className="mt-4 whitespace-pre-line text-lg text-cacao">
         {tema.contenido}
       </p>
+
+      {/* El producto que etiquetó el negocio (000075): lleva a su catálogo. */}
+      {tema.sucursales && tema.productos_servicios && (
+        <div className="mt-5">
+          <ProductoEtiquetado slug={tema.sucursales.slug} producto={tema.productos_servicios} />
+        </div>
+      )}
 
       {/*
         El corazón, con su contador y el de comentarios al lado. Aquí había dos

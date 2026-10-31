@@ -38,27 +38,38 @@ export function TarjetaEntrada({
         )}
       />
 
+      {/*
+        Quién escribe va primero: en una retícula de cuatro, lo que hace
+        abrir una publicación es de quién es y de qué trata, en ese orden.
+
+        Si es un negocio, su nombre lleva a su tienda. Por eso va fuera del
+        enlace a la publicación: un enlace dentro de otro es HTML inválido.
+      */}
+      <p className="flex flex-wrap items-baseline gap-x-2 px-4 pt-4 text-sm">
+        {entrada.tienda ? (
+          <Link
+            href={`/marca/${entrada.tienda}`}
+            className="font-bold text-selva-2 underline decoration-mango/50 underline-offset-4 hover:text-mango"
+          >
+            {entrada.autor}
+          </Link>
+        ) : (
+          <span className="font-bold text-selva-2">{entrada.autor}</span>
+        )}
+
+        {entrada.detalle && (
+          <span className="w-full text-cacao/70">{entrada.detalle}</span>
+        )}
+
+        {entrada.oculta && (
+          <span className="rounded-full bg-ink/10 px-2 py-0.5 font-mono text-[0.7rem] font-bold text-cacao">
+            Oculta
+          </span>
+        )}
+      </p>
+
       <Link href={entrada.href} className="flex flex-1 flex-col">
-
-        <div className="flex flex-1 flex-col gap-1 p-4">
-          {/*
-            Quién escribe va primero: en una retícula de cuatro, lo que hace
-            abrir una publicación es de quién es y de qué trata, en ese orden.
-          */}
-          <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
-            <span className="font-bold text-selva-2">{entrada.autor}</span>
-
-            {entrada.detalle && (
-              <span className="w-full text-cacao/70">{entrada.detalle}</span>
-            )}
-
-            {entrada.oculta && (
-              <span className="rounded-full bg-ink/10 px-2 py-0.5 font-mono text-[0.7rem] font-bold text-cacao">
-                Oculta
-              </span>
-            )}
-          </p>
-
+        <div className="flex flex-1 flex-col gap-1 px-4 pt-1 pb-4">
           <p className="font-display text-base leading-tight font-semibold text-selva-2 underline-offset-4 group-hover:underline">
             {entrada.titulo}
           </p>
@@ -66,6 +77,13 @@ export function TarjetaEntrada({
           <p className="mt-auto line-clamp-3 pt-1 text-sm text-cacao">
             {entrada.resumen}
           </p>
+
+          {/* El producto etiquetado (000075): se ve completo al abrirla. */}
+          {entrada.producto && (
+            <p className="mt-2 w-fit max-w-full truncate rounded-full bg-mango/20 px-3 py-1 text-xs font-bold text-selva-2">
+              🏷 {entrada.producto}
+            </p>
+          )}
         </div>
       </Link>
 

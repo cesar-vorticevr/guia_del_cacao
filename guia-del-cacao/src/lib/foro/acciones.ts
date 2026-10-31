@@ -27,6 +27,9 @@ function traducir(mensaje: string) {
   if (mensaje.includes("Tu plan no incluye")) {
     return "Publicar como negocio viene con el plan Pro.";
   }
+  if (mensaje.includes("no es del catálogo")) {
+    return "Ese producto no es del catálogo de la sucursal con la que publicas.";
+  }
   if (mensaje.includes("row-level security")) {
     return "Tu cuenta no puede publicar aquí ahora mismo.";
   }
@@ -108,6 +111,8 @@ export async function crearTema(
 
   const contenido = (datos.get("contenido")?.toString() ?? "").trim();
   const sucursalId = datos.get("sucursal_id")?.toString() || null;
+  // El producto etiquetado (000075). La base revisa que sea de quien firma.
+  const productoId = datos.get("producto_id")?.toString() || null;
 
   const mal = revisarTexto(contenido);
   if (mal) return { error: mal };
@@ -140,6 +145,7 @@ export async function crearTema(
       contenido,
       imagenes: subidas.rutas,
       sucursal_id: perfil.rol === "negocio" ? sucursalId : null,
+      producto_id: perfil.rol === "negocio" ? productoId : null,
     })
     .select("id")
     .maybeSingle();

@@ -81,6 +81,8 @@ export type Publicacion = {
   sucursales: {
     slug: string;
     nombre_sucursal: string;
+    /** Para la firma del negocio en el detalle. */
+    logo?: string | null;
     marcas: { nombre_comercial: string } | null;
   } | null;
 };
@@ -235,7 +237,7 @@ export async function bannersDePortada() {
 }
 
 const CAMPOS_PUBLICACION =
-  "id, titulo, subtitulo, contenido, imagenes, fecha_publicacion, sucursales(slug, nombre_sucursal, marcas(nombre_comercial))";
+  "id, titulo, subtitulo, contenido, imagenes, fecha_publicacion, sucursales(slug, nombre_sucursal, logo, marcas(nombre_comercial))";
 
 export async function listarEventos(perfilId?: string) {
   const supabase = await crearClienteServidor();

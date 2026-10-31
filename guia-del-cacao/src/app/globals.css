@@ -668,6 +668,27 @@
   color: rgb(255 247 232 / 0.7);
 }
 
+/*
+  Un difuminado oscuro y tenue detrás de toda la letra clara: las partículas
+  del cielo son bonitas, pero pasaban por detrás del texto crema y le quitaban
+  contraste. Dos sombras —una corta que perfila y una ancha que oscurece el
+  fondo alrededor— con poca opacidad, para que no se lea como letra con borde.
+
+  Fuera: los campos (letra oscura sobre blanco), lo que va sobre oro o mango
+  (letra oscura sobre color vivo) y el texto de oro, que se pinta con
+  `background-clip: text` y una sombra debajo lo ensuciaría.
+*/
+.noche {
+  text-shadow:
+    0 1px 2px rgb(10 6 22 / 0.55),
+    0 0 16px rgb(10 6 22 / 0.45);
+}
+
+.noche :is(input, textarea, select, .texto-oro, .boton-oro, [class*="bg-mango"], [class*="bg-[#ffb703]"]),
+.noche :is(.boton-oro, [class*="bg-mango"]) * {
+  text-shadow: none;
+}
+
 /* Los enlaces que antes eran verdes ahora son de oro. */
 .noche a[class*="text-selva"]:not([class*="bg-"]) {
   color: var(--color-mango);
@@ -916,5 +937,41 @@ button:disabled:is(.bg-selva, .bg-selva-2) {
   .dossier li,
   .dossier .tarjeta-magica {
     break-inside: avoid;
+  }
+}
+
+/*
+  El cursor es una mazorca de cacao, con la punta apuntando arriba a la
+  izquierda (ahí está el punto que hace clic: 6 4). Sobre lo que se puede
+  tocar, la misma mazorca encendida, con halo y destello. Solo con ratón
+  (`pointer: fine`): en el celular no hay cursor. Fuera de capa para ganarle
+  a `cursor-pointer` de Tailwind; los campos de texto conservan su barra.
+  La explosión de semillas al hacer clic vive en `polvo-de-hada.tsx`.
+*/
+@media (pointer: fine) {
+  html {
+    cursor: url("/marca/cursor-cacao.svg") 6 4, auto;
+  }
+
+  a,
+  button,
+  summary,
+  select,
+  label[for],
+  [role="button"],
+  [role="tab"],
+  input:is([type="checkbox"], [type="radio"], [type="submit"], [type="button"], [type="file"]),
+  .cursor-pointer {
+    cursor: url("/marca/cursor-cacao-brillo.svg") 6 4, pointer;
+  }
+
+  input:not([type="checkbox"], [type="radio"], [type="submit"], [type="button"], [type="file"], [type="range"]),
+  textarea,
+  [contenteditable="true"] {
+    cursor: text;
+  }
+
+  :disabled {
+    cursor: not-allowed;
   }
 }

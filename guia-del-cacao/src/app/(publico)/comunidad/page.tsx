@@ -7,6 +7,7 @@ import { MiPublicacion } from "@/components/publico/mi-publicacion";
 import { perfilActual } from "@/lib/auth/sesion";
 import { muroDeComunidad } from "@/lib/datos/comunidad";
 import { misSucursales } from "@/lib/datos/sucursales";
+import { catalogoDeMarca } from "@/lib/datos/catalogo";
 import { FUNCIONES } from "@/lib/funciones";
 
 export const metadata: Metadata = { title: "Comunidad · Guía del Cacao" };
@@ -43,6 +44,8 @@ export default async function Comunidad() {
   */
   const sucursales = esNegocio ? await misSucursales(perfil.id) : [];
   const publicadas = sucursales.filter((s) => s.estado === "publicado");
+  // El catálogo de la marca, para etiquetar un producto al publicar (000075).
+  const catalogo = publicadas[0] ? await catalogoDeMarca(publicadas[0].marca_id) : [];
 
   const puedePublicar = esNegocio
     ? publicadas.length > 0
@@ -129,6 +132,7 @@ export default async function Comunidad() {
         ) : puedePublicar ? (
           <FormularioTema
             sucursales={publicadas}
+            productos={catalogo.map((p) => ({ id: p.id, nombre: p.nombre }))}
             inicial={(perfil.nombre ?? "?").charAt(0).toUpperCase()}
           />
         ) : null}
