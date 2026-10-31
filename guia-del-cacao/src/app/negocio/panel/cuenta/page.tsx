@@ -270,30 +270,57 @@ export default async function CuentaNegocio({
                 Los precios ya incluyen IVA. Mándanos tu constancia de situación
                 fiscal y el uso de CFDI, y te la enviamos por correo.
               </p>
-              <a
-                href={`mailto:${CORREO_DE_CONTACTO}?subject=${encodeURIComponent(
-                  `Factura · ${marca.nombre_comercial}`,
-                )}&body=${encodeURIComponent(
-                  [
-                    `Hola, quiero la factura de mi pago en la Guía del Cacao.`,
-                    ``,
-                    `Negocio: ${marca.nombre_comercial}`,
-                    `Correo de la cuenta: ${perfil.correo}`,
-                    `Plan: ${plan?.nombre ?? ""}`,
-                    `Mes que quiero facturar: `,
-                    `RFC: `,
-                    `Razón social: `,
-                    `Régimen fiscal: `,
-                    `Código postal fiscal: `,
-                    `Uso de CFDI: `,
-                    ``,
-                    `Adjunto mi constancia de situación fiscal.`,
-                  ].join("\n"),
-                )}`}
-                className="mt-3 inline-flex min-h-11 items-center rounded-full border-2 border-selva/25 bg-white px-5 font-bold text-selva-2"
-              >
-                Pedir factura por correo
-              </a>
+              {(() => {
+                const asunto = `Factura · ${marca.nombre_comercial}`;
+                const cuerpo = [
+                  `Hola, quiero la factura de mi pago en la Guía del Cacao.`,
+                  ``,
+                  `Negocio: ${marca.nombre_comercial}`,
+                  `Correo de la cuenta: ${perfil.correo}`,
+                  `Plan: ${plan?.nombre ?? ""}`,
+                  `Mes que quiero facturar: `,
+                  `RFC: `,
+                  `Razón social: `,
+                  `Régimen fiscal: `,
+                  `Código postal fiscal: `,
+                  `Uso de CFDI: `,
+                  ``,
+                  `Adjunto mi constancia de situación fiscal.`,
+                ].join("\n");
+
+                /*
+                  `mailto:` solo abre algo si el equipo tiene un programa de
+                  correo configurado. En una computadora que usa Gmail en el
+                  navegador el botón no hacía nada, y parecía roto. Por eso va
+                  también Gmail en la web y la dirección escrita, para copiarla.
+                */
+                return (
+                  <>
+                    <div className="mt-3 flex flex-wrap gap-3">
+                      <a
+                        href={`mailto:${CORREO_DE_CONTACTO}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`}
+                        className="inline-flex min-h-11 items-center rounded-full border-2 border-selva/25 bg-white px-5 font-bold text-selva-2"
+                      >
+                        Pedir factura por correo
+                      </a>
+                      <a
+                        href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(CORREO_DE_CONTACTO)}&su=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex min-h-11 items-center rounded-full border-2 border-selva/25 bg-white px-5 font-bold text-selva-2"
+                      >
+                        Pedirla desde Gmail
+                      </a>
+                    </div>
+                    <p className="mt-3 text-sm text-cacao">
+                      ¿No se abre nada? Escríbenos a{" "}
+                      <strong className="select-all">{CORREO_DE_CONTACTO}</strong>{" "}
+                      con tu RFC, razón social, régimen fiscal, código postal
+                      fiscal, uso de CFDI y tu constancia.
+                    </p>
+                  </>
+                );
+              })()}
             </div>
           )}
 

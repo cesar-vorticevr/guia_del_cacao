@@ -1062,6 +1062,42 @@ function TarjetaDePlan({
   );
 }
 
+/**
+ * «Pagar ahora» y «Solo cambiar de plan». Mientras la acción trabaja —ir a
+ * Stripe tarda unos segundos— los dos se apagan y el pulsado dice «Un
+ * momento…»: sin eso la pantalla parecía congelada y se volvía a pulsar.
+ */
+function BotonesPagarOCambiar({
+  pagar,
+  alElegir,
+}: {
+  pagar: boolean;
+  alElegir: (pagar: boolean) => void;
+}) {
+  const { pending } = useFormStatus();
+
+  return (
+    <>
+      <button
+        type="submit"
+        disabled={pending}
+        onClick={() => alElegir(true)}
+        className="min-h-14 rounded-full bg-selva px-6 font-display text-lg font-semibold text-crema disabled:opacity-60"
+      >
+        {pending && pagar ? "Llevándote a pagar…" : "Pagar ahora con tarjeta"}
+      </button>
+      <button
+        type="submit"
+        disabled={pending}
+        onClick={() => alElegir(false)}
+        className="min-h-14 rounded-full border-2 border-selva/25 bg-white px-6 font-bold text-selva-2 disabled:opacity-60"
+      >
+        {pending && !pagar ? "Un momento…" : "Solo cambiar de plan"}
+      </button>
+    </>
+  );
+}
+
 export function FormularioCambiarPlan({
   tiers,
   cobroReal = false,
@@ -1099,7 +1135,6 @@ export function FormularioCambiarPlan({
     <form action={accion} className="grid gap-4">
       <input type="hidden" name="codigo_convenio" value={codigoNuevo?.codigo ?? ""} />
       <input type="hidden" name="pagar" value={pagar ? "si" : ""} />
-      <Resultado estado={estado} />
 
       <CodigoDeConvenio tiers={tiers} oferta={codigoNuevo} alCambiar={setCodigoNuevo} />
 
@@ -1114,22 +1149,17 @@ export function FormularioCambiarPlan({
         oferta={vigente}
       />
 
+      {/*
+        La respuesta va aquí, junto al botón, y no arriba del formulario: con
+        los planes en medio, arriba quedaba fuera de la pantalla y «Ya estás en
+        ese plan» o un error de Stripe no los veía nadie. Parecía que el botón
+        no hacía nada.
+      */}
+      <Resultado estado={estado} />
+
       {cobroReal && porPagar && !(codigoNuevo?.cubreHasta) ? (
         <div className="grid gap-3 sm:grid-cols-2">
-          <button
-            type="submit"
-            onClick={() => setPagar(true)}
-            className="min-h-14 rounded-full bg-selva px-6 font-display text-lg font-semibold text-crema"
-          >
-            Pagar ahora con tarjeta
-          </button>
-          <button
-            type="submit"
-            onClick={() => setPagar(false)}
-            className="min-h-14 rounded-full border-2 border-selva/25 bg-white px-6 font-bold text-selva-2"
-          >
-            Solo cambiar de plan
-          </button>
+          <BotonesPagarOCambiar pagar={pagar} alElegir={setPagar} />
           <p className="text-sm text-cacao/70 sm:col-span-2">
             El pago se hace en la página segura de Stripe; tu tarjeta no pasa
             por la Guía. Mientras estés en prueba, cambiar de plan no cobra
