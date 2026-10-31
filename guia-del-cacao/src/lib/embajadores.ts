@@ -50,8 +50,11 @@ export async function vincularEmbajador(
 export async function embajadorPendienteDe(marcaId: string) {
   const supabase = await crearClienteServidor();
   const { data } = await supabase.rpc("codigo_de_embajador_de", { p_marca: marcaId });
-  const fila = (data as { codigo: string; embajador: string; embajador_id: string }[] | null)?.[0];
-  return fila ?? null;
+  const fila = (
+    data as { codigo: string; embajador: string; embajador_id: string; descuento: number }[] | null
+  )?.[0];
+  // El % lo fijó el código al ponerlo: 15 el fijo, el suyo un cupón (000073).
+  return fila ? { ...fila, descuento: Number(fila.descuento) } : null;
 }
 
 /**

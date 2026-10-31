@@ -1207,10 +1207,18 @@ export async function consultarCodigo(codigo: string): Promise<RespuestaDeCodigo
   const { data: asesor } = await supabase.rpc("codigo_de_asesor", {
     p_codigo: codigo,
   });
-  const delAsesor = (asesor as { nombre: string; tipo: "descuento" | "destacado" }[] | null)?.[0];
+  const delAsesor = (
+    asesor as { nombre: string; tipo: "descuento" | "destacado"; porcentaje: number }[] | null
+  )?.[0];
   if (delAsesor) {
     return {
-      oferta: ofertaDeEmbajador(normalizarCodigo(codigo), delAsesor.nombre, delAsesor.tipo),
+      oferta: ofertaDeEmbajador(
+        normalizarCodigo(codigo),
+        delAsesor.nombre,
+        delAsesor.tipo,
+        // Un cupón del vendedor trae su propio % (000073).
+        Number(delAsesor.porcentaje),
+      ),
     };
   }
 

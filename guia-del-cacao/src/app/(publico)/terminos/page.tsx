@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { CORREO_DE_CONTACTO } from "@/components/publico/pie-de-pagina";
 import { ACTUALIZADO, DOMICILIO, RESPONSABLE } from "@/lib/legal";
 import { PAGO_SIMULADO } from "@/lib/pagos";
-import { DESCUENTO_DE_EMBAJADOR } from "@/lib/precios";
+import { DESCUENTO_DE_EMBAJADOR, DESCUENTO_MAXIMO_DE_VENDEDOR } from "@/lib/precios";
 
 export const metadata: Metadata = {
   title: "Condiciones del Servicio · Guía del Cacao",
@@ -302,7 +302,9 @@ export default function Terminos() {
       <p className="mt-3 text-cacao">
         El <strong className="text-selva-2">código de un asesor de la Guía</strong>{" "}
         te da {DESCUENTO_DE_EMBAJADOR}% de descuento en tu primer pago, sea del
-        mes o del año; los siguientes van al precio normal. Se usa una sola vez
+        mes o del año, o el porcentaje de su cupón si te dio uno (hasta{" "}
+        {DESCUENTO_MAXIMO_DE_VENDEDOR}%); los siguientes van al precio normal.
+        El porcentaje queda fijo al poner el código. Se usa una sola vez
         por negocio, antes de su primer pago, y no se suma a una promoción.
         Quien te compartió el código recibe de la Guía una comisión por tus
         pagos; a ti no te cuesta nada extra.

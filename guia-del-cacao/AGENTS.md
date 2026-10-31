@@ -1801,3 +1801,35 @@ son 4:3 (`PROPORCIONES.fondo`, `MEDIDAS.fondo`) y el micrositio pone en
 escritorio la portada a la izquierda y el nombre a la derecha; en celular, una
 sobre otra con el logo montado en el borde. Las portadas subidas antes en 8:3
 se recortan por los lados hasta que el negocio suba una nueva.
+
+## Cupones propios del vendedor (migración 000073)
+
+Desde el 31 de octubre de 2026, además de sus dos códigos fijos (000070), cada
+cuenta de ventas arma **sus propios cupones** en `/ventas?ver=cupones`: el
+código que quiera y el **porcentaje que quiera, de 1 a 50%**, para el primer
+pago del negocio. **Tres activos a la vez** (`tope_de_cupones_de_vendedor()`,
+`TOPE_DE_CUPONES_DE_VENDEDOR`; el 50 está en el `check` y en
+`DESCUENTO_MAXIMO_DE_VENDEDOR`: si cambia uno, cambian los dos).
+
+- **No se editan ni se borran**, como los cupones de los negocios: alguien
+  pudo ponerlo ya. Se desactivan (`activo`, `desactivado_en`) y se crea otro.
+  Reactivar cuenta contra el tope. El trigger `revisar_cupon_de_vendedor`
+  pone el código en mayúsculas, exige 4 a 20 letras o números y que **no
+  choque con ningún otro código** del sitio (fijos, destacados, convenios,
+  cupones), y frena a un vendedor en pausa.
+- **El descuento se fija en el vínculo**: `referidos.descuento` (y
+  `cupon_id`) se guardan al poner el código. Desactivar el cupón después no se
+  lo quita a quien ya lo puso. Los referidos de antes quedaron en 15 (o 0 el
+  destacado).
+- `buscar_codigo_de_vendedor` (interna) reconoce los tres tipos de código y es
+  la única fuente: la usan `codigo_de_asesor` (que ahora devuelve también el
+  `porcentaje`, para que «¿Tienes un código?» enseñe el precio) y
+  `vincular_embajador`. `codigo_de_embajador_de` devuelve el `descuento`, y
+  `crearPago` usa el cupón de Stripe **`guia-embajador-{porcentaje}`**, uno
+  por porcentaje, creado la primera vez.
+- La comisión no cambia: 25% de lo que Stripe cobró, ya con el descuento. La
+  pantalla le enseña al vendedor, mientras escribe el %, cuánto le deja ese
+  primer cobro.
+- `PRECIO_PRO` pasó de `kit.tsx` a `lib/precios.ts`: lo usan el kit y los
+  cupones.
+- La prueba es la 32.

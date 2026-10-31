@@ -33,6 +33,10 @@ export type Referido = {
   siguePagando: boolean;
   /** Qué código puso: el de descuento o el destacado (000070). */
   tipo: "descuento" | "destacado";
+  /** El % que se llevó en su primer pago (000073). */
+  descuento: number | null;
+  /** El cupón propio que usó, si fue uno (000073). */
+  cupon: string | null;
 };
 
 /** Una comisión: un cobro confirmado por Stripe de un negocio referido. */
@@ -74,6 +78,8 @@ export async function miEmbajada(perfilId: string) {
       ultimo_cobro: string | null;
       sigue_pagando: boolean;
       tipo: "descuento" | "destacado";
+      descuento: number | null;
+      cupon: string | null;
     }[]).map(
       (r): Referido => ({
         marca: r.marca,
@@ -85,6 +91,8 @@ export async function miEmbajada(perfilId: string) {
         ultimoCobro: r.ultimo_cobro,
         siguePagando: r.sigue_pagando,
         tipo: r.tipo ?? "descuento",
+        descuento: r.descuento === null ? null : Number(r.descuento),
+        cupon: r.cupon,
       }),
     ),
     comisiones: ((comisiones ?? []) as { comision: number; cobrado_en: string; pago_id: string | null }[]).map(
@@ -306,5 +314,41 @@ export async function misProspectos(perfilId: string): Promise<Prospecto[]> {
     nota: p.nota,
     siguienteEn: p.siguiente_en,
     actualizadoEn: p.actualizado_en,
+  }));
+}
+
+/** Un cupón propio del vendedor (migración 000073). */
+export type CuponDeVendedor = {
+  id: string;
+  codigo: string;
+  porcentaje: number;
+  activo: boolean;
+  creadoEn: string;
+  desactivadoEn: string | null;
+  /** Cuántos negocios lo pusieron. */
+  negocios: number;
+};
+
+/** Los cupones de quien mira, los activos arriba (`mis_cupones_de_vendedor`). */
+export async function misCuponesDeVendedor(): Promise<CuponDeVendedor[]> {
+  const supabase = await crearClienteServidor();
+  const { data } = await supabase.rpc("mis_cupones_de_vendedor");
+
+  return ((data ?? []) as {
+    id: string;
+    codigo: string;
+    porcentaje: number;
+    activo: boolean;
+    creado_en: string;
+    desactivado_en: string | null;
+    negocios: number;
+  }[]).map((c) => ({
+    id: c.id,
+    codigo: c.codigo,
+    porcentaje: Number(c.porcentaje),
+    activo: c.activo,
+    creadoEn: c.creado_en,
+    desactivadoEn: c.desactivado_en,
+    negocios: Number(c.negocios),
   }));
 }

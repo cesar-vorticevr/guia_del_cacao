@@ -69,7 +69,7 @@ export function DatosDeCobro({
 }
 
 /** El botón de copiar: si el navegador no deja, el texto se selecciona a mano. */
-function Copiar({ texto, etiqueta }: { texto: string; etiqueta: string }) {
+export function Copiar({ texto, etiqueta }: { texto: string; etiqueta: string }) {
   const [copiado, setCopiado] = useState(false);
   return (
     <button

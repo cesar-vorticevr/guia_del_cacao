@@ -1,8 +1,15 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { perfilActual, origenDelSitio } from "@/lib/auth/sesion";
-import { cuentasDe, miEmbajada, misProspectos } from "@/lib/datos/embajadores";
-import { COMISION_DE_EMBAJADOR, DESCUENTO_DE_EMBAJADOR, MESES_DE_DESTACADO } from "@/lib/precios";
+import { cuentasDe, miEmbajada, misCuponesDeVendedor, misProspectos } from "@/lib/datos/embajadores";
+import {
+  COMISION_DE_EMBAJADOR,
+  DESCUENTO_DE_EMBAJADOR,
+  DESCUENTO_MAXIMO_DE_VENDEDOR,
+  MESES_DE_DESTACADO,
+  TOPE_DE_CUPONES_DE_VENDEDOR,
+} from "@/lib/precios";
+import { NuevoCupon, TarjetaDeCupon } from "@/components/embajador/cupones";
 import { pesos } from "@/lib/tipos";
 import { ETAPAS } from "@/lib/ventas";
 import { Pestanas } from "@/components/negocio/pestanas";
@@ -52,17 +59,19 @@ export default async function Ventas({
   const perfil = await perfilActual();
   if (!perfil) redirect("/login?volver=/ventas");
 
-  const [{ embajada, referidos, comisiones, pagos }, prospectos, sinLeer] = await Promise.all([
+  const [{ embajada, referidos, comisiones, pagos }, prospectos, sinLeer, cupones] = await Promise.all([
     miEmbajada(perfil.id),
     misProspectos(perfil.id),
     mensajesSinLeer(),
+    misCuponesDeVendedor(),
   ]);
+  const cuponesActivos = cupones.filter((c) => c.activo).length;
 
   if (!embajada || embajada.estado === "rechazado" || embajada.estado === "solicitado") {
     redirect("/cuenta");
   }
 
-  const seccion = (["libreta", "kit", "cuenta"] as const).find((s) => s === ver) ?? "resumen";
+  const seccion = (["cupones", "libreta", "kit", "cuenta"] as const).find((s) => s === ver) ?? "resumen";
   const cuentas = cuentasDe(referidos, comisiones, pagos);
   const origen = await origenDelSitio();
   const sitio = origen.replace(/^https?:\/\//, "");
@@ -94,6 +103,7 @@ export default async function Ventas({
         etiqueta="Secciones del panel de ventas"
         pestanas={[
           { clave: "resumen", texto: "Resumen" },
+          { clave: "cupones", texto: "Mis cupones", cuenta: cuponesActivos || undefined },
           { clave: "libreta", texto: "Mi libreta", cuenta: porBuscar || undefined, destella: porBuscar > 0 },
           { clave: "kit", texto: "Kit de venta" },
           { clave: "cuenta", texto: "Mi cuenta" },
@@ -199,8 +209,10 @@ export default async function Ventas({
                     <span>
                       <span className="block font-bold">{r.marca}</span>
                       <span className="text-sm text-cacao/70">
-                        Usó tu código {r.tipo === "destacado" ? "destacado" : "de descuento"} el{" "}
-                        {FECHA.format(new Date(r.vinculadoEn))}
+                        {r.cupon
+                          ? `Usó tu cupón ${r.cupon} (${r.descuento}%)`
+                          : `Usó tu código ${r.tipo === "destacado" ? "destacado" : "de descuento"}`}{" "}
+                        el {FECHA.format(new Date(r.vinculadoEn))}
                       </span>
                       {r.cobros > 0 && (
                         <span
@@ -256,6 +268,47 @@ export default async function Ventas({
             </section>
           )}
         </>
+      )}
+
+      {/*
+        Cupones propios (migración 000073): el código y el % que el vendedor
+        quiera, de 1 a 50, hasta tres activos. No se editan: se desactivan y
+        se crea otro, y quien ya lo puso conserva su descuento.
+      */}
+      {seccion === "cupones" && (
+        <section className="grid gap-5">
+          <div>
+            <h2 className="font-display text-2xl">Mis cupones</h2>
+            <p className="mt-1 max-w-prose text-crema/75">
+              Además de tu código de {DESCUENTO_DE_EMBAJADOR}%, arma hasta{" "}
+              {TOPE_DE_CUPONES_DE_VENDEDOR} cupones con el descuento que tú decidas, hasta{" "}
+              {DESCUENTO_MAXIMO_DE_VENDEDOR}%, para el primer pago del negocio. Tú sigues ganando tu{" "}
+              {COMISION_DE_EMBAJADOR}% de cada cobro. Un cupón no se edita: desactívalo y crea otro.
+            </p>
+          </div>
+
+          {embajada.estado === "activo" ? (
+            <NuevoCupon lugares={TOPE_DE_CUPONES_DE_VENDEDOR - cuponesActivos} />
+          ) : (
+            <p className="rounded-3xl border-2 border-mango/40 bg-white p-5 text-cacao">
+              Tu cuenta está en pausa: por ahora no puedes crear ni activar cupones.
+            </p>
+          )}
+
+          {cupones.length > 0 && (
+            <ul className="grid gap-3 lg:grid-cols-2">
+              {cupones.map((cupon) => (
+                <TarjetaDeCupon
+                  key={cupon.id}
+                  cupon={cupon}
+                  sitio={sitio}
+                  hayLugar={embajada.estado === "activo" && cuponesActivos < TOPE_DE_CUPONES_DE_VENDEDOR}
+                  fecha={FECHA.format(new Date(cupon.creadoEn))}
+                />
+              ))}
+            </ul>
+          )}
+        </section>
       )}
 
       {seccion === "libreta" && (

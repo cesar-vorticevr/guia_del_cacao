@@ -5,11 +5,9 @@ import {
   DIAS_GRATIS,
   MESES_DE_DESTACADO,
   MESES_PAGADOS_AL_ANIO,
+  PRECIO_PRO,
 } from "@/lib/precios";
 import { pesos } from "@/lib/tipos";
-
-/** Lo que cuesta el Pro al mes. La base lo tiene en `tiers` (000059). */
-const PRECIO_PRO = 499;
 
 const centavos = (n: number) => Math.round(n * 100) / 100;
 

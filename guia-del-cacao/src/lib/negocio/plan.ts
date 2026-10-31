@@ -412,6 +412,7 @@ async function contratarConStripe({
       url = await crearPago({
       marcaId,
       embajadorId: embajador?.embajador_id ?? null,
+      descuentoEmbajador: embajador?.descuento ?? null,
       clienteStripe: (marca?.stripe_customer_id as string | null) ?? null,
       correo: perfil!.correo,
       sucursalIds: porCobrar.map((s) => s.sucursal_id),

@@ -104,16 +104,18 @@ async function productoDelPlan(tier: Tier) {
  * lleva el porcentaje porque un cupón de Stripe no cambia de monto (el de 20%
  * de antes de la 000067 se queda para quien ya lo usó).
  */
-async function cuponDeEmbajador() {
-  const id = `guia-embajador-${DESCUENTO_DE_EMBAJADOR}`;
+async function cuponDeEmbajador(porcentaje: number) {
+  // Uno por porcentaje: los cupones propios de los vendedores (000073) van de
+  // 1 a 50%, y cada uno reutiliza el suyo.
+  const id = `guia-embajador-${porcentaje}`;
   const s = stripe()!;
   try {
     return (await s.coupons.retrieve(id)).id;
   } catch {
     const cupon = await s.coupons.create({
       id,
-      name: `Embajador del Cacao · ${DESCUENTO_DE_EMBAJADOR}% en tu primer pago`,
-      percent_off: DESCUENTO_DE_EMBAJADOR,
+      name: `Embajador del Cacao · ${porcentaje}% en tu primer pago`,
+      percent_off: porcentaje,
       duration: "once",
       metadata: { app: APP },
     });
@@ -151,6 +153,8 @@ export type DatosDelPago = {
    * descuento, solo esta vez, y el webhook le anota la comisión.
    */
   embajadorId: string | null;
+  /** El % de ese primer pago: 15 con el código fijo, el suyo con un cupón. */
+  descuentoEmbajador?: number | null;
   /** A dónde vuelve al pagar y al arrepentirse. */
   exito: string;
   cancelado: string;
@@ -208,7 +212,13 @@ export async function crearPago(datos: DatosDelPago) {
       : { customer_email: datos.correo }),
     client_reference_id: datos.marcaId,
     line_items: lineas,
-    ...(datos.embajadorId ? { discounts: [{ coupon: await cuponDeEmbajador() }] } : {}),
+    ...(datos.embajadorId
+      ? {
+          discounts: [
+            { coupon: await cuponDeEmbajador(datos.descuentoEmbajador ?? DESCUENTO_DE_EMBAJADOR) },
+          ],
+        }
+      : {}),
     metadata,
     subscription_data: {
       metadata,

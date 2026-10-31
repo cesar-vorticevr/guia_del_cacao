@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { ETAPAS, type EtapaDeProspecto } from "@/lib/ventas";
+import { DESCUENTO_MAXIMO_DE_VENDEDOR } from "@/lib/precios";
 
 export type EstadoEmbajador = { error?: string; ok?: string };
 
@@ -140,4 +141,68 @@ export async function borrarProspecto(datos: FormData) {
 
   if (error) console.error("No se pudo borrar el prospecto:", error);
   revalidatePath("/ventas");
+}
+
+/**
+ * Un cupón propio (migración 000073): el código y el % que el vendedor quiera,
+ * de 1 a 50, hasta tres activos. Las reglas —el tope, que el código no exista,
+ * que no se edite— las pone la base; aquí solo se arma y se explica.
+ */
+export async function crearCuponDeVendedor(
+  _previo: EstadoEmbajador & { valores?: { codigo: string; porcentaje: string } },
+  datos: FormData,
+): Promise<EstadoEmbajador & { valores?: { codigo: string; porcentaje: string } }> {
+  const perfil = await exigirSesion();
+
+  const valores = {
+    codigo: (datos.get("codigo")?.toString() ?? "").trim(),
+    porcentaje: (datos.get("porcentaje")?.toString() ?? "").trim(),
+  };
+  const porcentaje = Number(valores.porcentaje);
+
+  if (!Number.isInteger(porcentaje) || porcentaje < 1 || porcentaje > DESCUENTO_MAXIMO_DE_VENDEDOR) {
+    return { error: `El descuento va de 1 a ${DESCUENTO_MAXIMO_DE_VENDEDOR}%, sin decimales.`, valores };
+  }
+
+  const supabase = await crearClienteServidor();
+  const { error } = await supabase
+    .from("cupones_de_vendedor")
+    .insert({ embajador_id: perfil.id, codigo: valores.codigo, porcentaje });
+
+  if (error) {
+    return {
+      error:
+        error.code === "P0001"
+          ? error.message
+          : error.code === "42501"
+            ? "Solo una cuenta de ventas activa crea cupones."
+            : "No se pudo crear el cupón. Inténtalo de nuevo.",
+      valores,
+    };
+  }
+
+  revalidatePath("/ventas");
+  return { ok: `Listo: ${valores.codigo.toUpperCase()} da ${porcentaje}% en el primer pago.` };
+}
+
+/** Desactiva un cupón, o lo vuelve a encender si hay lugar (tope de tres). */
+export async function cambiarCuponDeVendedor(
+  _previo: EstadoEmbajador,
+  datos: FormData,
+): Promise<EstadoEmbajador> {
+  const perfil = await exigirSesion();
+
+  const supabase = await crearClienteServidor();
+  const { error } = await supabase
+    .from("cupones_de_vendedor")
+    .update({ activo: datos.get("activo") === "1" })
+    .eq("id", datos.get("cupon_id")?.toString() ?? "")
+    .eq("embajador_id", perfil.id);
+
+  if (error) {
+    return { error: error.code === "P0001" ? error.message : "No se pudo cambiar. Inténtalo de nuevo." };
+  }
+
+  revalidatePath("/ventas");
+  return { ok: "Listo" };
 }

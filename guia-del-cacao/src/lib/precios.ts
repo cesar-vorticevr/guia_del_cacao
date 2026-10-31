@@ -70,6 +70,8 @@ export function ofertaDeEmbajador(
   codigo: string,
   nombre: string,
   tipo: "descuento" | "destacado" = "descuento",
+  /** El % de un cupón del vendedor (000073); el código fijo da el de siempre. */
+  porcentaje: number = DESCUENTO_DE_EMBAJADOR,
 ): Oferta {
   if (tipo === "destacado") {
     return {
@@ -87,9 +89,9 @@ export function ofertaDeEmbajador(
 
   return {
     codigo,
-    descripcion: `Código de ${nombre}, asesor de la Guía: ${DESCUENTO_DE_EMBAJADOR}% de descuento en tu primer pago.`,
+    descripcion: `Código de ${nombre}, asesor de la Guía: ${porcentaje}% de descuento en tu primer pago.`,
     basicoGratisHasta: null,
-    descuento: DESCUENTO_DE_EMBAJADOR,
+    descuento: porcentaje,
     planId: null,
     cubreHasta: null,
     quedan: null,
@@ -115,6 +117,20 @@ export const DIAS_GRATIS = 15;
  */
 export const DESCUENTO_DE_EMBAJADOR = 15;
 export const COMISION_DE_EMBAJADOR = 25;
+
+/**
+ * Los cupones propios del vendedor (migración 000073): hasta tres activos, de
+ * 1 a 50%. La base los tiene en `tope_de_cupones_de_vendedor()` y en el
+ * `check` de `cupones_de_vendedor.porcentaje`.
+ */
+export const TOPE_DE_CUPONES_DE_VENDEDOR = 3;
+
+/**
+ * Lo que cuesta el Pro al mes, para las cuentas del panel de ventas (el kit y
+ * los cupones). La base lo tiene en `tiers` (000059): si cambia, cambia aquí.
+ */
+export const PRECIO_PRO = 499;
+export const DESCUENTO_MAXIMO_DE_VENDEDOR = 50;
 
 /**
  * Cuánto dura un negocio en «Destacados» desde que pone el código destacado de
