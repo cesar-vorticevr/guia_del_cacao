@@ -37,6 +37,7 @@ import { listaDeContacto } from "@/lib/redes";
 import { tarjetaSocial } from "@/lib/compartir";
 import { IconoSobre } from "@/components/iconos";
 import { escribirAMarca } from "@/lib/buzon/acciones";
+import { sucursalVende } from "@/lib/datos/pedidos";
 
 export async function generateMetadata({
   params,
@@ -144,6 +145,10 @@ export default async function Micrositio({
   const esDemo = Boolean(sucursal.marcas?.es_demo);
   const miGiro = girable && participa && !esDemo ? await miGiroEn(sucursal.id) : null;
   const yaGiro = miGiro !== null && !miGiro.puedeGirar;
+
+  // Pedidos (000071): el carrito sale si la sucursal vende —plan pagado y
+  // datos de pago, lo decide la base— y nunca a su dueño.
+  const vende = !esDuenio && productos.length > 0 && (await sucursalVende(sucursal.id));
 
   let misEstrellas: number | null = null;
   let resenaPropia: Awaited<ReturnType<typeof miResena>> = null;
@@ -506,6 +511,16 @@ export default async function Micrositio({
             `urlImagen` se traería con él el cliente de Supabase de servidor.
           */}
           <CatalogoPublico
+            pedido={
+              vende
+                ? {
+                    sucursalId: sucursal.id,
+                    slug,
+                    negocio: sucursal.marcas?.nombre_comercial ?? sucursal.nombre_sucursal,
+                    conSesion: Boolean(perfil),
+                  }
+                : null
+            }
             productos={productos.map((producto) => ({
               id: producto.id,
               nombre: producto.nombre,

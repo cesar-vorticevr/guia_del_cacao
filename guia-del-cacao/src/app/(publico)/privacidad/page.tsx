@@ -21,8 +21,9 @@ export const metadata: Metadata = {
  * y que hay que **corregir aquí el día que dejen de serlo**:
  *
  * - Las tarjetas no pasan por la Guía: sin llaves de Stripe no hay pago en
- *   línea, y con ellas la tarjeta la captura Stripe Checkout en su página. La
- *   única cuenta bancaria guardada es la CLABE de los embajadores (000059).
+ *   línea, y con ellas la tarjeta la captura Stripe Checkout en su página. Las
+ *   únicas cuentas bancarias guardadas son la CLABE de los embajadores (000059)
+ *   y la de cobro de cada negocio (`datos_de_pago`, 000071).
  *   El texto se pinta desde `PAGO_SIMULADO`, igual que en las condiciones.
  * - La única medición es la propia (migración 000052, `lib/actividad.ts`):
  *   conteos sin nada que diga quién, sin cookies y sin terceros. No hay Google
@@ -122,10 +123,13 @@ export default function Privacidad() {
           {PAGO_SIMULADO
             ? "No hay pago en línea en la plataforma, así que aquí no se captura ni se guarda ningún número de tarjeta."
             : "Los negocios que pagan un plan lo hacen en la página de Stripe: la tarjeta la captura y la guarda Stripe, y la Guía del Cacao solo recibe la confirmación del pago, nunca el número de tarjeta."}{" "}
-          La única cuenta bancaria que guardamos es la{" "}
+          Las únicas cuentas bancarias que guardamos son la{" "}
           <strong className="text-selva-2">CLABE de los Embajadores del Cacao</strong>,
           con el nombre del titular y el banco, que ellos mismos nos dan para
-          transferirles sus comisiones. Solo la ven ellos y el administrador.
+          transferirles sus comisiones (solo la ven ellos y el administrador), y la{" "}
+          <strong className="text-selva-2">CLABE que un negocio anota para cobrar sus pedidos</strong>.
+          Esa la ve el negocio, el administrador y, solo cuando el negocio confirma un
+          pedido, la persona que lo hizo, para poder transferirle.
         </li>
         <li>
           <strong className="text-selva-2">

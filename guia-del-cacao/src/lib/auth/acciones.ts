@@ -225,6 +225,13 @@ export async function iniciarSesion(
   // todos los perfiles, así que la consulta devuelve varias filas.
   const perfil = await perfilActual();
 
+  // Si venía de una pantalla que pedía sesión —«Entra para pedir» en un
+  // micrositio, el buzón— vuelve ahí, igual que con Google. Solo rutas de
+  // este sitio, y solo con el rol ya elegido: sin rol, lo primero es elegirlo.
+  const pedido = texto(datos, "volver");
+  const volver = pedido.startsWith("/") && !pedido.startsWith("//") ? pedido : null;
+  if (volver && perfil?.rol_confirmado) redirect(volver);
+
   redirect(perfil ? await destinoAlEntrar(perfil) : "/cuenta");
 }
 

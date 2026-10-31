@@ -3,6 +3,7 @@ import { BarraSesion } from "@/components/barra-sesion";
 import { PestanasDelPanel } from "@/components/negocio/pestanas-del-panel";
 import { solicitudesPorSucursal } from "@/lib/datos/notificaciones";
 import { mensajesSinLeer } from "@/lib/datos/buzon";
+import { pedidosPorAtender } from "@/lib/datos/pedidos";
 import { catalogoDeMarca } from "@/lib/datos/catalogo";
 import { cuposLibres, misCupones, TOPE_CUPONES } from "@/lib/datos/cupones";
 import { misSucursales } from "@/lib/datos/sucursales";
@@ -53,11 +54,12 @@ export default async function LayoutDelPanel({
 
   const marca = marcas[0];
 
-  const [sucursales, catalogo, solicitudes, sinLeer] = await Promise.all([
+  const [sucursales, catalogo, solicitudes, sinLeer, pedidos] = await Promise.all([
     misSucursales(perfil.id),
     catalogoDeMarca(marca.id),
     solicitudesPorSucursal(),
     mensajesSinLeer(),
+    pedidosPorAtender(),
   ]);
 
   // En la pestaña se cuentan los vigentes, no todos: los caducados no ocupan
@@ -103,6 +105,7 @@ export default async function LayoutDelPanel({
             cupones={vigentes}
             monedasPendientes={monedasPendientes}
             monedasNuevas={monedasNuevas}
+            pedidos={pedidos}
             empezando={empezando}
           />
         </div>

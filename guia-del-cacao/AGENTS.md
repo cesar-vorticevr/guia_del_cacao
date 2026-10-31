@@ -1004,9 +1004,9 @@ lo que aceptaste sigue vigente.
 Tres afirmaciones se comprobaron en el repositorio antes de escribirlas, y **hay
 que corregir la pagina el dia que dejen de ser ciertas**:
 
-- **No hay datos de tarjeta.** Las cobra Stripe en su página. La única cuenta
-  bancaria guardada es la **CLABE de los embajadores** (000059), y el aviso lo
-  dice.
+- **No hay datos de tarjeta.** Las cobra Stripe en su página. Las únicas
+  cuentas bancarias guardadas son la **CLABE de los embajadores** (000059) y la
+  **de cobro de cada negocio** (`datos_de_pago`, 000071), y el aviso lo dice.
 - **No hay analitica ni cookies de publicidad.** Tampoco Vercel Analytics.
 - **El cobro es simulado.** `src/lib/pagos.ts` siempre aprueba y no hace ningun
   cargo. Por eso el apartado de cobro de las condiciones **se pinta desde
@@ -1718,3 +1718,51 @@ cambió, solo mira que haya un referido.
   qué código usó cada negocio), en el kit de venta («¿Descuento o
   destacado?»), y en `/admin/embajadores` y su detalle.
 - La prueba es la 29.
+
+## Pedidos con pago por transferencia (migración 000071)
+
+Desde el 31 de octubre de 2026 un cliente con cuenta pide desde el catálogo de
+un micrositio y el negocio lo atiende en **Pedidos** de su panel. **La Guía no
+cobra, no guarda el dinero ni cobra comisión**: el cliente le transfiere
+directo al negocio, a la CLABE que este anotó. La conversación es la del buzón
+(000069): el pedido se cuelga de ella (`pedidos.conversacion_id`) y cada paso
+deja ahí su mensaje.
+
+- **Lo que la plataforma no puede asegurar —que el producto exista— lo
+  resuelve el orden de los pasos.** `nuevo` → el negocio **confirma** que lo
+  tiene y fija el total (envío incluido, y obligatorio si hay productos sin
+  precio) → **solo entonces** el cliente ve la CLABE, y le llega al chat →
+  el cliente avisa «Ya transferí» (`aviso_de_pago_en`, no cambia el estado)
+  → el negocio marca **pagado** al verlo en su banco → **entregado**. Para
+  recoger, `confirmado` puede ir directo a `entregado` (pagó en tienda).
+  Cancela el cliente mientras no esté pagado; el negocio hasta entregarlo y
+  siempre con motivo.
+- **Vende quien paga.** `por_que_no_vende(sucursal)` (texto, como
+  `que_le_falta_al_micrositio`) exige sucursal publicada, que no sea demo,
+  suscripción `activo` en un plan con `precio_mensual > 0` —**la prueba Gratis
+  no vende**— y datos de pago con `recibe_pedidos`. Se deriva, no se guarda:
+  al vencer el plan deja de vender solo. `sucursal_vende` es el booleano que
+  pregunta el micrositio para enseñar el carrito.
+- **Todo cambio pasa por funciones** (`hacer_pedido`, `cambiar_estado_pedido`,
+  `avisar_pago_de_pedido`, `mandar_datos_de_pago`): `pedidos` y
+  `pedido_productos` solo tienen `select`. Los renglones guardan nombre y
+  precio del día; un producto borrado deja el renglón con `producto_id` null.
+- **La CLABE solo la ve su dueño** por RLS. El cliente la recibe por
+  `mis_pedidos()` y solo con el pedido confirmado; una política de lectura para
+  clientes dejaría leer la de cualquier negocio al que alguna vez le pidieron.
+  `clabe_valida` revisa el dígito de control al guardarla.
+- `mis_pedidos(lado, conversacion)` filtra por quien pregunta (RLS deja pasar
+  al administrador) y trae renglones, nombre de la otra parte y pago.
+  `pedidos_por_atender()` es el número de la pestaña.
+- Un cliente no apila más de **tres** pedidos `nuevo` en el mismo negocio.
+- Pantallas: carrito en `CatalogoPublico` (prop `pedido`; sin sesión invita a
+  entrar en vez de armar un carrito que se pierde), `/pedidos` para el
+  cliente (enlazada desde `/cuenta`), `/negocio/panel/pedidos` con los datos
+  de pago y quién vende, y las tarjetas arriba de la conversación en
+  `/buzon/[id]` con «Mandar mis datos de pago» para el negocio. La tarjeta es
+  una sola (`TarjetaPedido`) con los botones del lado de quien mira.
+- **El login con contraseña ahora respeta `?volver=`**, como ya lo hacía
+  Google: «Entra para pedir» regresa al micrositio.
+- Las llaves de personas van a `auth.users`, no a `perfiles`. La prueba es la
+  30 (los folios saltan entre corridas: una identidad no se devuelve al
+  deshacer la transacción).

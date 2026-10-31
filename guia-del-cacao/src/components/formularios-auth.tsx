@@ -53,11 +53,12 @@ function opcionesDe(categorias: Categoria[]) {
   ];
 }
 
-export function FormularioLogin() {
+export function FormularioLogin({ volver = null }: { volver?: string | null }) {
   const [estado, accion] = useActionState(iniciarSesion, INICIAL);
 
   return (
     <form action={accion} className="grid gap-4">
+      {volver && <input type="hidden" name="volver" value={volver} />}
       <Aviso>{estado.error}</Aviso>
       <Campo nombre="correo" etiqueta="Correo" tipo="email" autoComplete="email" />
       <Campo

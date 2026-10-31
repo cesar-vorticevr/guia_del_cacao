@@ -31,7 +31,7 @@ export default async function Login({
         </Aviso>
       )}
 
-      <FormularioLogin />
+      <FormularioLogin volver={volver ?? null} />
 
       <p className="text-center">
         <Link href="/recuperar" className="font-bold text-selva underline">

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { VisorDeFotos } from "@/components/publico/visor-de-fotos";
+import { BarraDelPedido, BotonAgregar, type Carrito } from "@/components/pedidos/carrito";
 import { pesos } from "@/lib/tipos";
 
 export type ProductoDelCatalogo = {
@@ -31,12 +33,29 @@ export type ProductoDelCatalogo = {
  * la portada: es la única forma de ver un producto en grande, porque no tienen
  * página propia.
  */
+/**
+ * Con `pedido`, el catálogo vende: cada tarjeta lleva «Agregar» y abajo sale la
+ * barra del pedido (migración 000071). Solo llega si la sucursal recibe
+ * pedidos —plan pagado y datos de pago—; sin sesión, en su lugar se invita a
+ * entrar, para no armar un carrito que se pierde al pasar por el login.
+ */
+export type PedidoEnCatalogo = {
+  sucursalId: string;
+  slug: string;
+  negocio: string;
+  conSesion: boolean;
+};
+
 export function CatalogoPublico({
   productos,
+  pedido,
 }: {
   productos: ProductoDelCatalogo[];
+  pedido?: PedidoEnCatalogo | null;
 }) {
   const [abierta, setAbierta] = useState<number | null>(null);
+  const [carrito, setCarrito] = useState<Carrito>({});
+  const vende = Boolean(pedido?.conSesion);
 
   // Solo los que tienen foto entran al visor, y se guarda a qué producto
   // corresponde cada índice: si se pasaran todos, las flechas caerían en huecos
@@ -47,6 +66,16 @@ export function CatalogoPublico({
 
   return (
     <>
+      {pedido && !pedido.conSesion && (
+        <Link
+          href={`/login?volver=${encodeURIComponent(`/marca/${pedido.slug}`)}`}
+          className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border-2 border-mango/50 bg-white px-4 py-3 font-bold text-selva-2 hover:border-mango"
+        >
+          <span>Este negocio recibe pedidos aquí.</span>
+          <span className="text-mango">Entra para pedir →</span>
+        </Link>
+      )}
+
       <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {productos.map((producto) => (
           <li
@@ -105,12 +134,35 @@ export function CatalogoPublico({
                   {pesos(producto.precio)}
                 </span>
               )}
+
+              {vende && (
+                <span className={producto.precio === null ? "mt-auto" : undefined}>
+                  <BotonAgregar
+                    nombre={producto.nombre}
+                    cantidad={carrito[producto.id] ?? 0}
+                    alCambiar={(cantidad) =>
+                      setCarrito((antes) => ({ ...antes, [producto.id]: cantidad }))
+                    }
+                  />
+                </span>
+              )}
             </span>
           </li>
         ))}
       </ul>
 
       <VisorDeFotos fotos={fotos} abierta={abierta} alCambiar={setAbierta} />
+
+      {vende && pedido && (
+        <BarraDelPedido
+          sucursalId={pedido.sucursalId}
+          slug={pedido.slug}
+          negocio={pedido.negocio}
+          productos={productos}
+          carrito={carrito}
+          alVaciar={() => setCarrito({})}
+        />
+      )}
     </>
   );
 }

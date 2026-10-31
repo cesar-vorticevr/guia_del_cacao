@@ -56,6 +56,18 @@ export default async function Cuenta({
 
       <AccesoAlBuzon sinLeer={await mensajesSinLeer()} />
 
+      {/* Pedidos a negocios (000071): cada uno lleva a su conversación. */}
+      <Link
+        href="/pedidos"
+        className="tarjeta-magica flex flex-wrap items-center justify-between gap-3 rounded-3xl border-2 border-mango/40 bg-white px-6 py-5"
+      >
+        <span>
+          <span className="antetitulo">Pedidos</span>
+          <strong className="mt-1 block font-display text-xl">Lo que pediste a los negocios</strong>
+        </span>
+        <span className="font-bold text-mango">Ver tus pedidos →</span>
+      </Link>
+
       <Pestanas
         base="/cuenta"
         actual={seccion}

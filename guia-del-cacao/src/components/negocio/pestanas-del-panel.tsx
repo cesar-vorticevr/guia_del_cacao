@@ -23,6 +23,7 @@ export function PestanasDelPanel({
   cupones,
   monedasPendientes,
   monedasNuevas,
+  pedidos,
   empezando,
 }: {
   sucursales: number;
@@ -31,6 +32,8 @@ export function PestanasDelPanel({
   cupones: number;
   monedasPendientes: number;
   monedasNuevas: boolean;
+  /** Pedidos nuevos, sin confirmar (000071). */
+  pedidos: number;
   /** Todavía no hay ninguna sucursal: el panel es el recorrido de alta. */
   empezando: boolean;
 }) {
@@ -63,7 +66,9 @@ export function PestanasDelPanel({
     donde se lee, en /eventos y en /comunidad, y no en un cuarto aparte que
     obligaba a salir del sitio público para escribir sobre él.
   */
-  const actual = ruta.startsWith("/negocio/panel/monedas")
+  const actual = ruta.startsWith("/negocio/panel/pedidos")
+    ? "pedidos"
+    : ruta.startsWith("/negocio/panel/monedas")
     ? "mazorcas"
     : ruta.startsWith("/negocio/panel/cupones")
       ? "cupones"
@@ -93,6 +98,15 @@ export function PestanasDelPanel({
           texto: "Catálogo",
           href: "/negocio/panel/catalogo",
           cuenta: catalogo,
+        },
+        // Pedidos con pago por transferencia (000071). El número son los
+        // nuevos, que esperan a que el negocio confirme.
+        {
+          clave: "pedidos",
+          texto: "Pedidos",
+          href: "/negocio/panel/pedidos",
+          cuenta: pedidos || undefined,
+          destella: pedidos > 0,
         },
         // La Ruleta Mágica (migración 000060). Desde la 000066 cualquiera la
         // arma; que se vea en el micrositio es del plan Pro.

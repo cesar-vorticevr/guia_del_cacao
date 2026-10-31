@@ -7,6 +7,9 @@ import { perfilActual } from "@/lib/auth/sesion";
 import { tipoDeCuenta } from "@/lib/buzon/textos";
 import { conversacionDe, marcarConversacionLeida, misReportesEn } from "@/lib/datos/buzon";
 import { haceCuanto } from "@/lib/tiempo";
+import { TarjetaPedido } from "@/components/pedidos/tarjeta-pedido";
+import { misPedidos, tengoDatosDePago } from "@/lib/datos/pedidos";
+import { mandarDatosDePago } from "@/lib/pedidos/acciones";
 
 export const metadata: Metadata = { title: "Conversación · Buzón · Guía del Cacao" };
 
@@ -48,10 +51,16 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
   const otro = conversacion.participantes.find((p) => p.usuario_id !== perfil.id);
   const moderando = !yo;
 
-  const [reportes] = await Promise.all([
+  const [reportes, , pedidos, conDatosDePago] = await Promise.all([
     moderando ? Promise.resolve(null) : misReportesEn(id, perfil.id),
     moderando ? Promise.resolve() : marcarConversacionLeida(id),
+    // Los pedidos entre estos dos (000071) van arriba del chat: es donde se
+    // habla de ellos. El administrador no tiene pedidos aquí.
+    moderando ? Promise.resolve([]) : misPedidos(null, id),
+    !moderando && perfil.rol === "negocio" ? tengoDatosDePago() : Promise.resolve(false),
   ]);
+  const pedidosAbiertos = pedidos.filter((p) => p.estado !== "entregado" && p.estado !== "cancelado");
+  const pedidosCerrados = pedidos.filter((p) => !pedidosAbiertos.includes(p));
 
   const nombres = new Map(conversacion.participantes.map((p) => [p.usuario_id, p.nombre]));
   const otroEscribio = conversacion.mensajes.some((m) => m.autor_id !== perfil.id);
@@ -95,6 +104,27 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
           Estás leyendo esta conversación como administrador, para moderarla. Ninguna
           de las dos partes ve que la abriste, y aquí no puedes escribir.
         </p>
+      )}
+
+      {pedidosAbiertos.length > 0 && (
+        <section className="grid gap-3" aria-label="Pedidos en curso">
+          {pedidosAbiertos.map((pedido) => (
+            <TarjetaPedido key={pedido.id} pedido={pedido} cuando={haceCuanto(pedido.creado_en)} enChat />
+          ))}
+        </section>
+      )}
+
+      {pedidosCerrados.length > 0 && (
+        <details className="rounded-3xl border-2 border-ink/10 bg-white p-4 text-cacao">
+          <summary className="cursor-pointer font-bold text-selva-2">
+            {pedidosCerrados.length === 1 ? "Un pedido anterior" : `${pedidosCerrados.length} pedidos anteriores`}
+          </summary>
+          <div className="mt-3 grid gap-3">
+            {pedidosCerrados.map((pedido) => (
+              <TarjetaPedido key={pedido.id} pedido={pedido} cuando={haceCuanto(pedido.creado_en)} enChat />
+            ))}
+          </div>
+        </details>
       )}
 
       <ol className="grid gap-3" aria-label="Mensajes">
@@ -152,6 +182,23 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
           );
         })}
       </ol>
+
+      {/*
+        El negocio manda sus datos para transferir con un botón, en vez de
+        teclear la CLABE (y equivocarse en un dígito). Al confirmar un pedido
+        ya se mandan solos.
+      */}
+      {conDatosDePago && (
+        <form action={mandarDatosDePago} className="justify-self-end">
+          <input type="hidden" name="conversacion_id" value={id} />
+          <button
+            type="submit"
+            className="rounded-full border-2 border-mango/40 bg-white px-4 py-2 text-sm font-bold text-selva-2 hover:border-mango hover:text-mango"
+          >
+            Mandar mis datos de pago
+          </button>
+        </form>
+      )}
 
       {!moderando && <EscribirMensaje conversacionId={id} />}
     </div>

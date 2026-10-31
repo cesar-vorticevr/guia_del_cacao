@@ -192,6 +192,37 @@ export default function Terminos() {
         por ahí mismo: lo revisamos.
       </p>
 
+      <h2 className="mt-8 font-display text-2xl">Pedidos a los negocios</h2>
+      <p className="mt-3 text-cacao">
+        Algunos negocios reciben pedidos desde su catálogo. Para pedir necesitas
+        una cuenta. El trato es{" "}
+        <strong className="text-selva-2">entre tú y el negocio</strong>:
+      </p>
+      <ul className="mt-3 grid gap-2 text-cacao">
+        <li>
+          <strong className="text-selva-2">La Guía del Cacao no cobra, no guarda tu dinero y no
+          vende nada.</strong>{" "}
+          Pagas por transferencia directo a la cuenta que el negocio anotó. No
+          cobramos comisión por los pedidos.
+        </li>
+        <li>
+          <strong className="text-selva-2">No pagues antes de que el negocio confirme.</strong>{" "}
+          Primero confirma que tiene el producto y te dice el total; hasta
+          entonces no ves a dónde transferir. Antes de mandar, revisa que el
+          titular de la cuenta sea el de ese negocio.
+        </li>
+        <li>
+          El negocio responde por su producto, su precio, su envío y las
+          devoluciones. Solo reciben pedidos los negocios con un plan pagado.
+        </li>
+        <li>
+          Lo que se habla queda en el buzón y no se borra. Si algo no cuadra —un
+          cobro sin entrega, datos que no coinciden—, repórtalo desde la
+          conversación: la administración lo revisa y puede sacar al negocio del
+          directorio.
+        </li>
+      </ul>
+
       <h2 className="mt-8 font-display text-2xl">De quién es lo que publicas</h2>
       <p className="mt-3 text-cacao">
         <strong className="text-selva-2">Tuyo.</strong> Lo que escribes y las
