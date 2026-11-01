@@ -1,0 +1,191 @@
+/* Hojas a sangre sobre crema; contenido en columna de 960 px; cada .hoja es una página carta al imprimir. */
+:root {
+  --crema: #fff7e8;
+  --crema-2: #fdeecb;
+  --selva: #106b46;
+  --selva-2: #0c5236;
+  --lima: #a8d94a;
+  --mango: #ffb703;
+  --guayaba: #ff5d73;
+  --turquesa: #12b8ac;
+  --cacao: #4a2c1d;
+  --ink: #22150e;
+  --ink-suave: #5b4436;
+  --linea: rgb(74 44 29 / 0.14);
+  --dura: 0 4px 0 0 rgb(12 82 54 / 0.15);
+  --dura-alta: 0 7px 0 0 rgb(12 82 54 / 0.18);
+  --display: "Fredoka", "Trebuchet MS", ui-rounded, system-ui, sans-serif;
+  --texto: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --mono: "Space Mono", ui-monospace, "Cascadia Mono", monospace;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body {
+  margin: 0;
+  background: var(--crema);
+  color: var(--ink);
+  font-family: var(--texto);
+  font-size: 16px;
+  line-height: 1.55;
+}
+img { max-width: 100%; display: block; }
+
+.hoja {
+  position: relative;
+  overflow: hidden;
+  padding-inline: max(16px, 5vw);
+  padding-block: 72px;
+}
+.col { max-width: 960px; margin-inline: auto; position: relative; z-index: 1; }
+
+.hoja.selva { background: var(--selva); color: var(--crema); }
+.hoja.selva-2 { background: var(--selva-2); color: var(--crema); }
+.hoja.mango { background: var(--mango); color: var(--ink); }
+.hoja.crema-2 { background: var(--crema-2); }
+.hoja.cacao { background: var(--cacao); color: var(--crema); }
+
+.ceja {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--selva);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+.ceja .n {
+  display: inline-grid;
+  place-items: center;
+  min-width: 30px;
+  height: 22px;
+  padding-inline: 6px;
+  border-radius: 999px;
+  background: var(--selva);
+  color: var(--crema);
+  font-size: 11px;
+}
+.selva .ceja, .selva-2 .ceja, .cacao .ceja { color: var(--lima); }
+.selva .ceja .n, .selva-2 .ceja .n, .cacao .ceja .n { background: var(--lima); color: var(--selva-2); }
+.mango .ceja { color: var(--cacao); }
+.mango .ceja .n { background: var(--cacao); color: var(--mango); }
+
+h1, h2, h3, h4 { font-family: var(--display); font-weight: 600; margin: 0; text-wrap: balance; line-height: 1.08; }
+h1 { font-size: clamp(44px, 7vw, 76px); letter-spacing: -0.01em; }
+h2 { font-size: clamp(32px, 4.6vw, 48px); color: var(--selva-2); }
+h3 { font-size: 22px; color: var(--selva-2); }
+h4 { font-size: 17px; }
+.selva h2, .selva-2 h2, .cacao h2, .selva h3, .selva-2 h3, .cacao h3 { color: var(--crema); }
+.mango h2, .mango h3 { color: var(--ink); }
+
+p { margin: 0; }
+.lead { font-size: 19px; line-height: 1.55; max-width: 62ch; color: var(--ink-suave); }
+.selva .lead, .selva-2 .lead, .cacao .lead { color: rgb(255 247 232 / 0.86); }
+.mango .lead { color: var(--cacao); }
+.chico { font-size: 13px; color: var(--ink-suave); }
+.selva .chico, .selva-2 .chico, .cacao .chico { color: rgb(255 247 232 / 0.7); }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+.cabeza { display: grid; gap: 14px; margin-bottom: 40px; }
+
+/* Rejillas */
+.rej { display: grid; gap: 20px; }
+.rej-2 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); }
+.rej-3 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); }
+.rej-4 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
+.rej > * { min-width: 0; }
+
+/* Tarjeta con sombra dura: la única sombra del sistema */
+.tarjeta {
+  background: #fffdf8;
+  border: 2px solid var(--linea);
+  border-radius: 22px;
+  padding: 22px;
+  box-shadow: var(--dura);
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+.selva .tarjeta, .selva-2 .tarjeta, .cacao .tarjeta { background: rgb(255 247 232 / 0.08); border-color: rgb(255 247 232 / 0.18); box-shadow: none; color: var(--crema); }
+.tarjeta p { color: var(--ink-suave); }
+.selva .tarjeta p, .selva-2 .tarjeta p, .cacao .tarjeta p { color: rgb(255 247 232 / 0.8); }
+
+.punto { width: 14px; height: 14px; border-radius: 50%; display: inline-block; flex: none; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: 0 3px 0 0 rgb(34 21 14 / 0.18);
+  white-space: nowrap;
+}
+
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 26px;
+  border-radius: 999px;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 17px;
+  text-decoration: none;
+  box-shadow: var(--dura-alta);
+}
+.boton.selva { background: var(--selva); color: var(--crema); }
+.boton.mango { background: var(--mango); color: var(--ink); }
+.boton.claro { background: #fffdf8; color: var(--selva-2); border: 2px solid var(--linea); }
+
+/* Teléfono: marco simple, el contenido manda */
+.tel {
+  border-radius: 34px;
+  border: 8px solid var(--ink);
+  background: var(--ink);
+  overflow: hidden;
+  box-shadow: 0 8px 0 0 rgb(12 82 54 / 0.22);
+  aspect-ratio: 500 / 900;
+  max-width: 100%;
+}
+.tel img { width: 100%; height: 100%; object-fit: cover; object-position: top; border-radius: 26px; }
+
+.pie-hoja {
+  margin-top: 40px;
+  padding-top: 14px;
+  border-top: 2px dashed var(--linea);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-suave);
+}
+.selva .pie-hoja, .selva-2 .pie-hoja, .cacao .pie-hoja { color: rgb(255 247 232 / 0.6); border-color: rgb(255 247 232 / 0.2); }
+
+.deco { position: absolute; pointer-events: none; z-index: 0; }
+
+table { border-collapse: collapse; width: 100%; }
+.tabla-env { overflow-x: auto; }
+
+@page { size: 8.5in 11in; margin: 0; }
+/* Para el PDF (construir.mjs abre la página con ?pdf): cada hoja mide una carta
+   exacta y, si su contenido no cabe, el script lo reduce hasta que quepa. */
+html.pdf body { width: 8.5in; font-size: 14px; }
+html.pdf .hoja { break-before: page; height: 11in; min-height: 0; padding: 0.6in; display: block; }
+html.pdf .hoja:first-of-type { break-before: auto; }
+html.pdf .portada { display: grid; }
+html.pdf .lead { font-size: 16.5px; }
+html.pdf h1 { font-size: 64px; }
+html.pdf h2 { font-size: 38px; }
+html.pdf .cabeza { margin-bottom: 26px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

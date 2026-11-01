@@ -4,8 +4,21 @@
     {
       "name": "guia-del-cacao",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "guia-del-cacao", "run", "dev"],
+      "runtimeArgs": [
+        "--prefix",
+        "guia-del-cacao",
+        "run",
+        "dev"
+      ],
       "port": 3000
+    },
+    {
+      "name": "selva-vortice",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "C:/Users/ladce/OneDrive/Documentos/selva_vortice_vr/servidor.js"
+      ],
+      "port": 5180
     }
   ]
 }

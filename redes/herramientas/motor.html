@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Motor de piezas · Guía del Cacao</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Plus+Jakarta+Sans:wght@500;700;800&family=Space+Mono:wght@700&display=block">
+<style>html,body{margin:0;background:#08150f}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="lienzo"></canvas>
+<script>
+// Pinta una pieza de redes sobre la noche de la selva, igual que el sitio.
+// render.mjs la abre, llama a prepararPieza() y luego pide cuadros con pintar(t).
+
+const CREMA = "#fff7e8";
+const CACAO = "#4a2c1d";
+const ORO = ["#ffb703", "#ffe9a8", "#ffb703", "#ff8f3d", "#ffd166", "#ffb703"];
+
+const FORMATOS = {
+  feed: { w: 1080, h: 1350, kicker: 96, titulo: 74, linea: 84, sub: 34, tarjeta: [560, 1176], pie: 1210 },
+  story: { w: 1080, h: 1920, kicker: 250, titulo: 92, linea: 104, sub: 40, tarjeta: [800, 1500], pie: 1545 },
+};
+
+let F, P, ctx, img, logo, caja, fondoDeImagen = CREMA, deco = [], estrellas = [], luciernagas = [], hojas = [];
+
+function cargar(src) {
+  return new Promise((ok, mal) => { const i = new Image(); i.onload = () => ok(i); i.onerror = mal; i.src = src; });
+}
+
+// Números al azar con semilla: cada render de la misma pieza sale idéntico.
+function azar(semilla) {
+  let s = semilla >>> 0;
+  return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+}
+
+const easeOut = (x) => 1 - Math.pow(1 - x, 3);
+const easeBack = (x) => { const c = 1.7; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+const tramo = (t, a, d) => Math.max(0, Math.min(1, (t - a) / d));
+
+async function prepararPieza(pieza, formato) {
+  P = pieza; F = FORMATOS[formato];
+  const c = document.getElementById("lienzo");
+  c.width = F.w; c.height = F.h;
+  ctx = c.getContext("2d");
+  await document.fonts.load("700 80px Fraunces");
+  await document.fonts.load("italic 700 80px Fraunces");
+  await document.fonts.load("700 40px 'Plus Jakarta Sans'");
+  await document.fonts.load("800 40px 'Plus Jakarta Sans'");
+  await document.fonts.load("700 30px 'Space Mono'");
+  img = await cargar(P.ilustracion);
+  // La tarjeta toma el crema exacto de la esquina de la ilustración: ChatGPT
+  // nunca da el #fff7e8 justo, y la diferencia se ve como un recuadro.
+  const muestra = new OffscreenCanvas(1, 1).getContext("2d");
+  muestra.drawImage(img, 8, 8, 1, 1, 0, 0, 1, 1);
+  const [cr, cg, cb] = muestra.getImageData(0, 0, 1, 1).data;
+  fondoDeImagen = `rgb(${cr},${cg},${cb})`;
+
+  // Dónde está lo dibujado: filas y columnas que se apartan del fondo.
+  const lec = new OffscreenCanvas(img.width, img.height).getContext("2d", { willReadFrequently: true });
+  lec.drawImage(img, 0, 0);
+  const px = lec.getImageData(0, 0, img.width, img.height).data;
+  let x0 = img.width, x1 = 0, y0 = img.height, y1 = 0;
+  for (let y = 0; y < img.height; y += 2) for (let x = 0; x < img.width; x += 2) {
+    const i = (y * img.width + x) * 4;
+    if (Math.abs(px[i] - cr) + Math.abs(px[i + 1] - cg) + Math.abs(px[i + 2] - cb) > 60) {
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+    }
+  }
+  const mg = 30;
+  caja = P.recorte ? [0, P.recorte[0], img.width, P.recorte[1]]
+    : [Math.max(0, x0 - mg), Math.max(0, y0 - mg), Math.min(img.width, x1 + mg), Math.min(img.height, y1 + mg)];
+  logo = await cargar("/guia-del-cacao/public/marca/logotipo.png");
+  deco = await Promise.all(["hoja", "flores-de-cacao", "granos-de-cacao", "mazorca-amarilla", "mazorca-rosa"]
+    .map((n) => cargar(`/guia-del-cacao/public/parallax/${n}.png`)));
+
+  const r = azar(P.semilla || 7);
+  estrellas = Array.from({ length: 90 }, () => ({ x: r() * F.w, y: r() * F.h * 0.75, r: 0.8 + r() * 2.2, f: r() * 6.28, v: 0.6 + r() * 1.6 }));
+  luciernagas = Array.from({ length: 22 }, () => ({ x: r() * F.w, y: F.h * (0.25 + r() * 0.75), f: r() * 6.28, a: 18 + r() * 40, v: 0.3 + r() * 0.6 }));
+  // Las hojas caen por las orillas, para no pasar por encima de las letras.
+  hojas = Array.from({ length: 9 }, (_, i) => ({ d: i % deco.length, x: i % 2 ? r() * 90 : F.w - r() * 90, y0: r(), s: 70 + r() * 70, giro: r() * 6.28, vg: (r() - 0.5) * 1.2, v: 0.05 + r() * 0.05, mece: 20 + r() * 40 }));
+  return true;
+}
+
+function fondo(t) {
+  const g = ctx.createLinearGradient(0, 0, 0, F.h);
+  g.addColorStop(0, "#1b1036");
+  g.addColorStop(0.45, "#102a24");
+  g.addColorStop(1, "#08150f");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, F.w, F.h);
+
+  // Las tres auroras del sitio: guayaba, lima y oro, respirando despacio.
+  const auroras = [[0.18, 0.3, "255,93,115", 0.22], [0.85, 0.22, "168,217,74", 0.16], [0.5, 0.85, "255,183,3", 0.2]];
+  for (const [ax, ay, col, al] of auroras) {
+    const x = F.w * ax + Math.sin(t * 0.4 + ax * 9) * 60, y = F.h * ay + Math.cos(t * 0.3 + ay * 7) * 50;
+    const rad = F.w * 0.65;
+    const a = ctx.createRadialGradient(x, y, 0, x, y, rad);
+    a.addColorStop(0, `rgba(${col},${al})`); a.addColorStop(1, `rgba(${col},0)`);
+    ctx.fillStyle = a; ctx.fillRect(0, 0, F.w, F.h);
+  }
+
+  for (const e of estrellas) {
+    const al = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * e.v * 2 + e.f));
+    ctx.fillStyle = `rgba(255,247,232,${al * 0.9})`;
+    ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, 6.283); ctx.fill();
+  }
+}
+
+function hojasQueCaen(t) {
+  for (const h of hojas) {
+    const y = ((h.y0 + t * h.v) % 1.15) * F.h * 1.0 - 120;
+    const x = h.x + Math.sin(t * 1.1 + h.giro) * h.mece;
+    // Arriba están las letras: ahí la hoja casi se desvanece.
+    const zonaTexto = F.tarjeta[0] - 60;
+    ctx.save(); ctx.globalAlpha = y < zonaTexto ? 0.55 * Math.max(0.08, 1 - (zonaTexto - y) / 160) : 0.55;
+    ctx.translate(x, y); ctx.rotate(h.giro + t * h.vg);
+    ctx.drawImage(deco[h.d], -h.s / 2, -h.s / 2, h.s, h.s);
+    ctx.restore();
+  }
+}
+
+function luces(t) {
+  for (const l of luciernagas) {
+    const x = l.x + Math.sin(t * l.v + l.f) * l.a, y = l.y + Math.cos(t * l.v * 0.8 + l.f) * l.a * 0.7;
+    const al = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(t * 3 * l.v + l.f));
+    const g = ctx.createRadialGradient(x, y, 0, x, y, 18);
+    g.addColorStop(0, `rgba(255,225,120,${al})`); g.addColorStop(1, "rgba(255,183,3,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 18, 0, 6.283); ctx.fill();
+  }
+}
+
+function rectRedondo(x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+
+function oro(x0, x1, t) {
+  const g = ctx.createLinearGradient(x0 - 200 + Math.sin(t * 0.9) * 200, 0, x1 + 200 + Math.sin(t * 0.9) * 200, 0);
+  ORO.forEach((c, i) => g.addColorStop(i / (ORO.length - 1), c));
+  return g;
+}
+
+function tarjeta(t) {
+  const [y0, y1] = F.tarjeta;
+  const m = 64, w = F.w - m * 2, h = y1 - y0;
+  const k = easeBack(tramo(t, 0.15, 0.9));
+  const al = tramo(t, 0.15, 0.4);
+  if (al <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = al;
+  ctx.translate(F.w / 2, y0 + h / 2 + (1 - k) * 90);
+  ctx.scale(0.9 + 0.1 * k, 0.9 + 0.1 * k);
+  ctx.translate(-F.w / 2, -(y0 + h / 2));
+
+  // Aura dorada y filo de oro, como las tarjetas del catálogo.
+  ctx.shadowColor = "rgba(255,183,3,0.55)"; ctx.shadowBlur = 50;
+  rectRedondo(m, y0, w, h, 44); ctx.fillStyle = fondoDeImagen; ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.lineWidth = 7; ctx.strokeStyle = oro(m, m + w, t); ctx.stroke();
+
+  // La ilustración, recortada a lo dibujado, meciéndose un poco.
+  rectRedondo(m + 4, y0 + 4, w - 8, h - 8, 40); ctx.clip();
+  const [rx0, ry0, rx1, ry1] = caja;
+  const sw = rx1 - rx0, sh = ry1 - ry0, pad = 26;
+  const escala = Math.min((w - pad * 2) / sw, (h - pad * 2) / sh);
+  const dw = sw * escala, dh = sh * escala;
+  const cx = F.w / 2, base = y0 + h - pad;
+  ctx.translate(cx, base);
+  ctx.rotate(Math.sin(t * 1.3) * 0.018);
+  const bob = Math.sin(t * 1.9) * 6;
+  // Centrada en lo alto de la tarjeta, no pegada abajo.
+  const sube = (h - pad * 2 - dh) / 2;
+  ctx.drawImage(img, rx0, ry0, sw, sh, -dw / 2, -dh - sube + bob, dw, dh);
+  ctx.restore();
+
+  // Chispas que brotan al aparecer la tarjeta.
+  const ch = tramo(t, 0.7, 1.4);
+  if (ch > 0 && ch < 1) {
+    const r = azar(99);
+    for (let i = 0; i < 26; i++) {
+      const ang = r() * 6.283, dist = (140 + r() * 380) * easeOut(ch);
+      const x = F.w / 2 + Math.cos(ang) * dist * 1.2, y = y0 + h / 2 + Math.sin(ang) * dist;
+      ctx.fillStyle = `rgba(255,${200 + r() * 55 | 0},${80 + r() * 80 | 0},${1 - ch})`;
+      estrella(x, y, 6 + r() * 10, ang + ch * 4);
+    }
+  }
+}
+
+function estrella(x, y, r, a) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(a); ctx.beginPath();
+  for (let i = 0; i < 8; i++) { const rr = i % 2 ? r * 0.35 : r; const an = (i / 8) * 6.283; ctx.lineTo(Math.cos(an) * rr, Math.sin(an) * rr); }
+  ctx.closePath(); ctx.fill(); ctx.restore();
+}
+
+function textos(t) {
+  const m = 76;
+  // Antetítulo: se escribe letra por letra.
+  const k = P.kicker, n = Math.floor(k.length * tramo(t, 0.5, 0.7));
+  if (n > 0) {
+    ctx.font = "700 28px 'Space Mono'"; ctx.fillStyle = "#ffd166"; ctx.textBaseline = "alphabetic";
+    ctx.letterSpacing = "4px";
+    ctx.fillText(k.slice(0, n).toUpperCase(), m, F.kicker);
+    ctx.letterSpacing = "0px";
+  }
+
+  // Título: renglón por renglón, subiendo; la palabra clave en itálica de oro.
+  P.titulo.forEach((renglon, i) => {
+    const p = easeOut(tramo(t, 0.9 + i * 0.22, 0.7));
+    if (p <= 0) return;
+    const y = F.kicker + 30 + F.linea * (i + 1);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, y - F.linea, F.w, F.linea + 24); ctx.clip();
+    ctx.globalAlpha = p;
+    let x = m;
+    for (const s of renglon) {
+      ctx.font = `${s.oro ? "italic 700" : "700"} ${F.titulo}px Fraunces`;
+      const ancho = ctx.measureText(s.t).width;
+      ctx.fillStyle = s.oro ? oro(x, x + ancho, t) : CREMA;
+      if (s.oro) { ctx.shadowColor = "rgba(255,183,3,0.5)"; ctx.shadowBlur = 24; }
+      ctx.fillText(s.t, x, y + (1 - p) * 60);
+      ctx.shadowBlur = 0;
+      x += ancho;
+    }
+    ctx.restore();
+  });
+
+  if (P.sub) {
+    const p = easeOut(tramo(t, 1.8, 0.7));
+    if (p > 0) {
+      ctx.globalAlpha = p * 0.88; ctx.fillStyle = CREMA;
+      ctx.font = `500 ${F.sub}px 'Plus Jakarta Sans'`;
+      const y = F.kicker + 30 + F.linea * P.titulo.length + F.sub * 2.1;
+      P.sub.split("\n").forEach((l, i) => ctx.fillText(l, m, y + i * F.sub * 1.35 + (1 - p) * 20));
+      ctx.globalAlpha = 1;
+    }
+  }
+}
+
+function pie(t) {
+  const p = easeBack(tramo(t, 2.3, 0.7));
+  if (p <= 0) return;
+  const y = F.pie, s = 132;
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, p);
+  ctx.translate(76 + s / 2, y + s / 2); ctx.scale(p, p);
+  ctx.drawImage(logo, -s / 2, -s / 2, s, s);
+  ctx.restore();
+
+  const texto = P.boton || "guiadelcacao.com";
+  ctx.font = "800 34px 'Plus Jakarta Sans'";
+  const w = ctx.measureText(texto).width + 70, h = 74;
+  const x = F.w - 76 - w, yy = y + (s - h) / 2;
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, p);
+  ctx.translate(x + w / 2, yy + h / 2); ctx.scale(0.6 + 0.4 * p, 0.6 + 0.4 * p); ctx.translate(-(x + w / 2), -(yy + h / 2));
+  const g = ctx.createLinearGradient(x, yy, x + w, yy + h);
+  g.addColorStop(0, "#ffe08a"); g.addColorStop(0.5, "#ffb703"); g.addColorStop(1, "#ff9f43");
+  ctx.shadowColor = "rgba(255,159,67,0.6)"; ctx.shadowBlur = 30 + Math.sin(t * 3) * 10;
+  rectRedondo(x, yy, w, h, h / 2); ctx.fillStyle = g; ctx.fill();
+  ctx.shadowBlur = 0; ctx.fillStyle = "#22150e";
+  ctx.fillText(texto, x + 35, yy + h / 2 + 12);
+  ctx.restore();
+}
+
+function pintar(t) {
+  ctx.globalAlpha = 1;
+  fondo(t);
+  hojasQueCaen(t);
+  luces(t);
+  tarjeta(t);
+  textos(t);
+  pie(t);
+}
+
+function cuadroPNG(t) { pintar(t); return document.getElementById("lienzo").toDataURL("image/png"); }
+
+// Video cuadro por cuadro con WebCodecs: sin grabar en tiempo real, no se saltan cuadros.
+async function grabarMP4(segundos, fps) {
+  const { Muxer, ArrayBufferTarget } = Mp4Muxer;
+  const c = document.getElementById("lienzo");
+  const muxer = new Muxer({ target: new ArrayBufferTarget(), video: { codec: "avc", width: F.w, height: F.h }, fastStart: "in-memory" });
+  let error = null;
+  const enc = new VideoEncoder({ output: (ch, meta) => muxer.addVideoChunk(ch, meta), error: (e) => (error = e) });
+  let config = null;
+  for (const codec of ["avc1.640033", "avc1.640028", "avc1.4d0033", "avc1.42003e"]) {
+    const prueba = { codec, width: F.w, height: F.h, bitrate: 10_000_000, framerate: fps };
+    if ((await VideoEncoder.isConfigSupported(prueba)).supported) { config = prueba; break; }
+  }
+  if (!config) throw new Error("Este Chrome no codifica H.264");
+  enc.configure(config);
+  const total = Math.round(segundos * fps);
+  for (let i = 0; i < total; i++) {
+    pintar(i / fps);
+    const cuadro = new VideoFrame(c, { timestamp: Math.round((i * 1e6) / fps), duration: Math.round(1e6 / fps) });
+    enc.encode(cuadro, { keyFrame: i % (fps * 2) === 0 });
+    cuadro.close();
+    if (enc.encodeQueueSize > 8) await new Promise((r) => setTimeout(r, 5));
+    if (error) throw error;
+  }
+  await enc.flush();
+  muxer.finalize();
+  const buf = new Uint8Array(muxer.target.buffer);
+  let bin = "";
+  for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+  return { base64: btoa(bin), codec: config.codec };
+}
+</script>
+<script src="/redes/herramientas/node_modules/mp4-muxer/build/mp4-muxer.js"></script>
+</body>
+</html>

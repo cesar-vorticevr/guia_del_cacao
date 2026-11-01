@@ -1,0 +1,389 @@
+<title>Dossier Guía del Cacao</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Space+Mono:wght@400;700&display=swap">
+<style>
+{{css}}
+
+/* —— Propio del dossier —— */
+.portada { min-height: 100vh; display: grid; align-items: center; padding-block: 64px; }
+.portada .col { display: grid; gap: 30px; justify-items: start; }
+.portada .logo { width: min(300px, 62vw); filter: drop-shadow(0 6px 0 rgb(0 0 0 / 0.18)); }
+.portada h1 { color: var(--crema); max-width: 11ch; }
+.portada h1 em { font-style: normal; color: var(--mango); }
+.portada .meta { display: flex; flex-wrap: wrap; gap: 10px; }
+.portada .meta span { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; padding: 6px 12px; border-radius: 999px; border: 1.5px solid rgb(255 247 232 / 0.35); color: var(--crema); }
+.portada .firma { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 13px; color: rgb(255 247 232 / 0.75); }
+.portada .firma img { height: 26px; width: auto; }
+
+.cifras { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); }
+.cifra { border-radius: 24px; padding: 24px; display: grid; gap: 10px; align-content: start; box-shadow: var(--dura); }
+.cifra b { font-family: var(--display); font-size: 64px; line-height: 0.95; font-weight: 700; }
+.cifra p { font-size: 16px; line-height: 1.45; }
+
+.piezas-tel { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; align-items: start; }
+.piezas-tel figure { margin: 0; display: grid; gap: 12px; }
+.piezas-tel figcaption { font-size: 14px; color: var(--ink-suave); }
+.piezas-tel figcaption b { display: block; font-family: var(--display); font-size: 18px; color: var(--selva-2); font-weight: 600; }
+@media (max-width: 620px) { .piezas-tel { grid-template-columns: repeat(2, minmax(0, 1fr)); } .piezas-tel figure:nth-child(3) { display: none; } }
+
+.lista-check { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+.lista-check li { display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start; }
+.lista-check li::before { content: ""; width: 22px; height: 22px; margin-top: 2px; border-radius: 50%; background: var(--lima) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230c5236' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center / 15px no-repeat; }
+.lista-check b { font-family: var(--display); font-weight: 600; color: var(--selva-2); }
+
+.micro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 300px); gap: 40px; align-items: center; }
+@media (max-width: 760px) { .micro { grid-template-columns: 1fr; } .micro .tel { max-width: 300px; } }
+
+.planes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 20px; }
+.plan { border-radius: 26px; padding: 26px; display: grid; gap: 14px; align-content: start; background: #fffdf8; border: 2px solid var(--linea); box-shadow: var(--dura); }
+.plan .nombre { font-family: var(--display); font-size: 26px; font-weight: 600; color: var(--selva-2); }
+.plan .precio { font-family: var(--mono); font-size: 40px; font-weight: 700; line-height: 1; color: var(--ink); }
+.plan .precio small { font-size: 14px; font-weight: 400; color: var(--ink-suave); }
+.plan .anual { font-family: var(--mono); font-size: 13px; color: var(--ink-suave); }
+.plan.destacado { background: var(--selva); border-color: var(--selva); color: var(--crema); }
+.plan.destacado .nombre, .plan.destacado .precio { color: var(--crema); }
+.plan.destacado .anual, .plan.destacado p, .plan.destacado .precio small { color: rgb(255 247 232 / 0.8); }
+.plan p { font-size: 15px; color: var(--ink-suave); }
+.reglas { margin-top: 26px; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)); }
+.regla { border-left: 4px solid var(--mango); padding: 4px 0 4px 14px; font-size: 15px; }
+.regla b { display: block; font-family: var(--display); font-weight: 600; color: var(--selva-2); font-size: 16px; }
+
+.linea-tiempo { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; position: relative; margin-top: 10px; }
+.linea-tiempo::before { content: ""; position: absolute; left: 0; right: 0; top: 13px; border-top: 3px dashed rgb(34 21 14 / 0.35); }
+.hito { position: relative; display: grid; gap: 6px; padding-right: 16px; }
+.hito .bola { width: 28px; height: 28px; border-radius: 50%; background: var(--cacao); border: 4px solid var(--mango); }
+.hito .fecha { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cacao); margin-top: 6px; }
+.hito h4 { font-size: 18px; }
+.hito p { font-size: 14px; color: var(--cacao); }
+@media (max-width: 680px) { .linea-tiempo { grid-template-columns: 1fr 1fr; row-gap: 24px; } .linea-tiempo::before { display: none; } }
+
+.codigo { display: inline-block; font-family: var(--mono); font-weight: 700; font-size: clamp(20px, 4vw, 30px); letter-spacing: 0.06em; background: var(--ink); color: var(--mango); padding: 10px 18px; border-radius: 14px; box-shadow: 0 5px 0 0 rgb(34 21 14 / 0.25); word-break: break-all; }
+
+.partes .tarjeta ul { margin: 4px 0 0; padding-left: 18px; display: grid; gap: 6px; font-size: 15px; }
+.partes .tarjeta h3 { font-size: 19px; }
+
+.metricas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 520px) { .metricas { grid-template-columns: 1fr 1fr; } }
+.metrica { background: rgb(255 247 232 / 0.08); border: 1.5px solid rgb(255 247 232 / 0.2); border-radius: 18px; padding: 16px; display: grid; gap: 4px; }
+.metrica .mono { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--lima); }
+.metrica b { font-family: var(--display); font-weight: 600; font-size: 18px; }
+
+.fases { display: grid; gap: 0; }
+.fase { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 24px; padding-block: 20px; border-top: 2px dashed var(--linea); }
+.fase:last-child { border-bottom: 2px dashed var(--linea); }
+.fase .cuando { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-suave); display: grid; gap: 8px; align-content: start; }
+.estado { justify-self: start; font-size: 11px; padding: 3px 10px; border-radius: 999px; font-weight: 700; }
+.estado.ya { background: var(--lima); color: var(--selva-2); }
+.estado.ahora { background: var(--mango); color: var(--ink); }
+.estado.luego { background: var(--crema-2); color: var(--cacao); border: 1.5px solid var(--linea); }
+.fase h3 { font-size: 21px; margin-bottom: 4px; }
+.fase p { color: var(--ink-suave); font-size: 15px; max-width: 64ch; }
+@media (max-width: 560px) { .fase { grid-template-columns: 1fr; gap: 8px; } }
+
+.cierre { text-align: left; }
+.contacto { display: grid; gap: 6px; font-size: 18px; }
+.contacto .mono { font-size: 15px; }
+.cierre .logo { width: 170px; }
+
+.escritorio { border-radius: 18px; border: 6px solid var(--ink); overflow: hidden; box-shadow: 0 8px 0 0 rgb(12 82 54 / 0.2); }
+.escritorio img { width: 100%; }
+</style>
+
+<!-- 1 · Portada -->
+<section class="hoja selva-2 portada">
+  <img class="deco" src="{{img:rama3}}" alt="" style="right:0; top:-30px; width:min(420px, 46vw); opacity:.9; transform:scaleX(-1)">
+  <img class="deco" src="{{img:granos}}" alt="" style="right:12%; bottom:40px; width:110px; opacity:.9">
+  <div class="col">
+    <img class="logo" src="{{img:logo}}" alt="Logotipo de la Guía del Cacao">
+    <div style="display:grid; gap:16px">
+      <p class="ceja">Dossier del proyecto</p>
+      <h1>El cacao de México, <em>en un solo lugar</em></h1>
+      <p class="lead">Una guía en línea de productoras, chocolaterías, museos y talleres del cacao. Cada negocio tiene su propia página; quien visita los encuentra por estado, por tipo o por producto.</p>
+    </div>
+    <div class="meta">
+      <span>guiadelcacao.com</span>
+      <span>Octubre de 2026</span>
+      <span>En funcionamiento</span>
+    </div>
+    <div class="firma">Desarrollada por <img src="{{img:vortice-blanco}}" alt="Vórtice VR"></div>
+  </div>
+</section>
+
+<!-- 2 · En resumen -->
+<section class="hoja">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja"><span class="n">01</span> En resumen</p>
+      <h2>Una vitrina permanente para el cacao mexicano</h2>
+      <p class="lead">La Guía del Cacao reúne en un solo sitio a los negocios que siembran, transforman, venden y cuentan el cacao. Está pensada primero para el celular: se usa de pie en un stand, en la calle o antes de salir de viaje.</p>
+    </div>
+    <div class="escritorio"><img src="{{img:cap-escritorio}}" alt="Portada de guiadelcacao.com en escritorio"></div>
+    <div class="rej rej-3" style="margin-top:28px">
+      <div class="tarjeta"><span class="mono chico">Alcance</span><h3>Nacional</h3><p>Negocios de las 32 entidades. Tabasco es el punto de partida, no la frontera.</p></div>
+      <div class="tarjeta"><span class="mono chico">Lanzamiento</span><h3>Festival del Chocolate</h3><p>Del 12 al 16 de noviembre de 2026, con el respaldo de la Secretaría de Turismo y Desarrollo Económico del Estado de Tabasco.</p></div>
+      <div class="tarjeta"><span class="mono chico">Modelo</span><h3>Suscripción por sucursal</h3><p>Tres planes, de $99 a $299 al mes desde 2027. Todo 2026 es gratis, y siempre gratis para quien visita.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · El problema -->
+<section class="hoja crema-2">
+  <img class="deco" src="{{img:mazorca-amarilla}}" alt="" style="right:-30px; top:50px; width:180px; transform:rotate(18deg)">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja"><span class="n">02</span> El problema</p>
+      <h2>El cacao tiene historia, pero no tiene vitrina</h2>
+      <p class="lead">Los negocios del cacao son de oficio y trayectoria, pero en internet casi no existen. Quien quiere visitarlos o comprarles depende de toparse con ellos en una feria.</p>
+    </div>
+    <div class="cifras">
+      <div class="cifra" style="background:var(--selva); color:var(--crema)"><b>63%</b><p>no tiene página web propia: solo redes sociales, o nada.</p></div>
+      <div class="cifra" style="background:var(--mango)"><b>63%</b><p>no tiene punto de venta fijo, o tiene uno solo: vende en ferias y por encargo.</p></div>
+      <div class="cifra" style="background:var(--guayaba)"><b>68%</b><p>lleva más de tres años operando. Son negocios con trayectoria.</p></div>
+    </div>
+    <div class="rej rej-2" style="margin-top:28px">
+      <div class="tarjeta">
+        <h3>Lo que más piden: que los encuentren</h3>
+        <p>9 de 19 negocios eligieron «aparecer en el directorio» como lo indispensable, muy por encima de cualquier otra función.</p>
+      </div>
+      <div class="tarjeta">
+        <h3>Y que la plataforma sea seria</h3>
+        <p>Antes de sumarse quieren saber quién la respalda. El convenio con la Secretaría responde a eso.</p>
+      </div>
+    </div>
+    <p class="chico" style="margin-top:20px">Fuente: encuesta propia a 19 negocios de cacao de Tabasco, septiembre de 2026, y sondeo a chocolateras del mismo mes. Muestra pequeña, con señales consistentes.</p>
+  </div>
+</section>
+
+<!-- 4 · La plataforma -->
+<section class="hoja">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja"><span class="n">03</span> La plataforma</p>
+      <h2>Cuatro piezas, una sola guía</h2>
+      <p class="lead">Ya está construida y funcionando en guiadelcacao.com. Explorar no pide registro.</p>
+    </div>
+    <div class="piezas-tel">
+      <figure><div class="tel"><img src="{{img:cap-portada}}" alt="Portada en celular"></div><figcaption><b>Directorio</b>Por estado, por tipo de negocio y por producto: barra, cacao en polvo, molinillo.</figcaption></figure>
+      <figure><div class="tel"><img src="{{img:cap-micrositio}}" alt="Micrositio de un negocio en celular"></div><figcaption><b>Micrositios</b>Una página propia por negocio, sin saber de diseño.</figcaption></figure>
+      <figure><div class="tel"><img src="{{img:cap-directorio}}" alt="Explorar negocios en celular"></div><figcaption><b>Agenda y comunidad</b>Catas, ferias y talleres con fecha, y un muro donde negocios y visitantes comparten.</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · El micrositio -->
+<section class="hoja crema-2">
+  <div class="col micro">
+    <div>
+      <div class="cabeza">
+        <p class="ceja"><span class="n">04</span> El micrositio</p>
+        <h2>Cada negocio, con su propia página web</h2>
+        <p class="lead">Lo arma el dueño desde el celular en una tarde. Para publicar basta con logo, una descripción y un producto.</p>
+      </div>
+      <ul class="lista-check">
+        <li><span><b>Su historia.</b> Logotipo, portada, «acerca de» y galería de fotos, acomodadas con el dedo antes de subirse.</span></li>
+        <li><span><b>Su catálogo.</b> Productos con foto y precio, descargable en PDF. Varias sucursales comparten un mismo catálogo.</span></li>
+        <li><span><b>Contacto directo.</b> WhatsApp, Instagram, Facebook, TikTok, teléfono y correo, con un toque.</span></li>
+        <li><span><b>Cómo llegar.</b> Ubicación en Google Maps, ciudad y estado.</span></li>
+        <li><span><b>Reseñas.</b> Estrellas y comentario con foto o video. El negocio responde en público.</span></li>
+        <li><span><b>Se comparte.</b> Un botón para mandarlo por redes y mensajería.</span></li>
+      </ul>
+    </div>
+    <div class="tel"><img src="{{img:cap-micrositio}}" alt="Micrositio en celular"></div>
+  </div>
+</section>
+
+<!-- 6 · Para quién -->
+<section class="hoja selva">
+  <img class="deco" src="{{img:ramahojas}}" alt="" style="left:-120px; bottom:-90px; width:520px; opacity:.35">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja"><span class="n">05</span> Para quién</p>
+      <h2>Tres públicos, un mismo lugar</h2>
+    </div>
+    <div class="rej rej-3">
+      <div class="tarjeta">
+        <span class="punto" style="background:var(--mango)"></span>
+        <h3>Quien visita</h3>
+        <p>Turistas de México y del extranjero, compradores y curiosos. Gratis.</p>
+        <ul class="chico" style="margin:6px 0 0; padding-left:18px; display:grid; gap:4px">
+          <li>Explora sin registrarse</li>
+          <li>Cuenta con correo o Google en un paso</li>
+          <li>Guarda favoritos para armar su ruta</li>
+          <li>Califica y reseña lo que visitó</li>
+        </ul>
+      </div>
+      <div class="tarjeta">
+        <span class="punto" style="background:var(--lima)"></span>
+        <h3>El negocio</h3>
+        <p>Fincas, chocolaterías, comercializadoras, museos, artesanos y servicios.</p>
+        <ul class="chico" style="margin:6px 0 0; padding-left:18px; display:grid; gap:4px">
+          <li>Su página y su contacto todo el año</li>
+          <li>Mensajes directos por WhatsApp</li>
+          <li>Sus eventos en la agenda</li>
+          <li>Sus números: visitas y contactos</li>
+        </ul>
+      </div>
+      <div class="tarjeta">
+        <span class="punto" style="background:var(--guayaba)"></span>
+        <h3>Las instituciones</h3>
+        <p>Turismo, desarrollo económico y organizadores de ferias.</p>
+        <ul class="chico" style="margin:6px 0 0; padding-left:18px; display:grid; gap:4px">
+          <li>Un padrón vivo de negocios del cacao</li>
+          <li>Un canal propio para sus campañas</li>
+          <li>El Festival sigue vivo todo el año</li>
+          <li>Reporte de visitas y contactos generados</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · Modelo de negocio -->
+<section class="hoja">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja"><span class="n">06</span> Modelo de negocio</p>
+      <h2>Tres planes, por sucursal</h2>
+      <p class="lead">Cada plan suma al anterior: aparecer, que te califiquen, poder promocionarte. Precios en pesos mexicanos.</p>
+    </div>
+    <div class="planes">
+      <div class="plan">
+        <span class="nombre">Básico</span>
+        <span class="precio">$99<small> /mes</small></span>
+        <span class="anual">$950 al año</span>
+        <p>Aparece en el directorio, con micrositio, catálogo y datos de contacto.</p>
+      </div>
+      <div class="plan">
+        <span class="nombre">Plus</span>
+        <span class="precio">$199<small> /mes</small></span>
+        <span class="anual">$1,910 al año</span>
+        <p>Todo lo de Básico, más reseñas de clientes y respuesta pública.</p>
+      </div>
+      <div class="plan destacado">
+        <span class="nombre">Premier</span>
+        <span class="precio">$299<small> /mes</small></span>
+        <span class="anual">$2,870 al año</span>
+        <p>Todo lo de Plus, más eventos y noticias, y lugar en el banner rotativo de la portada.</p>
+      </div>
+    </div>
+    <div class="reglas">
+      <div class="regla"><b>Por sucursal</b>Una marca con tres locales paga tres planes, y cada uno puede ser distinto.</div>
+      <div class="regla"><b>Gratis todo 2026</b>Cualquier plan, Premier incluido, sin pedir tarjeta. Se cobra desde enero de 2027.</div>
+      <div class="regla"><b>Pago anual: 20% menos</b>Los descuentos no se suman: se aplica el mayor.</div>
+      <div class="regla"><b>Quien no paga se oculta</b>Su página sale del directorio pero no se borra, y vuelve al pagar.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · Convenio -->
+<section class="hoja mango">
+  <img class="deco" src="{{img:mazorca-rosa}}" alt="" style="right:-20px; top:30px; width:170px; transform:rotate(-14deg)">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja"><span class="n">07</span> Convenio de colaboración</p>
+      <h2>El Festival del Chocolate, abierto todo el año</h2>
+      <p class="lead">Vórtice VR, que desarrolla la plataforma, y la Secretaría de Turismo y Desarrollo Económico del Estado de Tabasco se unen para que los negocios del Festival lleguen publicados y sigan visibles después.</p>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; margin-bottom:30px">
+      <span class="codigo">FESTIVALCHOCOLATE</span>
+      <p style="max-width:44ch; color:var(--cacao)">Gratis todo 2026 como todos, y desde 2027, 20% de descuento en Plus y Premier mientras se siga pagando.</p>
+    </div>
+    <div class="linea-tiempo">
+      <div class="hito"><span class="bola"></span><span class="fecha">1 oct</span><h4>Abre el registro</h4><p>Convocatoria conjunta y talleres de alta.</p></div>
+      <div class="hito"><span class="bola"></span><span class="fecha">12–16 nov</span><h4>Festival</h4><p>Los negocios llegan ya publicados. El código vale hasta el 16.</p></div>
+      <div class="hito"><span class="bola"></span><span class="fecha">31 dic</span><h4>Termina lo gratis</h4><p>Hasta aquí, cualquier plan sin costo.</p></div>
+      <div class="hito"><span class="bola"></span><span class="fecha">1 ene 2027</span><h4>Cada quien elige</h4><p>Básico $99, Plus $159 o Premier $239 con el código.</p></div>
+    </div>
+    <div class="rej rej-3 partes" style="margin-top:34px">
+      <div class="tarjeta"><h3>La Secretaría</h3><ul><li>Convoca, difunde y respalda</li><li>Recibe el padrón y el reporte de visitas</li><li>Micrositio propio para sus campañas</li></ul></div>
+      <div class="tarjeta"><h3>Vórtice VR</h3><ul><li>Pone la plataforma y el soporte</li><li>Imparte los talleres de registro</li><li>Promueve la guía</li></ul></div>
+      <div class="tarjeta"><h3>Los negocios</h3><ul><li>Su página todo el año</li><li>Gratis todo 2026, con Premier</li><li>20% en Plus y Premier desde 2027</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 · Lo que se mide -->
+<section class="hoja selva-2">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja"><span class="n">08</span> Resultados medibles</p>
+      <h2>Cada visita y cada mensaje, contados</h2>
+      <p class="lead">Es el argumento para que un negocio suba de plan y el reporte que recibe la Secretaría. Cada negocio ve sus números en su panel, en «Lo que te trajo la guía».</p>
+    </div>
+    <div class="metricas">
+      <div class="metrica"><span class="mono">Visitas</span><b>Páginas y micrositios</b></div>
+      <div class="metrica"><span class="mono">Interés</span><b>Eventos vistos</b></div>
+      <div class="metrica"><span class="mono">Intención</span><b>Búsquedas y filtros</b></div>
+      <div class="metrica"><span class="mono">Contacto</span><b>WhatsApp, teléfono y correo</b></div>
+      <div class="metrica"><span class="mono">Ruta</span><b>Clics al mapa</b></div>
+      <div class="metrica"><span class="mono">Alcance</span><b>Compartidos y catálogos en PDF</b></div>
+    </div>
+    <div class="rej rej-2" style="margin-top:28px">
+      <div class="tarjeta"><h3>Solo conteos</h3><p>Sin usuario, sin IP, sin cookies de publicidad. Lo que se reporta son cifras agregadas, no personas.</p></div>
+      <div class="tarjeta"><h3>Números limpios</h3><p>No cuenta al dueño en su propia página ni al administrador, para no inflar lo que se le enseña al negocio.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 · Estado actual -->
+<section class="hoja">
+  <div class="col micro">
+    <div>
+      <div class="cabeza">
+        <p class="ceja"><span class="n">09</span> Estado actual</p>
+        <h2>Construida, publicada y lista para crecer</h2>
+        <p class="lead">Todo lo que se presenta en este documento ya está en línea en guiadelcacao.com.</p>
+      </div>
+      <ul class="lista-check">
+        <li><span>Registro de visitantes y negocios con correo o Google</span></li>
+        <li><span>Directorio con filtros por estado, tipo y producto</span></li>
+        <li><span>Micrositios, catálogo en PDF y varias sucursales por marca</span></li>
+        <li><span>Reseñas con foto o video, y respuesta del negocio</span></li>
+        <li><span>Agenda de eventos y comunidad con comentarios</span></li>
+        <li><span>Planes, pago anual, códigos de convenio y periodo de prueba</span></li>
+        <li><span>Panel de administración y tablero de métricas con descarga en CSV</span></li>
+      </ul>
+    </div>
+    <div class="tel"><img src="{{img:cap-directorio}}" alt="Explorar negocios en celular"></div>
+  </div>
+</section>
+
+<!-- 11 · Hoja de ruta -->
+<section class="hoja crema-2">
+  <img class="deco" src="{{img:flores}}" alt="" style="right:-10px; bottom:30px; width:150px">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja"><span class="n">10</span> Hoja de ruta</p>
+      <h2>De Tabasco a todo México</h2>
+    </div>
+    <div class="fases">
+      <div class="fase"><div class="cuando">Ago–sep 2026<span class="estado ya">Hecho</span></div><div><h3>Plataforma</h3><p>Directorio, micrositios, agenda, comunidad, planes y métricas. Encuesta a negocios para decidir qué lanzar.</p></div></div>
+      <div class="fase"><div class="cuando">Oct–nov 2026<span class="estado ahora">En curso</span></div><div><h3>Festival del Chocolate</h3><p>Convenio con la Secretaría, talleres de registro y los primeros negocios publicados antes del 12 de noviembre.</p></div></div>
+      <div class="fase"><div class="cuando">Ene 2027<span class="estado luego">Siguiente</span></div><div><h3>Inicio del cobro</h3><p>Se conecta la pasarela de pago y empieza el cobro, con avisos a cada negocio antes de ocultar a nadie.</p></div></div>
+      <div class="fase"><div class="cuando">2027<span class="estado luego">Después</span></div><div><h3>Crecimiento nacional</h3><p>Convocatoria en otros estados cacaoteros, como Chiapas, Oaxaca y Veracruz.</p></div></div>
+      <div class="fase"><div class="cuando">Más adelante<span class="estado luego">Exploración</span></div><div><h3>Venta en línea y réplica</h3><p>Catálogo con compra y comisión por venta. El mismo modelo para otras ferias y productos de origen.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 12 · Contacto -->
+<section class="hoja selva-2 cierre">
+  <img class="deco" src="{{img:rama1}}" alt="" style="right:0; bottom:-40px; width:min(360px, 42vw); opacity:.9; transform:scaleX(-1)">
+  <div class="col" style="display:grid; gap:30px">
+    <img class="logo" src="{{img:logo}}" alt="Guía del Cacao">
+    <div style="display:grid; gap:14px">
+      <p class="ceja">Hablemos</p>
+      <h2>Súmate a la Guía del Cacao</h2>
+      <p class="lead">Para alianzas, convenios con instituciones, inversión o para dar de alta tu negocio.</p>
+    </div>
+    <div class="contacto">
+      <b style="font-family:var(--display); font-weight:600; font-size:22px">Mtro. César Adrián García Martínez</b>
+      <span>Vórtice VR · Villahermosa, Tabasco</span>
+      <span class="mono">lad.cesargarcia@gmail.com</span>
+      <span class="mono">99 83 44 82 07</span>
+      <span class="mono">guiadelcacao.com</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:14px; font-size:13px; color:rgb(255 247 232 / .75)">Desarrollada por <img src="{{img:vortice-blanco}}" alt="Vórtice VR" style="height:26px; width:auto"></div>
+  </div>
+</section>

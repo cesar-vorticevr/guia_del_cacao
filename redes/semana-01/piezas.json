@@ -1,0 +1,90 @@
+{
+  "semana": "2 al 8 de noviembre de 2026",
+  "piezas": [
+    {
+      "id": "01",
+      "nombre": "presentacion",
+      "ilustracion": "ilustraciones/01-presentacion.png",
+      "kicker": "Lunes 2 nov · Ya estamos aquí",
+      "titulo": [
+        [{ "t": "El cacao de México," }],
+        [{ "t": "en un solo " }, { "t": "lugar", "oro": true }]
+      ],
+      "sub": "Productoras, chocolaterías, museos\ny talleres, en una sola guía.",
+      "semilla": 11
+    },
+    {
+      "id": "02",
+      "nombre": "como-funciona",
+      "ilustracion": "ilustraciones/02-como-funciona.png",
+      "kicker": "Martes 3 nov · Cómo funciona",
+      "titulo": [
+        [{ "t": "Búscalos por estado," }],
+        [{ "t": "por tipo o por " }, { "t": "producto", "oro": true }]
+      ],
+      "sub": "Barra, cacao en polvo, molinillo…\ny llegas directo con quien lo hace.",
+      "semilla": 22
+    },
+    {
+      "id": "03",
+      "nombre": "para-negocios",
+      "ilustracion": "ilustraciones/03-para-negocios.png",
+      "kicker": "Miércoles 4 nov · Para negocios",
+      "titulo": [
+        [{ "t": "Tu negocio de cacao," }],
+        [{ "t": "con su propia " }, { "t": "página", "oro": true }]
+      ],
+      "sub": "Catálogo, WhatsApp y cómo llegar.\nSe arma desde el celular en una tarde.",
+      "boton": "Pruébalo 15 días gratis",
+      "semilla": 33
+    },
+    {
+      "id": "04",
+      "nombre": "del-arbol-a-la-taza",
+      "ilustracion": "ilustraciones/04-del-arbol.png",
+      "kicker": "Jueves 5 nov · Para saber",
+      "titulo": [
+        [{ "t": "De la mazorca" }],
+        [{ "t": "a tu " }, { "t": "chocolate", "oro": true }]
+      ],
+      "sub": "Fermentar, secar, tostar y moler.\nConoce a quienes lo hacen con oficio.",
+      "semilla": 44
+    },
+    {
+      "id": "05",
+      "nombre": "festival",
+      "ilustracion": "ilustraciones/05-festival.png",
+      "kicker": "Viernes 6 nov · Faltan 6 días",
+      "titulo": [
+        [{ "t": "Festival del" }],
+        [{ "t": "Chocolate", "oro": true }]
+      ],
+      "sub": "Del 12 al 16 de noviembre, en Tabasco.\nArma tu ruta del cacao desde hoy.",
+      "semilla": 55
+    },
+    {
+      "id": "06",
+      "nombre": "tu-ruta",
+      "ilustracion": "ilustraciones/06-ruta.png",
+      "kicker": "Sábado 7 nov · Para quien visita",
+      "titulo": [
+        [{ "t": "Guarda tus " }, { "t": "favoritos", "oro": true }],
+        [{ "t": "y arma tu ruta" }]
+      ],
+      "sub": "Explorar no pide registro.\nY es gratis, siempre, para quien visita.",
+      "semilla": 66
+    },
+    {
+      "id": "07",
+      "nombre": "comunidad",
+      "ilustracion": "ilustraciones/07-comunidad.png",
+      "kicker": "Domingo 8 nov · Cuéntanos",
+      "titulo": [
+        [{ "t": "¿Cuál es tu" }],
+        [{ "t": "chocolate", "oro": true }, { "t": " favorito?" }]
+      ],
+      "sub": "Déjalo en los comentarios\ny etiqueta al negocio que lo hace.",
+      "semilla": 77
+    }
+  ]
+}

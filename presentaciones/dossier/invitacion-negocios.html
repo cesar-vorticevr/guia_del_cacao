@@ -1,0 +1,250 @@
+<title>Tu negocio en la Guía del Cacao</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap">
+<style>
+{{css}}
+
+/* Hojas verticales, del tamaño de una pantalla de celular: se manda por WhatsApp. */
+.col { max-width: 560px; }
+.hoja { padding-block: 56px; }
+
+.portada { min-height: 92vh; display: grid; align-items: center; }
+.portada .col { display: grid; gap: 22px; justify-items: start; }
+.portada .logo { width: min(230px, 60vw); filter: drop-shadow(0 6px 0 rgb(0 0 0 / 0.18)); }
+.portada h1 { color: var(--crema); font-size: clamp(40px, 10vw, 54px); }
+.portada h1 em { font-style: normal; color: var(--mango); }
+.sello { display: inline-flex; flex-direction: column; gap: 2px; background: var(--mango); color: var(--ink); border-radius: 22px; padding: 14px 20px; box-shadow: 0 6px 0 0 rgb(0 0 0 / 0.2); transform: rotate(-2deg); }
+.sello b { font-family: var(--display); font-size: 26px; line-height: 1.05; }
+.sello span { font-size: 14px; color: var(--cacao); }
+
+.beneficios { display: grid; gap: 14px; }
+.beneficio { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 14px; align-items: start; background: #fffdf8; border: 2px solid var(--linea); border-radius: 22px; padding: 16px; box-shadow: var(--dura); }
+.beneficio .ic { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; }
+.beneficio .ic svg { width: 28px; height: 28px; }
+.beneficio h3 { font-size: 19px; }
+.beneficio p { font-size: 15px; color: var(--ink-suave); }
+
+.tel-centro { max-width: 260px; margin: 22px auto 0; }
+
+.planes { display: grid; gap: 12px; }
+.plan { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; background: #fffdf8; border: 2px solid var(--linea); border-radius: 20px; padding: 16px 18px; box-shadow: var(--dura); }
+.plan .nombre { font-family: var(--display); font-weight: 600; font-size: 22px; color: var(--selva-2); }
+.plan .precio { font-family: var(--mono); font-weight: 700; font-size: 20px; text-align: right; }
+.plan .precio small { font-weight: 400; font-size: 12px; color: var(--ink-suave); }
+.plan p { grid-column: 1 / -1; font-size: 14.5px; color: var(--ink-suave); }
+.plan.top { background: var(--selva); border-color: var(--selva); color: var(--crema); }
+.plan.top .nombre, .plan.top .precio { color: var(--crema); }
+.plan.top p, .plan.top .precio small { color: rgb(255 247 232 / 0.8); }
+.plan .etq { justify-self: start; font-family: var(--mono); font-size: 11px; font-weight: 700; background: var(--mango); color: var(--ink); border-radius: 999px; padding: 2px 10px; grid-column: 1 / -1; }
+.notas { margin-top: 18px; display: grid; gap: 8px; font-size: 14.5px; }
+.notas div { border-left: 4px solid var(--mango); padding-left: 12px; }
+
+.gratis-grande { font-family: var(--display); font-weight: 700; font-size: clamp(64px, 18vw, 92px); line-height: .9; color: var(--ink); }
+.lista-gratis { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; font-size: 17px; }
+.lista-gratis li { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; }
+.lista-gratis li::before { content: ""; width: 24px; height: 24px; margin-top: 1px; border-radius: 50%; background: var(--cacao) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffb703' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center / 15px no-repeat; }
+
+.tener { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.tener li { display: flex; gap: 12px; align-items: center; background: #fffdf8; border: 2px solid var(--linea); border-radius: 18px; padding: 12px 16px; font-size: 16px; font-weight: 600; }
+.tener li span { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--crema); background: var(--selva); border-radius: 999px; min-width: 26px; height: 26px; display: grid; place-items: center; }
+
+.pasos { display: grid; gap: 16px; }
+.paso { display: grid; grid-template-columns: 50px minmax(0, 1fr); gap: 14px; align-items: start; }
+.paso .num { width: 50px; height: 50px; border-radius: 50%; background: var(--mango); color: var(--ink); font-family: var(--display); font-weight: 700; font-size: 26px; display: grid; place-items: center; box-shadow: 0 4px 0 0 rgb(74 44 29 / 0.25); }
+.paso h3 { font-size: 21px; margin-bottom: 4px; }
+.paso p { font-size: 15.5px; color: var(--ink-suave); }
+.paso p + p { margin-top: 6px; }
+.selva .paso p { color: rgb(255 247 232 / 0.85); }
+.selva .paso h3 { color: var(--crema); }
+.tecla { display: inline-block; font-family: var(--display); font-weight: 600; font-size: 14px; background: var(--selva); color: var(--crema); border-radius: 999px; padding: 1px 10px; white-space: nowrap; }
+.selva .tecla { background: var(--mango); color: var(--ink); }
+.consejo { margin-top: 20px; background: var(--crema-2); border-radius: 18px; padding: 14px 16px; font-size: 15px; color: var(--cacao); }
+.selva .consejo { background: rgb(255 247 232 / 0.1); color: var(--crema); }
+
+.cierre .logo { width: 150px; }
+.contacto { display: grid; gap: 4px; font-size: 17px; }
+.contacto .mono { font-size: 15px; }
+
+/* PDF: una pantalla de celular por hoja */
+@page { size: 5in 8.889in; margin: 0; }
+html.pdf body { width: 5in; font-size: 14px; }
+html.pdf .hoja { height: 8.889in; padding: 0.42in 0.36in; }
+html.pdf h1, html.pdf .portada h1 { font-size: 44px; }
+html.pdf h2 { font-size: 31px; }
+html.pdf .lead { font-size: 15.5px; }
+html.pdf .portada { display: grid; }
+</style>
+
+<!-- Portada -->
+<section class="hoja selva-2 portada">
+  <img class="deco" src="{{img:rama3}}" alt="" style="right:0; top:-30px; width:min(250px, 52vw); transform:scaleX(-1); opacity:.95">
+  <img class="deco" src="{{img:granos}}" alt="" style="right:20px; bottom:30px; width:90px">
+  <div class="col">
+    <img class="logo" src="{{img:logo}}" alt="Logotipo de la Guía del Cacao">
+    <p class="ceja">Invitación</p>
+    <h1>Tu negocio en la <em>Guía del Cacao</em></h1>
+    <p class="lead">Te invito a ser de los primeros negocios en la guía en línea del cacao de México.</p>
+    <div class="sello"><b>15 días gratis</b><span>Con todas las funciones, sin dejar tarjeta</span></div>
+  </div>
+</section>
+
+<!-- Qué es -->
+<section class="hoja">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja">Qué es</p>
+      <h2>El cacao de México, en un solo lugar</h2>
+      <p class="lead">Un directorio de productoras, chocolaterías, haciendas, museos y talleres. Quien visita busca por estado, por tipo de negocio o por producto, y encuentra tu página.</p>
+    </div>
+    <div class="tel tel-centro"><img src="{{img:cap-portada}}" alt="La Guía del Cacao en el celular"></div>
+  </div>
+</section>
+
+<!-- Por qué estar -->
+<section class="hoja crema-2">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja">Por qué estar</p>
+      <h2>Que te encuentren todo el año, no solo en la feria</h2>
+    </div>
+    <div class="beneficios">
+      <div class="beneficio">
+        <span class="ic" style="background:var(--lima)"><svg viewBox="0 0 24 24" fill="none" stroke="#0c5236" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18M8 14h4"/></svg></span>
+        <div><h3>Tu propia página</h3><p>Logo, fotos, catálogo con precios y ubicación. Sin saber de diseño.</p></div>
+      </div>
+      <div class="beneficio">
+        <span class="ic" style="background:var(--turquesa)"><svg viewBox="0 0 24 24" fill="none" stroke="#22150e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.2A8.5 8.5 0 1 1 21 12z"/></svg></span>
+        <div><h3>Te escriben directo</h3><p>Un toque y te llega el mensaje por WhatsApp, o te llaman.</p></div>
+      </div>
+      <div class="beneficio">
+        <span class="ic" style="background:var(--mango)"><svg viewBox="0 0 24 24" fill="none" stroke="#22150e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></span>
+        <div><h3>Anuncias tus eventos</h3><p>Catas, talleres y ferias en la agenda de la guía.</p></div>
+      </div>
+      <div class="beneficio">
+        <span class="ic" style="background:var(--guayaba)"><svg viewBox="0 0 24 24" fill="none" stroke="#22150e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span>
+        <div><h3>Te ven en todo México</h3><p>Turistas y compradores de otros estados y del extranjero.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Tu micrositio -->
+<section class="hoja">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja">Tu micrositio</p>
+      <h2>Así se ve tu página</h2>
+      <p class="lead">Con reseñas de tus clientes, botón de compartir y tu catálogo para descargar en PDF.</p>
+    </div>
+    <div class="tel tel-centro"><img src="{{img:cap-micrositio}}" alt="Ejemplo de micrositio"></div>
+  </div>
+</section>
+
+<!-- Pruébalo gratis -->
+<section class="hoja mango">
+  <img class="deco" src="{{img:mazorca-rosa}}" alt="" style="right:-16px; top:30px; width:130px; transform:rotate(-12deg)">
+  <div class="col" style="display:grid; gap:22px">
+    <p class="ceja">Pruébalo</p>
+    <span class="gratis-grande">15 días<br>gratis</span>
+    <p class="lead">Publicas hoy y pruebas todo el plan Pro sin pagar nada. Si no te convence, no pagas y no pasa nada. En esos días tienes:</p>
+    <ul class="lista-gratis">
+      <li><span>Tu página, tu catálogo y tu contacto</span></li>
+      <li><span>Reseñas de tus clientes</span></li>
+      <li><span>Tus eventos en la agenda</span></li>
+      <li><span>La Ruleta Mágica de premios para tus clientes</span></li>
+      <li><span>Tarjetón con QR para tu mostrador</span></li>
+      <li><span>Sin dejar tarjeta</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- Precio -->
+<section class="hoja">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja">Después de la prueba</p>
+      <h2>Un solo plan, con todo</h2>
+      <p class="lead">Precio por sucursal, en pesos mexicanos, con IVA incluido.</p>
+    </div>
+    <div class="planes">
+      <div class="plan top"><span class="nombre">Pro mensual</span><span class="precio">$499<small>/mes</small></span><p>Tu página, catálogo en PDF, reseñas, eventos, banner de la portada, ruleta de premios, 3 experiencias de realidad aumentada y tus números.</p></div>
+      <div class="plan"><span class="etq">2 meses gratis</span><span class="nombre">Pro anual</span><span class="precio">$4,990<small>/año</small></span><p>Lo mismo, pagando el año: pagas diez meses y te llevas doce.</p></div>
+    </div>
+    <div class="notas">
+      <div><b>Con el código de tu asesor, {{descuento}}% menos en tu primer pago.</b> Código: <span class="mono">{{codigo}}</span></div>
+      <div><b>¿Necesitas factura?</b> Se la pides a la Guía desde tu panel, con tu constancia fiscal.</div>
+      <div><b>Si no pagas, no se borra nada.</b> Tu página sale del directorio y vuelve en cuanto pagues.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Antes de empezar -->
+<section class="hoja crema-2">
+  <img class="deco" src="{{img:hoja}}" alt="" style="right:-30px; bottom:40px; width:140px; transform:rotate(-20deg)">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja">Antes de empezar</p>
+      <h2>Ten esto a la mano</h2>
+    </div>
+    <ul class="tener">
+      <li><span>1</span>Tu celular y tu correo abierto</li>
+      <li><span>2</span>Tu logotipo</li>
+      <li><span>3</span>De 3 a 5 fotos de tu negocio y tus productos</li>
+      <li><span>4</span>Tus productos con su precio</li>
+      <li><span>5</span>Tu ubicación en Google Maps</li>
+      <li><span>6</span>Tu WhatsApp y tus redes sociales</li>
+    </ul>
+    <p class="consejo">Para publicar basta con tu logo, una descripción y un producto. Lo demás lo completas cuando quieras.</p>
+  </div>
+</section>
+
+<!-- Paso a paso 1-2 -->
+<section class="hoja">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja">Paso a paso</p>
+      <h2>En 20 minutos quedas publicado</h2>
+    </div>
+    <div class="pasos">
+      <div class="paso"><span class="num">1</span><div><h3>Crea tu cuenta</h3><p>Entra a <b>guiadelcacao.com</b>, toca <span class="tecla">Crear cuenta</span> y elige <span class="tecla">Soy negocio</span>.</p><p>Escribe tu nombre, tu correo, una contraseña, el nombre de tu negocio y su tipo. O entra con Google.</p><p>Te llega un correo: ábrelo y toca el enlace para confirmar.</p></div></div>
+      <div class="paso"><span class="num">2</span><div><h3>Da de alta tu local</h3><p>Ponle nombre a tu sucursal, como «Matriz» o «Centro», y elige tu estado y tu ciudad.</p><p>¿Varios locales? Cada uno tiene su página y todos comparten tu catálogo.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Paso a paso 3-4 -->
+<section class="hoja selva">
+  <div class="col">
+    <div class="pasos">
+      <div class="paso"><span class="num">3</span><div><h3>Arma tu página</h3><p><b>Fotos:</b> tu logo, la portada y tu galería. Acomódalas con el dedo antes de subirlas.</p><p><b>Datos:</b> qué haces, tu ubicación, tu WhatsApp y tus redes.</p><p><b>Catálogo:</b> tus productos con foto y precio.</p></div></div>
+      <div class="paso"><span class="num">4</span><div><h3>Publica</h3><p>Toca <span class="tecla">Publicar</span> y elige <b>Pro</b>. En <span class="tecla">¿Tienes un código?</span> escribe <b class="mono">{{codigo}}</b>. No te pide tarjeta: son 15 días gratis.</p><p>Listo, ya apareces en la guía.</p></div></div>
+    </div>
+    <p class="consejo">¿Te atoras? Escríbeme y lo terminamos juntos por llamada.</p>
+  </div>
+</section>
+
+<!-- Ya publicaste + contacto -->
+<section class="hoja selva-2 cierre">
+  <img class="deco" src="{{img:rama1}}" alt="" style="right:0; bottom:-30px; width:min(230px, 46vw); transform:scaleX(-1); opacity:.95">
+  <div class="col" style="display:grid; gap:22px">
+    <div style="display:grid; gap:12px">
+      <p class="ceja">Ya publicaste</p>
+      <h2>Ahora, a moverlo</h2>
+    </div>
+    <ul class="lista-gratis" style="color:var(--crema)">
+      <li><span><b>Comparte tu página</b> con tus clientes y en tus redes</span></li>
+      <li><span><b>Pide reseñas</b> a quienes ya te compran</span></li>
+      <li><span><b>Sube tus eventos</b>: catas, talleres y ferias</span></li>
+      <li><span><b>Mira tus números</b>: en tu panel ves cuántos te visitaron y te escribieron</span></li>
+    </ul>
+    <img class="logo" src="{{img:logo}}" alt="Guía del Cacao" style="width:120px">
+    <div class="contacto">
+      <span style="font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--mango)">Tu asesor</span>
+      <b style="font-family:var(--display); font-weight:600; font-size:20px">{{asesor}}</b>
+      <span class="mono">{{telefono}}</span>
+      <span class="mono">guiadelcacao.com</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px; font-size:12px; color:rgb(255 247 232 / .75)">Desarrollada por <img src="{{img:vortice-blanco}}" alt="Vórtice VR" style="height:22px; width:auto"></div>
+  </div>
+</section>

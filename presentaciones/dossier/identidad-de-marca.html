@@ -1,0 +1,552 @@
+<title>Identidad Guía del Cacao</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Space+Mono:wght@400;700&display=swap">
+<style>
+{{css}}
+
+/* —— Propio del manual —— */
+.portada { min-height: 100vh; display: grid; align-items: center; }
+.portada .col { display: grid; gap: 28px; grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); align-items: center; }
+.portada h1 { color: var(--crema); }
+.portada .logo { width: 100%; max-width: 380px; justify-self: center; filter: drop-shadow(0 8px 0 rgb(0 0 0 / 0.2)); }
+@media (max-width: 720px) { .portada .col { grid-template-columns: 1fr; } .portada .logo { max-width: 240px; justify-self: start; } }
+
+.anatomia { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 36px; align-items: center; }
+@media (max-width: 720px) { .anatomia { grid-template-columns: 1fr; } }
+.anatomia .lienzo { background: var(--crema-2); border-radius: 28px; padding: 30px; position: relative; }
+.anatomia ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 14px; counter-reset: p; }
+.anatomia li { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; counter-increment: p; }
+.anatomia li::before { content: counter(p); display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--cacao); color: var(--mango); font-family: var(--mono); font-weight: 700; font-size: 13px; }
+.anatomia li b { font-family: var(--display); font-weight: 600; color: var(--selva-2); }
+.marca-num { position: absolute; width: 30px; height: 30px; border-radius: 50%; background: var(--cacao); color: var(--mango); font-family: var(--mono); font-weight: 700; font-size: 13px; display: grid; place-items: center; border: 2px solid var(--crema); }
+
+.versiones { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 20px; }
+.version { display: grid; gap: 12px; }
+.version .caja { border-radius: 24px; height: 190px; display: grid; place-items: center; padding: 20px; box-shadow: var(--dura); overflow: hidden; }
+.version .caja img { max-height: 150px; max-width: 100%; width: auto; object-fit: contain; }
+.version h4 { color: var(--selva-2); }
+.version p { font-size: 14px; color: var(--ink-suave); }
+.imagotipo { display: inline-flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 700; font-size: 24px; white-space: nowrap; }
+.imagotipo img { height: 36px !important; width: auto; }
+.version .caja .imagotipo { font-size: clamp(17px, 2.4vw, 24px); }
+html.pdf .version .caja .imagotipo { font-size: 18px; }
+html.pdf .version .caja .imagotipo img { height: 28px !important; }
+
+.proteccion { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 30px; align-items: center; }
+@media (max-width: 720px) { .proteccion { grid-template-columns: 1fr; } }
+.zona { position: relative; background: repeating-linear-gradient(45deg, rgb(255 93 115 / 0.12) 0 8px, transparent 8px 16px); border: 2px dashed var(--guayaba); border-radius: 12px; padding: 44px; justify-self: center; }
+.zona img { width: 200px; background: var(--crema); }
+.zona .x { position: absolute; font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--guayaba); }
+.minimos { display: grid; gap: 16px; }
+.minimo { display: flex; align-items: end; gap: 18px; padding: 16px; border-radius: 18px; background: #fffdf8; border: 2px solid var(--linea); }
+.minimo div { display: grid; gap: 2px; }
+.minimo b { font-family: var(--display); font-weight: 600; color: var(--selva-2); }
+.minimo span { font-size: 14px; color: var(--ink-suave); }
+
+.noes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 16px; }
+.noes figure { margin: 0; display: grid; gap: 8px; }
+.noes .caja { aspect-ratio: 1; border-radius: 20px; background: #fffdf8; border: 2px solid var(--linea); display: grid; place-items: center; overflow: hidden; position: relative; }
+.noes .caja img { width: 58%; }
+.noes .caja::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top right, transparent calc(50% - 2px), var(--guayaba) calc(50% - 2px) calc(50% + 2px), transparent calc(50% + 2px)); opacity: .85; }
+.noes figcaption { font-size: 14px; color: var(--ink-suave); }
+.noes figcaption b { color: var(--guayaba); font-family: var(--display); font-weight: 600; display: block; }
+
+.paleta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.paleta .color:first-child { grid-column: span 2; }
+@media (max-width: 640px) { .paleta { grid-template-columns: 1fr 1fr; } }
+.color { border-radius: 24px; overflow: hidden; border: 2px solid var(--linea); background: #fffdf8; box-shadow: var(--dura); display: grid; }
+.color .muestra { height: 110px; display: flex; align-items: end; padding: 14px; font-family: var(--display); font-weight: 600; font-size: 22px; }
+.color .datos { padding: 14px; display: grid; gap: 4px; font-size: 14px; }
+.color .datos .mono { font-size: 12.5px; color: var(--ink-suave); }
+.color .datos p { color: var(--ink-suave); font-size: 13.5px; }
+.secundarios { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+.sec { display: flex; align-items: center; gap: 10px; padding: 8px 14px 8px 8px; border-radius: 999px; background: #fffdf8; border: 2px solid var(--linea); font-size: 14px; }
+.sec i { width: 28px; height: 28px; border-radius: 50%; display: block; border: 1.5px solid var(--linea); }
+
+.proporcion { display: flex; height: 54px; border-radius: 16px; overflow: hidden; margin-top: 28px; box-shadow: var(--dura); }
+.proporcion div { display: grid; place-items: center; font-family: var(--mono); font-size: 12px; font-weight: 700; }
+
+.categorias { display: flex; flex-wrap: wrap; gap: 12px; }
+
+.combos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 14px; margin-top: 22px; }
+.combo { border-radius: 18px; padding: 18px; display: grid; gap: 4px; }
+.combo b { font-family: var(--display); font-weight: 600; font-size: 22px; }
+.combo span { font-family: var(--mono); font-size: 11.5px; opacity: .85; }
+
+.especimen { display: grid; gap: 22px; }
+.fuente { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 26px; padding-block: 24px; border-top: 2px dashed var(--linea); }
+.fuente:last-child { border-bottom: 2px dashed var(--linea); }
+@media (max-width: 640px) { .fuente { grid-template-columns: 1fr; gap: 10px; } }
+.fuente .info { display: grid; gap: 6px; align-content: start; }
+.fuente .info b { font-family: var(--display); font-weight: 600; font-size: 20px; color: var(--selva-2); }
+.fuente .info span { font-size: 14px; color: var(--ink-suave); }
+.fuente .info .mono { font-size: 12px; }
+.muestra-f { min-width: 0; overflow-wrap: anywhere; }
+
+.escala { display: grid; gap: 10px; margin-top: 18px; }
+.escala div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 16px; align-items: baseline; }
+.escala .mono { font-size: 11.5px; color: var(--ink-suave); }
+
+.ilus { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.ilus figure { margin: 0; background: var(--crema-2); border-radius: 22px; aspect-ratio: 1; display: grid; place-items: center; padding: 14px; }
+.ilus figure img { max-height: 100%; width: auto; object-fit: contain; }
+@media (max-width: 640px) { .ilus { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.reglas-ilu { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 18px; margin-top: 26px; }
+.reglas-ilu ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 15px; }
+
+.ui { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 22px; }
+.ui .panel { background: #fffdf8; border: 2px solid var(--linea); border-radius: 24px; padding: 22px; display: grid; gap: 16px; align-content: start; }
+.ui .panel h4 { color: var(--selva-2); }
+.ui .panel p { font-size: 14px; color: var(--ink-suave); }
+.fila { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.sombras { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.sombras div { width: 76px; height: 56px; border-radius: 16px; background: #fffdf8; border: 2px solid var(--linea); display: grid; place-items: center; font-family: var(--mono); font-size: 11px; color: var(--ink-suave); }
+.tarjeta-negocio { border-radius: 22px; overflow: hidden; background: #fffdf8; border: 2px solid var(--linea); box-shadow: var(--dura); max-width: 280px; }
+.tarjeta-negocio .foto { height: 120px; background: var(--crema-2); display: grid; place-items: center; position: relative; }
+.tarjeta-negocio .foto img { height: 90px; width: auto; }
+.tarjeta-negocio .foto .chip { position: absolute; top: 10px; right: 10px; font-size: 12px; padding: 4px 10px; }
+.tarjeta-negocio .txt { padding: 14px 16px; display: grid; gap: 2px; }
+.tarjeta-negocio .txt b { font-family: var(--display); font-weight: 600; font-size: 19px; color: var(--selva-2); }
+.tarjeta-negocio .txt span { font-size: 13px; color: var(--ink-suave); }
+
+.voz { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+@media (max-width: 560px) { .voz { grid-template-columns: 1fr; } }
+.par { display: grid; gap: 8px; }
+.par .si, .par .no { border-radius: 16px; padding: 12px 14px; font-size: 15px; }
+.par .si { background: rgb(168 217 74 / 0.28); border: 2px solid var(--lima); }
+.par .no { background: rgb(255 93 115 / 0.08); border: 2px dashed rgb(255 93 115 / 0.55); color: var(--ink-suave); text-decoration: line-through; text-decoration-color: rgb(255 93 115 / 0.7); }
+.par .mono { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-suave); }
+.rasgos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)); gap: 16px; }
+.rasgo { border-radius: 22px; padding: 20px; display: grid; gap: 6px; }
+.rasgo b { font-family: var(--display); font-weight: 600; font-size: 22px; }
+.rasgo p { font-size: 14.5px; }
+
+.glosario { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 0 28px; margin-top: 8px; }
+.glosario div { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr); gap: 14px; padding-block: 12px; border-top: 2px dashed var(--linea); font-size: 14.5px; }
+.glosario b { font-family: var(--display); font-weight: 600; color: var(--selva-2); }
+.glosario span { color: var(--ink-suave); }
+
+.apps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 22px; align-items: start; }
+.app { display: grid; gap: 10px; }
+.app h4 { color: var(--selva-2); }
+.app p { font-size: 14px; color: var(--ink-suave); }
+.post { aspect-ratio: 1; border-radius: 20px; background: var(--selva); color: var(--crema); padding: 20px; display: grid; align-content: space-between; position: relative; overflow: hidden; box-shadow: var(--dura-alta); }
+.post .t { font-family: var(--display); font-weight: 700; font-size: 25px; line-height: 1.02; position: relative; z-index: 1; }
+.post .t em { font-style: normal; color: var(--mango); }
+.post .abajo { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 600; position: relative; z-index: 1; }
+.post .abajo img { width: 34px; }
+.calco { aspect-ratio: 1; border-radius: 50%; background: var(--mango); border: 6px solid var(--cacao); display: grid; place-items: center; text-align: center; padding: 26px; box-shadow: 0 7px 0 0 rgb(74 44 29 / 0.25); position: relative; }
+.calco .dentro { display: grid; gap: 6px; justify-items: center; }
+.calco img { width: 46%; }
+.calco b { font-family: var(--display); font-weight: 700; font-size: 18px; line-height: 1.05; color: var(--cacao); }
+.calco span { font-family: var(--mono); font-size: 9px; font-weight: 700; color: var(--cacao); letter-spacing: 0.06em; }
+.gafete { border-radius: 20px; background: #fffdf8; border: 2px solid var(--linea); box-shadow: var(--dura-alta); overflow: hidden; display: grid; }
+.gafete .franja { background: var(--selva); padding: 14px 18px; display: flex; align-items: center; gap: 10px; color: var(--crema); font-family: var(--display); font-weight: 700; font-size: 18px; }
+.gafete .franja img { width: 30px; }
+.gafete .cuerpo { padding: 22px 18px; display: grid; gap: 4px; }
+.gafete .cuerpo b { font-family: var(--display); font-weight: 600; font-size: 24px; color: var(--selva-2); }
+.gafete .cuerpo .chip { justify-self: start; margin-top: 10px; font-size: 13px; padding: 5px 12px; }
+.gafete .pie { border-top: 2px dashed var(--linea); padding: 10px 18px; font-family: var(--mono); font-size: 11.5px; color: var(--ink-suave); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+
+.cobrand { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 20px; }
+.cobrand .caja { border-radius: 22px; padding: 26px; display: flex; align-items: center; justify-content: center; gap: 22px; flex-wrap: wrap; min-height: 150px; }
+.cobrand .caja .div { width: 2px; align-self: stretch; background: currentColor; opacity: .25; }
+</style>
+
+<!-- Portada -->
+<section class="hoja selva-2 portada">
+  <img class="deco" src="{{img:ramahojas}}" alt="" style="left:-140px; bottom:-120px; width:560px; opacity:.3">
+  <div class="col">
+    <div style="display:grid; gap:18px">
+      <p class="ceja">Manual de identidad · Versión 1 · Octubre de 2026</p>
+      <h1>Guía del Cacao</h1>
+      <p class="lead">Cómo se ve, cómo suena y cómo se aplica la marca. Para quien diseñe una lona, un post, una pantalla o un gafete.</p>
+      <div class="categorias" style="margin-top:6px">
+        <span class="punto" style="width:22px;height:22px;background:var(--selva);border:2px solid var(--crema)"></span>
+        <span class="punto" style="width:22px;height:22px;background:var(--lima)"></span>
+        <span class="punto" style="width:22px;height:22px;background:var(--mango)"></span>
+        <span class="punto" style="width:22px;height:22px;background:var(--guayaba)"></span>
+        <span class="punto" style="width:22px;height:22px;background:var(--turquesa)"></span>
+        <span class="punto" style="width:22px;height:22px;background:var(--cacao);border:2px solid var(--crema)"></span>
+        <span class="punto" style="width:22px;height:22px;background:var(--crema)"></span>
+      </div>
+    </div>
+    <img class="logo" src="{{img:logo}}" alt="Logotipo de la Guía del Cacao">
+  </div>
+</section>
+
+<!-- 01 Esencia -->
+<section class="hoja">
+  <img class="deco" src="{{img:mazorca-amarilla}}" alt="" style="right:-30px; top:40px; width:170px; transform:rotate(16deg)">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja"><span class="n">01</span> Esencia</p>
+      <h2>El cacao de México, en un solo lugar</h2>
+      <p class="lead">Esa es la promesa y es también la frase de marca. La Guía del Cacao es el lugar donde se encuentra a quien siembra, transforma, vende y cuenta el cacao. Se siente como una fruta abierta en la mesa: tropical, colorida y para compartir. Nunca como un trámite.</p>
+    </div>
+    <div class="rasgos">
+      <div class="rasgo" style="background:var(--lima)"><b>Tropical</b><p>Viene de la selva y de la mazorca, no de una oficina. Color pleno, formas redondas.</p></div>
+      <div class="rasgo" style="background:var(--mango)"><b>Divertida</b><p>Celebra lo que pasa: publicar, guardar un favorito, recibir una reseña.</p></div>
+      <div class="rasgo" style="background:var(--turquesa)"><b>Cercana</b><p>Habla de tú, con las palabras de la gente y de los negocios.</p></div>
+      <div class="rasgo" style="background:var(--selva); color:var(--crema)"><b>Confiable</b><p>Clara con los precios, las reglas y los datos. Lo que dice, lo cumple.</p></div>
+    </div>
+    <div class="rej rej-2" style="margin-top:30px">
+      <div class="tarjeta"><h3>Lo que sí es</h3><p>Una guía viva, hecha para el celular, que mezcla la herencia del cacao con el gusto de descubrirlo.</p></div>
+      <div class="tarjeta"><h3>Lo que no es</h3><p>Corporativa, minimalista ni solemne. Tampoco una tienda en línea ni un folleto turístico estático.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 Logotipo -->
+<section class="hoja crema-2">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja"><span class="n">02</span> Logotipo</p>
+      <h2>Una mazorca que lleva a algún lado</h2>
+      <p class="lead">El logotipo cuenta el producto en una sola imagen: el cacao como fruto y la guía como mapa para llegar a él.</p>
+    </div>
+    <div class="anatomia">
+      <div class="lienzo" style="background:#fffdf8; border:2px solid var(--linea)">
+        <img src="{{img:logo}}" alt="Logotipo con sus partes numeradas" style="width:100%; max-width:380px; margin-inline:auto">
+        <span class="marca-num" style="left:46%; top:12%">1</span>
+        <span class="marca-num" style="left:18%; top:26%">2</span>
+        <span class="marca-num" style="left:74%; top:34%">3</span>
+        <span class="marca-num" style="left:12%; top:56%">4</span>
+        <span class="marca-num" style="left:44%; top:86%">5</span>
+      </div>
+      <ol>
+        <li><span><b>La mazorca mango.</b> El fruto del cacao, en el amarillo más reconocible del árbol. Es también el símbolo suelto de la marca.</span></li>
+        <li><span><b>Las hojas selva.</b> El origen: el cacao crece a la sombra, en la selva húmeda del sureste.</span></li>
+        <li><span><b>El mapa y el pin.</b> La guía. Hay un camino punteado y una equis: alguien te lleva a un lugar concreto.</span></li>
+        <li><span><b>El nombre.</b> Letras redondas y gruesas en crema, con contorno cacao. «del» va en mango, entre dos guiones, para que el nombre se lea en dos tiempos.</span></li>
+        <li><span><b>Los granos.</b> Lo que hay dentro de la mazorca y de cada chocolate.</span></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- 03 Versiones -->
+<section class="hoja">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja"><span class="n">03</span> Versiones</p>
+      <h2>Tres formas de firmar</h2>
+      <p class="lead">Se elige por el espacio disponible, nunca por gusto. Cuando quepa, el logotipo completo.</p>
+    </div>
+    <div class="versiones">
+      <div class="version">
+        <div class="caja" style="background:var(--crema-2)"><img src="{{img:logo}}" alt="Logotipo completo"></div>
+        <h4>Logotipo completo</h4>
+        <p>Portadas, lonas, carteles, stands, la portada del sitio. Es la firma principal.</p>
+      </div>
+      <div class="version">
+        <div class="caja" style="background:var(--selva)"><span class="imagotipo" style="color:var(--crema)"><img src="{{img:mazorca}}" alt="">Guía del Cacao</span></div>
+        <h4>Horizontal</h4>
+        <p>Barras de navegación, encabezados, pies de correo y espacios bajos y anchos. Mazorca y nombre en Fredoka Bold.</p>
+      </div>
+      <div class="version">
+        <div class="caja" style="background:var(--mango)"><img src="{{img:mazorca}}" alt="Símbolo de la mazorca" style="height:120px"></div>
+        <h4>Símbolo</h4>
+        <p>Ícono de la app, favicon, avatar de redes y sellos. Solo cuando el nombre ya está presente cerca o es evidente.</p>
+      </div>
+    </div>
+    <div class="rej rej-3" style="margin-top:30px">
+      <div class="tarjeta"><h4 style="color:var(--selva-2)">Sobre crema</h4><p>Es el fondo de la marca y donde mejor se lee el logotipo.</p></div>
+      <div class="tarjeta"><h4 style="color:var(--selva-2)">Sobre selva</h4><p>Funciona por su contorno cacao grueso. Es la combinación de las portadas.</p></div>
+      <div class="tarjeta"><h4 style="color:var(--selva-2)">Sobre foto</h4><p>Solo sobre una zona lisa o con una placa crema detrás. Nunca sobre texturas cargadas.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 Protección y mal uso -->
+<section class="hoja crema-2">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja"><span class="n">04</span> Espacio y tamaño</p>
+      <h2>Aire alrededor, y nunca demasiado chico</h2>
+    </div>
+    <div class="proteccion">
+      <div class="zona">
+        <span class="x" style="top:14px; left:50%; transform:translateX(-50%)">x</span>
+        <span class="x" style="bottom:14px; left:50%; transform:translateX(-50%)">x</span>
+        <span class="x" style="left:16px; top:50%; transform:translateY(-50%)">x</span>
+        <span class="x" style="right:16px; top:50%; transform:translateY(-50%)">x</span>
+        <img src="{{img:logo}}" alt="Logotipo con su área de protección">
+      </div>
+      <div class="minimos">
+        <p>El área de protección mide <b>x</b>: el alto de la palabra «del». Ningún texto, borde ni otra marca entra ahí.</p>
+        <div class="minimo"><img src="{{img:logo}}" alt="" style="width:64px"><div><b>Logotipo completo</b><span>Mínimo 25 mm impreso, 96 px en pantalla.</span></div></div>
+        <div class="minimo"><span class="imagotipo" style="font-size:18px; color:var(--selva-2)"><img src="{{img:mazorca}}" alt="" style="height:24px !important">Guía del Cacao</span><div><b>Horizontal</b><span>Mínimo 120 px de ancho.</span></div></div>
+        <div class="minimo"><img src="{{img:mazorca}}" alt="" style="width:24px"><div><b>Símbolo</b><span>Mínimo 16 px. Debajo de eso, se pierde la hoja.</span></div></div>
+      </div>
+    </div>
+    <h3 style="margin:40px 0 16px">Así no</h3>
+    <div class="noes">
+      <figure><div class="caja"><img src="{{img:logo}}" alt="" style="transform:scaleX(1.45)"></div><figcaption><b>Deformarlo</b>Siempre se escala en proporción.</figcaption></figure>
+      <figure><div class="caja"><img src="{{img:logo}}" alt="" style="filter:hue-rotate(150deg)"></div><figcaption><b>Cambiarle los colores</b>La paleta del logotipo es fija.</figcaption></figure>
+      <figure><div class="caja"><img src="{{img:logo}}" alt="" style="transform:rotate(-22deg)"></div><figcaption><b>Girarlo</b>Va derecho, siempre.</figcaption></figure>
+      <figure><div class="caja" style="background:repeating-linear-gradient(60deg, var(--turquesa) 0 10px, var(--guayaba) 10px 20px, var(--lima) 20px 30px)"><img src="{{img:logo}}" alt=""></div><figcaption><b>Ponerlo sobre ruido</b>El fondo tiene que ser liso.</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- 05 Color -->
+<section class="hoja">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja"><span class="n">05</span> Color</p>
+      <h2>Siete colores, todos del árbol</h2>
+      <p class="lead">La paleta sale de la planta del cacao: la selva, la hoja tierna, la mazorca amarilla y la rosa, el agua del trópico y el grano tostado. No se inventan tonos intermedios.</p>
+    </div>
+    <div class="paleta">
+      <div class="color"><div class="muestra" style="background:var(--selva); color:var(--crema)">Selva</div><div class="datos"><span class="mono">#106B46 · RGB 16 107 70</span><p>Primario. Barras, títulos, botones principales.</p></div></div>
+      <div class="color"><div class="muestra" style="background:var(--crema); border-bottom:2px solid var(--linea)">Crema</div><div class="datos"><span class="mono">#FFF7E8 · RGB 255 247 232</span><p>El fondo de todo. Nunca blanco puro.</p></div></div>
+      <div class="color"><div class="muestra" style="background:var(--cacao); color:var(--crema)">Cacao</div><div class="datos"><span class="mono">#4A2C1D · RGB 74 44 29</span><p>Contornos de ilustración y textos sobre colores claros.</p></div></div>
+      <div class="color"><div class="muestra" style="background:var(--mango)">Mango</div><div class="datos"><span class="mono">#FFB703 · RGB 255 183 3</span><p>La llamada a la acción: «Crear cuenta», el código, lo que hay que ver.</p></div></div>
+      <div class="color"><div class="muestra" style="background:var(--lima)">Lima</div><div class="datos"><span class="mono">#A8D94A · RGB 168 217 74</span><p>Lo confirmado y lo nuevo. Acentos sobre selva.</p></div></div>
+      <div class="color"><div class="muestra" style="background:var(--guayaba)">Guayaba</div><div class="datos"><span class="mono">#FF5D73 · RGB 255 93 115</span><p>Corazones, avisos y errores. Con medida.</p></div></div>
+      <div class="color"><div class="muestra" style="background:var(--turquesa)">Turquesa</div><div class="datos"><span class="mono">#12B8AC · RGB 18 184 172</span><p>Acento fresco para variar sin salir de la paleta.</p></div></div>
+    </div>
+    <div class="secundarios">
+      <span class="sec"><i style="background:var(--selva-2)"></i><span><b>Selva oscura</b> <span class="mono chico">#0C5236</span></span></span>
+      <span class="sec"><i style="background:var(--crema-2)"></i><span><b>Crema tostada</b> <span class="mono chico">#FDEECB</span></span></span>
+      <span class="sec"><i style="background:var(--ink)"></i><span><b>Tinta</b> <span class="mono chico">#22150E</span></span></span>
+    </div>
+    <div class="proporcion" aria-label="Proporción de uso">
+      <div style="flex:55; background:var(--crema); border-right:2px solid var(--linea)">Crema 55%</div>
+      <div style="flex:22; background:var(--selva); color:var(--crema)">Selva 22%</div>
+      <div style="flex:10; background:var(--cacao); color:var(--crema)">10%</div>
+      <div style="flex:8; background:var(--mango)">8%</div>
+      <div style="flex:5; background:linear-gradient(90deg, var(--lima) 0 33%, var(--guayaba) 33% 66%, var(--turquesa) 66%)"></div>
+    </div>
+    <p class="chico" style="margin-top:10px">Proporción orientativa en una pieza típica. Mucha crema y selva; los colores de fruta son acentos.</p>
+  </div>
+</section>
+
+<!-- 06 Color en uso -->
+<section class="hoja crema-2">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja"><span class="n">06</span> Color en uso</p>
+      <h2>Un color por tipo de negocio</h2>
+      <p class="lead">Cada categoría tiene su color, así el directorio se vuelve tropical sin inventar tonos y se distingue de un vistazo qué es cada negocio. La chocolatería es cacao a propósito.</p>
+    </div>
+    <div class="categorias">
+      <span class="chip" style="background:var(--lima); color:var(--ink)">Productora / Finca</span>
+      <span class="chip" style="background:var(--turquesa); color:var(--ink)">Comercializadora</span>
+      <span class="chip" style="background:var(--cacao); color:var(--crema)">Chocolatería</span>
+      <span class="chip" style="background:var(--mango); color:var(--ink)">Museo</span>
+      <span class="chip" style="background:var(--guayaba); color:var(--ink)">Artesanías</span>
+      <span class="chip" style="background:var(--selva); color:var(--crema)">Otros servicios</span>
+    </div>
+    <h3 style="margin:40px 0 4px">Combinaciones que se leen bien</h3>
+    <p class="chico">Texto y fondo aprobados. Lo que no está aquí, se prueba antes de imprimir.</p>
+    <div class="combos">
+      <div class="combo" style="background:var(--selva); color:var(--crema)"><b>Crema sobre selva</b><span>Contraste 6.1 : 1</span></div>
+      <div class="combo" style="background:var(--crema); color:var(--selva); border:2px solid var(--linea)"><b>Selva sobre crema</b><span>Contraste 6.1 : 1</span></div>
+      <div class="combo" style="background:var(--mango); color:var(--ink)"><b>Tinta sobre mango</b><span>Contraste 10.2 : 1</span></div>
+      <div class="combo" style="background:var(--cacao); color:var(--mango)"><b>Mango sobre cacao</b><span>Contraste 7.2 : 1</span></div>
+      <div class="combo" style="background:var(--lima); color:var(--selva-2)"><b>Selva oscura sobre lima</b><span>Contraste 5.6 : 1</span></div>
+      <div class="combo" style="background:var(--guayaba); color:var(--ink)"><b>Tinta sobre guayaba</b><span>Contraste 6.0 : 1</span></div>
+    </div>
+    <div class="tarjeta" style="margin-top:24px">
+      <h4 style="color:var(--guayaba)">Evitar</h4>
+      <p>Texto blanco o crema sobre mango, lima o turquesa: no se lee. Y degradados entre colores de la paleta: la marca es de colores planos.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 07 Tipografía -->
+<section class="hoja">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja"><span class="n">07</span> Tipografía</p>
+      <h2>Redonda para gritar, clara para leer</h2>
+      <p class="lead">Tres familias de Google Fonts, gratuitas y con acentos completos. Cada una tiene un solo trabajo.</p>
+    </div>
+    <div class="especimen">
+      <div class="fuente">
+        <div class="info"><b>Fredoka</b><span>Títulos, botones, nombres de negocio y chips.</span><span class="mono">SemiBold 600 · Bold 700</span></div>
+        <div class="muestra-f" style="font-family:var(--display); font-weight:600; color:var(--selva-2)"><div style="font-size:52px; line-height:1">Aa Ññ ¿Á?</div><div style="font-size:26px; margin-top:8px">El cacao de México, en un solo lugar</div></div>
+      </div>
+      <div class="fuente">
+        <div class="info"><b>Nunito</b><span>Párrafos, descripciones, formularios y ayudas.</span><span class="mono">Regular 400 · Bold 700</span></div>
+        <div class="muestra-f" style="font-family:var(--texto)"><div style="font-size:44px; line-height:1; font-weight:700; color:var(--cacao)">Aa Ññ ¿Á?</div><p style="font-size:17px; margin-top:10px; max-width:52ch; color:var(--ink-suave)">Productoras, chocolaterías, museos y talleres. Encuentra a quién visitar y qué está pasando cerca de ti.</p></div>
+      </div>
+      <div class="fuente">
+        <div class="info"><b>Space Mono</b><span>Precios, cifras, fechas, códigos y etiquetas pequeñas.</span><span class="mono">Regular 400 · Bold 700</span></div>
+        <div class="muestra-f" style="font-family:var(--mono)"><div style="font-size:40px; line-height:1; font-weight:700">$299 /mes</div><div style="font-size:16px; margin-top:10px; color:var(--ink-suave)">FESTIVALCHOCOLATE · 12–16 NOV 2026 · 5.0 ★</div></div>
+      </div>
+    </div>
+    <div class="escala">
+      <div><span class="mono">Título 1 · 48–76</span><span style="font-family:var(--display); font-weight:600; font-size:40px; line-height:1.05; color:var(--selva-2)">Explorar</span></div>
+      <div><span class="mono">Título 2 · 32–48</span><span style="font-family:var(--display); font-weight:600; font-size:30px; color:var(--selva-2)">Destacados</span></div>
+      <div><span class="mono">Título 3 · 22</span><span style="font-family:var(--display); font-weight:600; font-size:22px; color:var(--selva-2)">Acerca de</span></div>
+      <div><span class="mono">Texto · 16–19</span><span style="font-size:17px">Negocios del cacao en todo México.</span></div>
+      <div><span class="mono">Etiqueta · 12</span><span class="mono" style="font-size:12px; letter-spacing:.12em; text-transform:uppercase">Convenio de colaboración</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 08 Ilustración -->
+<section class="hoja crema-2">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja"><span class="n">08</span> Ilustración</p>
+      <h2>Planas, con contorno cacao</h2>
+      <p class="lead">Una familia de ramas, hojas, mazorcas, flores y granos que acompaña el contenido en los márgenes. Se dibujan con la misma regla que el logotipo.</p>
+    </div>
+    <div class="ilus">
+      <figure><img src="{{img:rama3}}" alt="Rama con tres mazorcas"></figure>
+      <figure><img src="{{img:mazorca-rosa}}" alt="Mazorca rosa"></figure>
+      <figure><img src="{{img:hoja}}" alt="Hoja"></figure>
+      <figure><img src="{{img:granos}}" alt="Granos de cacao"></figure>
+      <figure><img src="{{img:flores}}" alt="Flores de cacao"></figure>
+      <figure><img src="{{img:mazorca-amarilla}}" alt="Mazorca amarilla"></figure>
+      <figure><img src="{{img:rama1}}" alt="Rama con una mazorca"></figure>
+      <figure><img src="{{img:ramahojas}}" alt="Rama de hojas"></figure>
+    </div>
+    <div class="reglas-ilu">
+      <div class="tarjeta"><h4 style="color:var(--selva-2)">Así sí</h4><ul><li>Relleno plano, máximo tres tonos por pieza</li><li>Contorno cacao #4A2C1D grueso y parejo</li><li>Formas redondeadas, vista de frente</li><li>Piezas sueltas y asimétricas, sin escenario</li><li>Las ramas entran por el borde izquierdo</li></ul></div>
+      <div class="tarjeta"><h4 style="color:var(--guayaba)">Así no</h4><ul><li>Degradados, sombras, brillos o volumen 3D</li><li>Texturas de acuarela, papel o ruido</li><li>Colores fuera de la paleta</li><li>Fotos recortadas mezcladas con dibujo</li><li>Fondo blanco: el de la marca es crema</li></ul></div>
+    </div>
+    <p class="chico" style="margin-top:18px">La guía completa para encargar ilustraciones nuevas está en guia-de-estilo-ilustraciones.pdf.</p>
+  </div>
+</section>
+
+<!-- 09 Interfaz -->
+<section class="hoja">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja"><span class="n">09</span> Elementos de interfaz</p>
+      <h2>Cosas que dan ganas de tocar</h2>
+      <p class="lead">Todo es grande, redondo y con una sombra dura debajo, como un bloque de color. Pensado para el pulgar, de pie en un stand.</p>
+    </div>
+    <div class="ui">
+      <div class="panel">
+        <h4>Botones</h4>
+        <div class="fila"><span class="boton selva">Agregar mi negocio</span><span class="boton mango">Crear cuenta</span><span class="boton claro">Compartir</span></div>
+        <p>Siempre en píldora. Selva para la acción principal, mango para registrarse, claro para lo secundario. El texto dice lo que pasa al tocar.</p>
+      </div>
+      <div class="panel">
+        <h4>Sombra dura</h4>
+        <div class="sombras"><div style="box-shadow:0 2px 0 0 rgb(12 82 54 / .15)">2 px</div><div style="box-shadow:var(--dura)">4 px</div><div style="box-shadow:var(--dura-alta)">7 px</div></div>
+        <p>Es la única sombra del sistema: sin difuminado, en verde selva al 15%. Si algo pide una sombra borrosa, el diseño se está yendo por otro lado.</p>
+      </div>
+      <div class="panel">
+        <h4>Tarjeta de negocio</h4>
+        <div class="tarjeta-negocio">
+          <div class="foto"><img src="{{img:mazorca}}" alt=""><span class="chip" style="background:var(--cacao); color:var(--crema)">Chocolatería</span></div>
+          <div class="txt"><b>Chocolatería La Mazorca</b><span>Matriz · Comalcalco, Tabasco</span></div>
+        </div>
+        <p>Primero la marca, grande; debajo la sucursal y dónde está, en chico.</p>
+      </div>
+      <div class="panel">
+        <h4>Esquinas</h4>
+        <div class="fila"><span style="width:60px;height:44px;border-radius:999px;background:var(--selva)"></span><span style="width:60px;height:60px;border-radius:22px;background:var(--mango)"></span><span style="width:60px;height:60px;border-radius:14px;background:var(--lima)"></span></div>
+        <p>Píldora para botones y chips; 22 a 28 px para tarjetas; 14 px para campos. Nada en ángulo recto.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 Voz -->
+<section class="hoja selva">
+  <img class="deco" src="{{img:hoja}}" alt="" style="right:-40px; top:30px; width:180px; opacity:.4; transform:rotate(30deg)">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja"><span class="n">10</span> Voz y tono</p>
+      <h2>Como habla alguien que conoce el cacao</h2>
+      <p class="lead">De tú, frases cortas y palabras de la gente. Se explica lo que pasa, no cómo está hecho el sistema. Con calidez, sin diminutivos de más ni signos de admiración por todos lados.</p>
+    </div>
+    <div class="voz">
+      <div class="par"><span class="mono" style="color:var(--lima)">Botón</span><div class="si" style="color:var(--ink)">Agregar mi negocio</div><div class="no" style="background:rgb(255 247 232 / .08); color:rgb(255 247 232 / .65)">Registrar entidad comercial</div></div>
+      <div class="par"><span class="mono" style="color:var(--lima)">Error</span><div class="si" style="color:var(--ink)">Falta tu logotipo para publicar.</div><div class="no" style="background:rgb(255 247 232 / .08); color:rgb(255 247 232 / .65)">Error: campo requerido</div></div>
+      <div class="par"><span class="mono" style="color:var(--lima)">Precio</span><div class="si" style="color:var(--ink)">Si no pagas, tu página se oculta, pero no se borra nada.</div><div class="no" style="background:rgb(255 247 232 / .08); color:rgb(255 247 232 / .65)">La cuenta será suspendida por falta de pago</div></div>
+      <div class="par"><span class="mono" style="color:var(--lima)">Invitación</span><div class="si" style="color:var(--ink)">Que te encuentren todo el año, no solo en la feria.</div><div class="no" style="background:rgb(255 247 232 / .08); color:rgb(255 247 232 / .65)">¡¡Impulsa tu negocio al siguiente nivel!!</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 11 Cómo se llaman las cosas -->
+<section class="hoja">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja"><span class="n">11</span> Vocabulario</p>
+      <h2>Cómo se llaman las cosas</h2>
+      <p class="lead">Los mismos nombres en el sitio, en los carteles y en voz alta en un taller.</p>
+    </div>
+    <div class="glosario">
+      <div><b>Guía del Cacao</b><span>Siempre con tilde y mayúsculas en Guía y Cacao. No «la guía cacao» ni «GDC».</span></div>
+      <div><b>Micrositio</b><span>La página de cada negocio. Al hablar con negocios también vale «tu página».</span></div>
+      <div><b>Marca y sucursal</b><span>La marca es lo que la gente reconoce; la sucursal es la dirección. Primero la marca.</span></div>
+      <div><b>Básico, Plus, Premier</b><span>Los planes. No «tier 1, 2, 3».</span></div>
+      <div><b>Explorar</b><span>Buscar en el directorio. Es la pestaña central.</span></div>
+      <div><b>Comunidad</b><span>El muro donde negocios y visitantes publican.</span></div>
+      <div><b>Tu cuenta</b><span>Lo de quien visita. No «perfil de usuario».</span></div>
+      <div><b>Mazorcas de cacao</b><span>Los puntos de lealtad, para cuando se enciendan. Nunca «monedas» ni «puntos».</span></div>
+      <div><b>La Secretaría</b><span>Secretaría de Turismo y Desarrollo Económico del Estado de Tabasco, siempre con el nombre completo la primera vez.</span></div>
+      <div><b>Vórtice VR</b><span>Quien desarrolla la plataforma. Con tilde en la O.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 12 Aplicaciones -->
+<section class="hoja crema-2">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja"><span class="n">12</span> Aplicaciones</p>
+      <h2>La marca fuera de la pantalla</h2>
+      <p class="lead">Tres ejemplos de cómo se arma una pieza con lo anterior.</p>
+    </div>
+    <div class="apps">
+      <div class="app">
+        <div class="post">
+          <img class="deco" src="{{img:rama3}}" alt="" style="right:0; bottom:-30px; width:60%; opacity:.95; transform:scaleX(-1)">
+          <span class="ceja" style="color:var(--lima); margin:0">Festival del Chocolate</span>
+          <span class="t">Tu negocio,<br><em>gratis</em> en la<br>guía hasta el<br>30 de nov.</span>
+          <span class="abajo"><img src="{{img:mazorca}}" alt="">guiadelcacao.com</span>
+        </div>
+        <h4>Post para redes</h4>
+        <p>1080 × 1080. Selva de fondo, una idea en Fredoka y una ilustración que sale del borde.</p>
+      </div>
+      <div class="app">
+        <div class="calco" style="max-width:300px; width:100%; justify-self:center">
+          <div class="dentro"><img src="{{img:logo}}" alt=""><b>Estamos en la<br>Guía del Cacao</b><span>BÚSCANOS EN GUIADELCACAO.COM</span></div>
+        </div>
+        <h4>Calcomanía de mostrador</h4>
+        <p>Para el aparador o la caja de cada negocio publicado. Circular, 10 cm, mango con borde cacao.</p>
+      </div>
+      <div class="app">
+        <div class="gafete">
+          <div class="franja"><img src="{{img:mazorca}}" alt="">Guía del Cacao</div>
+          <div class="cuerpo"><span class="mono chico">MESA DE AYUDA</span><b>Ana Pérez</b><span class="chico">Taller de registro</span><span class="chip" style="background:var(--mango); color:var(--ink)">Pregúntame</span></div>
+          <div class="pie"><span>Festival del Chocolate</span><span>12–16 nov 2026</span></div>
+        </div>
+        <h4>Gafete de taller</h4>
+        <p>Para quien ayuda a los negocios a darse de alta. Franja selva y nombre grande.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 13 Co-branding -->
+<section class="hoja">
+  <div class="col">
+    <div class="cabeza">
+      <p class="ceja"><span class="n">13</span> Con otras marcas</p>
+      <h2>Junto a Vórtice VR y a la Secretaría</h2>
+      <p class="lead">La Guía del Cacao siempre va primero y más grande. Las demás marcas van separadas por una línea, al mismo alto entre ellas y con su propio color.</p>
+    </div>
+    <div class="cobrand">
+      <div class="caja" style="background:var(--crema-2); color:var(--cacao)"><img src="{{img:logo}}" alt="Guía del Cacao" style="height:110px; width:auto"><span class="div"></span><div style="display:grid; gap:6px"><span class="mono chico">Desarrollada por</span><img src="{{img:vortice}}" alt="Vórtice VR" style="height:30px; width:auto"></div></div>
+      <div class="caja" style="background:var(--selva-2); color:var(--crema)"><img src="{{img:logo}}" alt="Guía del Cacao" style="height:110px; width:auto"><span class="div"></span><div style="display:grid; gap:6px"><span class="mono chico" style="color:rgb(255 247 232 / .7)">Desarrollada por</span><img src="{{img:vortice-blanco}}" alt="Vórtice VR" style="height:30px; width:auto"></div></div>
+    </div>
+    <div class="rej rej-2" style="margin-top:24px">
+      <div class="tarjeta"><h4 style="color:var(--selva-2)">Créditos</h4><p>«Desarrollada por Vórtice VR» va al pie, en chico, con el logotipo de Vórtice VR en su versión morada sobre claro o blanca sobre oscuro.</p></div>
+      <div class="tarjeta"><h4 style="color:var(--selva-2)">Con la Secretaría</h4><p>En piezas del convenio, el logotipo oficial de la Secretaría se usa según su propio manual, del mismo alto que el de Vórtice VR y nunca recoloreado con la paleta de la guía.</p></div>
+    </div>
+    <div class="pie-hoja"><span>Guía del Cacao · Manual de identidad v1</span><span>Octubre de 2026</span><span>guiadelcacao.com</span></div>
+  </div>
+</section>
