@@ -1,0 +1,91 @@
+{
+  "semana": "9 al 15 de noviembre de 2026",
+  "piezas": [
+    {
+      "id": "08",
+      "nombre": "faltan-3-dias",
+      "ilustracion": "ilustraciones/08-faltan-3-dias.png",
+      "kicker": "Faltan 3 días",
+      "titulo": [
+        [{ "t": "Ya casi llega el" }],
+        [{ "t": "Festival", "oro": true }, { "t": " del Chocolate" }]
+      ],
+      "sub": "Del 12 al 16 de noviembre, en Tabasco.\nGuarda desde hoy a quién quieres visitar.",
+      "semilla": 88
+    },
+    {
+      "id": "09",
+      "nombre": "negocios-en-la-guia",
+      "ilustracion": "ilustraciones/09-primer-negocio.png",
+      "kicker": "Bienvenidos",
+      "titulo": [
+        [{ "t": "Los negocios ya están" }],
+        [{ "t": "llegando a la " }, { "t": "guía", "oro": true }]
+      ],
+      "sub": "Chocolaterías y productoras de Tabasco\ncon su catálogo, WhatsApp y mapa.",
+      "boton": "Pruébalo 15 días gratis",
+      "semilla": 99
+    },
+    {
+      "id": "10",
+      "nombre": "que-llevar",
+      "ilustracion": "ilustraciones/10-que-llevar.png",
+      "kicker": "Mañana empieza",
+      "titulo": [
+        [{ "t": "Lo que tienes que" }],
+        [{ "t": "llevar", "oro": true }, { "t": " al Festival" }]
+      ],
+      "sub": "Agua, sombrero, bolsa de tela\ny tu ruta guardada en la guía.",
+      "semilla": 110
+    },
+    {
+      "id": "11",
+      "nombre": "arranca-festival",
+      "ilustracion": "ilustraciones/11-arranca-festival.png",
+      "kicker": "¡Hoy empieza!",
+      "titulo": [
+        [{ "t": "¡Arranca el Festival" }],
+        [{ "t": "del " }, { "t": "Chocolate", "oro": true }, { "t": "!" }]
+      ],
+      "sub": "Del 12 al 16 de noviembre.\nEncuentra a cada negocio en la guía.",
+      "semilla": 121
+    },
+    {
+      "id": "12",
+      "nombre": "puestos",
+      "ilustracion": "ilustraciones/12-puestos.png",
+      "kicker": "En el Festival",
+      "titulo": [
+        [{ "t": "¿Te gustó un puesto?" }],
+        [{ "t": "Búscalo en la " }, { "t": "guía", "oro": true }]
+      ],
+      "sub": "Guárdalo en favoritos y escríbele\npor WhatsApp cuando regreses a casa.",
+      "semilla": 132
+    },
+    {
+      "id": "13",
+      "nombre": "variedades",
+      "ilustracion": "ilustraciones/13-variedades.png",
+      "kicker": "Para saber",
+      "titulo": [
+        [{ "t": "No todo el cacao" }],
+        [{ "t": "es " }, { "t": "igual", "oro": true }]
+      ],
+      "sub": "Criollo, forastero y trinitario:\ncada uno con su sabor y su historia.",
+      "semilla": 143
+    },
+    {
+      "id": "14",
+      "nombre": "pasale",
+      "ilustracion": "ilustraciones/14-pasale.png",
+      "kicker": "Para negocios",
+      "titulo": [
+        [{ "t": "Tu negocio también" }],
+        [{ "t": "tiene un " }, { "t": "lugar", "oro": true }, { "t": " aquí" }]
+      ],
+      "sub": "Arma tu página desde el celular\nen una tarde, con todo incluido.",
+      "boton": "Pruébalo 15 días gratis",
+      "semilla": 154
+    }
+  ]
+}

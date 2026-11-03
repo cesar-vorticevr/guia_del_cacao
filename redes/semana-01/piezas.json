@@ -5,7 +5,7 @@
       "id": "01",
       "nombre": "presentacion",
       "ilustracion": "ilustraciones/01-presentacion.png",
-      "kicker": "Lunes 2 nov · Ya estamos aquí",
+      "kicker": "Ya estamos aquí",
       "titulo": [
         [{ "t": "El cacao de México," }],
         [{ "t": "en un solo " }, { "t": "lugar", "oro": true }]
@@ -17,7 +17,7 @@
       "id": "02",
       "nombre": "como-funciona",
       "ilustracion": "ilustraciones/02-como-funciona.png",
-      "kicker": "Martes 3 nov · Cómo funciona",
+      "kicker": "Cómo funciona",
       "titulo": [
         [{ "t": "Búscalos por estado," }],
         [{ "t": "por tipo o por " }, { "t": "producto", "oro": true }]
@@ -29,7 +29,7 @@
       "id": "03",
       "nombre": "para-negocios",
       "ilustracion": "ilustraciones/03-para-negocios.png",
-      "kicker": "Miércoles 4 nov · Para negocios",
+      "kicker": "Para negocios",
       "titulo": [
         [{ "t": "Tu negocio de cacao," }],
         [{ "t": "con su propia " }, { "t": "página", "oro": true }]
@@ -42,7 +42,7 @@
       "id": "04",
       "nombre": "del-arbol-a-la-taza",
       "ilustracion": "ilustraciones/04-del-arbol.png",
-      "kicker": "Jueves 5 nov · Para saber",
+      "kicker": "Para saber",
       "titulo": [
         [{ "t": "De la mazorca" }],
         [{ "t": "a tu " }, { "t": "chocolate", "oro": true }]
@@ -54,7 +54,7 @@
       "id": "05",
       "nombre": "festival",
       "ilustracion": "ilustraciones/05-festival.png",
-      "kicker": "Viernes 6 nov · Faltan 6 días",
+      "kicker": "Faltan 6 días",
       "titulo": [
         [{ "t": "Festival del" }],
         [{ "t": "Chocolate", "oro": true }]
@@ -66,7 +66,7 @@
       "id": "06",
       "nombre": "tu-ruta",
       "ilustracion": "ilustraciones/06-ruta.png",
-      "kicker": "Sábado 7 nov · Para quien visita",
+      "kicker": "Para quien visita",
       "titulo": [
         [{ "t": "Guarda tus " }, { "t": "favoritos", "oro": true }],
         [{ "t": "y arma tu ruta" }]
@@ -78,7 +78,7 @@
       "id": "07",
       "nombre": "comunidad",
       "ilustracion": "ilustraciones/07-comunidad.png",
-      "kicker": "Domingo 8 nov · Cuéntanos",
+      "kicker": "Cuéntanos",
       "titulo": [
         [{ "t": "¿Cuál es tu" }],
         [{ "t": "chocolate", "oro": true }, { "t": " favorito?" }]

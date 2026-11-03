@@ -1,0 +1,102 @@
+{
+  "semana": "23 al 30 de noviembre de 2026",
+  "piezas": [
+    {
+      "id": "22",
+      "nombre": "pozol",
+      "ilustracion": "ilustraciones/22-pozol.png",
+      "kicker": "Para saber",
+      "titulo": [
+        [{ "t": "El pozol, la bebida" }],
+        [{ "t": "de " }, { "t": "Tabasco", "oro": true }]
+      ],
+      "sub": "Maíz y cacao, batidos con agua\ny servidos en jícara.",
+      "semilla": 242
+    },
+    {
+      "id": "23",
+      "nombre": "resenas",
+      "ilustracion": "ilustraciones/23-resenas.png",
+      "kicker": "Para negocios",
+      "titulo": [
+        [{ "t": "Que tus clientes" }],
+        [{ "t": "hablen por " }, { "t": "ti", "oro": true }]
+      ],
+      "sub": "Reseñas en tu página para que\nquien no te conoce se anime.",
+      "boton": "Pruébalo 15 días gratis",
+      "semilla": 253
+    },
+    {
+      "id": "24",
+      "nombre": "tostado",
+      "ilustracion": "ilustraciones/24-tostado.png",
+      "kicker": "Para saber",
+      "titulo": [
+        [{ "t": "Tostar y moler," }],
+        [{ "t": "puro " }, { "t": "oficio", "oro": true }]
+      ],
+      "sub": "Del comal al metate:\nasí empieza una tablilla de chocolate.",
+      "semilla": 264
+    },
+    {
+      "id": "25",
+      "nombre": "cosecha",
+      "ilustracion": "ilustraciones/25-cosecha.png",
+      "kicker": "Del campo",
+      "titulo": [
+        [{ "t": "Detrás de cada barra" }],
+        [{ "t": "hay una " }, { "t": "cosecha", "oro": true }]
+      ],
+      "sub": "Conoce a las productoras\nque cuidan el cacao desde el árbol.",
+      "semilla": 275
+    },
+    {
+      "id": "26",
+      "nombre": "regala-cacao",
+      "ilustracion": "ilustraciones/26-regala-cacao.png",
+      "kicker": "Para regalar",
+      "titulo": [
+        [{ "t": "Esta Navidad," }],
+        [{ "t": "regala " }, { "t": "cacao", "oro": true }]
+      ],
+      "sub": "Barras, granos y molinillos\nhechos en Tabasco. Encuéntralos en la guía.",
+      "semilla": 286
+    },
+    {
+      "id": "27",
+      "nombre": "arma-tu-ruta",
+      "ilustracion": "ilustraciones/27-mapa.png",
+      "kicker": "Para quien visita",
+      "titulo": [
+        [{ "t": "Tu " }, { "t": "ruta", "oro": true }, { "t": " del cacao," }],
+        [{ "t": "en un solo mapa" }]
+      ],
+      "sub": "Guarda tus favoritos y llega directo.\nGratis, siempre, para quien visita.",
+      "semilla": 297
+    },
+    {
+      "id": "28",
+      "nombre": "tu-recuerdo",
+      "ilustracion": "ilustraciones/28-cocina.png",
+      "kicker": "Cuéntanos",
+      "titulo": [
+        [{ "t": "¿Cuál es tu recuerdo" }],
+        [{ "t": "con " }, { "t": "cacao", "oro": true }, { "t": "?" }]
+      ],
+      "sub": "La abuela, el molinillo, la cocina…\nCuéntanos en los comentarios.",
+      "semilla": 308
+    },
+    {
+      "id": "29",
+      "nombre": "ya-viene-diciembre",
+      "ilustracion": "ilustraciones/29-diciembre.png",
+      "kicker": "Ya viene diciembre",
+      "titulo": [
+        [{ "t": "Diciembre sabe" }],
+        [{ "t": "a " }, { "t": "chocolate", "oro": true }]
+      ],
+      "sub": "Posadas, regalos y tazas calientes.\nEncuentra tu cacao en la guía.",
+      "semilla": 319
+    }
+  ]
+}

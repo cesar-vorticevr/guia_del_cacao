@@ -1,0 +1,90 @@
+{
+  "semana": "16 al 22 de noviembre de 2026",
+  "piezas": [
+    {
+      "id": "15",
+      "nombre": "ultimo-dia-festival",
+      "ilustracion": "ilustraciones/15-ultimo-dia-festival.png",
+      "kicker": "Último día",
+      "titulo": [
+        [{ "t": "Hoy es el último día" }],
+        [{ "t": "del " }, { "t": "Festival", "oro": true }]
+      ],
+      "sub": "¿Ya probaste todo? Lo que no alcances,\nlo encuentras después en la guía.",
+      "semilla": 165
+    },
+    {
+      "id": "16",
+      "nombre": "gracias",
+      "ilustracion": "ilustraciones/16-gracias.png",
+      "kicker": "Gracias",
+      "titulo": [
+        [{ "t": "Gracias por llenar" }],
+        [{ "t": "de " }, { "t": "cacao", "oro": true }, { "t": " el Festival" }]
+      ],
+      "sub": "A quienes lo hacen y a quienes lo prueban.\nEl cacao de Tabasco sigue aquí todo el año.",
+      "semilla": 176
+    },
+    {
+      "id": "17",
+      "nombre": "tu-catalogo",
+      "ilustracion": "ilustraciones/17-tu-catalogo.png",
+      "kicker": "Para negocios",
+      "titulo": [
+        [{ "t": "Tu catálogo," }],
+        [{ "t": "con precios y " }, { "t": "fotos", "oro": true }]
+      ],
+      "sub": "Que te pidan directo por WhatsApp\nsin mandar la lista cada vez.",
+      "boton": "Pruébalo 15 días gratis",
+      "semilla": 187
+    },
+    {
+      "id": "18",
+      "nombre": "fermentacion",
+      "ilustracion": "ilustraciones/18-fermentacion.png",
+      "kicker": "Para saber",
+      "titulo": [
+        [{ "t": "El sabor nace en la" }],
+        [{ "t": "fermentación", "oro": true }]
+      ],
+      "sub": "Varios días en cajones de madera,\ncubiertos con hojas de plátano.",
+      "semilla": 198
+    },
+    {
+      "id": "19",
+      "nombre": "chocolate-de-agua",
+      "ilustracion": "ilustraciones/19-chocolate-de-agua.png",
+      "kicker": "Receta",
+      "titulo": [
+        [{ "t": "Chocolate de agua," }],
+        [{ "t": "como en " }, { "t": "casa", "oro": true }]
+      ],
+      "sub": "Agua caliente, tablilla y canela.\nY el molinillo hasta que haga espuma.",
+      "semilla": 209
+    },
+    {
+      "id": "20",
+      "nombre": "haciendas",
+      "ilustracion": "ilustraciones/20-hacienda.png",
+      "kicker": "Ruta del cacao",
+      "titulo": [
+        [{ "t": "Visita una" }],
+        [{ "t": "hacienda", "oro": true }, { "t": " cacaotera" }]
+      ],
+      "sub": "En la Chontalpa te enseñan el árbol,\nel proceso y el chocolate al final.",
+      "semilla": 220
+    },
+    {
+      "id": "21",
+      "nombre": "con-que-acompanas",
+      "ilustracion": "ilustraciones/21-acompanas.png",
+      "kicker": "Cuéntanos",
+      "titulo": [
+        [{ "t": "¿Con qué acompañas" }],
+        [{ "t": "tu " }, { "t": "chocolate", "oro": true }, { "t": "?" }]
+      ],
+      "sub": "¿Concha, tamal, galleta…?\nDéjalo en los comentarios.",
+      "semilla": 231
+    }
+  ]
+}
