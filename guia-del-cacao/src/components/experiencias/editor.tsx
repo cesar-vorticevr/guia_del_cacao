@@ -566,7 +566,7 @@ export function EditorDeExperiencia({
             ))}
           </nav>
 
-          <div className="relative h-[60vh] min-h-80 overflow-hidden rounded-2xl bg-[#1a0d33] shadow-[inset_0_0_60px_rgb(0_0_0/0.5)]">
+          <div className="relative h-[60vh] min-h-80 min-w-0 overflow-hidden rounded-2xl bg-[#1a0d33] shadow-[inset_0_0_60px_rgb(0_0_0/0.5)]">
             <div ref={escenario} className="absolute inset-0 [&>canvas]:block [&>canvas]:h-full [&>canvas]:w-full" />
             {!imagen.ancho && (
               <p className="absolute inset-0 grid place-items-center p-6 text-center font-bold text-crema/70">
@@ -611,7 +611,7 @@ export function EditorDeExperiencia({
             )}
           </div>
 
-          <aside className="grid content-start gap-3">
+          <aside className="grid min-w-0 grid-cols-1 content-start gap-3">
             {avisoElementos && <p className="text-sm font-bold text-guayaba">{avisoElementos}</p>}
             <div className="flex items-baseline justify-between">
               <h3 className="font-bold">Elementos</h3>
@@ -624,7 +624,7 @@ export function EditorDeExperiencia({
                 Usa los botones para agregar un video, una imagen o un texto.
               </p>
             ) : (
-              <ol className="grid gap-1.5" aria-label="Elementos (el de abajo se ve al frente)">
+              <ol className="grid grid-cols-1 gap-1.5" aria-label="Elementos (el de abajo se ve al frente)">
                 {lista.map((it, i) => (
                   <li key={it.id}>
                     <div
