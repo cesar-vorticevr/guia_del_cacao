@@ -1,5 +1,6 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import {
@@ -43,6 +44,12 @@ function traducirError(mensaje: string) {
   }
   if (m.includes("password")) {
     return "La contraseña no cumple los requisitos mínimos.";
+  }
+  if (m.includes("expired") || m.includes("invalid") && m.includes("token")) {
+    return "Ese código no es correcto o ya caducó. Revísalo o pide uno nuevo.";
+  }
+  if (m.includes("security purposes") || m.includes("rate limit")) {
+    return "Espera un minuto antes de pedir otro código.";
   }
 
   return "No se pudo completar la operación. Inténtalo de nuevo.";
@@ -108,7 +115,7 @@ export async function registrarCliente(
   if (error) return { error: traducirError(error.message) };
 
   // Si el proyecto exige confirmar el correo, todavía no hay sesión.
-  if (!data.session) redirect("/registro/confirma");
+  if (!data.session) return pedirCodigo(correo);
 
   redirect("/cuenta");
 }
@@ -155,7 +162,7 @@ export async function registrarNegocio(
   });
 
   if (error) return { error: traducirError(error.message) };
-  if (!data.session) redirect("/registro/confirma");
+  if (!data.session) return pedirCodigo(correo);
 
   const { error: errorMarca } = await supabase.from("marcas").insert({
     perfil_id: data.session.user.id,
@@ -167,6 +174,89 @@ export async function registrarNegocio(
   if (errorMarca) redirect("/negocio/completar-marca");
 
   redirect("/negocio/panel");
+}
+
+// ---------------------------------------------------------------------------
+// Confirmar la cuenta con el código del correo
+// ---------------------------------------------------------------------------
+
+/**
+ * A qué correo se le mandó el código, mientras se escribe. Va en una cookie y
+ * no en la URL: un correo en la dirección se queda en el historial y en los
+ * registros del servidor. Dura lo que el código.
+ */
+const COOKIE_CODIGO = "guia-codigo-para";
+
+/** Tras el alta sin sesión: recuerda el correo y lleva a escribir el código. */
+async function pedirCodigo(correo: string): Promise<never> {
+  (await cookies()).set(COOKIE_CODIGO, correo, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 60 * 60,
+    path: "/",
+  });
+  redirect("/registro/confirma");
+}
+
+/** El correo al que se mandó el código, si sigue en la cookie. */
+export async function correoDelCodigo() {
+  return (await cookies()).get(COOKIE_CODIGO)?.value ?? null;
+}
+
+/** Solo los dígitos: se dicta y se copia con espacios o guiones. */
+function codigoDe(datos: FormData) {
+  return texto(datos, "codigo").replace(/\D/g, "");
+}
+
+/**
+ * Confirma la cuenta con el código de 6 dígitos que llega al correo, como en
+ * Vórtice VR. Es el mismo correo de siempre (`signUp`), que ahora trae el
+ * código además del enlace: en el stand se lee en el celular y se escribe en
+ * la tablet, sin salir de la página. El enlace sigue sirviendo.
+ *
+ * `verifyOtp` abre la sesión con `amr = otp`, que `marcar_correo_verificado`
+ * acepta: confirmar la cuenta también deja verificado el correo del negocio.
+ */
+export async function confirmarConCodigo(
+  _previo: EstadoFormulario,
+  datos: FormData,
+): Promise<EstadoFormulario> {
+  const correo = (await correoDelCodigo()) ?? texto(datos, "correo");
+  const codigo = codigoDe(datos);
+
+  if (!correo.includes("@")) return { error: "Escribe el correo con el que te registraste." };
+  if (codigo.length < 6) return { error: "Escribe los 6 dígitos del código." };
+
+  const supabase = await crearClienteServidor();
+  const { error } = await supabase.auth.verifyOtp({ email: correo, token: codigo, type: "email" });
+  if (error) return { error: traducirError(error.message) };
+
+  await supabase.rpc("marcar_correo_verificado");
+  (await cookies()).delete(COOKIE_CODIGO);
+
+  const perfil = await perfilActual();
+  redirect(perfil ? await destinoAlEntrar(perfil) : "/cuenta");
+}
+
+/** Manda otra vez el correo del alta, con un código nuevo. */
+export async function reenviarCodigo(
+  _previo: EstadoFormulario,
+  datos: FormData,
+): Promise<EstadoFormulario> {
+  const correo = (await correoDelCodigo()) ?? texto(datos, "correo");
+  if (!correo.includes("@")) return { error: "Escribe el correo con el que te registraste." };
+
+  const supabase = await crearClienteServidor();
+  const origen = await origenDelSitio();
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email: correo,
+    options: { emailRedirectTo: `${origen}/auth/callback` },
+  });
+  if (error) return { error: traducirError(error.message) };
+
+  return { enviado: true };
 }
 
 /** Alta de la marca cuando no se pudo crear durante el registro. */
@@ -429,4 +519,26 @@ export async function pedirVerificarCorreo(): Promise<EstadoFormulario> {
   if (error) return { error: traducirError(error.message) };
 
   return { enviado: true };
+}
+
+/**
+ * El código del correo de `pedirVerificarCorreo`, escrito a mano. Va a la
+ * dirección de la sesión, igual que el correo: el código no sirve para otra.
+ */
+export async function verificarCorreoConCodigo(
+  _previo: EstadoFormulario,
+  datos: FormData,
+): Promise<EstadoFormulario> {
+  const perfil = await perfilActual();
+  if (!perfil) redirect("/login");
+
+  const codigo = codigoDe(datos);
+  if (codigo.length < 6) return { error: "Escribe los 6 dígitos del código.", enviado: true };
+
+  const supabase = await crearClienteServidor();
+  const { error } = await supabase.auth.verifyOtp({ email: perfil.correo, token: codigo, type: "email" });
+  if (error) return { error: traducirError(error.message), enviado: true };
+
+  const { error: errorMarca } = await supabase.rpc("marcar_correo_verificado");
+  redirect(`/negocio/panel?correo=${errorMarca ? "fallo" : "listo"}`);
 }

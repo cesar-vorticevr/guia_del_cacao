@@ -5,12 +5,14 @@ import { Aviso, BotonEnviar, Campo, Selector } from "@/components/formulario";
 import { MINIMO_CONTRASENA } from "@/lib/limites";
 import {
   cambiarContrasena,
+  confirmarConCodigo,
   crearMarca,
   elegirRol,
   iniciarSesion,
   pedirRestablecer,
   registrarCliente,
   registrarNegocio,
+  reenviarCodigo,
   type EstadoFormulario,
 } from "@/lib/auth/acciones";
 
@@ -220,6 +222,67 @@ export function FormularioContrasenaNueva() {
       <Aviso>{estado.error}</Aviso>
       <ParDeContrasenas nueva />
       <BotonEnviar>Guardar mi contraseña</BotonEnviar>
+    </form>
+  );
+}
+
+/**
+ * El código de 6 dígitos del correo. Grande y numérico: en el stand se dicta
+ * desde el celular de quien se registra y se teclea en la tablet, y en un
+ * teléfono `one-time-code` deja que el teclado lo ofrezca solo.
+ */
+export function CampoCodigo() {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block font-bold text-selva-2">Código del correo</span>
+      <input
+        name="codigo"
+        required
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        pattern="[0-9 -]{6,12}"
+        maxLength={12}
+        placeholder="123456"
+        className="block w-full rounded-2xl border-2 border-selva/20 bg-white px-4 py-3 text-center font-mono text-3xl tracking-[0.4em] text-ink focus:border-mango focus:outline-none"
+      />
+    </label>
+  );
+}
+
+/**
+ * Confirmar la cuenta recién creada con el código del correo, y pedir otro.
+ * Sin la cookie del alta (otro dispositivo, o pasó una hora) se pide también
+ * el correo.
+ */
+export function FormularioCodigo({ correo }: { correo: string | null }) {
+  const [estado, accion] = useActionState(confirmarConCodigo, INICIAL);
+  const [reenvio, reenviar] = useActionState(reenviarCodigo, INICIAL);
+
+  return (
+    // Un solo formulario con dos botones: así «mandarme otro» usa el mismo
+    // correo que se escribió arriba. Ese botón no valida, porque para pedir
+    // otro código todavía no se tiene ninguno.
+    <form action={accion} className="grid gap-4">
+      <Aviso>{estado.error ?? reenvio.error}</Aviso>
+      {!correo && (
+        <Campo nombre="correo" etiqueta="Tu correo" tipo="email" autoComplete="email" />
+      )}
+      <CampoCodigo />
+      <BotonEnviar>Confirmar mi cuenta</BotonEnviar>
+
+      {reenvio.enviado ? (
+        <p role="status" className="text-center text-cacao">
+          Te mandamos un código nuevo. El anterior ya no sirve.
+        </p>
+      ) : (
+        <button
+          formAction={reenviar}
+          formNoValidate
+          className="min-h-12 w-full rounded-full border-2 border-mango/40 bg-white px-6 font-bold text-selva-2 hover:border-mango hover:text-mango"
+        >
+          Mandarme otro código
+        </button>
+      )}
     </form>
   );
 }

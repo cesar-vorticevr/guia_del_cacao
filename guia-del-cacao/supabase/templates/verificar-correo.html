@@ -16,10 +16,13 @@
 <tr><td style="padding:32px 28px 8px;font-family:Arial,Helvetica,sans-serif;color:#4a2c1d;">
 <h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;color:#0c5236;">Verifica el correo de tu negocio</h1>
 <p style="margin:0 0 24px;font-size:16px;line-height:1.55;">Para publicar tu negocio en la Guía del Cacao necesitamos comprobar que este correo es tuyo. Toca el botón y listo.</p>
+<p style="margin:0 0 8px;font-size:14px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;color:#7a5a48;">Tu código</p>
+<p style="margin:0 0 20px;padding:16px 0;background:#fff7e8;border:2px dashed #ffb703;border-radius:16px;text-align:center;font-family:'Courier New',Courier,monospace;font-size:36px;font-weight:bold;letter-spacing:10px;color:#0c5236;">{{ .Token }}</p>
+<p style="margin:0 0 20px;font-size:15px;line-height:1.55;">Escríbelo en la página de la Guía para verificar tu correo. También puedes tocar el botón:</p>
 <table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:999px;background:#106b46;">
 <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 28px;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;color:#fff7e8;text-decoration:none;border-radius:999px;">Verificar mi correo</a>
 </td></tr></table>
-<p style="margin:24px 0 0;font-size:14px;line-height:1.5;color:#7a5a48;">El enlace sirve una sola vez y vence en una hora.</p>
+<p style="margin:24px 0 0;font-size:14px;line-height:1.5;color:#7a5a48;">El código y el enlace sirven una sola vez y vencen en una hora.</p>
 <p style="margin:16px 0 0;font-size:13px;line-height:1.5;color:#7a5a48;">Si el botón no abre, copia este enlace en tu navegador:<br><a href="{{ .ConfirmationURL }}" style="color:#106b46;word-break:break-all;">{{ .ConfirmationURL }}</a></p>
 </td></tr>
 <tr><td style="padding:24px 28px 28px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;color:#9a7f70;border-top:1px solid #f2e3c4;">
