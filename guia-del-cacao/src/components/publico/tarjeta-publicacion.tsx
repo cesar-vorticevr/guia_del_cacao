@@ -125,26 +125,32 @@ export function TarjetaPublicacion({
           )}
         </span>
 
-        <span className="flex min-w-0 flex-1 flex-col gap-1 p-4">
-          <span className="block font-mono text-xs tracking-wide text-cacao/70 uppercase">
-            {FECHA.format(new Date(fecha))}
-          </span>
-
-          <span className="block font-display text-base leading-tight font-semibold text-selva-2">
-            {publicacion.titulo}
-          </span>
-
+        {/*
+          El mismo orden y los mismos recortes que la tarjeta de la comunidad
+          (`TarjetaEntrada`): quién lo organiza, de qué trata y un resumen corto.
+          El texto entero se lee al abrirlo; en la retícula, un evento con su
+          programa completo medía tres pantallas.
+        */}
+        <span className="flex min-w-0 flex-1 flex-col gap-1 px-4 pt-4 pb-4">
           {marca && (
-            <span className="block text-sm font-bold text-selva">
-              {marca}
-              {sucursal && (
-                <span className="font-normal text-cacao/70"> · {sucursal}</span>
-              )}
+            <span className="flex flex-wrap items-baseline gap-x-2 text-sm">
+              <span className="font-bold text-selva-2 underline decoration-mango/50 underline-offset-4">
+                {marca}
+              </span>
+              {sucursal && <span className="line-clamp-1 w-full text-cacao/70">{sucursal}</span>}
             </span>
           )}
 
+          <span className="block pt-1 font-mono text-xs tracking-wide text-cacao/70 uppercase">
+            {FECHA.format(new Date(fecha))}
+          </span>
+
+          <span className="line-clamp-3 font-display text-base leading-tight font-semibold text-selva-2 underline-offset-4 group-hover:underline">
+            {publicacion.titulo}
+          </span>
+
           {publicacion.subtitulo && (
-            <span className="line-clamp-2 text-sm text-cacao/80">
+            <span className="line-clamp-1 text-sm text-cacao/80">
               {publicacion.subtitulo}
             </span>
           )}
@@ -153,10 +159,9 @@ export function TarjetaPublicacion({
             El cuerpo pegado al fondo con `mt-auto`: así queda a la misma altura
             en toda la fila aunque unas tarjetas lleven subtítulo y otras no.
           */}
-          <span className="mt-auto line-clamp-3 pt-1.5 text-sm text-cacao">
+          <span className="mt-auto line-clamp-2 pt-1 text-sm text-cacao">
             {publicacion.contenido}
           </span>
-
         </span>
       </Link>
 
