@@ -948,7 +948,7 @@ function TarjetaDePlan({
   const nota = gratis
     ? "Sin tarjeta y sin pagar nada"
     : precio.festival
-      ? `Promoción Festival: tu primer año, solo del 12 al 16 de noviembre. Después, ${textoDePrecio(precio.despues ?? 0, precio.periodo)}.`
+      ? `Promoción Festival: tu primer año, solo hasta el 16 de noviembre. Después, ${textoDePrecio(precio.despues ?? 0, precio.periodo)}.`
       : precio.soloPrimerPago
       ? `Tu primer pago, con el código de ${oferta?.embajador}. Después, ${textoDePrecio(precio.despues ?? 0, precio.periodo)}.`
       : precio.cubreHasta

@@ -290,7 +290,7 @@ export default function Terminos() {
         todas las funciones de su plan. El conteo empieza el día que publicas.
         Si pagas el año completo,{" "}
         <strong className="text-selva-2">dos meses son gratis</strong>: pagas
-        diez. Del 12 al 16 de noviembre de 2026, con la{" "}
+        diez. Del 10 al 16 de noviembre de 2026, con la{" "}
         <strong className="text-selva-2">Promoción Festival</strong>, el primer
         año de la membresía cuesta $1,499; al renovar se cobra el precio normal.
       </p>

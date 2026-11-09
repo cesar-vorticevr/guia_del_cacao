@@ -1115,7 +1115,7 @@ Desde la migración **000059** hay **un solo plan de pago**:
 | Plan (id) | Mensual | Anual |
 |---|---|---|
 | Gratis (1) | $0, treinta días | — |
-| Pro (3) | $299 | $2,990 ($1,499 el primer año del 12 al 16 de nov. de 2026) |
+| Pro (3) | $299 | $2,990 ($1,499 el primer año del 10 al 16 de nov. de 2026) |
 | Básico (2) | $199, **ya no se ofrece** | — |
 
 El Básico se queda en `tiers` con `se_ofrece = false`: quien ya lo paga lo
@@ -1940,7 +1940,7 @@ Chocolate:
   `por_que_no_vende` acepta una prueba sin vencer. Al vencer,
   `vencer_pruebas()` la pausa como siempre. Las pruebas vivas se alargaron a
   treinta días desde su `fecha_inicio`.
-- **Promoción Festival**: del 12 al 16 de noviembre de 2026 (`FESTIVAL` en
+- **Promoción Festival**: del 10 al 16 de noviembre de 2026 (`FESTIVAL` en
   `lib/precios.ts`), el primer año de la membresía anual cuesta $1,499. No se guarda
   en la base: `monto_por_cobro` queda en el normal, que es lo que se renueva, y
   el descuento lo aplica Stripe con el cupón `guia-festival-2026-{centavos}`,

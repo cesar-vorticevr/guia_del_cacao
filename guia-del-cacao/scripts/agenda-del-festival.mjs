@@ -39,7 +39,7 @@ El Festival cumple 15 ediciones con el lema «15 años de encuentros: Maridaje»
 const PRODUCTOS = [
   {
     nombre: "Anualidad · Precio de festival",
-    descripcion: "Tu marca en la Guía del Cacao un año completo. Solo del 12 al 16 de noviembre de 2026; precio normal $2,990. Incluye registro en el stand con acompañamiento y tu QR con ruleta impreso ahí mismo.",
+    descripcion: "Tu marca en la Guía del Cacao un año completo. Solo hasta el 16 de noviembre de 2026; precio normal $2,990. Incluye registro en el stand con acompañamiento y tu QR con ruleta impreso ahí mismo.",
     precio: 1499,
     portada: "stand-guia",
   },
@@ -219,7 +219,7 @@ ${FUENTE}`,
     portada: "stand-guia",
     contenido: `¿Produces cacao o haces chocolate? Pasa a nuestro stand y sal con tu marca en la guía: página propia con catálogo, publicación de eventos y noticias, y tu ruleta de premios con QR para tu mesa.
 
-Promoción Festival, solo del 12 al 16 de noviembre: la anualidad a $1,499 (precio normal $2,990), con registro paso a paso en el stand y tu QR con ruleta impreso ahí mismo. También hay plan mensual de $299 y prueba gratis de 30 días.
+Promoción Festival, solo hasta el 16 de noviembre: la anualidad a $1,499 (precio normal $2,990), con registro paso a paso en el stand y tu QR con ruleta impreso ahí mismo. También hay plan mensual de $299 y prueba gratis de 30 días.
 
 Escríbenos por WhatsApp al 999 223 0256.`,
   },

@@ -110,14 +110,16 @@ export const MESES_PAGADOS_AL_ANIO = 10;
 export const DIAS_GRATIS = 30;
 
 /**
- * La Promoción Festival (migración 000076): del 12 al 16 de noviembre de 2026
+ * La Promoción Festival (migración 000076): del 10 al 16 de noviembre de 2026
  * el primer año del Pro anual cuesta $1,499 en vez de diez mensualidades. Es
  * solo del primer cobro, como el descuento de un vendedor: lo aplica Stripe
  * con un cupón de una vez (`lib/stripe.ts`) y la renovación va completa. Las
  * fechas son días del centro de México, inclusive.
  */
 export const FESTIVAL = {
-  desde: "2026-11-12",
+  // Empezó el 10, dos días antes del Festival: el equipo sale a registrar
+  // expositores desde que montan sus stands.
+  desde: "2026-11-10",
   hasta: "2026-11-16",
   precioAnual: 1499,
 } as const;
