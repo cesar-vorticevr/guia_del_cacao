@@ -39,6 +39,8 @@ import { tarjetaSocial } from "@/lib/compartir";
 import { IconoSobre } from "@/components/iconos";
 import { escribirAMarca } from "@/lib/buzon/acciones";
 import { sucursalVende } from "@/lib/datos/pedidos";
+import { idsDeMisMarcas } from "@/lib/negocio/marca-activa";
+
 
 export async function generateMetadata({
   params,
@@ -125,7 +127,7 @@ export default async function Micrositio({
       .from("marcas")
       .select("id")
       .eq("id", sucursal.marca_id)
-      .eq("perfil_id", perfil.id)
+      .in("id", await idsDeMisMarcas())
       .maybeSingle();
 
     esDuenio = data !== null;

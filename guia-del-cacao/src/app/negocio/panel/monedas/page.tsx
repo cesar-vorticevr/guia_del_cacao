@@ -16,6 +16,8 @@ import { dadasHoyPorPersona, solicitudesPorResolver } from "@/lib/datos/puntos";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { FUNCIONES } from "@/lib/funciones";
 import { urlImagen } from "@/lib/imagenes";
+import { idMarcaActiva } from "@/lib/negocio/marca-activa";
+
 
 export const metadata: Metadata = {
   title: "Solicitudes de mazorcas · Guía del Cacao",
@@ -39,7 +41,7 @@ export default async function PanelPuntos({
   // panel. Lo que sigue sin resolver conserva su icono, porque sigue pendiente.
   await anotarMonedasVistas(perfil.id);
 
-  const sucursales = await misSucursales(perfil.id);
+  const sucursales = await misSucursales();
 
   // Solo las publicadas y con plan que otorgue puntos tienen QR que valga.
   const conPuntos = sucursales.filter(
@@ -98,7 +100,7 @@ export default async function PanelPuntos({
   const { data: marca } = await supabase
     .from("marcas")
     .select("id, nombre_comercial")
-    .eq("perfil_id", perfil.id)
+    .eq("id", await idMarcaActiva())
     .limit(1)
     .maybeSingle();
 

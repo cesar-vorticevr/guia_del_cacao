@@ -32,7 +32,7 @@ export default async function Cupones() {
   if (!perfil) redirect("/login");
   if (perfil.rol !== "negocio") redirect("/cuenta");
 
-  const sucursales = await misSucursales(perfil.id);
+  const sucursales = await misSucursales();
 
   // Un cupón cuelga de una sucursal publicada: en borrador no lo ve nadie, así
   // que ofrecerlo desde ahí sería publicar a un escaparate cerrado.

@@ -12,8 +12,16 @@ export const metadata: Metadata = { title: "Datos de tu negocio · Guía del Cac
  * Recoge los datos de la marca cuando el registro no alcanzó a crearla: pasa
  * con Google (donde el rol se elige después) y cuando hay que confirmar el
  * correo antes de tener sesión.
+ *
+ * Con `?nueva=1` es «Crear otro negocio» (cuentas compartidas, fase 2): una
+ * cuenta puede tener varios, cada uno con su plan y su pago.
  */
-export default async function CompletarMarca() {
+export default async function CompletarMarca({
+  searchParams,
+}: {
+  searchParams: Promise<{ nueva?: string }>;
+}) {
+  const nueva = (await searchParams).nueva === "1";
   const perfil = await perfilActual();
 
   if (!perfil) redirect("/login");
@@ -29,7 +37,7 @@ export default async function CompletarMarca() {
     .eq("perfil_id", perfil.id)
     .limit(1);
 
-  if (marcas && marcas.length > 0) redirect("/negocio/panel");
+  if (!nueva && marcas && marcas.length > 0) redirect("/negocio/panel");
 
   /*
     Si los escribió al registrarse, ya están en su cuenta: cuando había que
@@ -43,7 +51,7 @@ export default async function CompletarMarca() {
   const nombreComercial = String(user?.user_metadata?.nombre_comercial ?? "").trim();
   const categoriaId = Number(user?.user_metadata?.categoria_id);
 
-  if (user && nombreComercial && Number.isInteger(categoriaId) && categoriaId > 0) {
+  if (!nueva && user && nombreComercial && Number.isInteger(categoriaId) && categoriaId > 0) {
     const { error } = await supabase.from("marcas").insert({
       perfil_id: user.id,
       nombre_comercial: nombreComercial.slice(0, 120),
@@ -64,10 +72,13 @@ export default async function CompletarMarca() {
 
       <main className="mx-auto grid w-[92vw] max-w-md gap-5 py-8 sm:py-12">
         <div>
-          <h1 className="font-display text-3xl">Datos de tu negocio</h1>
+          <h1 className="font-display text-3xl">
+            {nueva ? "Crear otro negocio" : "Datos de tu negocio"}
+          </h1>
           <p className="mt-2 text-cacao">
-            Con esto ya puedes empezar a armar tu micrositio. Publicarlo es un
-            paso aparte.
+            {nueva
+              ? "Lo administras desde la misma cuenta y cambias de uno a otro arriba del panel. Cada negocio lleva su propio plan."
+              : "Con esto ya puedes empezar a armar tu micrositio. Publicarlo es un paso aparte."}
           </p>
         </div>
 

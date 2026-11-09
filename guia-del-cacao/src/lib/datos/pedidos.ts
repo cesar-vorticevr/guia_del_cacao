@@ -1,5 +1,7 @@
 import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
+import { idMarcaActiva } from "@/lib/negocio/marca-activa";
+
 
 export type EstadoDePedido = "nuevo" | "confirmado" | "pagado" | "entregado" | "cancelado";
 
@@ -91,8 +93,8 @@ export async function tengoDatosDePago() {
   const supabase = await crearClienteServidor();
   const { data } = await supabase
     .from("datos_de_pago")
-    .select("marca_id, marcas!inner(perfil_id)")
-    .eq("marcas.perfil_id", perfil.id)
+    .select("marca_id")
+    .eq("marca_id", await idMarcaActiva())
     .limit(1);
 
   return (data ?? []).length > 0;

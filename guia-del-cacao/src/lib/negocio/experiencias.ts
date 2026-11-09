@@ -31,7 +31,7 @@ async function miMarca() {
   const perfil = await perfilActual();
   if (!perfil) redirect("/login");
   if (perfil.rol !== "negocio") redirect("/cuenta");
-  const marca = await marcaDe(perfil.id);
+  const marca = await marcaDe();
   if (!marca) redirect("/negocio/completar-marca");
   return { perfil, marca };
 }

@@ -16,7 +16,7 @@ export default async function EditarExperiencia({ params }: { params: Promise<{ 
   if (!perfil.rol_confirmado) redirect("/elegir-rol");
   if (perfil.rol !== "negocio") redirect("/cuenta");
 
-  const marca = await marcaDe(perfil.id);
+  const marca = await marcaDe();
   if (!marca) redirect("/negocio/completar-marca");
 
   const [experiencia, todas, cupo, origen] = await Promise.all([

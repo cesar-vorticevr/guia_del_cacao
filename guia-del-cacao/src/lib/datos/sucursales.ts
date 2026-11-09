@@ -2,6 +2,8 @@ import { crearClienteServidor } from "@/lib/supabase/server";
 import { ofertaDeFila, type FilaDeConvenio, type Oferta } from "@/lib/precios";
 import { productosDeSucursal } from "@/lib/datos/catalogo";
 import type { Producto, Sucursal, Tier } from "@/lib/tipos";
+import { idsDeMisMarcas, idMarcaActiva } from "@/lib/negocio/marca-activa";
+
 
 const CAMPOS_SUCURSAL = `
   id, marca_id, nombre_sucursal, slug, logo, imagen_fondo, ubicacion_maps_url,
@@ -17,16 +19,12 @@ const CAMPOS_SUCURSAL = `
  * publicada —el directorio la necesita—, así que apoyarse solo en la política
  * mezclaría aquí las sucursales de otros negocios.
  */
-export async function misSucursales(perfilId: string) {
+export async function misSucursales({ todas = false }: { todas?: boolean } = {}) {
   const supabase = await crearClienteServidor();
 
-  const { data: marcas } = await supabase
-    .from("marcas")
-    .select("id")
-    .eq("perfil_id", perfilId);
-
-  const ids = (marcas ?? []).map((m) => m.id);
-  if (ids.length === 0) return [];
+  // Las del negocio que se está administrando; con `todas`, las de todos los
+  // que administra (para comprobar que una abierta por su enlace es suya).
+  const ids = todas ? await idsDeMisMarcas() : [await idMarcaActiva()];
 
   const { data } = await supabase
     .from("sucursales")
@@ -38,8 +36,8 @@ export async function misSucursales(perfilId: string) {
 }
 
 /** Una sucursal, solo si es de quien la pide. Devuelve null si no lo es. */
-export async function miSucursal(perfilId: string, sucursalId: string) {
-  const todas = await misSucursales(perfilId);
+export async function miSucursal(sucursalId: string) {
+  const todas = await misSucursales({ todas: true });
   return todas.find((s) => s.id === sucursalId) ?? null;
 }
 
@@ -298,19 +296,16 @@ export type EventoPropio = {
  * lectura de eventos es tan ancha como el público de un micrositio publicado,
  * así que sin este filtro se abriría el editor de un evento ajeno sabiendo su id.
  */
-export async function miEvento(
-  perfilId: string,
-  eventoId: string,
-): Promise<EventoPropio | null> {
+export async function miEvento(eventoId: string): Promise<EventoPropio | null> {
   const supabase = await crearClienteServidor();
 
   const { data } = await supabase
     .from("eventos")
     .select(
-      "id, titulo, subtitulo, contenido, imagenes, fecha_evento, cancelado_en, sucursales!inner(nombre_sucursal, marcas!inner(perfil_id))",
+      "id, titulo, subtitulo, contenido, imagenes, fecha_evento, cancelado_en, sucursales!inner(nombre_sucursal, marca_id)",
     )
     .eq("id", eventoId)
-    .eq("sucursales.marcas.perfil_id", perfilId)
+    .in("sucursales.marca_id", await idsDeMisMarcas())
     .maybeSingle();
 
   if (!data) return null;

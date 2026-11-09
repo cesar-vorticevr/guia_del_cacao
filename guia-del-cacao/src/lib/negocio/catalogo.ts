@@ -8,6 +8,8 @@ import { revisarImagen } from "@/lib/imagenes";
 import { LIMITES, revisarLargo } from "@/lib/limites";
 import { normalizar } from "@/lib/negocio/columnas-catalogo";
 import { leerFormato } from "@/lib/negocio/formato-catalogo";
+import { idMarcaActiva, idsDeMisMarcas } from "@/lib/negocio/marca-activa";
+
 
 /** Los campos del producto, tal como los escribio quien los mando. */
 export type ValoresProducto = {
@@ -76,8 +78,7 @@ async function miMarca() {
   const { data } = await supabase
     .from("marcas")
     .select("id")
-    .eq("perfil_id", perfil.id)
-    .limit(1)
+    .eq("id", await idMarcaActiva())
     .maybeSingle();
 
   if (!data) redirect("/negocio/completar-marca");
@@ -323,9 +324,9 @@ export async function guardarSeleccion(
   // se comprueba antes para poder contestar con algo legible.
   const { data: propia } = await supabase
     .from("sucursales")
-    .select("id, marcas!inner(perfil_id)")
+    .select("id")
     .eq("id", sucursalId)
-    .eq("marcas.perfil_id", perfil.id)
+    .in("marca_id", await idsDeMisMarcas())
     .maybeSingle();
 
   if (!propia) return { error: "Esa sucursal no es tuya." };

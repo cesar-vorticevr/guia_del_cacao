@@ -42,7 +42,7 @@ export default async function Comunidad() {
     sucursal publicada, porque es con la que firma la publicación y no se puede
     firmar con un micrositio que nadie puede abrir.
   */
-  const sucursales = esNegocio ? await misSucursales(perfil.id) : [];
+  const sucursales = esNegocio ? await misSucursales() : [];
   const publicadas = sucursales.filter((s) => s.estado === "publicado");
   // El catálogo de la marca, para etiquetar un producto al publicar (000075).
   const catalogo = publicadas[0] ? await catalogoDeMarca(publicadas[0].marca_id) : [];

@@ -8,6 +8,8 @@ import { crearClienteServidor } from "@/lib/supabase/server";
 import { misSucursales } from "@/lib/datos/sucursales";
 import { datosDePagoDe, misPedidos, porQueNoVende } from "@/lib/datos/pedidos";
 import { haceCuanto } from "@/lib/tiempo";
+import { idMarcaActiva } from "@/lib/negocio/marca-activa";
+
 
 export const metadata: Metadata = { title: "Pedidos · Guía del Cacao" };
 
@@ -35,15 +37,14 @@ export default async function PanelPedidos({
   const { data: marca } = await supabase
     .from("marcas")
     .select("id")
-    .eq("perfil_id", perfil.id)
-    .order("fecha_registro")
+    .eq("id", await idMarcaActiva())
     .limit(1)
     .maybeSingle();
 
   if (!marca) redirect("/negocio/completar-marca");
 
   const [sucursales, pedidos, datos] = await Promise.all([
-    misSucursales(perfil.id),
+    misSucursales(),
     misPedidos("ventas"),
     datosDePagoDe(marca.id),
   ]);

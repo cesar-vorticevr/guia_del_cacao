@@ -12,6 +12,8 @@ import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { urlImagen } from "@/lib/imagenes";
 import { pesos } from "@/lib/tipos";
+import { idMarcaActiva } from "@/lib/negocio/marca-activa";
+
 
 export const metadata: Metadata = { title: "Catálogo · Guía del Cacao" };
 
@@ -37,7 +39,7 @@ export default async function Catalogo({
   const { data: marca } = await supabase
     .from("marcas")
     .select("id, nombre_comercial")
-    .eq("perfil_id", perfil.id)
+    .eq("id", await idMarcaActiva())
     .limit(1)
     .maybeSingle();
 

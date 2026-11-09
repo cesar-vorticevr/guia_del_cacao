@@ -67,7 +67,7 @@ export default async function EditorMicrositio({
   const { id } = await params;
   const { publicado, paso } = await searchParams;
 
-  const sucursal = await miSucursal(perfil.id, id);
+  const sucursal = await miSucursal(id);
   if (!sucursal) redirect("/negocio/panel");
 
   // El catálogo es de la marca; lo de esta sucursal es qué eligió de él.

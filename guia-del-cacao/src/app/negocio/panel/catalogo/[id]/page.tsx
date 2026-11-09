@@ -6,6 +6,8 @@ import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { urlImagen } from "@/lib/imagenes";
 import type { Producto } from "@/lib/tipos";
+import { idsDeMisMarcas } from "@/lib/negocio/marca-activa";
+
 
 export const metadata: Metadata = { title: "Editar producto · Guía del Cacao" };
 
@@ -31,10 +33,10 @@ export default async function EditarProducto({
   const { data: producto } = await supabase
     .from("productos_servicios")
     .select(
-      "id, nombre, sku, descripcion, precio, imagen, marcas!inner(perfil_id)",
+      "id, nombre, sku, descripcion, precio, imagen, marca_id",
     )
     .eq("id", id)
-    .eq("marcas.perfil_id", perfil.id)
+    .in("marca_id", await idsDeMisMarcas())
     .maybeSingle();
 
   if (!producto) redirect("/negocio/panel/catalogo");

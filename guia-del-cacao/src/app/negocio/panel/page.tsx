@@ -29,6 +29,8 @@ import { numerosDeSucursales } from "@/lib/datos/actividad";
 import { TarjetonQr } from "@/components/negocio/tarjeton-qr";
 import { origenDelSitio } from "@/lib/auth/sesion";
 import { sucursalesConRuleta, tarjetonDe } from "@/lib/datos/ruleta";
+import { idMarcaActiva } from "@/lib/negocio/marca-activa";
+
 
 export const metadata: Metadata = {
   title: "Panel del negocio · Guía del Cacao",
@@ -83,7 +85,7 @@ export default async function PanelNegocio({
       negocio no tiene marca" y el panel entero rebotaba a completar-marca.
     */
     .select("id, nombre_comercial, categorias!marcas_categoria_id_fkey(nombre)")
-    .eq("perfil_id", perfil.id);
+    .eq("id", await idMarcaActiva());
 
   if (!marcas || marcas.length === 0) redirect("/negocio/completar-marca");
 
@@ -91,7 +93,7 @@ export default async function PanelNegocio({
   const verificado = perfil.correo_verificado_en !== null;
 
   const [sucursales, catalogo, sinLeer, solicitudes] = await Promise.all([
-    misSucursales(perfil.id),
+    misSucursales(),
     catalogoDeMarca(marca.id),
     sinLeerPorSucursal(),
     solicitudesPorSucursal(),

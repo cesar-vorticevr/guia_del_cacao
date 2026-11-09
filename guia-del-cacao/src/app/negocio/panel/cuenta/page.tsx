@@ -25,6 +25,8 @@ import { abrirPortalDePago } from "@/lib/negocio/plan";
 import { pesos } from "@/lib/tipos";
 import { CORREO_DE_CONTACTO } from "@/components/publico/pie-de-pagina";
 import { textoDePrecio, fechaDeOferta, type Periodo } from "@/lib/precios";
+import { idMarcaActiva } from "@/lib/negocio/marca-activa";
+
 
 export const metadata: Metadata = { title: "Mi cuenta · Guía del Cacao" };
 
@@ -70,7 +72,7 @@ export default async function CuentaNegocio({
   const { data: marca } = await supabase
     .from("marcas")
     .select("id, nombre_comercial, stripe_customer_id")
-    .eq("perfil_id", perfil.id)
+    .eq("id", await idMarcaActiva())
     .limit(1)
     .maybeSingle();
 
@@ -79,7 +81,7 @@ export default async function CuentaNegocio({
   const [tiers, suscripcion, sucursales, avisarMensajes] = await Promise.all([
     listarTiers(),
     suscripcionDeMarca(marca.id),
-    misSucursales(perfil.id),
+    misSucursales(),
     quiereAvisoDeMensajes(perfil.id),
   ]);
 

@@ -1981,3 +1981,22 @@ Lo que ya existe tras la fase 1:
   diez pantallas del panel que buscan «la» marca de la cuenta con
   `.eq("perfil_id", …)`.
 - La prueba es la 34.
+
+### Fase 2: varios negocios por cuenta
+
+- **El negocio activo** vive en `lib/negocio/marca-activa.ts`: `marcaActiva()`
+  es la de la cookie `guia-marca` si `mis_marcas()` la incluye, o la primera
+  (las propias antes que las compartidas). `idMarcaActiva()` devuelve
+  `SIN_MARCA` (un uuid de nadie) cuando no hay ninguna, para que la consulta
+  filtre a cero sin romperse. Todo va con `cache`: una pregunta por pintada.
+- **Dos reglas para filtrar**, y no son intercambiables: las listas del panel
+  (sucursales, catálogo, pedidos, plan) van con `.eq(…, await idMarcaActiva())`;
+  lo que se abre por su enlace (un producto, un evento, una sucursal) basta
+  con que sea de **cualquiera** de sus marcas, `.in(…, await idsDeMisMarcas())`.
+  Por eso `misSucursales()` ya no recibe el perfil y tiene `{ todas: true }`.
+- **`SelectorDeNegocio`** va arriba del panel (layout): con varias marcas, un
+  `select` que cambia solo (`elegirMarca`, que ignora un id que no esté en
+  `mis_marcas`), y siempre «+ Crear otro negocio» →
+  `/negocio/completar-marca?nueva=1`. Crear una marca la deja como activa
+  (`recordarMarca`).
+- Cada marca paga lo suyo: no cambió nada del plan, que ya era por sucursal.

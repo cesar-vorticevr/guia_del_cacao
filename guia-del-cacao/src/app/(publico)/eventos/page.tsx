@@ -34,7 +34,7 @@ export default async function Eventos() {
   const { proximos, pasados } = await listarEventos(perfil?.id);
 
   const esNegocio = perfil?.rol === "negocio";
-  const sucursales = esNegocio ? await misSucursales(perfil.id) : [];
+  const sucursales = esNegocio ? await misSucursales() : [];
 
   /*
     Quien puede anunciar un evento lo dice la bandera de su plan, no su número:

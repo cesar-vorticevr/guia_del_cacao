@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
+import { idMarcaActiva } from "@/lib/negocio/marca-activa";
+
 
 export type EstadoPedido = {
   error?: string;
@@ -134,7 +136,7 @@ export async function guardarDatosDePago(
   _previo: EstadoPedido,
   datos: FormData,
 ): Promise<EstadoPedido> {
-  const perfil = await exigirSesion("/negocio/panel/pedidos");
+  await exigirSesion("/negocio/panel/pedidos");
 
   const valores = {
     banco: datos.get("banco")?.toString() ?? "",
@@ -148,8 +150,7 @@ export async function guardarDatosDePago(
   const { data: marca } = await supabase
     .from("marcas")
     .select("id")
-    .eq("perfil_id", perfil.id)
-    .order("fecha_registro")
+    .eq("id", await idMarcaActiva())
     .limit(1)
     .maybeSingle();
 

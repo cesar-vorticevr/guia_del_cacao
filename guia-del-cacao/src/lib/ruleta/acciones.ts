@@ -89,9 +89,9 @@ export async function guardarRuleta(
   _previo: EstadoRuleta,
   datos: FormData,
 ): Promise<EstadoRuleta> {
-  const perfil = await exigirNegocio();
+  await exigirNegocio();
   const sucursalId = datos.get("sucursal_id")?.toString() ?? "";
-  const sucursal = await miSucursal(perfil.id, sucursalId);
+  const sucursal = await miSucursal(sucursalId);
   if (!sucursal) return { error: "Esa sucursal no es tuya." };
 
   const frecuencia = datos.get("frecuencia")?.toString() ?? "diaria";

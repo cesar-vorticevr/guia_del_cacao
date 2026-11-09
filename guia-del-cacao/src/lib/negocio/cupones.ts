@@ -28,7 +28,7 @@ export async function crearCupon(
   const sucursalId = datos.get("sucursal_id")?.toString() ?? "";
 
   // Que la sucursal sea suya se comprueba aquí y además en RLS.
-  const sucursal = await miSucursal(perfil.id, sucursalId);
+  const sucursal = await miSucursal(sucursalId);
   if (!sucursal) return { error: "Elige una de tus sucursales." };
 
   const nombre = (datos.get("nombre")?.toString() ?? "").trim();

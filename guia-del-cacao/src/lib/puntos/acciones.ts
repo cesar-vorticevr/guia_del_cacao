@@ -250,7 +250,7 @@ export async function resolverSolicitud(
   const decision = datos.get("decision")?.toString() ?? "";
 
   // Que la sucursal sea suya se comprueba aquí y además en RLS.
-  const sucursal = await miSucursal(perfil.id, sucursalId);
+  const sucursal = await miSucursal(sucursalId);
   if (!sucursal) redirect("/negocio/panel");
 
   const supabase = await crearClienteServidor();

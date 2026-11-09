@@ -1,5 +1,7 @@
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { experienciaDeFila, type Experiencia } from "@/lib/experiencias";
+import { idMarcaActiva } from "@/lib/negocio/marca-activa";
+
 
 /**
  * Lecturas de las experiencias de realidad aumentada (migración 000066).
@@ -9,12 +11,12 @@ import { experienciaDeFila, type Experiencia } from "@/lib/experiencias";
  */
 
 /** La marca de quien lleva la sesión, o null. */
-export async function marcaDe(perfilId: string) {
+export async function marcaDe() {
   const supabase = await crearClienteServidor();
   const { data } = await supabase
     .from("marcas")
     .select("id, nombre_comercial, experiencias_extra")
-    .eq("perfil_id", perfilId)
+    .eq("id", await idMarcaActiva())
     .limit(1)
     .maybeSingle();
   return data as { id: string; nombre_comercial: string; experiencias_extra: number } | null;

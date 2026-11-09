@@ -44,7 +44,7 @@ export default async function PanelRuleta({
   if (!perfil.rol_confirmado) redirect("/elegir-rol");
   if (perfil.rol !== "negocio") redirect("/cuenta");
 
-  const sucursales = await misSucursales(perfil.id);
+  const sucursales = await misSucursales();
   const sucursal = sucursales.find((s) => s.id === elegida) ?? sucursales[0] ?? null;
 
   if (!sucursal) redirect("/negocio/panel");

@@ -38,7 +38,7 @@ export default async function EditarEvento({
   if (!perfil) redirect("/login");
   if (perfil.rol !== "negocio") redirect("/cuenta");
 
-  const evento = await miEvento(perfil.id, id);
+  const evento = await miEvento(id);
 
   if (!evento) redirect("/eventos");
 

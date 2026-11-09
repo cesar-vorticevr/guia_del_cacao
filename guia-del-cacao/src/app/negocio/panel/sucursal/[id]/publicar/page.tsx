@@ -30,7 +30,7 @@ export default async function Publicar({
   if (perfil.rol !== "negocio") redirect("/cuenta");
 
   const { id } = await params;
-  const sucursal = await miSucursal(perfil.id, id);
+  const sucursal = await miSucursal(id);
 
   if (!sucursal) redirect("/negocio/panel");
   if (

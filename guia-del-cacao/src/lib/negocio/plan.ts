@@ -26,6 +26,8 @@ import {
   explicarErrorDeStripe,
   stripe,
 } from "@/lib/stripe";
+import { idMarcaActiva } from "@/lib/negocio/marca-activa";
+
 
 export type EstadoPlan = { error?: string; ok?: string };
 
@@ -52,8 +54,7 @@ async function miMarca() {
   const { data } = await supabase
     .from("marcas")
     .select("id, nombre_comercial")
-    .eq("perfil_id", perfil.id)
-    .limit(1)
+    .eq("id", await idMarcaActiva())
     .maybeSingle();
 
   if (!data) redirect("/negocio/completar-marca");
@@ -546,7 +547,7 @@ export async function guardarDatosPersonales(
   const { error: errorMarca } = await supabase
     .from("marcas")
     .update({ nombre_comercial: comercial })
-    .eq("perfil_id", perfil.id);
+    .eq("id", await idMarcaActiva());
 
   if (errorMarca) return { error: "Tu nombre se guardó, pero el del negocio no." };
 

@@ -22,6 +22,8 @@ import { crearClienteDeServicio } from "@/lib/supabase/servicio";
 import { origenDelSitio } from "@/lib/auth/sesion";
 import { revisarImagen } from "@/lib/imagenes";
 import { LIMITES, revisarLargo, TOPE_FOTOS } from "@/lib/limites";
+import { idMarcaActiva, idsDeMisMarcas } from "@/lib/negocio/marca-activa";
+
 
 export type EstadoAccion = { error?: string; ok?: string };
 
@@ -41,8 +43,8 @@ async function exigirNegocio() {
 }
 
 /** La sucursal debe ser suya. Si no, no existe para efectos prácticos. */
-async function exigirSucursalPropia(perfilId: string, sucursalId: string) {
-  const sucursal = await miSucursal(perfilId, sucursalId);
+async function exigirSucursalPropia(sucursalId: string) {
+  const sucursal = await miSucursal(sucursalId);
   if (!sucursal) redirect("/negocio/panel");
   return sucursal;
 }
@@ -55,7 +57,7 @@ export async function crearSucursal(
   _previo: EstadoAccion,
   datos: FormData,
 ): Promise<EstadoAccion> {
-  const perfil = await exigirNegocio();
+  await exigirNegocio();
   const nombre = texto(datos, "nombre_sucursal");
 
   if (!nombre) return { error: "Escribe el nombre de la sucursal." };
@@ -72,8 +74,7 @@ export async function crearSucursal(
   const { data: marca } = await supabase
     .from("marcas")
     .select("id, nombre_comercial")
-    .eq("perfil_id", perfil.id)
-    .limit(1)
+    .eq("id", await idMarcaActiva())
     .maybeSingle();
 
   if (!marca) redirect("/negocio/completar-marca");
@@ -133,9 +134,9 @@ export async function guardarMicrositio(
   _previo: EstadoAccion,
   datos: FormData,
 ): Promise<EstadoAccion> {
-  const perfil = await exigirNegocio();
+  await exigirNegocio();
   const id = datos.get("sucursal_id")?.toString() ?? "";
-  await exigirSucursalPropia(perfil.id, id);
+  await exigirSucursalPropia(id);
 
   const nombre = texto(datos, "nombre_sucursal");
   if (!nombre) return { error: "La sucursal necesita un nombre." };
@@ -204,9 +205,9 @@ export async function subirImagen(
   _previo: EstadoAccion,
   datos: FormData,
 ): Promise<EstadoAccion> {
-  const perfil = await exigirNegocio();
+  await exigirNegocio();
   const id = datos.get("sucursal_id")?.toString() ?? "";
-  await exigirSucursalPropia(perfil.id, id);
+  await exigirSucursalPropia(id);
 
   const campo = datos.get("campo")?.toString();
   if (campo !== "logo" && campo !== "imagen_fondo") {
@@ -261,7 +262,7 @@ export async function publicarSucursal(
 ): Promise<EstadoAccion> {
   const perfil = await exigirNegocio();
   const id = datos.get("sucursal_id")?.toString() ?? "";
-  const sucursal = await exigirSucursalPropia(perfil.id, id);
+  const sucursal = await exigirSucursalPropia(id);
 
   if (
     sucursal.estado === "publicado" ||
@@ -458,9 +459,9 @@ export async function agregarAGaleria(
   _previo: EstadoAccion,
   datos: FormData,
 ): Promise<EstadoAccion> {
-  const perfil = await exigirNegocio();
+  await exigirNegocio();
   const id = datos.get("sucursal_id")?.toString() ?? "";
-  const sucursal = await exigirSucursalPropia(perfil.id, id);
+  const sucursal = await exigirSucursalPropia(id);
 
   const lugares = TOPE_GALERIA - sucursal.galeria.length;
 
@@ -540,10 +541,10 @@ export async function agregarAGaleria(
 }
 
 export async function quitarDeGaleria(datos: FormData) {
-  const perfil = await exigirNegocio();
+  await exigirNegocio();
   const id = datos.get("sucursal_id")?.toString() ?? "";
   const ruta = datos.get("ruta")?.toString() ?? "";
-  const sucursal = await exigirSucursalPropia(perfil.id, id);
+  const sucursal = await exigirSucursalPropia(id);
 
   const supabase = await crearClienteServidor();
 
@@ -650,9 +651,9 @@ export async function crearEvento(
   _previo: EstadoAccion,
   datos: FormData,
 ): Promise<EstadoAccion> {
-  const perfil = await exigirNegocio();
+  await exigirNegocio();
   const id = datos.get("sucursal_id")?.toString() ?? "";
-  await exigirSucursalPropia(perfil.id, id);
+  await exigirSucursalPropia(id);
 
   const problema = validarPublicacion(datos);
   if (problema) return problema;
@@ -698,9 +699,9 @@ export async function crearNoticia(
   _previo: EstadoAccion,
   datos: FormData,
 ): Promise<EstadoAccion> {
-  const perfil = await exigirNegocio();
+  await exigirNegocio();
   const id = datos.get("sucursal_id")?.toString() ?? "";
-  await exigirSucursalPropia(perfil.id, id);
+  await exigirSucursalPropia(id);
 
   const problema = validarPublicacion(datos);
   if (problema) return problema;
@@ -760,11 +761,7 @@ function claseDe(datos: FormData): Clase | null {
  * genérico y sin decir por qué. Además devuelve la sucursal, que hace falta
  * para armar la ruta de la foto.
  */
-async function exigirPublicacionPropia(
-  perfilId: string,
-  clase: Clase,
-  id: string,
-) {
+async function exigirPublicacionPropia(clase: Clase, id: string) {
   const supabase = await crearClienteServidor();
 
   const { data } = await supabase
@@ -775,7 +772,7 @@ async function exigirPublicacionPropia(
 
   if (!data) redirect("/negocio/panel/eventos");
 
-  await exigirSucursalPropia(perfilId, data.sucursal_id);
+  await exigirSucursalPropia(data.sucursal_id);
 
   return data as { id: string; sucursal_id: string; imagenes: string[] };
 }
@@ -790,13 +787,13 @@ export async function cambiarFotoPublicacion(
   _previo: EstadoAccion,
   datos: FormData,
 ): Promise<EstadoAccion> {
-  const perfil = await exigirNegocio();
+  await exigirNegocio();
 
   const clase = claseDe(datos);
   if (!clase) return { error: "Publicación no reconocida." };
 
   const id = datos.get("publicacion_id")?.toString() ?? "";
-  const publicacion = await exigirPublicacionPropia(perfil.id, clase, id);
+  const publicacion = await exigirPublicacionPropia(clase, id);
 
   const supabase = await crearClienteServidor();
 
@@ -832,13 +829,13 @@ export async function cambiarFotoPublicacion(
 }
 
 export async function eliminarPublicacion(datos: FormData) {
-  const perfil = await exigirNegocio();
+  await exigirNegocio();
 
   const clase = claseDe(datos);
   if (!clase) redirect("/negocio/panel/eventos");
 
   const id = datos.get("publicacion_id")?.toString() ?? "";
-  const publicacion = await exigirPublicacionPropia(perfil.id, clase, id);
+  const publicacion = await exigirPublicacionPropia(clase, id);
 
   const supabase = await crearClienteServidor();
 
@@ -913,9 +910,9 @@ export async function eliminarSucursal(
   _previo: EstadoAccion,
   datos: FormData,
 ): Promise<EstadoAccion> {
-  const perfil = await exigirNegocio();
+  await exigirNegocio();
   const id = datos.get("sucursal_id")?.toString() ?? "";
-  const sucursal = await exigirSucursalPropia(perfil.id, id);
+  const sucursal = await exigirSucursalPropia(id);
 
   if (datos.get("entendido") !== "si") {
     return {
@@ -976,10 +973,10 @@ export async function eliminarSucursal(
  * mandando otro slug.
  */
 export async function abrirResenas(datos: FormData) {
-  const perfil = await exigirNegocio();
+  await exigirNegocio();
   const slug = datos.get("slug")?.toString() ?? "";
 
-  const mias = await misSucursales(perfil.id);
+  const mias = await misSucursales({ todas: true });
   if (!mias.some((sucursal) => sucursal.slug === slug)) {
     redirect("/negocio/panel");
   }
@@ -1012,9 +1009,9 @@ export async function abrirResenas(datos: FormData) {
  * negocio puede ponerlo él.
  */
 export async function ocultarSucursal(datos: FormData) {
-  const perfil = await exigirNegocio();
+  await exigirNegocio();
   const id = datos.get("sucursal_id")?.toString() ?? "";
-  await exigirSucursalPropia(perfil.id, id);
+  await exigirSucursalPropia(id);
 
   const supabase = await crearClienteServidor();
 
@@ -1035,9 +1032,9 @@ export async function ocultarSucursal(datos: FormData) {
  * debe depender de que esta acción se acuerde.
  */
 export async function mostrarSucursal(datos: FormData) {
-  const perfil = await exigirNegocio();
+  await exigirNegocio();
   const id = datos.get("sucursal_id")?.toString() ?? "";
-  await exigirSucursalPropia(perfil.id, id);
+  await exigirSucursalPropia(id);
 
   const supabase = await crearClienteServidor();
 
@@ -1081,16 +1078,16 @@ export async function marcarMonedasVistas() {
  * eventos es tan ancha como el público de un micrositio publicado, así que sin
  * esto se podría abrir el editor de un evento ajeno con solo saber su id.
  */
-async function miEvento(perfilId: string, eventoId: string) {
+async function miEvento(eventoId: string) {
   const supabase = await crearClienteServidor();
 
   const { data } = await supabase
     .from("eventos")
     .select(
-      "id, sucursal_id, sucursales!inner(marca_id, marcas!inner(perfil_id))",
+      "id, sucursal_id, sucursales!inner(marca_id)",
     )
     .eq("id", eventoId)
-    .eq("sucursales.marcas.perfil_id", perfilId)
+    .in("sucursales.marca_id", await idsDeMisMarcas())
     .maybeSingle();
 
   if (!data) redirect("/negocio/panel/eventos");
@@ -1102,9 +1099,9 @@ export async function editarEvento(
   _previo: EstadoAccion,
   datos: FormData,
 ): Promise<EstadoAccion> {
-  const perfil = await exigirNegocio();
+  await exigirNegocio();
   const eventoId = datos.get("evento_id")?.toString() ?? "";
-  const evento = await miEvento(perfil.id, eventoId);
+  const evento = await miEvento(eventoId);
 
   const problema = validarPublicacion(datos);
   if (problema) return problema;
@@ -1165,9 +1162,9 @@ export async function editarEvento(
  * puerta.
  */
 export async function cambiarEstadoEvento(datos: FormData) {
-  const perfil = await exigirNegocio();
+  await exigirNegocio();
   const eventoId = datos.get("evento_id")?.toString() ?? "";
-  await miEvento(perfil.id, eventoId);
+  await miEvento(eventoId);
 
   const cancelar = datos.get("cancelar") === "si";
 

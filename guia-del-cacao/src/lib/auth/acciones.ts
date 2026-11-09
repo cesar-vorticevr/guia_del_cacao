@@ -9,6 +9,7 @@ import {
   perfilActual,
 } from "@/lib/auth/sesion";
 import { MINIMO_CONTRASENA } from "@/lib/limites";
+import { recordarMarca } from "@/lib/negocio/elegir-marca";
 
 export type EstadoFormulario = {
   error?: string;
@@ -279,15 +280,22 @@ export async function crearMarca(
 
   if (!user) redirect("/login");
 
-  const { error } = await supabase.from("marcas").insert({
-    perfil_id: user.id,
-    nombre_comercial: nombreComercial,
-    categoria_id: categoria,
-  });
+  const { data: marca, error } = await supabase
+    .from("marcas")
+    .insert({
+      perfil_id: user.id,
+      nombre_comercial: nombreComercial,
+      categoria_id: categoria,
+    })
+    .select("id")
+    .single();
 
-  if (error)
+  if (error || !marca)
     return { error: "No se pudo dar de alta la marca. Inténtalo de nuevo." };
 
+  // Una cuenta puede tener varias (cuentas compartidas, fase 2): la recién
+  // creada queda como la que se administra, que es lo que se quiere llenar.
+  await recordarMarca(marca.id as string);
   redirect("/negocio/panel");
 }
 

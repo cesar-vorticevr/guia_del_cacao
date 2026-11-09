@@ -10,6 +10,9 @@ import { cuposLibres, misCupones, TOPE_CUPONES } from "@/lib/datos/cupones";
 import { misSucursales } from "@/lib/datos/sucursales";
 import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
+import { idMarcaActiva, marcasDeLaCuenta } from "@/lib/negocio/marca-activa";
+import { SelectorDeNegocio } from "@/components/negocio/selector-de-negocio";
+
 
 /**
  * El armazón del panel del negocio: encabezado, nombre de la marca y la fila de
@@ -49,14 +52,14 @@ export default async function LayoutDelPanel({
       negocio no tiene marca" y el panel entero rebotaba a completar-marca.
     */
     .select("id, nombre_comercial, categorias!marcas_categoria_id_fkey(nombre)")
-    .eq("perfil_id", perfil.id);
+    .eq("id", await idMarcaActiva());
 
   if (!marcas || marcas.length === 0) redirect("/negocio/completar-marca");
 
   const marca = marcas[0];
 
   const [sucursales, catalogo, solicitudes, sinLeer, pedidos, sinClabe] = await Promise.all([
-    misSucursales(perfil.id),
+    misSucursales(),
     catalogoDeMarca(marca.id),
     solicitudesPorSucursal(),
     mensajesSinLeer(),
@@ -99,6 +102,10 @@ export default async function LayoutDelPanel({
         <p className="mt-1 font-display text-2xl text-selva-2">
           {marca.nombre_comercial}
         </p>
+
+        <div className="mt-3">
+          <SelectorDeNegocio marcas={await marcasDeLaCuenta()} activa={marca.id} />
+        </div>
 
         <div className="mt-8">
           <PestanasDelPanel
