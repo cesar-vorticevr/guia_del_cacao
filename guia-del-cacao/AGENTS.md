@@ -2069,3 +2069,16 @@ arriba sobre «el Gratis» describe cómo era.
 - Un convenio viejo con `basico_gratis_hasta` ahora alarga el mes gratis de la
   membresía.
 - La prueba es la 37.
+- **Meter la tarjeta en el mes gratis no le quita días.** `contratarConStripe`
+  pasa a `crearPago` el fin de prueba más próximo (`pruebaHasta`) si todas las
+  que se cobran están en su mes gratis, y la sesión de Checkout lleva
+  `trial_end` ese día: Stripe guarda la tarjeta y el primer cargo llega al
+  acabar el mes. Con 48 horas o menos Stripe no acepta la prueba y se cobra ya
+  (el botón vuelve a «Pagar ahora»). El webhook abre la suscripción `activo`
+  al completar Checkout, así que **el banner se enciende al meter la tarjeta**,
+  antes del primer cobro: es el premio por adelantarse. La comisión del
+  embajador sigue esperando a `invoice.paid` con monto.
+- **La promoción anual se empuja** con `PromoAnual` (formularios.tsx): una
+  tarjeta con entrada animada (`.promo-anual` en globals.css) en publicar, en
+  la lista de la membresía y, cerrada la lista, en Mi cuenta para quien no paga
+  con tarjeta; su botón abre la lista ya en anual.

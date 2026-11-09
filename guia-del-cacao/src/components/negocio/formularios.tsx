@@ -302,6 +302,10 @@ export function FormularioPublicar({
 
       <ElegirPeriodo periodo={periodo} alCambiar={setPeriodo} />
 
+      {!oferta?.cubreHasta && (
+        <PromoAnual tiers={tiers} periodo={periodo} alElegir={() => setPeriodo("anual")} />
+      )}
+
       {/*
         `Planes` ya trae dentro el radio `tier_id` y el `periodo`. La `key`
         vuelve a elegir al aplicar un código: con la promoción, su plan.
@@ -319,7 +323,7 @@ export function FormularioPublicar({
           ? oferta.descuento >= 100
             ? `Con la promoción tienes la membresía gratis hasta el ${fechaDeOferta(oferta.cubreHasta)}.`
             : `Con la promoción pagas un mes de membresía al publicar y te cubre hasta el ${fechaDeOferta(oferta.cubreHasta)}.`
-          : `Tu membresía empieza con ${DIAS_GRATIS} días gratis de promoción, con todas las herramientas y sin dejar tarjeta. El banner de estelares de la portada se enciende con tu primer pago.`}{" "}
+          : `Tu membresía empieza con ${DIAS_GRATIS} días gratis de promoción, con todas las herramientas y sin dejar tarjeta. Cuando quieras, metes tu tarjeta: no se cobra nada hasta que acabe tu mes gratis, y desde ese momento sales en el banner de estelares de la portada.`}{" "}
         Si al terminar no has pagado, tu micrositio se oculta: no lo ve nadie,
         ni con el enlace, y no se vuelve a publicar hasta pagar. No se borra
         nada y vuelve en cuanto pagues.
@@ -527,6 +531,89 @@ function ElegirPeriodo({
         </label>
       ))}
     </fieldset>
+  );
+}
+
+/**
+ * La promoción de la anualidad: el año cuesta diez meses. Entra a la vista con
+ * su festejo —la tarjeta brinca, el sello late y titilan chispas— porque es la
+ * oferta que más conviene empujar: un año pagado es un negocio que no se va.
+ *
+ * Con `alElegir`, el botón pasa a anual; ya elegido, la tarjeta lo celebra.
+ */
+export function PromoAnual({
+  tiers,
+  periodo,
+  alElegir,
+}: {
+  tiers: Tier[];
+  periodo: Periodo;
+  alElegir: () => void;
+}) {
+  const tier = tiers.find((t) => t.se_ofrece && !esPlanGratis(t, tiers));
+  if (!tier) return null;
+
+  const mensual = Number(tier.precio_mensual);
+  const anual = precioDe(tier, tiers, "anual", null).cobro;
+  const ahorro = mensual * 12 - anual;
+  if (ahorro <= 0) return null;
+
+  const elegida = periodo === "anual";
+
+  return (
+    <div className="promo-anual relative isolate overflow-hidden rounded-[2rem] p-6 text-crema sm:p-8">
+      {/* Las chispas, a destiempo. */}
+      {[
+        "top-4 left-[12%]",
+        "top-10 right-[18%] [animation-delay:0.6s]",
+        "bottom-6 left-[40%] [animation-delay:1.2s]",
+        "top-1/2 right-6 [animation-delay:1.8s]",
+        "bottom-10 left-6 [animation-delay:0.9s]",
+      ].map((lugar) => (
+        <span
+          key={lugar}
+          aria-hidden="true"
+          className={`absolute -z-10 size-1.5 rounded-full bg-[#ffe9a8] shadow-[0_0_12px_4px_rgb(255_209_102/0.6)] motion-safe:animate-titila ${lugar}`}
+        />
+      ))}
+
+      <span className="inline-block rounded-full bg-guayaba px-3 py-1 font-mono text-[0.7rem] font-bold uppercase tracking-widest text-ink shadow-dura-sm motion-safe:animate-late">
+        Promoción anual
+      </span>
+
+      <p className="mt-3 font-display text-3xl font-bold leading-tight sm:text-4xl">
+        Paga el año y llévate{" "}
+        <span className="texto-oro">2 meses gratis</span>
+      </p>
+
+      <p className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className="font-mono text-lg text-crema/50 line-through">{pesos(mensual * 12)}</span>
+        <span className="font-display text-5xl font-bold leading-none text-mango">{pesos(anual)}</span>
+        <span className="font-mono text-sm text-crema/75">/año · IVA incluido</span>
+      </p>
+
+      <p className="mt-2 text-crema/85">
+        Ahorras <strong className="text-mango">{pesos(ahorro)}</strong>: sale en{" "}
+        {pesos(Math.round(anual / 12))} al mes, y un año entero sin pensar en pagos.
+      </p>
+
+      {elegida ? (
+        <p
+          key="elegida"
+          className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-full bg-lima px-6 font-bold text-selva-2 motion-safe:animate-brinca"
+        >
+          ✓ ¡Elegiste el año! Te ahorras {pesos(ahorro)}
+        </p>
+      ) : (
+        <button
+          type="button"
+          onClick={alElegir}
+          className="boton-oro brillo mt-5 inline-flex min-h-12 items-center rounded-full px-6 font-display text-lg font-bold text-ink"
+        >
+          ¡La quiero anual!
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -970,11 +1057,12 @@ function TarjetaDePlan({
     },
     {
       hay: tier.en_banner_principal,
-      // El banner de estelares es de quien paga: el mes gratis no lo trae.
+      // El banner de estelares es de quien deja tarjeta: el mes gratis solo no
+      // lo trae, y meterla lo enciende aunque el cobro llegue al acabar el mes.
       texto: enPrueba ? (
         <>
-          En el <strong>banner de estelares</strong> de la portada, desde tu
-          primer pago
+          En el <strong>banner de estelares</strong> de la portada, en cuanto
+          metas tu tarjeta
         </>
       ) : (
         <>
@@ -1123,9 +1211,12 @@ function TarjetaDePlan({
 function BotonesPagarOCambiar({
   pagar,
   alElegir,
+  guardaTarjeta,
 }: {
   pagar: boolean;
   alElegir: (pagar: boolean) => void;
+  /** En su mes gratis: se guarda la tarjeta y el cobro llega al acabarlo. */
+  guardaTarjeta: boolean;
 }) {
   const { pending } = useFormStatus();
 
@@ -1137,7 +1228,11 @@ function BotonesPagarOCambiar({
         onClick={() => alElegir(true)}
         className="min-h-14 rounded-full bg-selva px-6 font-display text-lg font-semibold text-crema disabled:opacity-60"
       >
-        {pending && pagar ? "Llevándote a pagar…" : "Pagar ahora con tarjeta"}
+        {pending && pagar
+          ? "Llevándote a pagar…"
+          : guardaTarjeta
+            ? "Meter mi tarjeta"
+            : "Pagar ahora con tarjeta"}
       </button>
       <button
         type="submit"
@@ -1159,10 +1254,16 @@ export function FormularioCambiarPlan({
   preseleccion,
   oferta = null,
   enPrueba = false,
+  finDePrueba = null,
+  periodoInicial = "mensual",
 }: {
   tiers: Tier[];
   /** Está en su mes gratis: la tarjeta lo dice. */
   enPrueba?: boolean;
+  /** Cuándo acaba el mes gratis: el día del primer cobro si mete tarjeta. */
+  finDePrueba?: string | null;
+  /** Llegando desde la promoción anual, abre ya en anual. */
+  periodoInicial?: Periodo;
   /** Hay Stripe: «Pagar ahora» lleva a su página de pago. */
   cobroReal?: boolean;
   /** Alguna sucursal todavía no paga con tarjeta: se le ofrece pagar ya. */
@@ -1178,7 +1279,7 @@ export function FormularioCambiarPlan({
   oferta?: Oferta | null;
 }) {
   const [estado, accion] = useActionState(contratarPlan, INICIAL);
-  const [periodo, setPeriodo] = useState<Periodo>("mensual");
+  const [periodo, setPeriodo] = useState<Periodo>(periodoInicial);
   // Un código nuevo manda sobre el convenio con el que entró.
   const [codigoNuevo, setCodigoNuevo] = useState<Oferta | null>(null);
   // Cuál de los dos botones se pulsó: «Cambiar de plan» o «Pagar ahora».
@@ -1186,6 +1287,12 @@ export function FormularioCambiarPlan({
   // La promoción ya usada no se repite al cambiar de plan: su precio solo se
   // enseña con el código escrito otra vez.
   const vigente = codigoNuevo ?? (oferta?.planId ? null : oferta);
+  // Stripe guarda la tarjeta sin cobrar solo si faltan más de dos días
+  // (`crearPago`): con menos, meterla es pagar ya.
+  const guardaTarjeta =
+    enPrueba &&
+    !!finDePrueba &&
+    new Date(finDePrueba).getTime() - Date.now() > 49 * 3600 * 1000;
 
   return (
     <form action={accion} className="grid gap-4">
@@ -1195,6 +1302,10 @@ export function FormularioCambiarPlan({
       <CodigoDeConvenio tiers={tiers} oferta={codigoNuevo} alCambiar={setCodigoNuevo} />
 
       <ElegirPeriodo periodo={periodo} alCambiar={setPeriodo} />
+
+      {!codigoNuevo?.cubreHasta && (
+        <PromoAnual tiers={tiers} periodo={periodo} alElegir={() => setPeriodo("anual")} />
+      )}
 
       <Planes
         key={codigoNuevo?.codigo ?? "sin-codigo"}
@@ -1216,7 +1327,23 @@ export function FormularioCambiarPlan({
 
       {cobroReal && porPagar && !(codigoNuevo?.cubreHasta) ? (
         <div className="grid gap-3 sm:grid-cols-2">
-          <BotonesPagarOCambiar pagar={pagar} alElegir={setPagar} />
+          <BotonesPagarOCambiar pagar={pagar} alElegir={setPagar} guardaTarjeta={guardaTarjeta} />
+          {guardaTarjeta && finDePrueba ? (
+            <p className="rounded-2xl border-2 border-mango/50 bg-mango/15 px-4 py-3 text-cacao sm:col-span-2">
+              <strong className="text-selva-2">
+                No se te cobra nada hasta el{" "}
+                {new Intl.DateTimeFormat("es-MX", {
+                  day: "numeric",
+                  month: "long",
+                  timeZone: "America/Mexico_City",
+                }).format(new Date(finDePrueba))}
+                .
+              </strong>{" "}
+              Tu mes gratis sigue completo: ese día llega tu primer cargo, y
+              desde que metes tu tarjeta ya sales en el banner de estelares de
+              la portada.
+            </p>
+          ) : null}
           <p className="text-sm text-cacao/70 sm:col-span-2">
             El pago se hace en la página segura de Stripe; tu tarjeta no pasa
             por la Guía. Mientras dure tu mes gratis, guardar sin pagar no

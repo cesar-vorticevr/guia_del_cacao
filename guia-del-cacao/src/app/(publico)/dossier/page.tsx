@@ -197,7 +197,7 @@ export default async function Dossier() {
             <p className="mt-2 font-display text-5xl font-bold text-selva-2">1 mes gratis</p>
             <p className="mt-1 font-bold text-cacao">{DIAS_GRATIS} días con todo, sin tarjeta</p>
             <p className="mt-3 text-cacao">
-              La membresía empieza gratis. El banner de estelares se enciende con el primer pago. Si al
+              La membresía empieza gratis. Quien mete su tarjeta antes no pierde días: el primer cobro llega al acabar el mes, y el banner de estelares se le enciende desde ese momento. Si al
               terminar no se paga, la página se oculta —no se borra— y vuelve al pagar.
             </p>
           </div>

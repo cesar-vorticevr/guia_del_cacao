@@ -181,6 +181,11 @@ export type DatosDelPago = {
   embajadorId: string | null;
   /** El % de ese primer pago: 15 con el código fijo, el suyo con un cupón. */
   descuentoEmbajador?: number | null;
+  /**
+   * Fin del mes gratis, si paga mientras corre: la tarjeta queda guardada y el
+   * primer cobro llega ese día. Meter la tarjeta antes no le quita días.
+   */
+  pruebaHasta?: string | null;
   /** A dónde vuelve al pagar y al arrepentirse. */
   exito: string;
   cancelado: string;
@@ -237,6 +242,15 @@ export async function crearPago(datos: DatosDelPago) {
     });
   }
 
+  // Stripe no acepta en Checkout una prueba que acabe en menos de 48 horas: a
+  // quien le quedan dos días o menos se le cobra al meter la tarjeta.
+  const finDePrueba = datos.pruebaHasta ? Math.floor(new Date(datos.pruebaHasta).getTime() / 1000) : 0;
+  const trialEnd = precio.cubreHasta
+    ? diaSiguienteEnMexico(precio.cubreHasta)
+    : finDePrueba > Date.now() / 1000 + 49 * 3600
+    ? finDePrueba
+    : null;
+
   const sesion = await stripe()!.checkout.sessions.create({
     mode: "subscription",
     locale: "es",
@@ -264,7 +278,7 @@ export async function crearPago(datos: DatosDelPago) {
     metadata,
     subscription_data: {
       metadata,
-      ...(precio.cubreHasta ? { trial_end: diaSiguienteEnMexico(precio.cubreHasta) } : {}),
+      ...(trialEnd ? { trial_end: trialEnd } : {}),
     },
     success_url: datos.exito,
     cancel_url: datos.cancelado,

@@ -104,7 +104,7 @@ export function KitDeVenta({
             <tbody className="divide-y divide-ink/10">
               <tr>
                 <td className="p-4 font-bold">Primer mes de membresía</td>
-                <td className="p-4">Gratis, {DIAS_GRATIS} días sin tarjeta (sin banner de estelares)</td>
+                <td className="p-4">Gratis, {DIAS_GRATIS} días sin tarjeta (el banner de estelares se enciende al meter tarjeta; el primer cobro llega al acabar el mes)</td>
                 <td className="p-4">—</td>
                 <td className="p-4 text-cacao/70">Tu código ya queda ligado</td>
               </tr>

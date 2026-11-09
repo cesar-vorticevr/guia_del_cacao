@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { FormularioCambiarPlan } from "@/components/negocio/formularios";
-import type { Oferta } from "@/lib/precios";
+import { FormularioCambiarPlan, PromoAnual } from "@/components/negocio/formularios";
+import type { Oferta, Periodo } from "@/lib/precios";
 import type { Tier } from "@/lib/tipos";
 
 /**
@@ -23,6 +23,7 @@ export function PlanesDesplegables({
   cobroReal = false,
   porPagar = false,
   enPrueba = false,
+  finDePrueba = null,
   tierActual,
   siguiente,
   oferta = null,
@@ -31,6 +32,8 @@ export function PlanesDesplegables({
   tiers: Tier[];
   /** Está en su mes gratis de la membresía. */
   enPrueba?: boolean;
+  /** Cuándo acaba el mes gratis: el día del primer cobro si mete tarjeta. */
+  finDePrueba?: string | null;
   /** Hay Stripe: el botón «Pagar ahora» cobra de verdad. */
   cobroReal?: boolean;
   /** Alguna sucursal todavía no paga con tarjeta. */
@@ -45,10 +48,12 @@ export function PlanesDesplegables({
 }) {
   const [abierto, setAbierto] = useState(false);
   const [preseleccion, setPreseleccion] = useState<number | undefined>(undefined);
+  const [periodo, setPeriodo] = useState<Periodo>("mensual");
   const lista = useRef<HTMLDivElement | null>(null);
 
-  function abrir(plan?: number) {
+  function abrir(plan?: number, conPeriodo: Periodo = "mensual") {
     setPreseleccion(plan);
+    setPeriodo(conPeriodo);
     setAbierto(true);
 
     // Después de pintar, no antes: hasta que la lista no existe no hay a dónde
@@ -96,11 +101,13 @@ export function PlanesDesplegables({
               sobrevive y la preselección nueva se ignoraría.
             */}
             <FormularioCambiarPlan
-              key={preseleccion ?? "actual"}
+              key={`${preseleccion ?? "actual"}-${periodo}`}
               tiers={tiers}
               cobroReal={cobroReal}
               porPagar={porPagar}
               enPrueba={enPrueba}
+              finDePrueba={finDePrueba}
+              periodoInicial={periodo}
               tierActual={tierActual}
               preseleccion={preseleccion}
               oferta={oferta}
@@ -109,6 +116,11 @@ export function PlanesDesplegables({
             {children}
           </>
         ) : (
+          <>
+            {/* La promoción anual se ve sin abrir nada: es la que se empuja. */}
+            {porPagar && (
+              <PromoAnual tiers={tiers} periodo="mensual" alElegir={() => abrir(undefined, "anual")} />
+            )}
           <button
             type="button"
             onClick={() => abrir()}
@@ -116,6 +128,7 @@ export function PlanesDesplegables({
           >
             {enPrueba ? "Pagar o ver mi membresía" : "Ver mi membresía"}
           </button>
+          </>
         )}
       </section>
     </>

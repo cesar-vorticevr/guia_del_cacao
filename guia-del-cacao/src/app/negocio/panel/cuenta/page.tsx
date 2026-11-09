@@ -88,9 +88,10 @@ export default async function CuentaNegocio({
   const plan = tiers.find((tier) => tier.id === suscripcion?.tier_id);
 
   // El plan de arriba, si lo hay. Es lo único que se anuncia: sin siguiente no
-  // hay nada que ofrecer, y decirlo igual sería mentir.
+  // hay nada que ofrecer, y decirlo igual sería mentir. Solo uno que se ofrezca:
+  // sin plan, el «siguiente» era el Gratis, y salía «Cámbiate a Gratis».
   const siguiente = tiers.find(
-    (tier) => tier.id === (suscripcion?.tier_id ?? 0) + 1,
+    (tier) => tier.se_ofrece && tier.id === (suscripcion?.tier_id ?? 0) + 1,
   );
 
   const publicadas = sucursales.filter((s) => s.estado === "publicado").length;
@@ -237,9 +238,10 @@ export default async function CuentaNegocio({
                         : `Te quedan ${diasDePrueba(suscripcion.finDePrueba)} días gratis`}
                   </strong>
                   Tu membresía empezó con un mes gratis de promoción y termina
-                  el {CUANDO.format(new Date(suscripcion.finDePrueba))}. Mientras
-                  no pagues no sales en el banner de estelares de la portada. Si
-                  para entonces no has pagado, tu micrositio se oculta: no lo ve
+                  el {CUANDO.format(new Date(suscripcion.finDePrueba))}. Mete tu
+                  tarjeta cuando quieras: no se cobra nada hasta ese día, y desde
+                  que la metes sales en el banner de estelares de la portada. Si
+                  para entonces no la has metido, tu micrositio se oculta: no lo ve
                   nadie, ni con el enlace, y no se vuelve a publicar hasta pagar.
                   No se borra nada.
                 </p>
@@ -340,6 +342,7 @@ export default async function CuentaNegocio({
             cobroReal={!PAGO_SIMULADO}
             porPagar={suscripcion?.porPagar ?? false}
             enPrueba={suscripcion?.enPrueba ?? false}
+            finDePrueba={suscripcion?.finDePrueba ?? null}
             tierActual={suscripcion?.tier_id}
             oferta={suscripcion?.convenio ?? null}
             siguiente={

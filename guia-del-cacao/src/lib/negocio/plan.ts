@@ -415,12 +415,20 @@ async function contratarConStripe({
     // tiene uno puesto. Con una promoción no: un solo descuento por pago.
     const embajador = oferta ? null : await embajadorPendienteDe(marcaId);
 
+    // Todas en su mes gratis: se guarda la tarjeta y se cobra cuando acabe el
+    // primero que vence, para no regalar días de más a ninguna.
+    const finesDePrueba = porCobrar.map((s) => (s.estado === "trial" ? s.fecha_fin_trial : null));
+    const pruebaHasta = finesDePrueba.every(Boolean)
+      ? (finesDePrueba as string[]).sort()[0]
+      : null;
+
     let url: string;
     try {
       url = await crearPago({
       marcaId,
       embajadorId: embajador?.embajador_id ?? null,
       descuentoEmbajador: embajador?.descuento ?? null,
+      pruebaHasta,
       clienteStripe: (marca?.stripe_customer_id as string | null) ?? null,
       correo: perfil!.correo,
       sucursalIds: porCobrar.map((s) => s.sucursal_id),
