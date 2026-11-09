@@ -113,7 +113,7 @@ export function RuletaMagica({
   reglas: string;
   puedeGirar: boolean;
   /** Por qué no puede girar quien mira. */
-  motivo: "sin-sesion" | "sin-rol" | "propia" | null;
+  motivo: "sin-sesion" | "sin-rol" | "propia" | "admin" | null;
   volver: string;
   /** Para decir «vuelve mañana» cuando sale suerte. */
   frecuenciaDiaria: boolean;
@@ -424,7 +424,9 @@ export function RuletaMagica({
         <p className="text-center text-sm text-crema/70">
           {motivo === "propia"
             ? "Es tu ruleta: así la ven tus visitantes. Gira las de otros negocios."
-            : "Termina de crear tu cuenta para girar la ruleta."}
+            : motivo === "admin"
+              ? "Estás con la cuenta de administración de la Guía, que no participa en las ruletas. Para girar, entra con tu cuenta personal."
+              : "Termina de crear tu cuenta para girar la ruleta."}
         </p>
       )}
 

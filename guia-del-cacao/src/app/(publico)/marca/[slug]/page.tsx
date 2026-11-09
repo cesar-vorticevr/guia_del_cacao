@@ -405,7 +405,15 @@ export default async function Micrositio({
               // La demo la gira cualquiera con cuenta, también su dueño: es para enseñarla.
               puedeGirar={participa || (esDemo && Boolean(perfil?.rol_confirmado))}
               motivo={
-                !perfil ? "sin-sesion" : esDuenio && !esDemo ? "propia" : !participa && !esDemo ? "sin-rol" : null
+                !perfil
+                  ? "sin-sesion"
+                  : esDuenio && !esDemo
+                    ? "propia"
+                    : perfil.rol === "admin" && !esDemo
+                      ? "admin"
+                      : !participa && !esDemo
+                        ? "sin-rol"
+                        : null
               }
               volver={`/marca/${sucursal.slug}`}
               esDemo={esDemo}
