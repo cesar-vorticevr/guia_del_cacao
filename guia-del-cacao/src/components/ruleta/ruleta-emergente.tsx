@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
 function suscribir() {
@@ -47,6 +47,13 @@ function yaSeAbrio(clave: string) {
  *
  * Al cerrar el resultado, la ruleta refresca la página; el micrositio la monta
  * de nuevo con otra `key` y ya no se abre sola: queda el botón.
+ *
+ * **La tarjeta siempre cabe en la pantalla**, a lo ancho y a lo alto. A lo
+ * ancho la acota su `w-full`. A lo alto, la rueda se encoge lo que la tarjeta
+ * se pase del alto de la ventana (`ajustarRueda`): como es cuadrada, quitarle
+ * ancho le quita lo mismo de alto, y el texto de alrededor no cambia porque su
+ * ancho es el de la tarjeta. Se mide en vez de calcularse con CSS porque lo que
+ * ocupa ese texto depende del ancho: en el celular las reglas son tres renglones.
  */
 export function RuletaEmergente({
   sucursalId,
@@ -68,6 +75,37 @@ export function RuletaEmergente({
   const [abierta, setAbierta] = useState<boolean | null>(null);
 
   const visible = enNavegador && (abierta ?? (abrirSola && !vista));
+  const tarjeta = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (!visible) return;
+    const ajustarRueda = () => {
+      const caja = tarjeta.current;
+      const rueda = caja?.querySelector<HTMLElement>(".ruleta-rueda")?.parentElement;
+      if (!caja || !rueda) return;
+      // Se mide desde su tamaño natural: así también vuelve a crecer.
+      rueda.style.maxWidth = "";
+      // 16px de aire arriba y abajo, los mismos del `py-4` del contenedor.
+      const sobra = caja.getBoundingClientRect().height - (window.innerHeight - 32);
+      if (sobra > 0) {
+        rueda.style.maxWidth = `${Math.max(144, rueda.getBoundingClientRect().width - sobra)}px`;
+      }
+    };
+    ajustarRueda();
+    // Las letras pueden llegar después de la primera medida y mover los renglones.
+    void document.fonts?.ready.then(ajustarRueda);
+    // Se observa la capa fija, que mide lo mismo que la pantalla: el `resize`
+    // de `window` no siempre llega (girar el celular, la barra del navegador
+    // que aparece y se esconde).
+    const capa = tarjeta.current?.closest<HTMLElement>("[role=dialog]");
+    const observador = new ResizeObserver(ajustarRueda);
+    if (capa) observador.observe(capa);
+    window.addEventListener("resize", ajustarRueda);
+    return () => {
+      observador.disconnect();
+      window.removeEventListener("resize", ajustarRueda);
+    };
+  }, [visible]);
 
   // Abrirse sola cuenta como «ya se abrió» en esta visita.
   useEffect(() => {
@@ -129,8 +167,8 @@ export function RuletaEmergente({
             onClick={() => setAbierta(false)}
             className="fixed inset-0 bg-[#120c22]/80 backdrop-blur-sm"
           />
-          <div className="pointer-events-none relative grid min-h-full place-items-center px-3 py-6">
-            <div className="noche pointer-events-auto relative w-full max-w-lg">
+          <div className="pointer-events-none relative grid min-h-full place-items-center px-3 py-4">
+            <div ref={tarjeta} className="noche pointer-events-auto relative w-full max-w-lg">
               <button
                 type="button"
                 onClick={() => setAbierta(false)}

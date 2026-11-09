@@ -261,7 +261,7 @@ export function RuletaMagica({
   }, []);
 
   return (
-    <div className="relative flex flex-col items-center gap-6">
+    <div className="relative flex flex-col items-center gap-4 [@media(min-height:760px)]:gap-6">
       <button
         type="button"
         onClick={() => {
@@ -440,7 +440,9 @@ export function RuletaMagica({
           guardado.
         </p>
       ) : (
-        <div className="text-center text-sm text-crema/65">
+        // En pantallas muy bajas (el celular acostado) las reglas se esconden
+        // para que la rueda y su botón quepan; se leen al girarlo derecho.
+        <div className="text-center text-sm text-crema/65 [@media(max-height:520px)]:hidden">
           <p>{reglas}</p>
           {/* En el panel, la vista previa ya dice debajo qué tan seguido sale cada uno. */}
           <p className={`mt-1 ${modo === "vista-previa" ? "hidden" : ""}`}>

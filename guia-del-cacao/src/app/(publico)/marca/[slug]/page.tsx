@@ -356,12 +356,12 @@ export default async function Micrositio({
             ruleta de cacao, con mazorcas, flores y el logo del negocio, que no
             da premios ni guarda nada. Así se nota que no hay nada más que ganar.
           */}
-          <div className="rounded-[2rem] border border-mango/30 bg-white px-4 py-8 text-center shadow-[0_0_60px_rgb(255_183_3/0.12)] sm:px-8">
+          <div className="rounded-[2rem] border border-mango/30 bg-white px-4 py-5 text-center shadow-[0_0_60px_rgb(255_183_3/0.12)] sm:px-8 [@media(min-height:760px)]:py-8">
             <p className="antetitulo">Ruleta de cacao</p>
-            <h2 className="mt-2 font-display text-3xl font-medium tracking-tight">
+            <h2 className="mt-1 font-display text-2xl font-medium tracking-tight [@media(max-height:520px)]:mb-5 [@media(min-height:760px)]:mt-2 [@media(min-height:760px)]:text-3xl">
               Sigue girando, <em className="texto-oro">por gusto</em>
             </h2>
-            <p className="mx-auto mt-2 mb-8 max-w-md text-cacao">
+            <p className="mx-auto mt-1 mb-4 max-w-md text-sm text-cacao [@media(max-height:520px)]:hidden [@media(min-height:760px)]:mt-2 [@media(min-height:760px)]:mb-8 [@media(min-height:760px)]:text-base">
               Tu premio ya está guardado. Esta vuelta es solo para divertirte.
             </p>
             <RuletaMagica
@@ -385,12 +385,12 @@ export default async function Micrositio({
 
       {girable && ruleta && !yaGiro && (
         <RuletaEmergente key="por-girar" sucursalId={sucursal.id} abrirSola etiqueta="Gira y gana">
-          <div className="rounded-[2rem] border border-mango/30 bg-white px-4 py-8 text-center shadow-[0_0_60px_rgb(255_183_3/0.12)] sm:px-8">
+          <div className="rounded-[2rem] border border-mango/30 bg-white px-4 py-5 text-center shadow-[0_0_60px_rgb(255_183_3/0.12)] sm:px-8 [@media(min-height:760px)]:py-8">
             <p className="antetitulo">Ruleta Mágica</p>
-            <h2 className="mt-2 font-display text-3xl font-medium tracking-tight">
+            <h2 className="mt-1 font-display text-2xl font-medium tracking-tight [@media(max-height:520px)]:mb-5 [@media(min-height:760px)]:mt-2 [@media(min-height:760px)]:text-3xl">
               Gira y <em className="texto-oro">gana</em>
             </h2>
-            <p className="mx-auto mt-2 mb-8 max-w-md text-cacao">
+            <p className="mx-auto mt-1 mb-4 max-w-md text-sm text-cacao [@media(max-height:520px)]:hidden [@media(min-height:760px)]:mt-2 [@media(min-height:760px)]:mb-8 [@media(min-height:760px)]:text-base">
               Un premio de {sucursal.marcas?.nombre_comercial ?? sucursal.nombre_sucursal} te
               espera. Gira y llévate tu código.
             </p>
