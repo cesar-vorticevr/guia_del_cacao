@@ -542,3 +542,38 @@ export async function verificarCorreoConCodigo(
   const { error: errorMarca } = await supabase.rpc("marcar_correo_verificado");
   redirect(`/negocio/panel?correo=${errorMarca ? "fallo" : "listo"}`);
 }
+
+// ---------------------------------------------------------------------------
+// El @usuario (migración 000078)
+// ---------------------------------------------------------------------------
+
+/**
+ * Cambia el @usuario de quien está en sesión. La base lo limpia (sin arroba, en
+ * minúsculas), exige que esté libre y que no se haya cambiado en 30 días: aquí
+ * solo se traducen sus avisos.
+ */
+export async function cambiarUsuario(
+  _previo: EstadoFormulario & { ok?: string },
+  datos: FormData,
+): Promise<EstadoFormulario & { ok?: string }> {
+  const perfil = await perfilActual();
+  if (!perfil) redirect("/login");
+
+  const usuario = texto(datos, "usuario").replace(/^@+/, "").toLowerCase();
+  if (usuario === perfil.usuario) return { ok: "Ese ya es tu @usuario." };
+  if (!/^[a-z0-9._]{3,30}$/.test(usuario)) {
+    return { error: "Usa de 3 a 30 letras, números, puntos o guiones bajos, sin espacios ni acentos." };
+  }
+
+  const supabase = await crearClienteServidor();
+  const { error } = await supabase.from("perfiles").update({ usuario }).eq("id", perfil.id);
+
+  if (error) {
+    // Los dos avisos de la base ya vienen en español y dicen qué hacer.
+    if (error.code === "P0001") return { error: error.message };
+    if (error.code === "23505") return { error: "Ese @usuario ya lo tiene otra cuenta. Prueba con otro." };
+    return { error: "No se pudo guardar tu @usuario. Inténtalo de nuevo." };
+  }
+
+  return { ok: `Listo: ahora eres @${usuario}.` };
+}

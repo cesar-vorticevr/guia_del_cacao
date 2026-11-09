@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FormularioUsuario } from "@/components/formulario-usuario";
 import { AccesoAVentas } from "@/components/embajador/acceso";
 import { MisPremios } from "@/components/ruleta/mis-premios";
 import { redirect } from "next/navigation";
@@ -409,6 +410,10 @@ export default async function CuentaNegocio({
               correo={perfil.correo}
               nombreComercial={marca.nombre_comercial}
             />
+          </section>
+
+          <section className="grid gap-4">
+            <FormularioUsuario usuario={perfil.usuario} />
           </section>
 
           {/*

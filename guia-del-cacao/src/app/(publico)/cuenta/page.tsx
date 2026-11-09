@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FormularioUsuario } from "@/components/formulario-usuario";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { perfilActual } from "@/lib/auth/sesion";
@@ -99,6 +100,10 @@ export default async function Cuenta({
               <dd className="text-cacao">{perfil.correo}</dd>
             </div>
           </dl>
+
+          <div className="rounded-3xl border-2 border-selva/15 p-6">
+            <FormularioUsuario usuario={perfil.usuario} />
+          </div>
 
           {vendedor ? (
             <p className="rounded-3xl border-2 border-selva/15 p-6 text-cacao">

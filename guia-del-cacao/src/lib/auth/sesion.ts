@@ -8,6 +8,8 @@ export type Perfil = {
   rol: Rol;
   rol_confirmado: boolean;
   nombre: string;
+  /** El @usuario, sin la arroba (migración 000078). */
+  usuario: string;
   correo: string;
   foto_perfil: string | null;
   /** Cuándo abrió el enlace que se le mandó al correo. Null = sin verificar. */
@@ -31,7 +33,7 @@ export async function perfilActual(): Promise<Perfil | null> {
 
   const { data } = await supabase
     .from("perfiles")
-    .select("id, rol, rol_confirmado, nombre, correo, foto_perfil, correo_verificado_en")
+    .select("id, rol, rol_confirmado, nombre, usuario, correo, foto_perfil, correo_verificado_en")
     .eq("id", user.id)
     .single();
 

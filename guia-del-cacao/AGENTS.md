@@ -1947,3 +1947,37 @@ Chocolate:
   de una vez y por monto (un monto por cada cuántas sucursales se pagan
   juntas). No se suma al código de un vendedor: se queda el primer pago más
   barato, y el vendedor conserva su comisión.
+
+## Cuentas compartidas (migración 000078, fase 1 de 4)
+
+El plan de noviembre de 2026: una cuenta sirve para todo, administra varios
+negocios, un negocio tiene varios administradores y su dueño puede ceder la
+propiedad. Va en cuatro fases que se publican por separado: (1) @usuario y la
+lista de administradores, (2) varios negocios por cuenta con selector en el
+panel, (3) compartir por @usuario, ceder y salir, (4) quitar «¿cliente o
+negocio?» al registrarse.
+
+Lo que ya existe tras la fase 1:
+
+- **`perfiles.usuario`**: único, `^[a-z0-9._]{3,30}$`, sin arroba. Nace solo
+  con el nombre (`usuario_disponible`, quita acentos y agrega un número si está
+  ocupado) y se cambia una vez cada 30 días (`preparar_usuario`; el
+  administrador sin esperar). Sale en `perfiles_publicos` y en Mi cuenta → Tus
+  datos (`FormularioUsuario`).
+- **`administradores_marca`** (`marca_id`, `perfil_id`, `papel` `dueno`|`admin`):
+  un solo dueño por marca (índice parcial). La fila del dueño **sigue a
+  `marcas.perfil_id`** con un trigger: si cambia el dueño, el anterior queda
+  como `admin`. `perfil_id` apunta a `auth.users`, no a `perfiles`, por el
+  tropiezo de PGRST201. Sin políticas de escritura: compartir y ceder van por
+  funciones (fase 3).
+- **`posee_marca` y `posee_sucursal` preguntan por la lista**, igual que
+  `puede_escribir_en_micrositio` y `puede_escribir_en_experiencia`. Con solo
+  el dueño en la lista dan lo mismo que antes. `es_dueno_de_marca` es para lo
+  que solo puede el dueño, y `mis_marcas()` lista las que administra quien
+  pregunta.
+- **Todavía miran `perfil_id` directo** (se deciden en la fase 3): las
+  políticas `marcas_*`, `mis_pedidos`, `pedidos_por_atender`,
+  `faltan_datos_de_pago`, `solicitudes_por_sucursal` y `es_vendedor`, y unas
+  diez pantallas del panel que buscan «la» marca de la cuenta con
+  `.eq("perfil_id", …)`.
+- La prueba es la 34.
