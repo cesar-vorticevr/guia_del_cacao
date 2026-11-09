@@ -2000,3 +2000,46 @@ Lo que ya existe tras la fase 1:
   `/negocio/completar-marca?nueva=1`. Crear una marca la deja como activa
   (`recordarMarca`).
 - Cada marca paga lo suyo: no cambió nada del plan, que ya era por sucursal.
+
+### Fase 3: compartir, ceder y dejar (migración 000079)
+
+- **Quién puede qué.** Administrador: todo el contenido y atender pedidos y
+  solicitudes. **Solo el dueño**: pagar y cancelar, publicar (abre una
+  suscripción), la CLABE, borrar el negocio, compartir, quitar y ceder. La base
+  lo exige (políticas de `suscripciones`, `datos_de_pago` y `marcas`) y la
+  aplicación lo pregunta antes con `soyDuenoDe()` para contestar
+  `SOLO_EL_DUENO` en vez de un error de RLS.
+- **`perfil_id` de la marca solo cambia con `ceder_marca`**: la edición de
+  `marcas` ya la tienen los administradores y `proteger_dueno_de_marca` impide
+  que uno se escriba como dueño; `ceder_marca` abre la puerta con
+  `guia.cediendo`.
+- Funciones: `compartir_marca(marca, @usuario)`, `quitar_administrador`,
+  `ceder_marca(marca, @usuario, quedarme)`, `dejar_marca`,
+  `administradores_de` y `cuenta_de_usuario`. Pantalla:
+  `/negocio/panel/equipo` («Administradores», junto al selector).
+- **Al ceder, la tarjeta es del negocio** (`marcas.stripe_customer_id`): los
+  cobros siguen con ella hasta que el nuevo dueño la cambie en Tu plan.
+- Quien cede sin quedarse o deja un negocio pierde la metadata
+  `nombre_comercial` de su alta (`olvidarAltaInicial`): si no,
+  `completar-marca` le volvería a crear ese negocio.
+- **Pendiente (3b)**: el buzón del negocio y los avisos siguen yendo solo al
+  dueño. Las conversaciones son entre cuentas (`para`) y los avisos tienen un
+  destinatario; dárselos al equipo pide otra forma de guardarlos.
+- La prueba es la 35.
+
+### Fase 4: una cuenta para todo (migración 000080)
+
+- **Ya no se elige rol.** `/registro` ofrece «Crear mi cuenta» o «Crear mi
+  cuenta y registrar mi negocio» (el del stand, `/registro/negocio`). Google
+  nace `cliente` confirmado (`manejar_nuevo_usuario`), así que `/elegir-rol`
+  ya no se pisa.
+- **`rol = 'negocio'` significa «administra al menos un negocio»** y lo pone
+  `dar_rol_de_negocio` al entrar a `administradores_marca` (al crear un negocio
+  o al recibirlo compartido), con `guia.rol_por_marca` para pasar
+  `proteger_rol`. Por eso las ~50 comprobaciones de `rol === "negocio"` del
+  panel siguen valiendo sin tocarlas. No se quita al dejar de administrar.
+- Un negocio sigue pudiendo reseñar, girar y pedir (`es_cliente` acepta los
+  dos roles desde la 000063). `/negocio/layout` ya solo pide sesión; el panel
+  pide el rol. Mi cuenta enseña «Registrar mi negocio» a quien no tiene, y
+  `/soy-negocio` lleva a `completar-marca`.
+- La prueba es la 36; la 03 cambió su caso de Google.

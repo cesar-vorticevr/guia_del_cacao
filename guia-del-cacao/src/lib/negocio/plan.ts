@@ -26,7 +26,7 @@ import {
   explicarErrorDeStripe,
   stripe,
 } from "@/lib/stripe";
-import { idMarcaActiva } from "@/lib/negocio/marca-activa";
+import { idMarcaActiva, SOLO_EL_DUENO, soyDuenoDe } from "@/lib/negocio/marca-activa";
 
 
 export type EstadoPlan = { error?: string; ok?: string };
@@ -96,6 +96,7 @@ export async function contratarPlan(
   datos: FormData,
 ): Promise<EstadoPlan> {
   const marca = await miMarca();
+  if (!(await soyDuenoDe(marca.id))) return { error: SOLO_EL_DUENO };
 
   const tierId = Number(datos.get("tier_id")?.toString() ?? "");
   if (!tierId) return { error: "Elige un plan." };
@@ -451,6 +452,7 @@ async function contratarConStripe({
  */
 export async function abrirPortalDePago() {
   const marca = await miMarca();
+  if (!(await soyDuenoDe(marca.id))) redirect("/negocio/panel/equipo?solo=dueno");
   const servicio = crearClienteDeServicio();
 
   const { data } = await servicio
@@ -477,6 +479,7 @@ export async function cancelarPlan(
   datos: FormData,
 ): Promise<EstadoPlan> {
   const marca = await miMarca();
+  if (!(await soyDuenoDe(marca.id))) return { error: SOLO_EL_DUENO };
 
   if (datos.get("entendido") !== "si") {
     return { error: "Marca la casilla para confirmar que entiendes qué pasa al cancelar." };

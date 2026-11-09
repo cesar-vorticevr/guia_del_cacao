@@ -46,6 +46,20 @@ export async function idMarcaActiva() {
 }
 
 /**
+ * Si quien está en sesión es el dueño de esa marca (fase 3). Pagar, publicar,
+ * anotar la CLABE, compartir y ceder son solo suyos; la base lo exige por su
+ * cuenta y esto es para contestar con algo legible antes de intentarlo.
+ */
+export async function soyDuenoDe(marcaId: string) {
+  const supabase = await crearClienteServidor();
+  const { data } = await supabase.rpc("es_dueno_de_marca", { p_marca: marcaId });
+  return data === true;
+}
+
+export const SOLO_EL_DUENO =
+  "Esto solo lo puede hacer quien es dueño del negocio. Tú lo administras: pídeselo, o que te ceda el negocio.";
+
+/**
  * Los ids de todas las que administra: para comprobar que un producto, un
  * evento o una sucursal abiertos por su enlace son de alguna de ellas, aunque
  * no sea la activa. Nunca vacío, para que `.in()` filtre a cero.

@@ -57,6 +57,20 @@ export default async function Cuenta({
 
       <AccesoAlBuzon sinLeer={await mensajesSinLeer()} />
 
+      {/* Una cuenta para todo (fase 4): de aquí se registra el primer negocio. */}
+      {perfil.rol === "cliente" && (
+        <Link
+          href="/negocio/completar-marca"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border-2 border-mango/50 p-5"
+        >
+          <span>
+            <span className="block font-display text-xl text-selva-2">¿Tienes un negocio de cacao?</span>
+            <span className="block text-cacao">Regístralo con esta misma cuenta: 30 días con todo, gratis.</span>
+          </span>
+          <span className="font-bold text-mango">Registrar mi negocio →</span>
+        </Link>
+      )}
+
       {/* Pedidos a negocios (000071): cada uno lleva a su conversación. */}
       <Link
         href="/pedidos"

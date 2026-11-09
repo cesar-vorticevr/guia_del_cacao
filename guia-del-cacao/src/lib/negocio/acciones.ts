@@ -22,7 +22,7 @@ import { crearClienteDeServicio } from "@/lib/supabase/servicio";
 import { origenDelSitio } from "@/lib/auth/sesion";
 import { revisarImagen } from "@/lib/imagenes";
 import { LIMITES, revisarLargo, TOPE_FOTOS } from "@/lib/limites";
-import { idMarcaActiva, idsDeMisMarcas } from "@/lib/negocio/marca-activa";
+import { idMarcaActiva, idsDeMisMarcas, SOLO_EL_DUENO, soyDuenoDe } from "@/lib/negocio/marca-activa";
 
 
 export type EstadoAccion = { error?: string; ok?: string };
@@ -263,6 +263,9 @@ export async function publicarSucursal(
   const perfil = await exigirNegocio();
   const id = datos.get("sucursal_id")?.toString() ?? "";
   const sucursal = await exigirSucursalPropia(id);
+
+  // Publicar abre una suscripción, y el plan es del dueño (fase 3).
+  if (!(await soyDuenoDe(sucursal.marca_id))) return { error: SOLO_EL_DUENO };
 
   if (
     sucursal.estado === "publicado" ||

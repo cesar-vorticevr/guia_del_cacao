@@ -18,7 +18,18 @@ values ('bbbbbbbb-0000-0000-0000-000000000002', '00000000-0000-0000-0000-0000000
 \echo '--- como nace cada perfil ---'
 select nombre, rol, rol_confirmado from public.perfiles order by nombre;
 
-\echo '--- el de Google elige negocio: debe permitirse UNA vez ---'
+\echo '--- el de Google nace confirmado y no elige rol (000080) ---'
+do $$
+begin
+  if (select rol = 'cliente' and rol_confirmado from public.perfiles
+       where id = 'bbbbbbbb-0000-0000-0000-000000000002') then
+    raise notice 'OK     nacio cliente confirmado';
+  else
+    raise notice 'FALLA  el de Google no nacio cliente confirmado';
+  end if;
+end $$;
+
+echo '--- el de Google intenta ponerse negocio a mano: debe bloquearse ---'
 begin;
   set local role authenticated;
   set local request.jwt.claims to '{"sub":"bbbbbbbb-0000-0000-0000-000000000002","role":"authenticated"}';
@@ -26,30 +37,13 @@ begin;
   begin
     update public.perfiles set rol = 'negocio'
      where id = 'bbbbbbbb-0000-0000-0000-000000000002';
-    raise notice 'OK     eligio negocio';
-  exception when others then
-    raise notice 'FALLA  no lo dejo elegir: %', sqlerrm;
-  end $$;
-commit;
-
-select nombre, rol, rol_confirmado from public.perfiles
- where id = 'bbbbbbbb-0000-0000-0000-000000000002';
-
-\echo '--- intenta cambiar otra vez: debe bloquearse ---'
-begin;
-  set local role authenticated;
-  set local request.jwt.claims to '{"sub":"bbbbbbbb-0000-0000-0000-000000000002","role":"authenticated"}';
-  do $$
-  begin
-    update public.perfiles set rol = 'cliente'
-     where id = 'bbbbbbbb-0000-0000-0000-000000000002';
-    raise notice 'FALLA  cambio de rol dos veces';
+    raise notice 'FALLA  se puso negocio a mano';
   exception when others then
     raise notice 'OK     bloqueado: %', sqlerrm;
   end $$;
 rollback;
 
-\echo '--- alta por correo intenta cambiarse de rol: debe bloquearse ---'
+echo '--- alta por correo intenta cambiarse de rol: debe bloquearse ---'
 begin;
   set local role authenticated;
   set local request.jwt.claims to '{"sub":"aaaaaaaa-0000-0000-0000-000000000001","role":"authenticated"}';

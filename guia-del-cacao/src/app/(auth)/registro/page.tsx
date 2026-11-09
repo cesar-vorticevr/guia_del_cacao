@@ -5,15 +5,20 @@ import { BotonGoogle } from "@/components/boton-google";
 export const metadata: Metadata = { title: "Crear cuenta · Guía del Cacao" };
 
 /**
- * No hay cuenta genérica: aquí se elige el camino (spec §3.1). Quien entra con
- * Google desde esta pantalla también elige su rol, pero después de volver.
+ * Una cuenta para todo (cuentas compartidas, fase 4): con ella se reseña, se
+ * pide y se administran negocios. Ya no se elige «cliente o negocio»; quien
+ * viene a registrar su negocio tiene el atajo que crea cuenta y negocio de una
+ * vez (es el que usa el stand).
  */
 export default function Registro() {
   return (
     <div className="grid gap-5">
       <div>
         <h1 className="font-display text-3xl">Crear cuenta</h1>
-        <p className="mt-2 text-cacao">¿Cómo vas a usar la plataforma?</p>
+        <p className="mt-2 text-cacao">
+          Una sola cuenta para explorar, dejar reseñas y pedir, y también para
+          registrar y administrar tus negocios.
+        </p>
       </div>
 
       <Link
@@ -21,11 +26,11 @@ export default function Registro() {
         className="rounded-3xl border-2 border-selva/20 bg-white p-5 transition-colors hover:border-selva"
       >
         <span className="block font-display text-xl font-semibold text-selva-2">
-          Soy cliente
+          Crear mi cuenta
         </span>
         <span className="mt-1 block text-cacao">
-          Explora el directorio, deja reseñas y junta mazorcas de cacao
-          escaneando el QR de cada negocio.
+          Tu nombre, tu correo y una contraseña. Si después quieres registrar
+          un negocio, lo haces desde tu cuenta.
         </span>
       </Link>
 
@@ -34,10 +39,11 @@ export default function Registro() {
         className="rounded-3xl border-2 border-selva/20 bg-white p-5 transition-colors hover:border-selva"
       >
         <span className="block font-display text-xl font-semibold text-selva-2">
-          Soy negocio
+          Crear mi cuenta y registrar mi negocio
         </span>
         <span className="mt-1 block text-cacao">
-          Arma tu micrositio gratis y publícalo cuando estés listo.
+          Lo mismo, y de una vez el nombre de tu negocio para empezar a armar tu
+          micrositio. Treinta días con todo, gratis.
         </span>
       </Link>
 

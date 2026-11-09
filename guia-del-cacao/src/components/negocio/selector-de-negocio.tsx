@@ -6,8 +6,8 @@ import type { MarcaDeLaCuenta } from "@/lib/negocio/marca-activa";
 
 /**
  * Qué negocio se administra (cuentas compartidas, fase 2). Con uno solo no hay
- * nada que elegir y solo queda «Crear otro negocio»; con varios, la lista se
- * cambia sin botón: elegir es la acción.
+ * nada que elegir y quedan «Administradores» y «Crear otro negocio»; con
+ * varios, la lista se cambia sin botón: elegir es la acción.
  */
 export function SelectorDeNegocio({
   marcas,
@@ -43,6 +43,12 @@ export function SelectorDeNegocio({
           </noscript>
         </form>
       )}
+      <Link
+        href="/negocio/panel/equipo"
+        className="text-sm font-bold text-selva underline decoration-mango/50 underline-offset-4 hover:text-mango"
+      >
+        Administradores
+      </Link>
       <Link
         href="/negocio/completar-marca?nueva=1"
         className="text-sm font-bold text-selva underline decoration-mango/50 underline-offset-4 hover:text-mango"

@@ -25,7 +25,6 @@ export default async function CompletarMarca({
   const perfil = await perfilActual();
 
   if (!perfil) redirect("/login");
-  if (perfil.rol !== "negocio") redirect("/cuenta");
 
   // Mismo cuidado que en el panel: filtrar por dueño explícitamente. Sin el
   // .eq, cualquier marca publicada de otro negocio contaría como propia y

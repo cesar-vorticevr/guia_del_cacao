@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { perfilActual } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
-import { idMarcaActiva } from "@/lib/negocio/marca-activa";
+import { idMarcaActiva, SOLO_EL_DUENO, soyDuenoDe } from "@/lib/negocio/marca-activa";
 
 
 export type EstadoPedido = {
@@ -155,6 +155,8 @@ export async function guardarDatosDePago(
     .maybeSingle();
 
   if (!marca) return { error: "Primero da de alta tu negocio.", valores };
+  // A dónde llega el dinero lo decide el dueño (fase 3).
+  if (!(await soyDuenoDe(marca.id))) return { error: SOLO_EL_DUENO, valores };
 
   const { error } = await supabase.from("datos_de_pago").upsert({
     marca_id: marca.id,

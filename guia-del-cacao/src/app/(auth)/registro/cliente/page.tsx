@@ -3,16 +3,16 @@ import type { Metadata } from "next";
 import { BotonGoogle } from "@/components/boton-google";
 import { FormularioCliente } from "@/components/formularios-auth";
 
-export const metadata: Metadata = { title: "Cuenta de cliente · Guía del Cacao" };
+export const metadata: Metadata = { title: "Crear cuenta · Guía del Cacao" };
 
 export default function RegistroCliente() {
   return (
     <div className="grid gap-5">
       <div>
-        <h1 className="font-display text-3xl">Cuenta de cliente</h1>
+        <h1 className="font-display text-3xl">Crear tu cuenta</h1>
         <p className="mt-2 text-cacao">
-          Para juntar mazorcas de cacao y dejar reseñas en los negocios que
-          visites.
+          Para dejar reseñas, pedir a los negocios y guardar tus favoritos. Con
+          la misma cuenta puedes registrar tu negocio cuando quieras.
         </p>
       </div>
 
