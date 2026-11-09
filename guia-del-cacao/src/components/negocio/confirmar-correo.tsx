@@ -27,7 +27,7 @@ export function ConfirmarCorreo({ correo }: { correo: string }) {
 
   const [verificacion, verificar] = useActionState(verificarCorreoConCodigo, INICIAL);
 
-  // El correo trae un código de 6 dígitos y un enlace: cualquiera de los dos
+  // El correo trae un código y un enlace: cualquiera de los dos
   // confirma. El código se escribe aquí mismo, sin salir del panel.
   if (estado.enviado) {
     return (
@@ -37,7 +37,7 @@ export function ConfirmarCorreo({ correo }: { correo: string }) {
           className="rounded-2xl border-2 border-lima/50 bg-lima/15 px-4 py-3 text-cacao"
         >
           <strong className="text-selva-2">Te mandamos el correo.</strong> Escribe
-          aquí el código de 6 dígitos (o toca el enlace del correo). Si no lo ves,
+          aquí el código (o toca el enlace del correo). Si no lo ves,
           revisa la carpeta de correo no deseado.
         </p>
         <Aviso>{verificacion.error}</Aviso>

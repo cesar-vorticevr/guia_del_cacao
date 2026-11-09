@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Confirma tu correo · Guía del Caca
 
 /**
  * Se llega aquí después de registrarse, porque el proyecto exige confirmar el
- * correo. El correo trae un código de 6 dígitos —y también un enlace, que
+ * correo. El correo trae un código —y también un enlace, que
  * sigue funcionando—: escribirlo aquí abre la sesión sin salir de la página.
  */
 export default async function Confirma() {
@@ -20,12 +20,12 @@ export default async function Confirma() {
         <p className="text-cacao">
           {correo ? (
             <>
-              Mandamos un código de 6 dígitos a{" "}
+              Mandamos un código a{" "}
               <strong className="text-selva-2">{correo}</strong>. Escríbelo aquí
               para confirmar tu cuenta.
             </>
           ) : (
-            <>Escribe tu correo y el código de 6 dígitos que te mandamos.</>
+            <>Escribe tu correo y el código que te mandamos.</>
           )}{" "}
           Si no lo ves, revisa la carpeta de correo no deseado.
         </p>

@@ -227,7 +227,7 @@ export function FormularioContrasenaNueva() {
 }
 
 /**
- * El código de 6 dígitos del correo. Grande y numérico: en el stand se dicta
+ * El código del correo (6 u 8 dígitos, según `otp_length` del proyecto). Grande y numérico: en el stand se dicta
  * desde el celular de quien se registra y se teclea en la tablet, y en un
  * teléfono `one-time-code` deja que el teclado lo ofrezca solo.
  */
@@ -242,7 +242,7 @@ export function CampoCodigo() {
         autoComplete="one-time-code"
         pattern="[0-9 -]{6,12}"
         maxLength={12}
-        placeholder="123456"
+        placeholder="12345678"
         className="block w-full rounded-2xl border-2 border-selva/20 bg-white px-4 py-3 text-center font-mono text-3xl tracking-[0.4em] text-ink focus:border-mango focus:outline-none"
       />
     </label>

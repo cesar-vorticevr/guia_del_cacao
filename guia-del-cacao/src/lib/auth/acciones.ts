@@ -210,7 +210,7 @@ function codigoDe(datos: FormData) {
 }
 
 /**
- * Confirma la cuenta con el código de 6 dígitos que llega al correo, como en
+ * Confirma la cuenta con el código que llega al correo, como en
  * Vórtice VR. Es el mismo correo de siempre (`signUp`), que ahora trae el
  * código además del enlace: en el stand se lee en el celular y se escribe en
  * la tablet, sin salir de la página. El enlace sigue sirviendo.
@@ -226,7 +226,7 @@ export async function confirmarConCodigo(
   const codigo = codigoDe(datos);
 
   if (!correo.includes("@")) return { error: "Escribe el correo con el que te registraste." };
-  if (codigo.length < 6) return { error: "Escribe los 6 dígitos del código." };
+  if (codigo.length < 6) return { error: "Escribe el código completo, como viene en el correo." };
 
   const supabase = await crearClienteServidor();
   const { error } = await supabase.auth.verifyOtp({ email: correo, token: codigo, type: "email" });
@@ -533,7 +533,7 @@ export async function verificarCorreoConCodigo(
   if (!perfil) redirect("/login");
 
   const codigo = codigoDe(datos);
-  if (codigo.length < 6) return { error: "Escribe los 6 dígitos del código.", enviado: true };
+  if (codigo.length < 6) return { error: "Escribe el código completo, como viene en el correo.", enviado: true };
 
   const supabase = await crearClienteServidor();
   const { error } = await supabase.auth.verifyOtp({ email: perfil.correo, token: codigo, type: "email" });
