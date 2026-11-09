@@ -83,7 +83,7 @@ function Tarjeta({
       ? { texto: "Borrador", clase: "bg-ink/10 text-cacao" }
       : e.seVe
         ? { texto: "Publicada", clase: "bg-lima/30 text-selva-2" }
-        : { texto: "Oculta: sin cupo o sin Pro", clase: "bg-guayaba/20 text-cacao" };
+        : { texto: "Oculta: sin cupo o sin membresía", clase: "bg-guayaba/20 text-cacao" };
 
   async function copiar() {
     try {

@@ -197,12 +197,12 @@ export default async function Dossier() {
             <p className="mt-2 font-display text-5xl font-bold text-selva-2">$0</p>
             <p className="mt-1 font-bold text-cacao">{DIAS_GRATIS} días con todo, sin tarjeta</p>
             <p className="mt-3 text-cacao">
-              Para conocer la guía: todo lo del Pro durante la prueba. Al terminar, la página se
+              Para conocer la guía: todo lo de la membresía durante la prueba. Al terminar, la página se
               oculta —no se borra— y vuelve al pagar.
             </p>
           </div>
           <div className="rounded-3xl border-2 border-mango bg-white p-6 shadow-[0_0_40px_rgb(255_183_3/0.2)]">
-            <p className="antetitulo">Pro</p>
+            <p className="antetitulo">Membresía</p>
             <p className="mt-2 font-display text-5xl font-bold text-selva-2">
               {pesos(PRECIO_PRO)}
               <span className="text-lg font-medium text-cacao"> /mes</span>

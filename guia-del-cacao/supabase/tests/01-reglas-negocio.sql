@@ -77,6 +77,13 @@ select pg_temp.debe_fallar('Segundo evento en la misma semana', $q$
   values ('55555555-5555-5555-5555-555555555555', 'Otra cata', 'texto', now() + interval '3 days')
 $q$);
 
+-- La agenda que sube la plataforma con la llave de servicio no cuenta (000077).
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+insert into public.eventos (sucursal_id, titulo, contenido, fecha_evento)
+values ('55555555-5555-5555-5555-555555555555', 'Agenda de la Guia', 'texto', now() + interval '3 days');
+\echo 'OK     la llave de servicio publica varios en la misma semana'
+select set_config('request.jwt.claims', '', true);
+
 -- ---------------------------------------------------------------- puntos
 \echo '--- pasaporte de puntos ---'
 insert into public.solicitudes_puntos (id, usuario_id, sucursal_id)

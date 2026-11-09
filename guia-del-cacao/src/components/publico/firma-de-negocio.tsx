@@ -90,7 +90,7 @@ export function ProductoEtiquetado({
         </span>
         <span className="block truncate font-bold text-selva-2">{producto.nombre}</span>
         {producto.descripcion && (
-          <span className="line-clamp-1 block text-sm text-cacao/80">{producto.descripcion}</span>
+          <span className="line-clamp-1 text-sm text-cacao/80">{producto.descripcion}</span>
         )}
         <span className="mt-1 flex flex-wrap items-center gap-x-3 text-sm">
           {producto.precio !== null && (

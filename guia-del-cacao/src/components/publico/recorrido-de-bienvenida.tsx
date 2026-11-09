@@ -312,7 +312,7 @@ function PasoFinal({ alElegir }: { alElegir: () => void }) {
       </h2>
       <p className="mx-auto mt-4 max-w-sm text-pretty text-[#fff7e8]/80">
         Tu página con catálogo, pedidos, reseñas, Ruleta Mágica y un QR para tu mostrador.{" "}
-        <strong className="text-[#ffd166]">15 días gratis, sin tarjeta.</strong>
+        <strong className="text-[#ffd166]">30 días gratis, sin tarjeta.</strong>
       </p>
 
       <div className="mt-7 grid gap-3">

@@ -84,14 +84,14 @@ export default async function PanelExperiencias({
         {conPro ? (
           <>
             <div>
-              <p className="antetitulo">Tu plan Pro</p>
+              <p className="antetitulo">Tu membresía</p>
               <p className="mt-2 font-display text-4xl">
                 <span className="texto-oro">{publicadas}</span>
                 <span className="text-cacao/60"> de {cupo}</span>
               </p>
               <p className="text-sm text-cacao">
                 experiencias publicadas
-                {marca.experiencias_extra > 0 && ` (3 del plan + ${marca.experiencias_extra} extra)`}
+                {marca.experiencias_extra > 0 && ` (3 de la membresía + ${marca.experiencias_extra} extra)`}
               </p>
             </div>
             <ComprarExtra />
@@ -99,10 +99,10 @@ export default async function PanelExperiencias({
         ) : (
           <>
             <div className="max-w-prose">
-              <p className="antetitulo">Arma gratis, publica con Pro</p>
+              <p className="antetitulo">Arma gratis, publica con tu membresía</p>
               <p className="mt-2 text-cacao">
                 Puedes crear y editar tus experiencias sin pagar. Para publicarlas —que su link y su QR
-                funcionen para todos— necesitas el plan <strong>Pro</strong>: trae 3 experiencias, y cada
+                funcionen para todos— necesitas la <strong>membresía</strong>: trae 3 experiencias, y cada
                 una más cuesta ${PRECIO_EXPERIENCIA_EXTRA} de un solo pago.
               </p>
             </div>
@@ -110,7 +110,7 @@ export default async function PanelExperiencias({
               href="/negocio/panel/cuenta"
               className="boton-oro brillo inline-flex min-h-12 items-center rounded-full px-6 font-bold text-ink"
             >
-              Pasarme a Pro · $499/mes
+              Activar mi membresía · $299/mes
             </Link>
           </>
         )}

@@ -16,7 +16,7 @@ export const metadata: Metadata = {
  *
  * Describe lo que la plataforma hace **hoy** de verdad —una reseña por negocio,
  * una publicación al día, cinco comentarios por publicación, el plan por
- * sucursal con quince días de prueba— para que no prometa nada que el código no
+ * sucursal con treinta días de prueba— para que no prometa nada que el código no
  * cumpla. Cada regla de aquí tiene detrás un trigger o una política; si alguna
  * cambia en la base, este texto se queda mintiendo y hay que corregirlo.
  *
@@ -260,12 +260,12 @@ export default function Terminos() {
       </p>
       <ul className="mt-3 grid gap-2 text-cacao">
         <li>
-          <strong className="text-selva-2">Gratis, por 15 días</strong> — todo
-          lo del Pro, sin dejar tarjeta. Al terminar, tu micrositio sale del
+          <strong className="text-selva-2">Gratis, por 30 días</strong> — todo
+          lo de la membresía, sin dejar tarjeta. Al terminar, tu micrositio sale del
           directorio hasta que pagues.
         </li>
         <li>
-          <strong className="text-selva-2">Pro, $499 al mes o $4,990 al año</strong>{" "}
+          <strong className="text-selva-2">Membresía, $299 al mes o $2,990 al año</strong>{" "}
           — tu micrositio con catálogo y contacto, las reseñas de tus
           clientes, anunciar tus eventos en la agenda, salir en el banner de la
           portada, la ruleta de premios y tres experiencias de realidad
@@ -283,14 +283,16 @@ export default function Terminos() {
       </p>
       <p className="mt-3 text-cacao">
         Quien ya pagaba el plan Básico ($199 al mes) lo conserva con su precio
-        mientras no lo cambie. El plan Gratis dura quince días. Con el plan de
+        mientras no lo cambie. El plan Gratis dura treinta días. Con el plan de
         pago, cada sucursal
         estrena{" "}
-        <strong className="text-selva-2">quince días de prueba</strong>, con
+        <strong className="text-selva-2">treinta días de prueba</strong>, con
         todas las funciones de su plan. El conteo empieza el día que publicas.
         Si pagas el año completo,{" "}
         <strong className="text-selva-2">dos meses son gratis</strong>: pagas
-        diez.
+        diez. Del 12 al 16 de noviembre de 2026, con la{" "}
+        <strong className="text-selva-2">Promoción Festival</strong>, el primer
+        año de la membresía cuesta $1,499; al renovar se cobra el precio normal.
       </p>
       <p className="mt-3 text-cacao">
         Un <strong className="text-selva-2">código de promoción</strong> puede

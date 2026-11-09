@@ -107,7 +107,26 @@ export function ofertaDeEmbajador(
 export const MESES_PAGADOS_AL_ANIO = 10;
 
 /** Lo que dura el plan Gratis. La base lo tiene en `public.dias_gratis()`. */
-export const DIAS_GRATIS = 15;
+export const DIAS_GRATIS = 30;
+
+/**
+ * La Promoción Festival (migración 000076): del 12 al 16 de noviembre de 2026
+ * el primer año del Pro anual cuesta $1,499 en vez de diez mensualidades. Es
+ * solo del primer cobro, como el descuento de un vendedor: lo aplica Stripe
+ * con un cupón de una vez (`lib/stripe.ts`) y la renovación va completa. Las
+ * fechas son días del centro de México, inclusive.
+ */
+export const FESTIVAL = {
+  desde: "2026-11-12",
+  hasta: "2026-11-16",
+  precioAnual: 1499,
+} as const;
+
+/** Hoy cae dentro de la Promoción Festival. */
+export function enFestival() {
+  const dia = hoy();
+  return FESTIVAL.desde <= dia && dia <= FESTIVAL.hasta;
+}
 
 /**
  * Las cuentas de ventas: el negocio se descuenta 15% en su primer pago, y el
@@ -129,7 +148,7 @@ export const TOPE_DE_CUPONES_DE_VENDEDOR = 3;
  * Lo que cuesta el Pro al mes, para las cuentas del panel de ventas (el kit y
  * los cupones). La base lo tiene en `tiers` (000059): si cambia, cambia aquí.
  */
-export const PRECIO_PRO = 499;
+export const PRECIO_PRO = 299;
 export const DESCUENTO_MAXIMO_DE_VENDEDOR = 50;
 
 /**
@@ -182,6 +201,8 @@ export type Precio = {
   despues: number | null;
   /** El descuento es solo de este cobro (código de embajador); `despues` es el normal. */
   soloPrimerPago: boolean;
+  /** El descuento es el de la Promoción Festival (`FESTIVAL`). */
+  festival: boolean;
   periodo: Periodo;
 };
 
@@ -198,6 +219,7 @@ export function precioDe(
     cubreHasta: null,
     despues: null,
     soloPrimerPago: false,
+    festival: false,
   };
 
   if (esPlanGratis(tier, tiers)) {
@@ -225,10 +247,34 @@ export function precioDe(
   // El de un embajador también, pero sin fecha: el primer cobro, sea del mes o
   // del año, va con descuento y los siguientes al precio normal.
   // El destacado no descuenta: su precio es el normal.
-  if (oferta?.embajador && !oferta.destacado) {
+  const conCodigo =
+    oferta?.embajador && !oferta.destacado
+      ? Math.round(normal * (1 - oferta.descuento / 100) * 100) / 100
+      : null;
+
+  // La Promoción Festival: el primer año a `FESTIVAL.precioAnual`. No se suma
+  // a un código: se queda el primer pago más barato.
+  if (
+    periodo === "anual" &&
+    enFestival() &&
+    FESTIVAL.precioAnual < normal &&
+    (conCodigo === null || FESTIVAL.precioAnual <= conCodigo)
+  ) {
     return {
       ...vacio,
-      cobro: Math.round(normal * (1 - oferta.descuento / 100) * 100) / 100,
+      cobro: FESTIVAL.precioAnual,
+      antes: normal,
+      despues: normal,
+      soloPrimerPago: true,
+      festival: true,
+      periodo,
+    };
+  }
+
+  if (conCodigo !== null) {
+    return {
+      ...vacio,
+      cobro: conCodigo,
       antes: normal,
       despues: normal,
       soloPrimerPago: true,

@@ -84,8 +84,8 @@ export default async function Publicar({
         <>
           <p className="max-w-xl text-cacao">
             Tu micrositio está completo. Elige con qué plan quieres que salga:
-            empieza con el Gratis, o prueba Básico o Pro quince días sin pagar
-            y sin dejar tarjeta. Si tienes un código de promoción o de convenio,
+            empieza con el Gratis, treinta días con todas las herramientas, sin
+            pagar y sin dejar tarjeta. Si tienes un código de promoción o de convenio,
             escríbelo abajo para ver tus precios.
           </p>
 

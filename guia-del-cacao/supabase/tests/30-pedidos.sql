@@ -132,15 +132,22 @@ update public.datos_de_pago set recibe_pedidos = true;
 select pg_temp.como('f3000000-0000-0000-0000-000000000003');
 insert into public.datos_de_pago (marca_id, banco, titular, clabe)
 values ('f3010000-0000-0000-0000-000000000003', 'Banamex', 'A prueba', '002010077777777771');
-select pg_temp.debe_ser('el Gratis no vende aunque tenga datos de pago',
-  public.por_que_no_vende('f3030000-0000-0000-0000-000000000003') like '%Gratis%');
+-- Desde la 000076 la prueba trae todo, pedidos incluidos; al vencer, deja de vender.
+select pg_temp.debe_ser('la prueba Gratis vigente tambien vende',
+  public.por_que_no_vende('f3030000-0000-0000-0000-000000000003') is null);
+reset role;
+update public.suscripciones set fecha_fin_trial = now() - interval '1 day'
+ where sucursal_id = 'f3030000-0000-0000-0000-000000000003';
+set local role authenticated;
+select pg_temp.debe_ser('una prueba vencida ya no vende',
+  public.por_que_no_vende('f3030000-0000-0000-0000-000000000003') like '%venció%');
 
 -- ---------------------------------------------------------------- la clienta pide
 select pg_temp.como('f3000000-0000-0000-0000-000000000001');
 
 select pg_temp.debe_ser('la clienta no lee la CLABE de un negocio',
   not exists (select 1 from public.datos_de_pago));
-select pg_temp.debe_fallar('al Gratis no se le pide',
+select pg_temp.debe_fallar('a una prueba vencida no se le pide',
   $q$ select public.hacer_pedido('f3030000-0000-0000-0000-000000000003',
       '[{"producto_id":"f3020000-0000-0000-0000-000000000004","cantidad":1}]', 'recoger') $q$);
 select pg_temp.debe_fallar('no se pide un producto que la sucursal no maneja',

@@ -147,7 +147,7 @@ select pg_temp.cobro('c3000000-0000-0000-0000-000000000001') = 299  as pro_mensu
 \echo '--- con convenio, Gratis dura hasta el dia siguiente a su fecha; una prueba de pago, 15 dias ---'
 select (fecha_fin_trial at time zone 'America/Mexico_City')::date = current_date + 41 as gratis_hasta_su_fecha
   from public.suscripciones where sucursal_id = 'c3000000-0000-0000-0000-000000000003';
-select fecha_fin_trial <= now() + interval '15 days' as pro_maximo_15_dias
+select fecha_fin_trial <= now() + make_interval(days => public.dias_gratis()) as pro_maximo_la_prueba
   from public.suscripciones where sucursal_id = 'c3000000-0000-0000-0000-000000000004';
 
 select pg_temp.debe_fallar('el precio no se cambia editando la suscripcion',

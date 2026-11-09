@@ -200,7 +200,7 @@ export default async function CuentaNegocio({
                       {suscripcion.convenio.basicoGratisHasta &&
                         `Plan Gratis hasta el ${fechaDeOferta(suscripcion.convenio.basicoGratisHasta)}. `}
                       {suscripcion.convenio.descuento > 0 &&
-                        `${suscripcion.convenio.descuento}% de descuento en Básico y Pro mientras sigas pagando.`}
+                        `${suscripcion.convenio.descuento}% de descuento en tu membresía mientras sigas pagando.`}
                     </>
                   )}
                 </p>
@@ -246,8 +246,8 @@ export default async function CuentaNegocio({
           ) : (
             <p className="max-w-2xl rounded-3xl bg-crema-2 p-6 text-cacao">
               Todavía no tienes ningún micrositio publicado. El plan se elige al
-              publicar cada uno, desde su ficha: el Gratis dura quince días, y
-              el Pro también se prueba quince días sin dejar tarjeta.
+              publicar cada uno, desde su ficha: el Gratis dura treinta días con
+              todas las herramientas, sin dejar tarjeta.
             </p>
           )}
 

@@ -175,7 +175,7 @@ export function FormularioConvenio({
         <input
           name="descripcion"
           required
-          placeholder="Apertura del Festival del Chocolate: Pro a mitad de precio"
+          placeholder="Apertura del Festival del Chocolate: membresía a mitad de precio"
           className={clase}
         />
         <span className="mt-1.5 block text-sm text-cacao/70">

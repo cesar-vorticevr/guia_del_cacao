@@ -29,6 +29,7 @@ import {
 import { pesos, type Sucursal, type Tier } from "@/lib/tipos";
 import {
   DIAS_GRATIS,
+  enFestival,
   esPlanGratis,
   fechaDeOferta,
   MESES_DE_DESTACADO,
@@ -273,7 +274,7 @@ export function FormularioImagen({
  * por sucursal: dos locales de la misma marca pueden estar en planes distintos,
  * así que la pregunta solo tiene respuesta parada frente a una de ellas.
  *
- * No se pide tarjeta. Se abren quince días de prueba y ya.
+ * No se pide tarjeta. Se abren los días de prueba (`DIAS_GRATIS`) y ya.
  */
 export function FormularioPublicar({
   sucursalId,
@@ -317,7 +318,7 @@ export function FormularioPublicar({
           ? oferta.descuento >= 100
             ? `Con la promoción tienes ${nombreDelPlan(tiers, oferta.planId)} gratis hasta el ${fechaDeOferta(oferta.cubreHasta)}. Con otro plan, lo pruebas sin pagar como siempre.`
             : `Con la promoción pagas un mes de ${nombreDelPlan(tiers, oferta.planId)} al publicar y te cubre hasta el ${fechaDeOferta(oferta.cubreHasta)}. Con otro plan, lo pruebas sin pagar como siempre.`
-          : `El plan ${nombreDelPlan(tiers, null)} dura ${DIAS_GRATIS} días. Los de pago los pruebas quince días sin pagar y sin dejar tarjeta.`}{" "}
+          : `El plan ${nombreDelPlan(tiers, null)} dura ${DIAS_GRATIS} días y trae todas las herramientas, sin pagar y sin dejar tarjeta.`}{" "}
         Si al terminar no has pagado, tu micrositio sale del directorio, pero no
         se borra nada y vuelve en cuanto pagues.
       </p>
@@ -834,7 +835,9 @@ function Planes({
               tier.id === conPromocion?.id
                 ? "Promoción de apertura"
                 : !conPromocion && tier.id === masAlto?.id
-                  ? "Todo incluido"
+                  ? periodo === "anual" && enFestival()
+                    ? "Precio de festival"
+                    : "Todo incluido"
                   : null
             }
             alElegir={() => setElegido(tier.id)}
@@ -944,7 +947,9 @@ function TarjetaDePlan({
   // Lo que va debajo del precio: hasta cuándo, o qué es ese número.
   const nota = gratis
     ? "Sin tarjeta y sin pagar nada"
-    : precio.soloPrimerPago
+    : precio.festival
+      ? `Promoción Festival: tu primer año, solo del 12 al 16 de noviembre. Después, ${textoDePrecio(precio.despues ?? 0, precio.periodo)}.`
+      : precio.soloPrimerPago
       ? `Tu primer pago, con el código de ${oferta?.embajador}. Después, ${textoDePrecio(precio.despues ?? 0, precio.periodo)}.`
       : precio.cubreHasta
       ? precio.cobro === 0

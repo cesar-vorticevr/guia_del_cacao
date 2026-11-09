@@ -248,7 +248,7 @@ export async function subirImagen(
 // ---------------------------------------------------------------------------
 
 /**
- * Saca la sucursal al directorio con el plan elegido y quince días de prueba.
+ * Saca la sucursal al directorio con el plan elegido y sus días de prueba.
  *
  * Con código de convenio cambian los precios (migración 000051): aquí solo se
  * revisa que el código exista y esté vigente; el monto y la prueba los fija un

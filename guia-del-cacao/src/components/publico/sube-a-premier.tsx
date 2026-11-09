@@ -26,8 +26,8 @@ export function SubeAPremier({
 
       <p className="mt-2 text-cacao">
         {esEvento
-          ? "Con Pro tus catas, talleres y ferias salen en la agenda de la Guía y en el muro de la comunidad, delante de gente que ya anda buscando qué hacer con el cacao este fin de semana."
-          : "Con Pro tus noticias salen en el muro de la comunidad y en tu micrositio, delante de gente que ya vino a buscar cacao de Tabasco."}
+          ? "Con la membresía tus catas, talleres y ferias salen en la agenda de la Guía y en el muro de la comunidad, delante de gente que ya anda buscando qué hacer con el cacao este fin de semana."
+          : "Con la membresía tus noticias salen en el muro de la comunidad y en tu micrositio, delante de gente que ya vino a buscar cacao de Tabasco."}
       </p>
 
       {/*
@@ -44,7 +44,7 @@ export function SubeAPremier({
         href="/negocio/panel/cuenta"
         className="mt-4 inline-block min-h-12 rounded-full bg-mango px-6 py-3 font-bold text-ink shadow-dura-sm transition-transform active:translate-y-0.5"
       >
-        Pasarme a Pro
+        Activar mi membresía
       </Link>
     </div>
   );

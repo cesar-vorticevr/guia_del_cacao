@@ -151,7 +151,7 @@ export async function guardarRuleta(
   revalidatePath(`/marca/${sucursal.slug}`);
   // Sin Pro se guarda igual (000066), pero no sale en el micrositio: se dice.
   const { data: conPro } = await supabase.rpc("sucursal_tiene_ruleta", { p_sucursal: sucursalId });
-  if (!conPro) return { ok: "Ruleta guardada. Pruébala aquí; sale en tu micrositio al pasarte a Pro." };
+  if (!conPro) return { ok: "Ruleta guardada. Pruébala aquí; sale en tu micrositio al activar tu membresía." };
   return { ok: activa ? "¡Tu ruleta está girando!" : "Ruleta guardada, apagada por ahora." };
 }
 

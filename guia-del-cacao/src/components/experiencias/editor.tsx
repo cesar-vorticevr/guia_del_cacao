@@ -732,16 +732,16 @@ export function EditorDeExperiencia({
           <div className="grid content-start gap-3">
             {!puedePublicar ? (
               <div className="rounded-2xl bg-crema-2 p-4">
-                <p className="antetitulo">Viene con el plan Pro</p>
+                <p className="antetitulo">Viene con la membresía</p>
                 <p className="mt-2 text-cacao">
                   Tu experiencia se guarda y la puedes probar tú. Para que su link y su QR funcionen para
-                  todos, pásate a <strong>Pro ($499/mes)</strong>: trae 3 experiencias publicadas.
+                  todos, activa tu <strong>membresía ($299/mes)</strong>: trae 3 experiencias publicadas.
                 </p>
                 <Link
                   href="/negocio/panel/cuenta"
                   className="boton-oro brillo mt-3 inline-flex min-h-12 items-center rounded-full px-6 font-bold text-ink"
                 >
-                  Pasarme a Pro
+                  Activar mi membresía
                 </Link>
               </div>
             ) : !hayLugar && estado !== "publicada" ? (

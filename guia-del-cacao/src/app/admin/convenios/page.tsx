@@ -91,7 +91,7 @@ export default async function Convenios() {
                 ? convenio.descuento >= 100
                   ? ` · ${nombreDe(convenio.plan_id)} gratis hasta el ${dia(convenio.cubre_hasta)}`
                   : ` · Un mes de ${nombreDe(convenio.plan_id)} con ${convenio.descuento}%, cubre hasta el ${dia(convenio.cubre_hasta)}`
-                : convenio.descuento > 0 && ` · ${convenio.descuento}% en Básico y Pro`}
+                : convenio.descuento > 0 && ` · ${convenio.descuento}% en la membresía`}
             </p>
 
             <dl className="mt-5 grid grid-cols-2 gap-3 text-center sm:grid-cols-3">

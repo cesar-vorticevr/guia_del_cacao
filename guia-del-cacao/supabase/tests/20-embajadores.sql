@@ -72,8 +72,9 @@ update public.marcas set stripe_customer_id = 'cus_ya_pago'
  where id = 'e2100000-0000-0000-0000-000000000003';
 
 -- ---------------------------------------------------------------- el plan unico
-select pg_temp.debe_ser('el Pro cuesta 499 y el Gratis dura 15 dias',
-  (select precio_mensual from public.tiers where id = 3) = 499 and public.dias_gratis() = 15);
+-- Desde la 000076: $299 y treinta dias.
+select pg_temp.debe_ser('el Pro cuesta 299 y el Gratis dura 30 dias',
+  (select precio_mensual from public.tiers where id = 3) = 299 and public.dias_gratis() = 30);
 select pg_temp.debe_ser('el Basico ya no se ofrece',
   not (select se_ofrece from public.tiers where id = 2));
 

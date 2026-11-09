@@ -144,7 +144,7 @@ export function TarjetaPublicacion({
           )}
 
           {publicacion.subtitulo && (
-            <span className="block text-sm text-cacao/80">
+            <span className="line-clamp-2 text-sm text-cacao/80">
               {publicacion.subtitulo}
             </span>
           )}
@@ -153,7 +153,7 @@ export function TarjetaPublicacion({
             El cuerpo pegado al fondo con `mt-auto`: así queda a la misma altura
             en toda la fila aunque unas tarjetas lleven subtítulo y otras no.
           */}
-          <span className="mt-auto line-clamp-2 block pt-1.5 text-sm text-cacao">
+          <span className="mt-auto line-clamp-3 pt-1.5 text-sm text-cacao">
             {publicacion.contenido}
           </span>
 

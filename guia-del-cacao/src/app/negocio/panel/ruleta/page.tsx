@@ -102,18 +102,18 @@ export default async function PanelRuleta({
       {!tienePro && (
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border-2 border-mango/50 bg-crema-2 p-6">
           <div className="max-w-prose">
-            <p className="antetitulo">Arma gratis, publica con Pro</p>
+            <p className="antetitulo">Arma gratis, publica con tu membresía</p>
             <p className="mt-2 text-cacao">
               Tu ruleta se guarda y la puedes probar aquí abajo. Para que salga en tu micrositio y
-              la giren tus clientes, pásate a{" "}
-              <strong>Pro ($499/mes)</strong>.
+              la giren tus clientes, activa tu{" "}
+              <strong>membresía ($299/mes)</strong>.
             </p>
           </div>
           <Link
             href="/negocio/panel/cuenta"
             className="boton-oro brillo inline-flex min-h-12 items-center rounded-full px-6 font-bold text-ink"
           >
-            Pasarme a Pro
+            Activar mi membresía
           </Link>
         </div>
       )}

@@ -126,7 +126,7 @@ select s.pago_de_apertura = 150 as pago_150,
 \echo '--- en prueba no hay promocion: 15 dias y precio normal ---'
 select s.pago_de_apertura is null as sin_pago,
        s.monto_por_cobro = 299 as precio_normal,
-       s.fecha_fin_trial <= now() + interval '15 days' as quince_dias
+       s.fecha_fin_trial <= now() + make_interval(days => public.dias_gratis()) as dentro_de_la_prueba
   from pg_temp.vigente('a3600000-0000-0000-0000-000000000003') s;
 
 \echo '--- el codigo de Pro no descuenta Basico ---'

@@ -1114,8 +1114,8 @@ Desde la migración **000059** hay **un solo plan de pago**:
 
 | Plan (id) | Mensual | Anual |
 |---|---|---|
-| Gratis (1) | $0, quince días | — |
-| Pro (3) | $499 | $4,990 |
+| Gratis (1) | $0, treinta días | — |
+| Pro (3) | $299 | $2,990 ($1,499 el primer año del 12 al 16 de nov. de 2026) |
 | Básico (2) | $199, **ya no se ofrece** | — |
 
 El Básico se queda en `tiers` con `se_ofrece = false`: quien ya lo paga lo
@@ -1129,7 +1129,7 @@ recorrieron un lugar sin cambiar ids ni lo que trae cada uno. La columna
 `convenios.basico_gratis_hasta` conserva el nombre viejo: es «el plan más barato
 gratis hasta», hoy el Gratis.
 
-- **Gratis dura quince días** (`public.dias_gratis()` y `DIAS_GRATIS` en
+- **Gratis dura treinta días** (desde la 000076; antes quince) (`public.dias_gratis()` y `DIAS_GRATIS` en
   `lib/precios.ts`). Es una prueba a $0: al vencer se oculta como cualquier
   otra. Si su convenio da una fecha más lejana, manda la fecha.
 
@@ -1143,8 +1143,8 @@ gratis hasta», hoy el Gratis.
   Si cambia una regla, cambia en los dos lados; manda la base.
 - `monto_por_cobro` es lo que se cobra cada periodo (el mes o el año);
   `monto_mensual` es lo que equivale al mes.
-- **Los planes de pago estrenan quince días de prueba.** Una prueba de pago nunca pasa de
-  quince días, aunque venga de un periodo gratis más largo: sin ese tope, quien
+- **Los planes de pago estrenan su prueba.** Una prueba de pago nunca pasa de
+  `dias_gratis()`, aunque venga de un periodo gratis más largo: sin ese tope, quien
   tenía el Básico gratis hasta noviembre se pasaba a Premier y lo tenía gratis
   igual.
 - **Quien no paga se oculta, no se borra.** `vencer_pruebas()` pasa la suscripción a `pausado_por_pago` y la sucursal
@@ -1739,8 +1739,8 @@ deja ahí su mensaje.
   siempre con motivo.
 - **Vende quien paga.** `por_que_no_vende(sucursal)` (texto, como
   `que_le_falta_al_micrositio`) exige sucursal publicada, que no sea demo,
-  suscripción `activo` en un plan con `precio_mensual > 0` —**la prueba Gratis
-  no vende**— y datos de pago con `recibe_pedidos`. Se deriva, no se guarda:
+  suscripción `activo` o una prueba sin vencer —**desde la 000076 la prueba
+  también vende**— y datos de pago con `recibe_pedidos`. Se deriva, no se guarda:
   al vencer el plan deja de vender solo. `sucursal_vende` es el booleano que
   pregunta el micrositio para enseñar el carrito.
 - **Todo cambio pasa por funciones** (`hacer_pedido`, `cambiar_estado_pedido`,
@@ -1920,3 +1920,30 @@ de cacao** que salen disparadas y caen con su peso, estrellas y hojas. Con
 otra ancha que oscurece el fondo alrededor) para que la letra crema se lea
 sobre las partículas del cielo. Se quita en campos, en lo que va sobre oro o
 mango y en `.texto-oro`, que se pinta con `background-clip: text`.
+
+## La membresía, los precios del Festival y treinta días con todo (migración 000076)
+
+Desde el 9 de noviembre de 2026, con el póster del stand del Festival del
+Chocolate:
+
+- **Ya no hay «Pro»: hay una membresía** para estar o no en la Guía (el plan 3
+  se llama `Membresía` en `tiers`; el código sigue diciendo `tier_id`).
+  Sin membresía la marca **deja de verse al público, pero su dueño conserva el
+  control**: edita micrositio, catálogo, ruleta, experiencias y eventos, y todo
+  vuelve a verse al pagar. Por eso se quitaron los triggers
+  `exigir_plan_al_publicar_evento` / `_noticia`: lo que se ve ya lo decide la
+  política de lectura con `marca_publica_contenido`.
+- **La membresía cuesta $299 al mes** y el anual sigue en diez mensualidades: $2,990.
+  Las suscripciones ya abiertas conservan su precio (el monto se fija al
+  abrir); en Stripe, las que ya cobraban $499 siguen así hasta que se cambien.
+- **La prueba dura treinta días y trae todo**, pedidos incluidos:
+  `por_que_no_vende` acepta una prueba sin vencer. Al vencer,
+  `vencer_pruebas()` la pausa como siempre. Las pruebas vivas se alargaron a
+  treinta días desde su `fecha_inicio`.
+- **Promoción Festival**: del 12 al 16 de noviembre de 2026 (`FESTIVAL` en
+  `lib/precios.ts`), el primer año de la membresía anual cuesta $1,499. No se guarda
+  en la base: `monto_por_cobro` queda en el normal, que es lo que se renueva, y
+  el descuento lo aplica Stripe con el cupón `guia-festival-2026-{centavos}`,
+  de una vez y por monto (un monto por cada cuántas sucursales se pagan
+  juntas). No se suma al código de un vendedor: se queda el primer pago más
+  barato, y el vendedor conserva su comisión.

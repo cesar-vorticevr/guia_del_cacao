@@ -25,7 +25,7 @@ function traducir(mensaje: string) {
     return "Ya la apoyaste. Es una mazorca por persona.";
   }
   if (mensaje.includes("Tu plan no incluye")) {
-    return "Publicar como negocio viene con el plan Pro.";
+    return "Publicar como negocio viene con la membresía.";
   }
   if (mensaje.includes("no es del catálogo")) {
     return "Ese producto no es del catálogo de la sucursal con la que publicas.";

@@ -162,7 +162,7 @@ export async function comprarExperienciaExtra(): Promise<EstadoExperiencia> {
   const supabase = await crearClienteServidor();
   const { data: cupo } = await supabase.rpc("cupo_de_experiencias", { p_marca: marca.id });
   if (!Number(cupo)) {
-    return { error: "Las experiencias extra se suman al plan Pro. Primero pásate a Pro." };
+    return { error: "Las experiencias extra se suman a la membresía. Primero actívala." };
   }
 
   if (stripe()) {

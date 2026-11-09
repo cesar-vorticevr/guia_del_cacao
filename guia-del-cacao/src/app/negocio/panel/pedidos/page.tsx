@@ -118,7 +118,7 @@ export default async function PanelPedidos({
             href="/negocio/panel/cuenta?ver=plan"
             className="boton-oro brillo justify-self-start rounded-full px-6 py-3 font-display text-lg font-semibold text-ink"
           >
-            Pasar al plan Pro para vender
+            Activar mi membresía para vender
           </Link>
         )}
       </section>

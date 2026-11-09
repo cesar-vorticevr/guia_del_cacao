@@ -51,7 +51,7 @@ export function KitDeVenta({
     },
     {
       titulo: "Antes de que acabe su prueba",
-      texto: `¡Hola! Tu página en la Guía del Cacao termina su prueba en unos días. Para que siga visible, entra a tu panel → Plan y paga el Pro: ${pesos(PRECIO_PRO)} al mes o ${pesos(anual)} al año (dos meses gratis), IVA incluido. Con mi código ${codigo} tu primer pago queda en ${pesos(conCodigoMes)}. Si necesitas factura, también se puede.`,
+      texto: `¡Hola! Tu página en la Guía del Cacao termina su prueba en unos días. Para que siga visible, entra a tu panel → Plan y paga tu membresía: ${pesos(PRECIO_PRO)} al mes o ${pesos(anual)} al año (dos meses gratis), IVA incluido. Con mi código ${codigo} tu primer pago queda en ${pesos(conCodigoMes)}. Si necesitas factura, también se puede.`,
     },
     ...(codigoDestacado
       ? [
@@ -109,7 +109,7 @@ export function KitDeVenta({
                 <td className="p-4 text-cacao/70">Tu código ya queda ligado</td>
               </tr>
               <tr>
-                <td className="p-4 font-bold">Pro mensual</td>
+                <td className="p-4 font-bold">Membresía mensual</td>
                 <td className="p-4">{pesos(PRECIO_PRO)} /mes</td>
                 <td className="p-4">{pesos(conCodigoMes)}</td>
                 <td className="p-4 font-bold text-mango">
@@ -117,7 +117,7 @@ export function KitDeVenta({
                 </td>
               </tr>
               <tr>
-                <td className="p-4 font-bold">Pro anual</td>
+                <td className="p-4 font-bold">Membresía anual</td>
                 <td className="p-4">{pesos(anual)} /año · 2 meses gratis</td>
                 <td className="p-4">{pesos(conCodigoAnio)}</td>
                 <td className="p-4 font-bold text-mango">{pesos(comision(conCodigoAnio))}</td>
@@ -133,7 +133,7 @@ export function KitDeVenta({
       </section>
 
       <section className="grid gap-4">
-        <h3 className="font-display text-2xl">Qué incluye el Pro</h3>
+        <h3 className="font-display text-2xl">Qué incluye la membresía</h3>
         <ul className="grid gap-2 sm:grid-cols-2">
           {[
             "Su página propia: logo, fotos, ubicación, WhatsApp y redes",

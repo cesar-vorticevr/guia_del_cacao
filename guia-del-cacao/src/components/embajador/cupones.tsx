@@ -8,6 +8,7 @@ import type { CuponDeVendedor } from "@/lib/datos/embajadores";
 import {
   COMISION_DE_EMBAJADOR,
   DESCUENTO_MAXIMO_DE_VENDEDOR,
+  DIAS_GRATIS,
   PRECIO_PRO,
   TOPE_DE_CUPONES_DE_VENDEDOR,
 } from "@/lib/precios";
@@ -90,7 +91,7 @@ export function NuevoCupon({ lugares }: { lugares: number }) {
       </div>
 
       <p className="rounded-2xl bg-crema-2 px-4 py-3 text-sm">
-        Con {porcentaje}%, el negocio paga <strong>{pesos(cobro)}</strong> su primer mes del Pro (en
+        Con {porcentaje}%, el negocio paga <strong>{pesos(cobro)}</strong> su primer mes de membresía (en
         vez de {pesos(PRECIO_PRO)}) y ese cobro te deja <strong>{pesos(comision)}</strong>. Los
         siguientes van completos y te dejan tu {COMISION_DE_EMBAJADOR}% de siempre.
       </p>
@@ -128,7 +129,7 @@ export function TarjetaDeCupon({
   fecha: string;
 }) {
   const [estado, accion, enviando] = useActionState(cambiarCuponDeVendedor, {});
-  const mensaje = `¡Hola! Te invito a poner tu negocio en la Guía del Cacao (${sitio}): tu página con catálogo, reseñas y un QR para tu mostrador. Son 15 días gratis y con mi código ${cupon.codigo} tienes ${cupon.porcentaje}% de descuento en tu primer pago.`;
+  const mensaje = `¡Hola! Te invito a poner tu negocio en la Guía del Cacao (${sitio}): tu página con catálogo, reseñas y un QR para tu mostrador. Son ${DIAS_GRATIS} días gratis con todo y con mi código ${cupon.codigo} tienes ${cupon.porcentaje}% de descuento en tu primer pago.`;
 
   return (
     <li

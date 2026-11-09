@@ -123,11 +123,37 @@ async function cuponDeEmbajador(porcentaje: number) {
   }
 }
 
+/**
+ * El cupón de la Promoción Festival: lo que va del anual normal a
+ * `FESTIVAL.precioAnual`, por cada sucursal, en el primer cobro. Es un monto y
+ * no un porcentaje para que el año quede justo en $1,499; por eso el id lleva
+ * el monto, y pagar tres sucursales juntas usa otro cupón que una sola.
+ */
+async function cuponDeFestival(descuento: number) {
+  const id = `guia-festival-2026-${centavos(descuento)}`;
+  const s = stripe()!;
+  try {
+    return (await s.coupons.retrieve(id)).id;
+  } catch {
+    const cupon = await s.coupons.create({
+      id,
+      name: "Promoción Festival del Chocolate · tu primer año",
+      amount_off: centavos(descuento),
+      currency: "mxn",
+      duration: "once",
+      metadata: { app: APP },
+    });
+    return cupon.id;
+  }
+}
+
 /** Lo que se cobra cada periodo, como `price_data` de una suscripción. */
 async function precioRecurrente(tier: Tier, tiers: Tier[], periodo: Periodo, oferta: Oferta | null) {
   const precio = precioDe(tier, tiers, periodo, oferta);
-  // Con promoción, lo recurrente es lo de después; lo de ahora va aparte.
-  const monto = precio.cubreHasta ? (precio.despues ?? 0) : precio.cobro;
+  // Con promoción, lo recurrente es lo de después; lo de ahora va aparte. Con
+  // un descuento de primer pago (Festival), también: el cupón lo descuenta.
+  const monto =
+    precio.cubreHasta || precio.festival ? (precio.despues ?? 0) : precio.cobro;
 
   return {
     currency: "mxn",
@@ -175,6 +201,13 @@ export async function crearPago(datos: DatosDelPago) {
   const precio = precioDe(datos.tier, datos.tiers, datos.periodo, datos.oferta);
   const cuantas = datos.sucursalIds.length;
   const producto = await productoDelPlan(datos.tier);
+  // El código del vendedor no llega en `oferta`: si su primer pago sale más
+  // barato que el del Festival, se queda el suyo.
+  const conCodigo =
+    datos.embajadorId && precio.antes !== null
+      ? precio.antes * (1 - (datos.descuentoEmbajador ?? DESCUENTO_DE_EMBAJADOR) / 100)
+      : null;
+  const festival = precio.festival && (conCodigo === null || precio.cobro <= conCodigo);
 
   const metadata = {
     app: APP,
@@ -212,7 +245,16 @@ export async function crearPago(datos: DatosDelPago) {
       : { customer_email: datos.correo }),
     client_reference_id: datos.marcaId,
     line_items: lineas,
-    ...(datos.embajadorId
+    // Un solo descuento: el del Festival si es el más barato (`precioDe` ya
+    // lo eligió), o el del vendedor. El vendedor conserva su comisión igual:
+    // va en la metadata.
+    ...(festival
+      ? {
+          discounts: [
+            { coupon: await cuponDeFestival(((precio.antes ?? 0) - precio.cobro) * cuantas) },
+          ],
+        }
+      : datos.embajadorId
       ? {
           discounts: [
             { coupon: await cuponDeEmbajador(datos.descuentoEmbajador ?? DESCUENTO_DE_EMBAJADOR) },
