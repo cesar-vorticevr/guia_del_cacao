@@ -8,6 +8,8 @@ set client_min_messages to notice;
 -- Dentro de una transaccion que se deshace.
 
 begin;
+-- El plan 1 ya no se ofrece (000081); esta prueba lo usa de plan cualquiera.
+update public.tiers set se_ofrece = true where id = 1;
 
 create or replace function pg_temp.debe_ser(etiqueta text, valor boolean)
 returns void language plpgsql as $$

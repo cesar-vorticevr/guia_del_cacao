@@ -201,7 +201,7 @@ export default async function CuentaNegocio({
                   ) : (
                     <>
                       {suscripcion.convenio.basicoGratisHasta &&
-                        `Plan Gratis hasta el ${fechaDeOferta(suscripcion.convenio.basicoGratisHasta)}. `}
+                        `Membresía gratis hasta el ${fechaDeOferta(suscripcion.convenio.basicoGratisHasta)}. `}
                       {suscripcion.convenio.descuento > 0 &&
                         `${suscripcion.convenio.descuento}% de descuento en tu membresía mientras sigas pagando.`}
                     </>
@@ -215,8 +215,9 @@ export default async function CuentaNegocio({
                   <strong className="block text-selva-2">
                     Tu micrositio está oculto por falta de pago
                   </strong>
-                  No se borró nada. Elige tu plan abajo y vuelve al directorio
-                  en cuanto quede pagado.
+                  Tu mes gratis terminó. Nadie lo ve, ni con el enlace, hasta
+                  que pagues tu membresía abajo. No se borró nada: vuelve al
+                  directorio en cuanto quede pagada.
                 </p>
               )}
 
@@ -230,14 +231,17 @@ export default async function CuentaNegocio({
                 <p className="mt-3 rounded-2xl border-2 border-mango/50 bg-mango/15 px-4 py-3 text-cacao">
                   <strong className="block text-selva-2">
                     {diasDePrueba(suscripcion.finDePrueba) <= 0
-                      ? "Tu prueba termina hoy"
+                      ? "Tu mes gratis termina hoy"
                       : diasDePrueba(suscripcion.finDePrueba) === 1
-                        ? "Te queda 1 día de prueba"
-                        : `Te quedan ${diasDePrueba(suscripcion.finDePrueba)} días de prueba`}
+                        ? "Te queda 1 día gratis"
+                        : `Te quedan ${diasDePrueba(suscripcion.finDePrueba)} días gratis`}
                   </strong>
-                  Termina el {CUANDO.format(new Date(suscripcion.finDePrueba))}.
-                  Si para entonces no has pagado, tu micrositio sale del
-                  directorio. No se borra nada: vuelve en cuanto pagues.
+                  Tu membresía empezó con un mes gratis de promoción y termina
+                  el {CUANDO.format(new Date(suscripcion.finDePrueba))}. Mientras
+                  no pagues no sales en el banner de estelares de la portada. Si
+                  para entonces no has pagado, tu micrositio se oculta: no lo ve
+                  nadie, ni con el enlace, y no se vuelve a publicar hasta pagar.
+                  No se borra nada.
                 </p>
               ) : suscripcion.estado === "pausado_por_pago" ? null : (
                 <p className="mt-1 text-sm text-cacao/70">
@@ -248,9 +252,9 @@ export default async function CuentaNegocio({
             </div>
           ) : (
             <p className="max-w-2xl rounded-3xl bg-crema-2 p-6 text-cacao">
-              Todavía no tienes ningún micrositio publicado. El plan se elige al
-              publicar cada uno, desde su ficha: el Gratis dura treinta días con
-              todas las herramientas, sin dejar tarjeta.
+              Todavía no tienes ningún micrositio publicado. Cada uno estrena su
+              membresía al publicarlo, desde su ficha, con el primer mes gratis
+              de promoción y todas las herramientas, sin dejar tarjeta.
             </p>
           )}
 
@@ -335,6 +339,7 @@ export default async function CuentaNegocio({
             tiers={tiers}
             cobroReal={!PAGO_SIMULADO}
             porPagar={suscripcion?.porPagar ?? false}
+            enPrueba={suscripcion?.enPrueba ?? false}
             tierActual={suscripcion?.tier_id}
             oferta={suscripcion?.convenio ?? null}
             siguiente={
@@ -370,7 +375,7 @@ export default async function CuentaNegocio({
             {suscripcion && (
               <details>
                 <summary className="cursor-pointer list-none text-sm text-cacao/70 underline underline-offset-4 hover:text-cacao">
-                  Cancelar mi plan
+                  Cancelar mi membresía
                 </summary>
 
                 <div className="mt-3 grid gap-4 rounded-3xl bg-crema-2 p-5">

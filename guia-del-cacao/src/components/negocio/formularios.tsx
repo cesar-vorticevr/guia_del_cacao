@@ -311,16 +311,18 @@ export function FormularioPublicar({
         tiers={tiers}
         periodo={periodo}
         oferta={oferta}
+        enPrueba
       />
 
       <p className="rounded-2xl bg-crema-2 px-4 py-3 text-sm text-cacao">
         {oferta?.cubreHasta
           ? oferta.descuento >= 100
-            ? `Con la promoción tienes ${nombreDelPlan(tiers, oferta.planId)} gratis hasta el ${fechaDeOferta(oferta.cubreHasta)}. Con otro plan, lo pruebas sin pagar como siempre.`
-            : `Con la promoción pagas un mes de ${nombreDelPlan(tiers, oferta.planId)} al publicar y te cubre hasta el ${fechaDeOferta(oferta.cubreHasta)}. Con otro plan, lo pruebas sin pagar como siempre.`
-          : `El plan ${nombreDelPlan(tiers, null)} dura ${DIAS_GRATIS} días y trae todas las herramientas, sin pagar y sin dejar tarjeta.`}{" "}
-        Si al terminar no has pagado, tu micrositio sale del directorio, pero no
-        se borra nada y vuelve en cuanto pagues.
+            ? `Con la promoción tienes la membresía gratis hasta el ${fechaDeOferta(oferta.cubreHasta)}.`
+            : `Con la promoción pagas un mes de membresía al publicar y te cubre hasta el ${fechaDeOferta(oferta.cubreHasta)}.`
+          : `Tu membresía empieza con ${DIAS_GRATIS} días gratis de promoción, con todas las herramientas y sin dejar tarjeta. El banner de estelares de la portada se enciende con tu primer pago.`}{" "}
+        Si al terminar no has pagado, tu micrositio se oculta: no lo ve nadie,
+        ni con el enlace, y no se vuelve a publicar hasta pagar. No se borra
+        nada y vuelve en cuanto pagues.
       </p>
 
       <BotonEnviar>Publicar mi micrositio</BotonEnviar>
@@ -785,6 +787,7 @@ function Planes({
   inicial,
   periodo = "mensual",
   oferta = null,
+  enPrueba = false,
 }: {
   tiers: Tier[];
   actual?: number;
@@ -793,10 +796,20 @@ function Planes({
   periodo?: Periodo;
   /** El convenio aplicado, si hay: cambia los precios que se enseñan. */
   oferta?: Oferta | null;
+  /**
+   * Todavía no ha pagado: estrena su mes gratis (al publicar) o está en él.
+   * Cambia lo que se dice debajo del precio y del banner.
+   */
+  enPrueba?: boolean;
 }) {
-  // Los que ya no se ofrecen solo salen para quien todavía los paga.
+  // Los que ya no se ofrecen solo salen para quien todavía los paga. El
+  // Gratis nunca: el mes gratis es la promoción de la membresía, no un plan
+  // que se elige (migración 000081).
   const ordenados = [...tiers]
-    .filter((tier) => tier.se_ofrece || tier.id === actual)
+    .filter(
+      (tier) =>
+        !esPlanGratis(tier, tiers) && (tier.se_ofrece || tier.id === actual),
+    )
     .sort((a, b) => a.precio_mensual - b.precio_mensual);
   const masAlto = ordenados[ordenados.length - 1];
   const conPromocion = ordenados.find((tier) => promocionPara(tier, oferta));
@@ -813,22 +826,32 @@ function Planes({
       <input type="hidden" name="periodo" value={periodo} />
 
       <div
-        className={`grid gap-4 pt-3 ${ordenados.length === 2 ? "mx-auto w-full max-w-3xl md:grid-cols-2" : "md:grid-cols-3"}`}
+        className={`grid gap-4 pt-3 ${
+          ordenados.length === 1
+            ? "mx-auto w-full max-w-md"
+            : ordenados.length === 2
+              ? "mx-auto w-full max-w-3xl md:grid-cols-2"
+              : "md:grid-cols-3"
+        }`}
       >
         {ordenados.map((tier, lugar) => (
           <TarjetaDePlan
             key={tier.id}
             tier={tier}
-            tiers={ordenados}
+            // Todos, no solo los que se enseñan: cuál es el Gratis se decide
+            // con la lista entera. Con la filtrada, la membresía quedaba como
+            // la más barata y salía a $0.
+            tiers={tiers}
             lema={
-              lugar === 0
-                ? LEMAS[0]
-                : lugar === ordenados.length - 1
-                  ? LEMAS[LEMAS.length - 1]
+              lugar === ordenados.length - 1
+                ? LEMAS[LEMAS.length - 1]
+                : lugar === 0
+                  ? LEMAS[0]
                   : (LEMAS[lugar] ?? "")
             }
             periodo={periodo}
             oferta={oferta}
+            enPrueba={enPrueba}
             elegido={tier.id === elegido}
             esActual={tier.id === actual}
             sello={
@@ -857,6 +880,7 @@ function TarjetaDePlan({
   lema,
   periodo,
   oferta,
+  enPrueba,
   elegido,
   esActual,
   sello,
@@ -867,6 +891,7 @@ function TarjetaDePlan({
   lema: string;
   periodo: Periodo;
   oferta: Oferta | null;
+  enPrueba: boolean;
   elegido: boolean;
   esActual: boolean;
   /** La cinta de arriba: la promoción, o el plan más completo. */
@@ -912,7 +937,16 @@ function TarjetaDePlan({
             </>
           ),
         }
-      : { hay: true, texto: "Sin vencimiento mientras pagues" },
+      : enPrueba
+        ? {
+            hay: true,
+            texto: (
+              <>
+                Tu <strong>primer mes gratis</strong>, sin tarjeta
+              </>
+            ),
+          }
+        : { hay: true, texto: "Sin vencimiento mientras pagues" },
     {
       hay: tier.permite_resenas,
       texto: (
@@ -936,9 +970,15 @@ function TarjetaDePlan({
     },
     {
       hay: tier.en_banner_principal,
-      texto: (
+      // El banner de estelares es de quien paga: el mes gratis no lo trae.
+      texto: enPrueba ? (
         <>
-          En el <strong>banner de la portada</strong>
+          En el <strong>banner de estelares</strong> de la portada, desde tu
+          primer pago
+        </>
+      ) : (
+        <>
+          En el <strong>banner de estelares</strong> de la portada
         </>
       ),
     },
@@ -955,6 +995,8 @@ function TarjetaDePlan({
       ? precio.cobro === 0
         ? `Gratis hasta el ${fechaDeOferta(precio.cubreHasta)}. Después, ${textoDePrecio(precio.despues ?? 0, precio.periodo)}.`
         : `Un solo pago: cubre hasta el ${fechaDeOferta(precio.cubreHasta)}. Después, ${textoDePrecio(precio.despues ?? 0, precio.periodo)}.`
+      : enPrueba
+        ? `Tu primer mes es gratis, sin tarjeta. Después, ${textoDePrecio(precio.cobro, precio.periodo)}.`
       : precio.periodo === "anual"
         ? `Equivale a ${textoDePrecio(Math.round(precio.cobro / 12), "mensual")}, en un pago al año`
         : "Al mes, por micrositio";
@@ -1074,7 +1116,7 @@ function TarjetaDePlan({
 }
 
 /**
- * «Pagar ahora» y «Solo cambiar de plan». Mientras la acción trabaja —ir a
+ * «Pagar ahora» y «Guardar sin pagar todavía». Mientras la acción trabaja —ir a
  * Stripe tarda unos segundos— los dos se apagan y el pulsado dice «Un
  * momento…»: sin eso la pantalla parecía congelada y se volvía a pulsar.
  */
@@ -1103,7 +1145,7 @@ function BotonesPagarOCambiar({
         onClick={() => alElegir(false)}
         className="min-h-14 rounded-full border-2 border-selva/25 bg-white px-6 font-bold text-selva-2 disabled:opacity-60"
       >
-        {pending && !pagar ? "Un momento…" : "Solo cambiar de plan"}
+        {pending && !pagar ? "Un momento…" : "Guardar sin pagar todavía"}
       </button>
     </>
   );
@@ -1116,8 +1158,11 @@ export function FormularioCambiarPlan({
   tierActual,
   preseleccion,
   oferta = null,
+  enPrueba = false,
 }: {
   tiers: Tier[];
+  /** Está en su mes gratis: la tarjeta lo dice. */
+  enPrueba?: boolean;
   /** Hay Stripe: «Pagar ahora» lleva a su página de pago. */
   cobroReal?: boolean;
   /** Alguna sucursal todavía no paga con tarjeta: se le ofrece pagar ya. */
@@ -1158,6 +1203,7 @@ export function FormularioCambiarPlan({
         inicial={codigoNuevo?.cubreHasta ? (codigoNuevo.planId ?? undefined) : preseleccion}
         periodo={periodo}
         oferta={vigente}
+        enPrueba={enPrueba}
       />
 
       {/*
@@ -1173,8 +1219,8 @@ export function FormularioCambiarPlan({
           <BotonesPagarOCambiar pagar={pagar} alElegir={setPagar} />
           <p className="text-sm text-cacao/70 sm:col-span-2">
             El pago se hace en la página segura de Stripe; tu tarjeta no pasa
-            por la Guía. Mientras estés en prueba, cambiar de plan no cobra
-            nada.
+            por la Guía. Mientras dure tu mes gratis, guardar sin pagar no
+            cobra nada.
           </p>
         </div>
       ) : (
@@ -1182,8 +1228,8 @@ export function FormularioCambiarPlan({
           {codigoNuevo?.cubreHasta && codigoNuevo.descuento < 100
             ? cobroReal
               ? "Ir a pagar con tarjeta"
-              : "Pagar y cambiar de plan"
-            : "Cambiar de plan"}
+              : "Pagar mi membresía"
+            : "Guardar cambios"}
         </BotonEnviar>
       )}
     </form>

@@ -283,11 +283,12 @@ export async function publicarSucursal(
 
   const { data: tier } = await supabase
     .from("tiers")
-    .select("id, nombre, precio_mensual")
+    .select("id, nombre, precio_mensual, se_ofrece")
     .eq("id", tierId)
     .maybeSingle();
 
   if (!tier) return { error: "Ese plan no existe." };
+  if (!tier.se_ofrece) return { error: "Ese plan ya no se ofrece. Solo hay membresía." };
 
   let convenioId: string | null = null;
   let oferta: Oferta | null = null;

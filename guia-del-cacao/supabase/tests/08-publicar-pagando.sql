@@ -13,6 +13,8 @@ set client_min_messages to notice;
 
 \echo '--- el dueno intenta publicar sin haber pagado ---'
 begin;
+-- El plan 1 ya no se ofrece (000081); esta prueba lo usa de plan cualquiera.
+update public.tiers set se_ofrece = true where id = 1;
   set local role authenticated;
   set local request.jwt.claims to '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';
   do $$
@@ -27,6 +29,8 @@ rollback;
 
 \echo '--- el mismo dueno, ya con suscripcion activa ---'
 begin;
+-- El plan 1 ya no se ofrece (000081); esta prueba lo usa de plan cualquiera.
+update public.tiers set se_ofrece = true where id = 1;
   set local role postgres;
   insert into public.suscripciones (sucursal_id, tier_id, monto_mensual, fecha_proximo_cobro)
   values ('88888888-8888-8888-8888-888888888888', 1, 99.00, now() + interval '1 month');
@@ -54,6 +58,8 @@ rollback;
 
 \echo '--- con la suscripcion vencida no alcanza ---'
 begin;
+-- El plan 1 ya no se ofrece (000081); esta prueba lo usa de plan cualquiera.
+update public.tiers set se_ofrece = true where id = 1;
   set local role postgres;
   insert into public.suscripciones (sucursal_id, tier_id, monto_mensual, fecha_proximo_cobro, estado)
   values ('88888888-8888-8888-8888-888888888888', 1, 99.00, now(), 'vencido');
@@ -72,6 +78,8 @@ rollback;
 
 \echo '--- pagar no levanta una pausa de moderacion ---'
 begin;
+-- El plan 1 ya no se ofrece (000081); esta prueba lo usa de plan cualquiera.
+update public.tiers set se_ofrece = true where id = 1;
   set local role postgres;
   insert into public.suscripciones (sucursal_id, tier_id, monto_mensual, fecha_proximo_cobro)
   values ('88888888-8888-8888-8888-888888888888', 1, 99.00, now() + interval '1 month');
@@ -94,6 +102,8 @@ rollback;
 
 \echo '--- pero la pausa que se puso el propio negocio, si ---'
 begin;
+-- El plan 1 ya no se ofrece (000081); esta prueba lo usa de plan cualquiera.
+update public.tiers set se_ofrece = true where id = 1;
   set local role postgres;
   insert into public.suscripciones (sucursal_id, tier_id, monto_mensual, fecha_proximo_cobro)
   values ('88888888-8888-8888-8888-888888888888', 1, 99.00, now() + interval '1 month');
@@ -125,6 +135,8 @@ rollback;
 
 \echo '--- rechazar sigue siendo cosa del administrador ---'
 begin;
+-- El plan 1 ya no se ofrece (000081); esta prueba lo usa de plan cualquiera.
+update public.tiers set se_ofrece = true where id = 1;
   set local role postgres;
   insert into public.suscripciones (sucursal_id, tier_id, monto_mensual, fecha_proximo_cobro)
   values ('88888888-8888-8888-8888-888888888888', 1, 99.00, now() + interval '1 month');
@@ -143,6 +155,8 @@ rollback;
 
 \echo '--- un ajeno no publica la sucursal de otro, ni pagada ---'
 begin;
+-- El plan 1 ya no se ofrece (000081); esta prueba lo usa de plan cualquiera.
+update public.tiers set se_ofrece = true where id = 1;
   set local role postgres;
   insert into public.suscripciones (sucursal_id, tier_id, monto_mensual, fecha_proximo_cobro)
   values ('88888888-8888-8888-8888-888888888888', 1, 99.00, now() + interval '1 month');
@@ -174,6 +188,8 @@ rollback;
 \echo '=== Cantidades en la solicitud de monedas ==='
 
 begin;
+-- El plan 1 ya no se ofrece (000081); esta prueba lo usa de plan cualquiera.
+update public.tiers set se_ofrece = true where id = 1;
   set local role postgres;
 
   insert into public.productos_servicios (id, sucursal_id, nombre, precio)

@@ -18,7 +18,7 @@ begin;
 -- venta. Desde la migracion 000059 hay un solo plan de pago ($499) y el
 -- Basico ya no se ofrece; los precios de hoy los revisa 20-embajadores.sql.
 -- Aqui se ponen los de entonces, dentro de la transaccion que se deshace.
-update public.tiers set se_ofrece = true where id = 2;
+update public.tiers set se_ofrece = true where id in (1, 2);
 update public.tiers set precio_mensual = 299 where id = 3;
 
 create or replace function pg_temp.debe_fallar(etiqueta text, sentencia text)

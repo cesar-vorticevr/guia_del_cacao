@@ -190,15 +190,15 @@ export default async function Dossier() {
       </Seccion>
 
       {/* ---------------------------------------------------------------- 6 */}
-      <Seccion numero="06" antetitulo="Cuánto cuesta" titulo="Dos planes, por sucursal">
+      <Seccion numero="06" antetitulo="Cuánto cuesta" titulo="Una membresía, por sucursal">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-3xl border border-mango/30 bg-white p-6">
-            <p className="antetitulo">Gratis</p>
-            <p className="mt-2 font-display text-5xl font-bold text-selva-2">$0</p>
+            <p className="antetitulo">Promoción de entrada</p>
+            <p className="mt-2 font-display text-5xl font-bold text-selva-2">1 mes gratis</p>
             <p className="mt-1 font-bold text-cacao">{DIAS_GRATIS} días con todo, sin tarjeta</p>
             <p className="mt-3 text-cacao">
-              Para conocer la guía: todo lo de la membresía durante la prueba. Al terminar, la página se
-              oculta —no se borra— y vuelve al pagar.
+              La membresía empieza gratis. El banner de estelares se enciende con el primer pago. Si al
+              terminar no se paga, la página se oculta —no se borra— y vuelve al pagar.
             </p>
           </div>
           <div className="rounded-3xl border-2 border-mango bg-white p-6 shadow-[0_0_40px_rgb(255_183_3/0.2)]">

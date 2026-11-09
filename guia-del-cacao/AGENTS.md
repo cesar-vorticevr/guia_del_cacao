@@ -2043,3 +2043,29 @@ Lo que ya existe tras la fase 1:
   pide el rol. Mi cuenta enseña «Registrar mi negocio» a quien no tiene, y
   `/soy-negocio` lleva a `completar-marca`.
 - La prueba es la 36; la 03 cambió su caso de Google.
+
+## Solo membresía, con el primer mes gratis (migración 000081)
+
+Desde el 9 de noviembre de 2026 **no hay plan Gratis que elegir**: hay la
+membresía, y su primer mes (`dias_gratis()`, 30) es gratis de promoción. Lo de
+arriba sobre «el Gratis» describe cómo era.
+
+- **El plan 1 tiene `se_ofrece = false`** y no sale en `Planes` ni para quien
+  lo tenía: las pruebas y las ocultas que estaban en él pasaron a la membresía
+  con sus mismas fechas. `contratarPlan` y `publicarSucursal` rechazan un plan
+  que no se ofrece, y `exigir_plan_ofrecido` lo frena en la base. Las pruebas
+  SQL viejas que usan el plan 1 de plan cualquiera lo vuelven a ofrecer dentro
+  de su transacción.
+- **`Planes` pasa la lista completa a cada tarjeta.** Cuál es el Gratis
+  (`esPlanGratis`) se decide con todos los planes: con la lista filtrada, la
+  membresía quedaba como la más barata y salía a $0.
+- **El banner de estelares es de quien paga**: `bannersDePortada` filtra por la
+  columna calculada `pagada(sucursales)` (suscripción `activo`). En el mes
+  gratis se sale en el directorio con todo, menos ahí. Las tarjetas lo dicen
+  con `enPrueba`.
+- **Una prueba vencida no es plan** aunque `vencer_pruebas()` todavía no haya
+  corrido esa noche: `plan_de_sucursal` mira `fecha_fin_trial`. Sin plan no se
+  publica, y lo oculto no se ve ni con el enlace.
+- Un convenio viejo con `basico_gratis_hasta` ahora alarga el mes gratis de la
+  membresía.
+- La prueba es la 37.

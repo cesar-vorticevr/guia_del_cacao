@@ -105,7 +105,7 @@ export async function contratarPlan(
 
   const { data: tier } = await supabase
     .from("tiers")
-    .select("id, nombre, precio_mensual")
+    .select("id, nombre, precio_mensual, se_ofrece")
     .eq("id", tierId)
     .maybeSingle();
 
@@ -113,6 +113,12 @@ export async function contratarPlan(
 
   const periodo = datos.get("periodo")?.toString() === "anual" ? "anual" : "mensual";
   const abiertas = await suscripcionesAbiertas(marca.id);
+
+  // Lo que ya no se ofrece —el Gratis, desde la 000081— solo lo conserva quien
+  // ya está en él. Pasarse a Gratis era regalarse otro mes sin pagar.
+  if (!tier.se_ofrece && !abiertas.every((s) => s.tier_id === tier.id)) {
+    return { error: "Ese plan ya no se ofrece. Solo hay membresía." };
+  }
 
   /*
     Un código nuevo se puede poner también aquí, no solo al publicar: quien ya

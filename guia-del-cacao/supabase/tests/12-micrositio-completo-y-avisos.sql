@@ -6,6 +6,8 @@ set client_min_messages to notice;
 
 \echo '=== Publicar exige micrositio completo ==='
 begin;
+-- El plan 1 ya no se ofrece (000081); esta prueba lo usa de plan cualquiera.
+update public.tiers set se_ofrece = true where id = 1;
   set local role postgres;
   insert into public.suscripciones (sucursal_id, tier_id, monto_mensual, fecha_proximo_cobro)
   values ('88888888-8888-8888-8888-888888888888', 1, 199.00, now() + interval '1 month');
@@ -55,6 +57,8 @@ rollback;
 
 \echo '=== Avisos al negocio ==='
 begin;
+-- El plan 1 ya no se ofrece (000081); esta prueba lo usa de plan cualquiera.
+update public.tiers set se_ofrece = true where id = 1;
   set local role postgres;
   delete from public.resenas
    where usuario_id = '11111111-1111-1111-1111-111111111111'

@@ -251,25 +251,27 @@ export default function Terminos() {
         <li>Un plan vigente para esa sucursal.</li>
       </ul>
 
-      <h3 className="mt-6 font-display text-xl">Los planes</h3>
+      <h3 className="mt-6 font-display text-xl">La membresía</h3>
       <p className="mt-3 text-cacao">
-        Son dos, y{" "}
-        <strong className="text-selva-2">el plan es de cada sucursal</strong>, no
-        de la cuenta: un negocio con tres locales paga tres, y puede tener uno
+        Hay una sola, y{" "}
+        <strong className="text-selva-2">es de cada sucursal</strong>, no de la
+        cuenta: un negocio con tres locales paga tres, y puede tener uno
         publicado y otro en borrador.
       </p>
       <ul className="mt-3 grid gap-2 text-cacao">
         <li>
-          <strong className="text-selva-2">Gratis, por 30 días</strong> — todo
-          lo de la membresía, sin dejar tarjeta. Al terminar, tu micrositio sale del
-          directorio hasta que pagues.
-        </li>
-        <li>
           <strong className="text-selva-2">Membresía, $299 al mes o $2,990 al año</strong>{" "}
           — tu micrositio con catálogo y contacto, las reseñas de tus
-          clientes, anunciar tus eventos en la agenda, salir en el banner de la
-          portada, la ruleta de premios y tres experiencias de realidad
-          aumentada, sin vencimiento mientras pagues.
+          clientes, anunciar tus eventos en la agenda, salir en el banner de
+          estelares de la portada, la ruleta de premios y tres experiencias de
+          realidad aumentada, sin vencimiento mientras pagues.
+        </li>
+        <li>
+          <strong className="text-selva-2">El primer mes es gratis</strong>, de
+          promoción: todo lo de la membresía, sin dejar tarjeta, salvo el banner
+          de estelares, que se enciende con el primer pago. Al terminar, si no
+          has pagado, tu micrositio se oculta —no lo ve nadie, ni con el
+          enlace— y no se puede volver a publicar hasta pagar. No se borra nada.
         </li>
       </ul>
       <p className="mt-3 text-cacao">
@@ -283,11 +285,9 @@ export default function Terminos() {
       </p>
       <p className="mt-3 text-cacao">
         Quien ya pagaba el plan Básico ($199 al mes) lo conserva con su precio
-        mientras no lo cambie. El plan Gratis dura treinta días. Con el plan de
-        pago, cada sucursal
-        estrena{" "}
-        <strong className="text-selva-2">treinta días de prueba</strong>, con
-        todas las funciones de su plan. El conteo empieza el día que publicas.
+        mientras no lo cambie. Cada sucursal estrena{" "}
+        <strong className="text-selva-2">treinta días gratis</strong> de
+        membresía. El conteo empieza el día que publicas.
         Si pagas el año completo,{" "}
         <strong className="text-selva-2">dos meses son gratis</strong>: pagas
         diez. Del 10 al 16 de noviembre de 2026, con la{" "}

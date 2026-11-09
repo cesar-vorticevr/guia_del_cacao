@@ -204,9 +204,10 @@ export async function bannersDePortada() {
       "id, slug, nombre_sucursal, imagen_fondo, marcas(nombre_comercial), banners(imagen, texto, orden_rotacion), tiers!inner(en_banner_principal)",
     )
     .eq("estado", "publicado")
-    // Del plan que lo incluye, no de `tier_id = 3`: desde la 000068 también
-    // el Gratis sale en el banner mientras dura.
+    // Del plan que lo incluye, no de `tier_id = 3`. Y solo de quien ya pagó:
+    // el mes gratis de la membresía no sale en el banner (migración 000081).
     .eq("tiers.en_banner_principal", true)
+    .eq("pagada", true)
     .order("fecha_publicacion", { ascending: false });
 
   type Fila = {

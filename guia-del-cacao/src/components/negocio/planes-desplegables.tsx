@@ -22,12 +22,15 @@ export function PlanesDesplegables({
   tiers,
   cobroReal = false,
   porPagar = false,
+  enPrueba = false,
   tierActual,
   siguiente,
   oferta = null,
   children,
 }: {
   tiers: Tier[];
+  /** Está en su mes gratis de la membresía. */
+  enPrueba?: boolean;
   /** Hay Stripe: el botón «Pagar ahora» cobra de verdad. */
   cobroReal?: boolean;
   /** Alguna sucursal todavía no paga con tarjeta. */
@@ -81,7 +84,7 @@ export function PlanesDesplegables({
 
       <section ref={lista} className="grid scroll-mt-24 gap-4">
         <h2 className="font-display text-xl">
-          {tierActual ? "Cambiar de plan" : "Elige tu plan"}
+          {enPrueba ? "Paga tu membresía" : "Tu membresía"}
         </h2>
 
         {abierto ? (
@@ -97,6 +100,7 @@ export function PlanesDesplegables({
               tiers={tiers}
               cobroReal={cobroReal}
               porPagar={porPagar}
+              enPrueba={enPrueba}
               tierActual={tierActual}
               preseleccion={preseleccion}
               oferta={oferta}
@@ -110,7 +114,7 @@ export function PlanesDesplegables({
             onClick={() => abrir()}
             className="inline-flex min-h-12 w-fit items-center rounded-full border-2 border-selva/25 bg-white px-6 font-bold text-selva-2 transition-transform active:translate-y-0.5"
           >
-            Ver los planes
+            {enPrueba ? "Pagar o ver mi membresía" : "Ver mi membresía"}
           </button>
         )}
       </section>

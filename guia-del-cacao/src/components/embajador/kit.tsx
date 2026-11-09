@@ -103,8 +103,8 @@ export function KitDeVenta({
             </thead>
             <tbody className="divide-y divide-ink/10">
               <tr>
-                <td className="p-4 font-bold">Gratis</td>
-                <td className="p-4">{DIAS_GRATIS} días, sin tarjeta</td>
+                <td className="p-4 font-bold">Primer mes de membresía</td>
+                <td className="p-4">Gratis, {DIAS_GRATIS} días sin tarjeta (sin banner de estelares)</td>
                 <td className="p-4">—</td>
                 <td className="p-4 text-cacao/70">Tu código ya queda ligado</td>
               </tr>
