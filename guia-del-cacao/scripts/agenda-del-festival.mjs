@@ -357,7 +357,7 @@ revisar(
 );
 const { data: hechos } = await db.from("productos_servicios").select("id, nombre").eq("marca_id", marca.id);
 const productos = [];
-for (const [i, p] of PRODUCTOS.entries()) {
+for (const p of PRODUCTOS) {
   const imagen = await subir(`catalogo/${marca.id}/${p.portada}.png`, `scripts/portadas-festival/${p.portada}.png`);
   let fila = hechos?.find((h) => h.nombre === p.nombre);
   const datos = { nombre: p.nombre, descripcion: p.descripcion, precio: p.precio, imagen };
