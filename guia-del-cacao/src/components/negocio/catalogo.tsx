@@ -462,8 +462,13 @@ export function SeleccionDeProductos({
 
               <span className="min-w-0 flex-1">
                 <span className="block font-bold text-selva-2">{producto.nombre}</span>
+                {/*
+                  `contain:inline-size` hace que la descripción no pida ancho:
+                  con `truncate` a secas, cada cuadrícula de arriba crecía hasta
+                  el largo del renglón entero y la página se salía de pantalla.
+                */}
                 {producto.descripcion && (
-                  <span className="block truncate text-sm text-cacao">
+                  <span className="block truncate text-sm text-cacao [contain:inline-size]">
                     {producto.descripcion}
                   </span>
                 )}
